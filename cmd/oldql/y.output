@@ -1,0 +1,1340 @@
+
+state 0
+	$accept: .toplvl $end 
+
+	error  shift 10
+	NAME  shift 14
+	NL  shift 15
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	FUNC  shift 11
+	'{'  shift 19
+	'<'  shift 12
+	';'  shift 16
+	'$'  shift 27
+	.  error
+
+	cmds  goto 2
+	cmd  goto 4
+	pipe  goto 7
+	simple  goto 17
+	elsif  goto 21
+	var  goto 8
+	func  goto 5
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 13
+	toplvl  goto 1
+	xcmd  goto 3
+	source  goto 6
+	sep  goto 9
+
+state 1
+	$accept:  toplvl.$end 
+
+	$end  accept
+	.  error
+
+
+state 2
+	toplvl:  cmds.    (1)
+	cmds:  cmds.xcmd 
+
+	$end  reduce 1 (src line 38)
+	error  shift 10
+	NAME  shift 14
+	NL  shift 15
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	FUNC  shift 11
+	'{'  shift 19
+	'<'  shift 12
+	';'  shift 16
+	'$'  shift 27
+	.  error
+
+	cmd  goto 4
+	pipe  goto 7
+	simple  goto 17
+	elsif  goto 21
+	var  goto 8
+	func  goto 5
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 13
+	xcmd  goto 32
+	source  goto 6
+	sep  goto 9
+
+state 3
+	cmds:  xcmd.    (3)
+
+	.  reduce 3 (src line 50)
+
+
+state 4
+	xcmd:  cmd.    (4)
+
+	.  reduce 4 (src line 60)
+
+
+state 5
+	xcmd:  func.    (5)
+
+	.  reduce 5 (src line 74)
+
+
+state 6
+	xcmd:  source.    (6)
+
+	.  reduce 6 (src line 78)
+
+
+state 7
+	cmd:  pipe.optbg sep 
+	pipe:  pipe.'|' opt_name $$19 opt_nl simplerdr 
+	optbg: .    (44)
+
+	'|'  shift 34
+	'&'  shift 35
+	.  reduce 44 (src line 296)
+
+	optbg  goto 33
+
+state 8
+	cmd:  var.sep 
+
+	NL  shift 15
+	';'  shift 16
+	.  error
+
+	sep  goto 36
+
+state 9
+	cmd:  sep.    (9)
+
+	.  reduce 9 (src line 96)
+
+
+state 10
+	cmd:  error.    (10)
+
+	.  reduce 10 (src line 100)
+
+
+state 11
+	func:  FUNC.NAME '{' subcmds '}' 
+
+	NAME  shift 37
+	.  error
+
+
+state 12
+	source:  '<'.NAME 
+
+	NAME  shift 38
+	.  error
+
+
+state 13
+	pipe:  simplerdr.    (21)
+
+	.  reduce 21 (src line 176)
+
+
+state 14
+	var:  NAME.'=' name 
+	var:  NAME.'=' inblk 
+	var:  NAME.'=' '{' names '}' 
+	var:  NAME.'[' NAME ']' '=' name 
+	var:  NAME.'[' NAME ']' '=' '{' names '}' 
+	var:  NAME.'=' '{' maps '}' 
+	name:  NAME.    (63)
+
+	'['  shift 40
+	'='  shift 39
+	.  reduce 63 (src line 386)
+
+
+state 15
+	sep:  NL.    (57)
+
+	.  reduce 57 (src line 362)
+
+
+state 16
+	sep:  ';'.    (58)
+
+	.  reduce 58 (src line 364)
+
+
+state 17
+	simplerdr:  simple.optredirs 
+	optredirs: .    (33)
+
+	APP  shift 48
+	'<'  shift 46
+	'>'  shift 47
+	.  reduce 33 (src line 237)
+
+	redir  goto 43
+	inredir  goto 44
+	outredir  goto 45
+	optredirs  goto 41
+	redirs  goto 42
+
+state 18
+	simple:  names.    (23)
+	names:  names.name 
+	names:  names.inblk 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	PIPEBLK  shift 31
+	LEN  shift 28
+	'$'  shift 27
+	.  reduce 23 (src line 191)
+
+	name  goto 49
+	inblk  goto 50
+
+state 19
+	simple:  '{'.subcmds '}' 
+	$$11: .    (11)
+
+	.  reduce 11 (src line 106)
+
+	subcmds  goto 52
+	$$11  goto 53
+
+state 20
+	simple:  FORBLK.subcmds '}' 
+	$$11: .    (11)
+
+	.  reduce 11 (src line 106)
+
+	subcmds  goto 54
+	$$11  goto 53
+
+state 21
+	simple:  elsif.    (26)
+	simple:  elsif.ELSE '{' subcmds '}' 
+	elsif:  elsif.ELSIF pipe '{' subcmds '}' 
+
+	ELSE  shift 55
+	ELSIF  shift 56
+	.  reduce 26 (src line 206)
+
+
+state 22
+	simple:  FOR.names '{' subcmds '}' 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	PIPEBLK  shift 31
+	LEN  shift 28
+	'$'  shift 27
+	.  error
+
+	names  goto 57
+	name  goto 24
+	inblk  goto 25
+
+state 23
+	simple:  WHILE.pipe '{' subcmds '}' 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	'{'  shift 19
+	'$'  shift 27
+	.  error
+
+	pipe  goto 58
+	simple  goto 17
+	elsif  goto 21
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 13
+
+state 24
+	names:  name.    (61)
+	name:  name.'^' name 
+
+	'^'  shift 59
+	.  reduce 61 (src line 376)
+
+
+state 25
+	names:  inblk.    (62)
+
+	.  reduce 62 (src line 380)
+
+
+state 26
+	elsif:  IF.pipe '{' subcmds '}' 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	'{'  shift 19
+	'$'  shift 27
+	.  error
+
+	pipe  goto 60
+	simple  goto 17
+	elsif  goto 21
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 13
+
+state 27
+	name:  '$'.NAME 
+	name:  '$'.'^' NAME 
+	name:  '$'.NAME '[' NAME ']' 
+
+	NAME  shift 61
+	'^'  shift 62
+	.  error
+
+
+state 28
+	name:  LEN.NAME 
+
+	NAME  shift 63
+	.  error
+
+
+state 29
+	inblk:  INBLK.pipe '}' 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	'{'  shift 19
+	'$'  shift 27
+	.  error
+
+	pipe  goto 64
+	simple  goto 17
+	elsif  goto 21
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 13
+
+state 30
+	inblk:  HEREBLK.pipe '}' 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	'{'  shift 19
+	'$'  shift 27
+	.  error
+
+	pipe  goto 65
+	simple  goto 17
+	elsif  goto 21
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 13
+
+state 31
+	inblk:  PIPEBLK.pipe '}' 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	'{'  shift 19
+	'$'  shift 27
+	.  error
+
+	pipe  goto 66
+	simple  goto 17
+	elsif  goto 21
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 13
+
+state 32
+	cmds:  cmds xcmd.    (2)
+
+	.  reduce 2 (src line 41)
+
+
+state 33
+	cmd:  pipe optbg.sep 
+
+	NL  shift 15
+	';'  shift 16
+	.  error
+
+	sep  goto 67
+
+state 34
+	pipe:  pipe '|'.opt_name $$19 opt_nl simplerdr 
+	opt_name: .    (18)
+
+	'['  shift 69
+	.  reduce 18 (src line 151)
+
+	opt_name  goto 68
+
+state 35
+	optbg:  '&'.    (42)
+	optbg:  '&'.NAME 
+
+	NAME  shift 70
+	.  reduce 42 (src line 287)
+
+
+state 36
+	cmd:  var sep.    (8)
+
+	.  reduce 8 (src line 92)
+
+
+state 37
+	func:  FUNC NAME.'{' subcmds '}' 
+
+	'{'  shift 71
+	.  error
+
+
+state 38
+	source:  '<' NAME.    (14)
+
+	.  reduce 14 (src line 132)
+
+
+state 39
+	var:  NAME '='.name 
+	var:  NAME '='.inblk 
+	var:  NAME '='.'{' names '}' 
+	var:  NAME '='.'{' maps '}' 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	PIPEBLK  shift 31
+	LEN  shift 28
+	'{'  shift 74
+	'$'  shift 27
+	.  error
+
+	name  goto 72
+	inblk  goto 73
+
+state 40
+	var:  NAME '['.NAME ']' '=' name 
+	var:  NAME '['.NAME ']' '=' '{' names '}' 
+
+	NAME  shift 75
+	.  error
+
+
+state 41
+	simplerdr:  simple optredirs.    (22)
+
+	.  reduce 22 (src line 182)
+
+
+state 42
+	optredirs:  redirs.    (32)
+	redirs:  redirs.redir 
+
+	APP  shift 48
+	'<'  shift 46
+	'>'  shift 47
+	.  reduce 32 (src line 232)
+
+	redir  goto 76
+	inredir  goto 44
+	outredir  goto 45
+
+state 43
+	redirs:  redir.    (35)
+
+	.  reduce 35 (src line 248)
+
+
+state 44
+	redir:  inredir.    (36)
+
+	.  reduce 36 (src line 251)
+
+
+state 45
+	redir:  outredir.    (37)
+
+	.  reduce 37 (src line 253)
+
+
+state 46
+	inredir:  '<'.NAME 
+
+	NAME  shift 77
+	.  error
+
+
+state 47
+	outredir:  '>'.opt_name NAME 
+	outredir:  '>'.'[' NAME '=' NAME ']' 
+	opt_name: .    (18)
+
+	'['  shift 79
+	.  reduce 18 (src line 151)
+
+	opt_name  goto 78
+
+state 48
+	outredir:  APP.opt_name NAME 
+	opt_name: .    (18)
+
+	'['  shift 69
+	.  reduce 18 (src line 151)
+
+	opt_name  goto 80
+
+state 49
+	names:  names name.    (59)
+	name:  name.'^' name 
+
+	'^'  shift 59
+	.  reduce 59 (src line 367)
+
+
+state 50
+	names:  names inblk.    (60)
+
+	.  reduce 60 (src line 372)
+
+
+state 51
+	name:  NAME.    (63)
+
+	.  reduce 63 (src line 386)
+
+
+state 52
+	simple:  '{' subcmds.'}' 
+
+	'}'  shift 81
+	.  error
+
+
+state 53
+	subcmds:  $$11.cmds 
+
+	error  shift 10
+	NAME  shift 14
+	NL  shift 15
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	FUNC  shift 11
+	'{'  shift 19
+	'<'  shift 12
+	';'  shift 16
+	'$'  shift 27
+	.  error
+
+	cmds  goto 82
+	cmd  goto 4
+	pipe  goto 7
+	simple  goto 17
+	elsif  goto 21
+	var  goto 8
+	func  goto 5
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 13
+	xcmd  goto 3
+	source  goto 6
+	sep  goto 9
+
+state 54
+	simple:  FORBLK subcmds.'}' 
+
+	'}'  shift 83
+	.  error
+
+
+state 55
+	simple:  elsif ELSE.'{' subcmds '}' 
+
+	'{'  shift 84
+	.  error
+
+
+state 56
+	elsif:  elsif ELSIF.pipe '{' subcmds '}' 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	'{'  shift 19
+	'$'  shift 27
+	.  error
+
+	pipe  goto 85
+	simple  goto 17
+	elsif  goto 21
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 13
+
+state 57
+	simple:  FOR names.'{' subcmds '}' 
+	names:  names.name 
+	names:  names.inblk 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	PIPEBLK  shift 31
+	LEN  shift 28
+	'{'  shift 86
+	'$'  shift 27
+	.  error
+
+	name  goto 49
+	inblk  goto 50
+
+state 58
+	pipe:  pipe.'|' opt_name $$19 opt_nl simplerdr 
+	simple:  WHILE pipe.'{' subcmds '}' 
+
+	'{'  shift 87
+	'|'  shift 34
+	.  error
+
+
+state 59
+	name:  name '^'.name 
+
+	NAME  shift 51
+	LEN  shift 28
+	'$'  shift 27
+	.  error
+
+	name  goto 88
+
+state 60
+	pipe:  pipe.'|' opt_name $$19 opt_nl simplerdr 
+	elsif:  IF pipe.'{' subcmds '}' 
+
+	'{'  shift 89
+	'|'  shift 34
+	.  error
+
+
+state 61
+	name:  '$' NAME.    (64)
+	name:  '$' NAME.'[' NAME ']' 
+
+	'['  shift 90
+	.  reduce 64 (src line 391)
+
+
+state 62
+	name:  '$' '^'.NAME 
+
+	NAME  shift 91
+	.  error
+
+
+state 63
+	name:  LEN NAME.    (67)
+
+	.  reduce 67 (src line 403)
+
+
+state 64
+	pipe:  pipe.'|' opt_name $$19 opt_nl simplerdr 
+	inblk:  INBLK pipe.'}' 
+
+	'}'  shift 92
+	'|'  shift 34
+	.  error
+
+
+state 65
+	pipe:  pipe.'|' opt_name $$19 opt_nl simplerdr 
+	inblk:  HEREBLK pipe.'}' 
+
+	'}'  shift 93
+	'|'  shift 34
+	.  error
+
+
+state 66
+	pipe:  pipe.'|' opt_name $$19 opt_nl simplerdr 
+	inblk:  PIPEBLK pipe.'}' 
+
+	'}'  shift 94
+	'|'  shift 34
+	.  error
+
+
+state 67
+	cmd:  pipe optbg sep.    (7)
+
+	.  reduce 7 (src line 84)
+
+
+state 68
+	pipe:  pipe '|' opt_name.$$19 opt_nl simplerdr 
+	$$19: .    (19)
+
+	.  reduce 19 (src line 157)
+
+	$$19  goto 95
+
+state 69
+	opt_name:  '['.NAME ']' 
+
+	NAME  shift 96
+	.  error
+
+
+state 70
+	optbg:  '&' NAME.    (43)
+
+	.  reduce 43 (src line 292)
+
+
+state 71
+	func:  FUNC NAME '{'.subcmds '}' 
+	$$11: .    (11)
+
+	.  reduce 11 (src line 106)
+
+	subcmds  goto 97
+	$$11  goto 53
+
+state 72
+	var:  NAME '=' name.    (45)
+	name:  name.'^' name 
+
+	'^'  shift 59
+	.  reduce 45 (src line 302)
+
+
+state 73
+	var:  NAME '=' inblk.    (46)
+
+	.  reduce 46 (src line 307)
+
+
+state 74
+	var:  NAME '=' '{'.names '}' 
+	var:  NAME '=' '{'.maps '}' 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	PIPEBLK  shift 31
+	LEN  shift 28
+	'['  shift 101
+	'$'  shift 27
+	.  error
+
+	maps  goto 99
+	map  goto 100
+	names  goto 98
+	name  goto 24
+	inblk  goto 25
+
+state 75
+	var:  NAME '[' NAME.']' '=' name 
+	var:  NAME '[' NAME.']' '=' '{' names '}' 
+
+	']'  shift 102
+	.  error
+
+
+state 76
+	redirs:  redirs redir.    (34)
+
+	.  reduce 34 (src line 243)
+
+
+state 77
+	inredir:  '<' NAME.    (38)
+
+	.  reduce 38 (src line 257)
+
+
+state 78
+	outredir:  '>' opt_name.NAME 
+
+	NAME  shift 103
+	.  error
+
+
+state 79
+	opt_name:  '['.NAME ']' 
+	outredir:  '>' '['.NAME '=' NAME ']' 
+
+	NAME  shift 104
+	.  error
+
+
+state 80
+	outredir:  APP opt_name.NAME 
+
+	NAME  shift 105
+	.  error
+
+
+state 81
+	simple:  '{' subcmds '}'.    (24)
+
+	.  reduce 24 (src line 197)
+
+
+state 82
+	cmds:  cmds.xcmd 
+	subcmds:  $$11 cmds.    (12)
+
+	error  shift 10
+	NAME  shift 14
+	NL  shift 15
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	FUNC  shift 11
+	'{'  shift 19
+	'}'  reduce 12 (src line 112)
+	'<'  shift 12
+	';'  shift 16
+	'$'  shift 27
+	.  error
+
+	cmd  goto 4
+	pipe  goto 7
+	simple  goto 17
+	elsif  goto 21
+	var  goto 8
+	func  goto 5
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 13
+	xcmd  goto 32
+	source  goto 6
+	sep  goto 9
+
+state 83
+	simple:  FORBLK subcmds '}'.    (25)
+
+	.  reduce 25 (src line 201)
+
+
+state 84
+	simple:  elsif ELSE '{'.subcmds '}' 
+	$$11: .    (11)
+
+	.  reduce 11 (src line 106)
+
+	subcmds  goto 106
+	$$11  goto 53
+
+state 85
+	pipe:  pipe.'|' opt_name $$19 opt_nl simplerdr 
+	elsif:  elsif ELSIF pipe.'{' subcmds '}' 
+
+	'{'  shift 107
+	'|'  shift 34
+	.  error
+
+
+state 86
+	simple:  FOR names '{'.subcmds '}' 
+	$$11: .    (11)
+
+	.  reduce 11 (src line 106)
+
+	subcmds  goto 108
+	$$11  goto 53
+
+state 87
+	simple:  WHILE pipe '{'.subcmds '}' 
+	$$11: .    (11)
+
+	.  reduce 11 (src line 106)
+
+	subcmds  goto 109
+	$$11  goto 53
+
+state 88
+	name:  name.'^' name 
+	name:  name '^' name.    (68)
+
+	.  reduce 68 (src line 407)
+
+
+state 89
+	elsif:  IF pipe '{'.subcmds '}' 
+	$$11: .    (11)
+
+	.  reduce 11 (src line 106)
+
+	subcmds  goto 110
+	$$11  goto 53
+
+state 90
+	name:  '$' NAME '['.NAME ']' 
+
+	NAME  shift 111
+	.  error
+
+
+state 91
+	name:  '$' '^' NAME.    (65)
+
+	.  reduce 65 (src line 395)
+
+
+state 92
+	inblk:  INBLK pipe '}'.    (51)
+
+	.  reduce 51 (src line 330)
+
+
+state 93
+	inblk:  HEREBLK pipe '}'.    (52)
+
+	.  reduce 52 (src line 335)
+
+
+state 94
+	inblk:  PIPEBLK pipe '}'.    (53)
+
+	.  reduce 53 (src line 339)
+
+
+state 95
+	pipe:  pipe '|' opt_name $$19.opt_nl simplerdr 
+	opt_nl: .    (16)
+
+	NL  shift 113
+	.  reduce 16 (src line 143)
+
+	opt_nl  goto 112
+
+state 96
+	opt_name:  '[' NAME.']' 
+
+	']'  shift 114
+	.  error
+
+
+state 97
+	func:  FUNC NAME '{' subcmds.'}' 
+
+	'}'  shift 115
+	.  error
+
+
+state 98
+	var:  NAME '=' '{' names.'}' 
+	names:  names.name 
+	names:  names.inblk 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	PIPEBLK  shift 31
+	LEN  shift 28
+	'}'  shift 116
+	'$'  shift 27
+	.  error
+
+	name  goto 49
+	inblk  goto 50
+
+state 99
+	var:  NAME '=' '{' maps.'}' 
+	maps:  maps.map 
+
+	'}'  shift 117
+	'['  shift 101
+	.  error
+
+	map  goto 118
+
+state 100
+	maps:  map.    (55)
+
+	.  reduce 55 (src line 350)
+
+
+state 101
+	map:  '['.NAME ']' NAME 
+
+	NAME  shift 119
+	.  error
+
+
+state 102
+	var:  NAME '[' NAME ']'.'=' name 
+	var:  NAME '[' NAME ']'.'=' '{' names '}' 
+
+	'='  shift 120
+	.  error
+
+
+state 103
+	outredir:  '>' opt_name NAME.    (39)
+
+	.  reduce 39 (src line 264)
+
+
+state 104
+	opt_name:  '[' NAME.']' 
+	outredir:  '>' '[' NAME.'=' NAME ']' 
+
+	']'  shift 114
+	'='  shift 121
+	.  error
+
+
+state 105
+	outredir:  APP opt_name NAME.    (40)
+
+	.  reduce 40 (src line 273)
+
+
+state 106
+	simple:  elsif ELSE '{' subcmds.'}' 
+
+	'}'  shift 122
+	.  error
+
+
+state 107
+	elsif:  elsif ELSIF pipe '{'.subcmds '}' 
+	$$11: .    (11)
+
+	.  reduce 11 (src line 106)
+
+	subcmds  goto 123
+	$$11  goto 53
+
+state 108
+	simple:  FOR names '{' subcmds.'}' 
+
+	'}'  shift 124
+	.  error
+
+
+state 109
+	simple:  WHILE pipe '{' subcmds.'}' 
+
+	'}'  shift 125
+	.  error
+
+
+state 110
+	elsif:  IF pipe '{' subcmds.'}' 
+
+	'}'  shift 126
+	.  error
+
+
+state 111
+	name:  '$' NAME '[' NAME.']' 
+
+	']'  shift 127
+	.  error
+
+
+state 112
+	pipe:  pipe '|' opt_name $$19 opt_nl.simplerdr 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	FORBLK  shift 20
+	PIPEBLK  shift 31
+	LEN  shift 28
+	IF  shift 26
+	FOR  shift 22
+	WHILE  shift 23
+	'{'  shift 19
+	'$'  shift 27
+	.  error
+
+	simple  goto 17
+	elsif  goto 21
+	names  goto 18
+	name  goto 24
+	inblk  goto 25
+	simplerdr  goto 128
+
+state 113
+	opt_nl:  NL.    (15)
+
+	.  reduce 15 (src line 141)
+
+
+state 114
+	opt_name:  '[' NAME ']'.    (17)
+
+	.  reduce 17 (src line 146)
+
+
+state 115
+	func:  FUNC NAME '{' subcmds '}'.    (13)
+
+	.  reduce 13 (src line 122)
+
+
+state 116
+	var:  NAME '=' '{' names '}'.    (47)
+
+	.  reduce 47 (src line 311)
+
+
+state 117
+	var:  NAME '=' '{' maps '}'.    (50)
+
+	.  reduce 50 (src line 323)
+
+
+state 118
+	maps:  maps map.    (54)
+
+	.  reduce 54 (src line 345)
+
+
+state 119
+	map:  '[' NAME.']' NAME 
+
+	']'  shift 129
+	.  error
+
+
+state 120
+	var:  NAME '[' NAME ']' '='.name 
+	var:  NAME '[' NAME ']' '='.'{' names '}' 
+
+	NAME  shift 51
+	LEN  shift 28
+	'{'  shift 131
+	'$'  shift 27
+	.  error
+
+	name  goto 130
+
+state 121
+	outredir:  '>' '[' NAME '='.NAME ']' 
+
+	NAME  shift 132
+	.  error
+
+
+state 122
+	simple:  elsif ELSE '{' subcmds '}'.    (27)
+
+	.  reduce 27 (src line 207)
+
+
+state 123
+	elsif:  elsif ELSIF pipe '{' subcmds.'}' 
+
+	'}'  shift 133
+	.  error
+
+
+state 124
+	simple:  FOR names '{' subcmds '}'.    (28)
+
+	.  reduce 28 (src line 211)
+
+
+state 125
+	simple:  WHILE pipe '{' subcmds '}'.    (29)
+
+	.  reduce 29 (src line 215)
+
+
+state 126
+	elsif:  IF pipe '{' subcmds '}'.    (30)
+
+	.  reduce 30 (src line 221)
+
+
+state 127
+	name:  '$' NAME '[' NAME ']'.    (66)
+
+	.  reduce 66 (src line 399)
+
+
+state 128
+	pipe:  pipe '|' opt_name $$19 opt_nl simplerdr.    (20)
+
+	.  reduce 20 (src line 162)
+
+
+state 129
+	map:  '[' NAME ']'.NAME 
+
+	NAME  shift 134
+	.  error
+
+
+state 130
+	var:  NAME '[' NAME ']' '=' name.    (48)
+	name:  name.'^' name 
+
+	'^'  shift 59
+	.  reduce 48 (src line 315)
+
+
+state 131
+	var:  NAME '[' NAME ']' '=' '{'.names '}' 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	PIPEBLK  shift 31
+	LEN  shift 28
+	'$'  shift 27
+	.  error
+
+	names  goto 135
+	name  goto 24
+	inblk  goto 25
+
+state 132
+	outredir:  '>' '[' NAME '=' NAME.']' 
+
+	']'  shift 136
+	.  error
+
+
+state 133
+	elsif:  elsif ELSIF pipe '{' subcmds '}'.    (31)
+
+	.  reduce 31 (src line 226)
+
+
+state 134
+	map:  '[' NAME ']' NAME.    (56)
+
+	.  reduce 56 (src line 355)
+
+
+state 135
+	var:  NAME '[' NAME ']' '=' '{' names.'}' 
+	names:  names.name 
+	names:  names.inblk 
+
+	NAME  shift 51
+	INBLK  shift 29
+	HEREBLK  shift 30
+	PIPEBLK  shift 31
+	LEN  shift 28
+	'}'  shift 137
+	'$'  shift 27
+	.  error
+
+	name  goto 49
+	inblk  goto 50
+
+state 136
+	outredir:  '>' '[' NAME '=' NAME ']'.    (41)
+
+	.  reduce 41 (src line 281)
+
+
+state 137
+	var:  NAME '[' NAME ']' '=' '{' names '}'.    (49)
+
+	.  reduce 49 (src line 319)
+
+
+31 terminals, 29 nonterminals
+69 grammar rules, 138/2000 states
+0 shift/reduce, 0 reduce/reduce conflicts reported
+78 working sets used
+memory: parser 145/30000
+97 extra closures
+275 shift entries, 3 exceptions
+66 goto entries
+93 entries saved by goto default
+Optimizer space used: output 206/30000
+206 table entries, 0 zero
+maximum spread: 31, maximum offset: 135

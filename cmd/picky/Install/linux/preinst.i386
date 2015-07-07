@@ -1,0 +1,7 @@
+#!/bin/bash
+
+arch=`uname -m`
+if [ $arch != "i686" ] && [ $arch != "i386" ]; then
+	echo "bad architecture ... try another package (64 bits?)";
+	exit 1
+fi

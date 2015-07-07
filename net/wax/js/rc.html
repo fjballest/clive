@@ -1,0 +1,65 @@
+<html>
+<body>
+Playground....
+<br>
+blah blha
+dfsd
+fs
+fs
+d
+fs
+d
+<script src="jq/jquery.js"></script>
+<script>
+var xx = 0
+var yy = 0
+var dragid
+
+function drag(e) {
+	console.log(e);
+	if(!e.target) {
+		console.log("no id");
+	} else {
+		dragid = e.target.id;
+		cx = e.x - $('#'+e.target.id).position().left;
+		cy = e.y - $('#'+e.target.id).position().top;
+		console.log(e.target.id, cx, cy);
+	}
+}
+
+function drop(e) {
+	console.log('pos', xx-cx, yy-cy);
+	console.log(dragid);
+	$('#'+dragid)
+	.css('top', yy-cy).css('left', xx-cx).css('position', 'fixed')
+	.click(function() {
+		$('#'+this.id).css('position', 'static');
+	});
+}
+
+document.body.ondrop = drop;
+
+document.body.ondragover = function(e) {
+	xx = e.x;
+	yy = e.y;
+	console.log(e.clientX, e.clientY);
+	e.preventDefault();
+}	
+
+</script>
+<div id="div1" draggable="true" ondragstart="drag(event)" resize="both" style="background-color:#f3f3f3; border:1px solid black; width:400px; height:200px; resize:both; overflow: auto; scrolling:no;">
+A iframe<br>
+<iframe src="http://lsub.org" frameborder="0" seamless="seamless" style="resize:none; height:100%; width:100%; margin: 10px;">
+</iframe>
+</div>
+<div id="div2" draggable="true" ondragstart="drag(event)" resize="both" style="background-color:#f3f3f3; border:1px solid black; width:400px; height:200px; resize:both; overflow: auto; scrolling:no;">
+A iframe<br>
+<iframe src="http://lsub.org" frameborder="0" seamless="seamless" style="resize:none; height:100%; width:100%; margin: 10px;">
+</iframe>
+
+</div>
+<p>
+<p>
+xx
+</body>
+</html>

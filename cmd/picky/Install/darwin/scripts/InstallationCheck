@@ -1,0 +1,10 @@
+#!/bin/bash
+
+vers=`sw_vers|grep '^ProductVersion'|sed 's/^.*:.//g'`
+if ! echo $vers|grep -E '^10\.([6789]|10)'>/dev/null
+then
+	exit 64
+fi
+exit
+
+

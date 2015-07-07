@@ -1,0 +1,6 @@
+func ll {
+	lf $argv[1]^,1 | pf -l
+}
+func l {
+	lf $argv[1]^,1 |cols
+}

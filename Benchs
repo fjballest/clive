@@ -1,0 +1,103 @@
+Thu May 29 18:05:32 CEST 2014
+Darwin Atlantis.local 13.1.0 Darwin Kernel Version 13.1.0: Tue May 27 16:05:18 CEST 201; root:xnu-2422.92.1~2/RELEASE_X86_64 x86_64
+
+ok  	clive/cmd/picky/comp	0.019s
+ok  	clive/dbg	0.003s
+BenchmarkZWByteRaw            	20000000	       132 ns/op
+BenchmarkZWMsgsRaw            	10000000	       178 ns/op
+BenchmarkZWByteBIO            	20000000	       132 ns/op
+BenchmarkZWMsgsBIO            	10000000	       202 ns/op
+BenchmarkZRByteRaw            	  200000	      9528 ns/op
+BenchmarkZRMsgsRaw            	10000000	       153 ns/op
+BenchmarkZRByteBIO            	  200000	      7644 ns/op
+BenchmarkZRMsgsBIO            	10000000	       160 ns/op
+BenchmarkIOByteRaw            	 2000000	       906 ns/op
+BenchmarkIOByteBIO            	 2000000	       924 ns/op
+BenchmarkIOMsgsRaw            	 1000000	      1560 ns/op
+BenchmarkIOMsgsBIO            	 1000000	      1139 ns/op
+BenchmarkOSByteRaw            	   50000	     43731 ns/op
+BenchmarkOSByteBIO            	   50000	     44019 ns/op
+BenchmarkOSMsgsRaw            	 1000000	      2533 ns/op
+BenchmarkOSMsgsBIO            	 1000000	      1181 ns/op
+ok  	clive/nchan	35.182s
+ok  	clive/net/auth	0.060s
+BenchmarkPipeRaw              	  500000	      3288 ns/op
+BenchmarkPipeBIO              	 1000000	      2345 ns/op
+ok  	clive/net/ds	4.256s
+BenchmarkFifoRaw              	   10000	    190203 ns/op
+BenchmarkFifoBIO              	   10000	    201997 ns/op
+ok  	clive/net/fifo	4.096s
+ok  	clive/net/srv	1.151s
+ok  	clive/net/wax	0.060s
+ok  	clive/ns	0.060s
+ok  	clive/snarf	0.051s
+ok  	clive/sre	0.008s
+BenchmarkNewDir               	 5000000	       745 ns/op
+BenchmarkDirPack              	 5000000	       532 ns/op
+BenchmarkUnpackDir            	 2000000	       969 ns/op
+BenchmarkDirGetPath           	50000000	        41.2 ns/op
+BenchmarkDirSetPath           	50000000	        52.0 ns/op
+BenchmarkDirGetTime           	20000000	       112 ns/op
+BenchmarkDirSetTime           	 5000000	       504 ns/op
+BenchmarkDirGetSize           	50000000	        63.6 ns/op
+BenchmarkDirSetSize           	10000000	       229 ns/op
+BenchmarkStat                 	  500000	      2179 ns/op
+BenchmarkStatNewDir           	  500000	      3317 ns/op
+ok  	clive/zx	29.602s
+BenchmarkOS_Stat              	 2000000	       796 ns/op
+BenchmarkLfs_Stat             	  500000	      5305 ns/op
+BenchmarkOS_GetSmall          	  200000	      7553 ns/op
+BenchmarkLfs_GetSmall         	  200000	     12602 ns/op
+BenchmarkOS_GetLarge          	  100000	     25813 ns/op
+BenchmarkLfs_GetLarge         	   50000	     68042 ns/op
+BenchmarkOS_GetDirSmall       	   50000	     36434 ns/op
+BenchmarkLfs_GetDirSmall      	   10000	    152955 ns/op
+BenchmarkOS_GetDirLarge       	    1000	   2685146 ns/op
+BenchmarkLfs_GetDirLarge      	     500	   5398712 ns/op
+BenchmarkLfs_Find_AllSmall    	    5000	    331524 ns/op
+BenchmarkLfs_Find_AllLarge    	     500	   3527927 ns/op
+BenchmarkLfs_Find_One         	  100000	     26631 ns/op
+BenchmarkLfs_Find_DirEnts     	    5000	    338494 ns/op
+BenchmarkOS_Put               	   10000	    264608 ns/op
+BenchmarkLfs_Put              	   10000	    257097 ns/op
+BenchmarkOS_Mkdir             	  100000	     15828 ns/op
+BenchmarkLfs_Mkdir            	  100000	     18703 ns/op
+BenchmarkOS_Remove            	  200000	     14154 ns/op
+BenchmarkLfs_Remove           	  100000	     15965 ns/op
+BenchmarkOS_Wstat             	  500000	      4898 ns/op
+BenchmarkLfs_Wstat            	  500000	      7207 ns/op
+ok  	clive/zx/lfs	65.289s
+BenchmarkNew                  	 1000000	      1446 ns/op
+BenchmarkPredString           	 5000000	       321 ns/op
+ok  	clive/zx/pred	3.431s
+BenchmarkRfs_PipeStat         	  100000	     28196 ns/op
+BenchmarkRfs_FifoStat         	    5000	    320625 ns/op
+BenchmarkRfs_TcpStat          	   10000	    113962 ns/op
+BenchmarkRfs_PipeGetSmall     	   50000	     33448 ns/op
+BenchmarkRfs_FifoGetSmall     	    5000	    390616 ns/op
+BenchmarkRfs_TcpGetSmall      	   10000	    115944 ns/op
+BenchmarkRfs_PipeGetLarge     	   20000	    128094 ns/op
+BenchmarkRfs_FifoGetLarge     	    5000	    631887 ns/op
+BenchmarkRfs_TcpGetLarge      	    2000	    864153 ns/op
+BenchmarkRfs_PipePut          	    5000	    335162 ns/op
+BenchmarkRfs_FifoPut          	    2000	    532656 ns/op
+BenchmarkRfs_TcpPut           	    5000	    315964 ns/op
+BenchmarkRfs_PipeMkdir        	   50000	     42734 ns/op
+BenchmarkRfs_FifoMkdir        	   10000	    240372 ns/op
+BenchmarkRfs_TcpMkdir         	   10000	    111862 ns/op
+BenchmarkRfs_PipeRemove       	   50000	     37789 ns/op
+BenchmarkRfs_FifoRemove       	   10000	    241089 ns/op
+BenchmarkRfs_TcpRemove        	   10000	    105837 ns/op
+BenchmarkRfs_PipeWstat        	  100000	     25656 ns/op
+BenchmarkRfs_FifoWstat        	    5000	    313678 ns/op
+BenchmarkRfs_TcpWstat         	   20000	     97266 ns/op
+BenchmarkRfs_Find_PipeAllSmall	    5000	    645624 ns/op
+BenchmarkRfs_Find_FifoAllSmall	    2000	   1517558 ns/op
+BenchmarkRfs_Find_TcpAllSmall 	    1000	   1672008 ns/op
+BenchmarkRfs_Find_PipeDirEnts 	    5000	    653366 ns/op
+BenchmarkRfs_Find_FifoDirEnts 	    2000	   1315736 ns/op
+BenchmarkRfs_Find_TcpDirEnts  	    1000	   1681314 ns/op
+BenchmarkRfs_Find_PipeOne     	   50000	     52046 ns/op
+BenchmarkRfs_Find_FifoOne     	    5000	    305815 ns/op
+BenchmarkRfs_Find_TcpOne      	   10000	    151464 ns/op
+ok  	clive/zx/rfs	0.115s

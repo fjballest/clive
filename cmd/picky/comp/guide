@@ -1,0 +1,2 @@
+go tool yacc -p Yy -v xx p.y
+go build

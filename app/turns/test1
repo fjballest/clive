@@ -1,0 +1,13 @@
+#
+# example file
+#
+# 10 slots here
+10 2015-07-30 9:00 10m Primer turno
+# and 5 here
+5 2015-07-30 15:00 10m Segundo turno
+< 1 foo
+< 0 bar
+> 1 ops
+! 1 ops
+< 1 sucks
+> 1 ops

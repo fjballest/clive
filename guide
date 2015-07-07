@@ -1,0 +1,20 @@
+Go install -v ./...
+go test -short ./...
+go test -short -bench . ./... |[2=1] grep '^Bench'
+go install ./...
+go fmt ./... ; 
+go clean ./...
+git status
+git add -vv --all .
+git commit  -m 'cfs passing new checks for mfs+lfs'
+git push -v
+git log --graph
+git pull -v
+git show HEAD~1:nchan/nchan.go
+git diff HEAD~1 HEAD
+git checkout .	# discard all your local edits
+git add cmd/zxdump/dump.go guide
+git tag -d dist ; git push origin :refs/tags/dist
+git tag  dist ; git push -v --tags
+
+

@@ -1,0 +1,16 @@
+Source: picky-ARCH
+Section: languages
+Priority: optional
+Maintainer: LSUB <lsub@lsub.org>
+Installed-Size: SIZE
+Homepage: http://lsub.org/picky
+Package: picky
+Architecture: ARCH
+Depends: xdg-utils (>= 1.0.2)
+Replaces:
+Description: Simple imperative compiled programming language for programming 101 classes.
+ Picky is a simple imperative programming languages developed for teaching. It consists of a
+ compiler, pick and a bytecode interpreter, pam. For a more detailed description of the language
+ read the white paper at http://lsub.org/ls/picky.html.
+Version: VERS
+

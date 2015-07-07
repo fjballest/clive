@@ -1,0 +1,8 @@
+bin/pam
+bin/pick
+usr/lib/mime/packages/picky
+usr/share/doc/picky/changelog.gz
+usr/share/doc/picky/copyright
+usr/share/icons/hicolor/128x128/mimetypes/picky128.png
+usr/share/man/man1/picky.1.gz
+usr/share/mime/packages/picky.xml

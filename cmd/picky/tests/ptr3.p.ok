@@ -1,0 +1,39 @@
+stack trace at:
+main() pid 2	pc 0x00000038 ptr3.p:28
+	local variables:
+	p = 0x2103173c0
+	q = 0x2103173c0
+
+global variables:
+Maxint = 2147483647
+Minint = -2147483646
+Maxchar = 'ÿ'
+Minchar = '\000'
+Eol = \n
+Eof = 'ÿ'
+Tab = \t
+Esc = '\033'
+Nul = '\000'
+stdin = <stdin>
+stdout = <stdout>
+heap:
+stack trace at:
+main() pid 2	pc 0x00000046 ptr3.p:32
+	local variables:
+	p = 0x2103173c0
+	q = 0x2103173c0
+
+global variables:
+Maxint = 2147483647
+Minint = -2147483646
+Maxchar = 'ÿ'
+Minchar = '\000'
+Eol = \n
+Eof = 'ÿ'
+Tab = \t
+Esc = '\033'
+Nul = '\000'
+stdin = <stdin>
+stdout = <stdout>
+heap:
+3

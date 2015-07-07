@@ -1,0 +1,11 @@
+clive/x keeps externals software retrieved using go get,
+that we changed to use import paths of the form
+	clive/x/<whatever-the-import-path-was>
+
+We did this to survive updates of the external packages used by clive,
+because their authors might change their software and that might
+break clive.
+
+See each directory/package for its license and authorship.
+
+

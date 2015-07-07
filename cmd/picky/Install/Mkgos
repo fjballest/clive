@@ -1,0 +1,35 @@
+#!/bin/sh
+
+ARCH="amd64 386"
+OS="windows linux darwin"
+
+if [ "$GOOS" != "darwin" ]
+then
+	echo 'run this only in Mac OS' > /dev/null 2>&1
+	#exit 1
+fi
+set -e
+for comp in 8 6; do
+        for cmd in a c g l; do
+                go tool dist install -v cmd/$comp$cmd
+        done
+done
+
+go env > /tmp/vars.$$
+. /tmp/vars.$$
+
+cd $GOROOT/src
+for ar in $ARCH; do
+	export GOARCH=$ar
+	for system in $OS; do
+		CGO_ENABLED=1
+		export GOOS=$system
+		if [ "$GOOS" != "darwin" ]
+		then
+			export CGO_ENABLED=0
+		fi
+		go tool dist install -v pkg/runtime
+		go install -v -a std
+	done
+done
+. /tmp/vars.$$

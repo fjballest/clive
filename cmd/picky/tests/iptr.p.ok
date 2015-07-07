@@ -1,0 +1,46 @@
+stack trace at:
+main() pid 0	pc 0x0000000e ptr.p:15
+	local variables:
+	p = 0x210316400
+	q = 0x210316440
+
+global variables:
+Maxint = 2147483647
+Minint = -2147483646
+Maxchar = 'ÿ'
+Minchar = '\000'
+Eol = \n
+Eof = 'ÿ'
+Tab = \t
+Esc = '\033'
+Nul = '\000'
+stdin = <stdin>
+stdout = <stdout>
+heap:
+0x210316440 = 707406379
+0x210316400 = 707406379
+stack trace at:
+main() pid 0	pc 0x00000030 ptr.p:20
+	local variables:
+	p = 0x210316400
+	q = 0x210316400
+
+global variables:
+Maxint = 2147483647
+Minint = -2147483646
+Maxchar = 'ÿ'
+Minchar = '\000'
+Eol = \n
+Eof = 'ÿ'
+Tab = \t
+Esc = '\033'
+Nul = '\000'
+stdin = <stdin>
+stdout = <stdout>
+heap:
+0x210316440 = 707406379
+0x210316400 = 3
+memory leaks:
+ptr.p:13	(1 times)
+ptr.p:14	(1 times)
+3

@@ -1,0 +1,3 @@
+graphx.p:21: argument to 'gfillcol' is not a color
+graphx.p:23: incompatible argument in call 'gpolygon'
+	got int; need file

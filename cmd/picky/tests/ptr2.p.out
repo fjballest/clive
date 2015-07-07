@@ -1,0 +1,74 @@
+stack trace at:
+main() pid 0	pc 0x00000021 ptr2.p:18
+	local variables:
+	p = 0xc208040100
+	q = 0xc208040100
+
+global variables:
+Maxint = 2147483647
+Minint = -2147483646
+Maxchar = 'ÿ'
+Minchar = '\000'
+Minstrength = %!v(PANIC=runtime error: index out of range)
+Maxstrength = %!v(PANIC=runtime error: index out of range)
+Transp = 0.0
+Tlucid = 0.5
+Opaque = 1.0
+NoBut = %!v(PANIC=vfmt: fmt 75)
+Esc = '\033'
+Del = 'ù'
+MetaRight = 'ø'
+Eol = \n
+Shift = 'ñ'
+Return = 'ö'
+Left = 'ó'
+Ctrl = 'ð'
+Tab = \t
+Nul = '\000'
+Up = 'õ'
+MetaLeft = '÷'
+Eof = 'ÿ'
+Down = 'ô'
+Right = 'ò'
+stdin = <stdin>
+stdout = <stdout>
+stdgraph = invalid file
+heap:
+0xc208040100 = 3
+stack trace at:
+main() pid 0	pc 0x00000038 ptr2.p:22
+	local variables:
+	p = 0xc208040100
+	q = 0xc208040100
+
+global variables:
+Maxint = 2147483647
+Minint = -2147483646
+Maxchar = 'ÿ'
+Minchar = '\000'
+Minstrength = %!v(PANIC=runtime error: index out of range)
+Maxstrength = %!v(PANIC=runtime error: index out of range)
+Transp = 0.0
+Tlucid = 0.5
+Opaque = 1.0
+NoBut = %!v(PANIC=vfmt: fmt 75)
+Esc = '\033'
+Del = 'ù'
+MetaRight = 'ø'
+Eol = \n
+Shift = 'ñ'
+Return = 'ö'
+Left = 'ó'
+Ctrl = 'ð'
+Tab = \t
+Nul = '\000'
+Up = 'õ'
+MetaLeft = '÷'
+Eof = 'ÿ'
+Down = 'ô'
+Right = 'ò'
+stdin = <stdin>
+stdout = <stdout>
+stdgraph = invalid file
+heap:
+3

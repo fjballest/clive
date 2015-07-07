@@ -1,0 +1,92 @@
+Type graphx, similar to file
+
+strength new type of int from 0 to 255, incompatible with int, permits cast
+
+color enum type:
+	Black, Red, Green, Blue, Yellow, Orange, White
+
+opacity new type of float between 0.0 and 1.0 (incompatible with float, permits cast)
+	Opaque = 1.0
+	Transp = 0.0
+	Tlucid = 0.5
+
+button new type of int from 0 to 255, incompatible with int, permits cast
+	constant NoBut
+
+g: graphics;
+
+gopen(g)
+gclear(g)
+gclose(g)
+
+gshowcursor(on)	on is boolean
+
+gfillcol(g, color, opacity)
+gfillrgb(g, rstrength, gstrength, bstrength, opacity)
+gpencol(g, color, opacity)
+gpenrgb(g, rstrength, gstrength, bstrength, opacity)
+
+gpenwidth(g, width)
+
+gellipse(g, x, y, rad1, rad2, angle) 		x, y, rad1, rad2 int angle float
+gpolygon(g, x, y, rad, nsides, angle)		x, y, rad, nsides int angle float
+gline(g, x1, y1, x2, y2)
+gloc(g, x, y, angle)		x, y int, angle float
+
+sleep(n)		n is ms
+rand(n)		pseudorandom [0, n) constant seed
+
+greadmouse(x, y, nbut)	//the bool x, y nbut button
+
+gkeypress(g, key)	//key char (Nul no key)
+gkeypress(g, keys)	//keys array of char (remaining are Nul)
+	Del
+	MetaRight
+	MetaLeft
+	Return
+	Up
+	Down
+	Left
+	Right
+	Shift
+	Ctrl
+
+gplay(sound)	Sound is an enum:
+	Woosh
+	Beep
+	Sheep
+	Phaser
+	Rocket
+	ANote
+	AsharpNote
+	BNote
+	CNote
+	CsharpNote
+	DNote
+	DsharpNote
+	ENote
+gstop()
+
+
+------------ gx provides:
+gx.go:169: func (g *Graphics) Line(x1, y1, x2, y2 int) {
+gx.go:187: func (g *Graphics) Ellipse(x, y, radx, rady int, angle float32) {
+gx.go:194: func (g *Graphics) SetPenCol(color uint, opacity float32) {
+gx.go:202: func (g *Graphics) SetPenRGB(r, gr, b byte, opacity float32) {
+gx.go:210: func (g *Graphics) SetPenWidth(width int) {
+gx.go:217: func (g *Graphics) SetFillCol(color uint, opacity float32) {
+gx.go:224: func (g *Graphics) SetFillRGB(r, gr, b byte, opacity float32) {
+gx.go:231: func (g *Graphics) Clear() {
+gx.go:239: func (g *Graphics) lostui(ws *websocket.Conn) {
+gx.go:256: func (g *Graphics) Flush() {
+gx.go:279: func (g *Graphics) Polygon(x, y, radius, nsides int, rotateAngle float32) {
+gx.go:307: func (g *Graphics) Text(x, y, size int, text string, rotateAngle float32) {
+gx.go:320: func NewGraphics() (g *Graphics) {
+gx.go:334: func (g *Graphics) CheckOpen() {
+gx.go:340: func (g *Graphics) Close() {
+gx.go:360: func (g *Graphics) ReadKeyPress(randsrc *rand.Rand) byte {
+gx.go:380: func (g *Graphics) ReadKeyPresses(kr []byte, randsrc *rand.Rand) {
+gx.go:408: func (g *Graphics) ReadMouse(x, y, nbut *int) {
+gx.go:545: func OpenGraphics(name string) *Graphics {
+gx.go:569: func (g *Graphics) IsLost() bool {
+gx.go:577: func (g *Graphics) Cursor(isvisib bool) {

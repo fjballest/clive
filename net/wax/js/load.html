@@ -1,0 +1,22 @@
+<html>
+<head>
+<script src="jq/jquery.js"></script>
+<script src="jq/ui/jquery-ui.js"></script>
+<script src="canvasloader.js"></script>
+</head>
+<body>
+<script>
+$(function(){
+var cl = new CanvasLoader('p1');
+ //cl.setColor('#157bd4'); default is '#000000'
+cl.setShape('oval'); // default is 'oval'
+cl.setDiameter(50); // default is 40
+cl.setDensity(18); // default is 40
+cl.setRange(1.1); // default is 1.3
+cl.setFPS(17); // default is 24
+cl.show(); // Hidden by default
+});
+ </script>
+<div id="p1"></div>
+</body>
+</html>

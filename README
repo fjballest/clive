@@ -1,0 +1,20 @@
+open http://lsub.org/ls/clive.html
+to see what's in here and how to use it.
+
+This contains the lsub go packages for clive, which
+require the go compiler from lsub with modified chans and doselect.
+
+IMPORTANT:
+	Unless you checkout the dist tag from this repo, the source might
+	not even compile: it's our development git and we push things
+	whlie we are writing them, so they might not even compile, or
+	they might fail.
+	The dist tag is the last pushed tree that should be ok, so use that one.
+
+To get documentation for packages you should, for example,
+
+	godoc -ex -notes 'BUG|REFERENCE' clive/nchan 
+
+so you get examples, and the BUGS and REFERENCES sections.
+
+To install, this directory should be in your $GOPATH/clive.

@@ -1,0 +1,3 @@
+rdarry.p:15: incompatible argument in call 'peek'
+	got Arry; need char
+rdarry.p:17: arrays cannot be used in read or write
