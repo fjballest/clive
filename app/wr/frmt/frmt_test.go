@@ -1,18 +1,18 @@
 package frmt
 
 import (
-	"testing"
 	"clive/dbg"
 	"os"
 	"strings"
+	"testing"
 )
 
 var dprintf = dbg.FuncPrintf(os.Stderr, testing.Verbose)
 
 func TestWords(t *testing.T) {
 	txt := []string{` a te`, `xt wit`, `h`, `
-  some`,`
-spaces `,`and words `,
+  some`, `
+spaces `, `and words `,
 	}
 	sc, rc := Words()
 	go func() {
@@ -38,8 +38,8 @@ func TestFmt(t *testing.T) {
 	txt := []string{` a te`, `xt with
 
 
-  some`,`
-spaces `,`and words and.a.very.long.word here.`,
+  some`, `
+spaces `, `and words and.a.very.long.word here.`,
 	}
 	sc, wc := Words()
 	go func() {
@@ -65,8 +65,8 @@ spaces `,`and words and.a.very.long.word here.`,
 
 func Test2Fmt(t *testing.T) {
 	txt := []string{` a te`, `xt w th
-  so e`,`
-sp ces `,`and words and.a.very.long.word 
+  so e`, `
+sp ces `, `and words and.a.very.long.word 
 
 
 here.`,
@@ -98,8 +98,8 @@ func TestAllFmt(t *testing.T) {
  a te`, `xt with
 
 
-  some`,`
-spaces `,`and 
+  some`, `
+spaces `, `and 
 
 words and.a.very.long.word here.`,
 	}
@@ -131,8 +131,8 @@ func TestOneFmt(t *testing.T) {
  a te`, `xt with
 
 
-  some`,`
-spaces `,`and 
+  some`, `
+spaces `, `and 
 
 words and.a.very.long.word here.`,
 	}
@@ -164,8 +164,8 @@ func TestROneFmt(t *testing.T) {
  a te`, `xt with
 
 
-  some`,`
-spaces `,`and 
+  some`, `
+spaces `, `and 
 
 words and.a.very.long.word here.`,
 	}

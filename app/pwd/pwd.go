@@ -8,7 +8,7 @@ import (
 	"clive/app/opt"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 	nflag bool

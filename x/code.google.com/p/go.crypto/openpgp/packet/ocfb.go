@@ -10,7 +10,7 @@ import (
 	"crypto/cipher"
 )
 
-type ocfbEncrypter  {
+type ocfbEncrypter struct {
 	b       cipher.Block
 	fre     []byte
 	outUsed int
@@ -76,7 +76,7 @@ func (x *ocfbEncrypter) XORKeyStream(dst, src []byte) {
 	}
 }
 
-type ocfbDecrypter  {
+type ocfbDecrypter struct {
 	b       cipher.Block
 	fre     []byte
 	outUsed int
@@ -112,8 +112,8 @@ func NewOCFBDecrypter(block cipher.Block, prefix []byte, resync OCFBResyncOption
 	prefixCopy[blockSize] ^= x.fre[0]
 	prefixCopy[blockSize+1] ^= x.fre[1]
 
-	if prefixCopy[blockSize-2]!=prefixCopy[blockSize] ||
-		prefixCopy[blockSize-1]!=prefixCopy[blockSize+1] {
+	if prefixCopy[blockSize-2] != prefixCopy[blockSize] ||
+		prefixCopy[blockSize-1] != prefixCopy[blockSize+1] {
 		return nil
 	}
 

@@ -4,35 +4,34 @@
 package main
 
 import (
-	"clive/dbg"
 	"clive/app/opt"
+	"clive/dbg"
 	"clive/zx/sync"
 	"clive/zx/sync/repl"
-	"time"
-	"os"
-	"fmt"
-	"strings"
 	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"time"
 )
 
 var (
-	opts    = opt.New("cfg [laddr raddr]")
+	opts                                 = opt.New("cfg [laddr raddr]")
 	pullonly, pushonly, skip, dry, print bool
-	quiet bool
-	name string
+	quiet                                bool
+	name                                 string
 )
 
 func waitReplTime(name string) {
 	t := time.Now()
 	dt := time.Date(t.Year(), t.Month(), t.Day(), 3, 0, 0, 0, time.Local)
 	if dt.Before(time.Now()) {
-		dt = dt.Add(24*time.Hour)
+		dt = dt.Add(24 * time.Hour)
 	}
 	dbg.Warn("next %s sync at %v", name, dt)
 	delta := dt.Sub(t)
 	time.Sleep(delta)
 }
-
 
 func cfgPath(nm string) string {
 	if _, err := os.Stat(nm); err == nil {
@@ -61,7 +60,7 @@ func main() {
 	opts.NewFlag("m", "name: make the named repl and exit", &name)
 	args, err := opts.Parse(os.Args)
 	mk := name != ""
-	if err != nil || skip&&mk || pullonly&&pushonly || dry&&mk || print&&mk || dry&&print {
+	if err != nil || skip && mk || pullonly && pushonly || dry && mk || print && mk || dry && print {
 		if err == nil {
 			err = errors.New("incompatible flags")
 		}

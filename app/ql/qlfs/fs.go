@@ -42,28 +42,28 @@ package qlfs
 
 import (
 	"clive/app"
-	"clive/zx"
-	"clive/nchan"
-	"clive/zx/vfs"
-	"sync"
-	"strconv"
 	"clive/dbg"
+	"clive/nchan"
+	"clive/zx"
+	"clive/zx/vfs"
 	"fmt"
+	"strconv"
+	"sync"
 )
 
 // Ql commands served as a ZX tree.
-type Fs {
-	*vfs.Fs	// Implementor of ZX fs ops.
-	root qRoot
+type Fs struct {
+	*vfs.Fs // Implementor of ZX fs ops.
+	root    qRoot
 }
 
-type qRoot {
+type qRoot struct {
 	sync.Mutex
 	envs map[string]*qEnv
 }
 
 // One per environment
-type qEnv {
+type qEnv struct {
 	name string
 	vars map[string]string
 	cmds map[string]*qCmd
@@ -71,33 +71,34 @@ type qEnv {
 	sync.Mutex
 }
 
-type qVars {
+type qVars struct {
 	e *qEnv
 }
 
-type qVar {
+type qVar struct {
 	name string
-	e *qEnv
+	e    *qEnv
 }
 
-type qIO {
+type qIO struct {
 	msgs []interface{}
-	n int	// size in bytes
-	c chan interface{}
-	wc []chan bool
-	eof bool
+	n    int // size in bytes
+	c    chan interface{}
+	wc   []chan bool
+	eof  bool
 }
 
 // One per command
-type qCmd {
-	name, txt string
-	e *qEnv
+type qCmd struct {
+	name, txt    string
+	e            *qEnv
 	in, out, err *qIO
 	sync.Mutex
 	ctx *app.Ctx
 }
 
 type qId int
+
 const (
 	qccmd qId = iota
 	qcin
@@ -110,27 +111,27 @@ const (
 	qcsig
 )
 
-type qGen {
-	id qId
+type qGen struct {
+	id         qId
 	name, mode string
 }
 
-type qFile {
+type qFile struct {
 	qGen
 	c *qCmd
 }
 
 var (
 	cFiles = map[string]qGen{
-		"cmd":	qGen{qccmd,  "cmd", "0644"},
-		"in":	qGen{qcin,  "in", "0660"},
-		"out":	qGen{qcout, "out", "0440"},
-		"err":	qGen{qcerr,  "err", "0440"},
-		"pout":	qGen{qcpout, "pout", "0440"},
-		"perr":	qGen{qcperr,  "perr", "0440"},
-		"sts":	qGen{qcsts,  "sts", "0440"},
-		"sig":	qGen{qcsig,  "sig", "0220"},
-		"wait":	qGen{qcwait,  "wait", "0440"},
+		"cmd":  qGen{qccmd, "cmd", "0644"},
+		"in":   qGen{qcin, "in", "0660"},
+		"out":  qGen{qcout, "out", "0440"},
+		"err":  qGen{qcerr, "err", "0440"},
+		"pout": qGen{qcpout, "pout", "0440"},
+		"perr": qGen{qcperr, "perr", "0440"},
+		"sts":  qGen{qcsts, "sts", "0440"},
+		"sig":  qGen{qcsig, "sig", "0220"},
+		"wait": qGen{qcwait, "wait", "0440"},
 	}
 
 	// make sure we implement the right interfaces
@@ -142,9 +143,8 @@ var (
 	_w   zx.Walker   = _fs
 	_s   zx.Stater   = _fs
 	_a   zx.AuthTree = _fs
-	_c zx.IsCtler = _fs
+	_c   zx.IsCtler  = _fs
 )
-
 
 // Tell fuse that we are virtual for all files
 func (r *qRoot) IsCtl() bool {
@@ -175,7 +175,7 @@ func (r *qRoot) Stat() (zx.Dir, error) {
 		"name": "/",
 		"type": "d",
 		"mode": "0755",
-		"size": strconv.Itoa(n+1), // +1 for /Ctl in vfs
+		"size": strconv.Itoa(n + 1), // +1 for /Ctl in vfs
 	}, nil
 }
 
@@ -235,7 +235,7 @@ func (e *qEnv) Stat() (zx.Dir, error) {
 		"name": e.name,
 		"type": "d",
 		"mode": "0755",
-		"size": strconv.Itoa(n+1),	// +1 for vars
+		"size": strconv.Itoa(n + 1), // +1 for vars
 	}, nil
 }
 
@@ -300,7 +300,7 @@ func (vs *qVars) Stat() (zx.Dir, error) {
 	}, nil
 }
 
-func (vs*qVars) Walk(elem string) (vfs.File, error) {
+func (vs *qVars) Walk(elem string) (vfs.File, error) {
 	vs.e.Lock()
 	defer vs.e.Unlock()
 	_, ok := vs.e.vars[elem]
@@ -411,7 +411,7 @@ func (c *qCmd) Walk(elem string) (vfs.File, error) {
 	defer c.Unlock()
 	f, ok := cFiles[elem]
 	if !ok {
-		return nil, fmt.Errorf("%s: %s: %s",c, elem, dbg.ErrNotExist)
+		return nil, fmt.Errorf("%s: %s: %s", c, elem, dbg.ErrNotExist)
 	}
 	return &qFile{f, c}, nil
 }
@@ -464,7 +464,7 @@ func (f *qFile) Put(name string, d zx.Dir, off int64, c <-chan []byte) error {
 		return fmt.Errorf("%s: %s", f, dbg.ErrPerm)
 	case qcin:
 		if d["mode"] != "" {
-			f.c.clearIn()	// ignored if already started
+			f.c.clearIn() // ignored if already started
 		}
 		return f.c.putIn(off, c)
 	case qccmd:

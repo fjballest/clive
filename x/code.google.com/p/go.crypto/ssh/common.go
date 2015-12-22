@@ -99,7 +99,7 @@ func findCommonCipher(clientCiphers []string, serverCiphers []string) (commonCip
 	for _, clientCipher := range clientCiphers {
 		for _, serverCipher := range serverCiphers {
 			// reject the cipher if we have no cipherModes definition
-			if clientCipher==serverCipher && cipherModes[clientCipher]!=nil {
+			if clientCipher == serverCipher && cipherModes[clientCipher] != nil {
 				return clientCipher, true
 			}
 		}
@@ -107,13 +107,13 @@ func findCommonCipher(clientCiphers []string, serverCiphers []string) (commonCip
 	return
 }
 
-type directionAlgorithms  {
+type directionAlgorithms struct {
 	Cipher      string
 	MAC         string
 	Compression string
 }
 
-type algorithms  {
+type algorithms struct {
 	kex     string
 	hostKey string
 	w       directionAlgorithms
@@ -172,7 +172,7 @@ const minRekeyThreshold uint64 = 256
 
 // Config contains configuration data common to both ServerConfig and
 // ClientConfig.
-type Config  {
+type Config struct {
 	// Rand provides the source of entropy for cryptographic
 	// primitives. If Rand is nil, the cryptographic random reader
 	// in package crypto/rand will be used.
@@ -217,7 +217,7 @@ func (c *Config) SetDefaults() {
 
 	if c.RekeyThreshold == 0 {
 		// RFC 4253, section 9 suggests rekeying after 1G.
-		c.RekeyThreshold = 1<<30
+		c.RekeyThreshold = 1 << 30
 	}
 	if c.RekeyThreshold < minRekeyThreshold {
 		c.RekeyThreshold = minRekeyThreshold
@@ -286,7 +286,7 @@ func newCond() *sync.Cond { return sync.NewCond(new(sync.Mutex)) }
 
 // window represents the buffer available to clients
 // wishing to write to a channel.
-type window  {
+type window struct {
 	*sync.Cond
 	win          uint32 // RFC 4254 5.2 says the window size can grow to 2^32-1
 	writeWaiters int
@@ -331,7 +331,7 @@ func (w *window) reserve(win uint32) (uint32, error) {
 	w.L.Lock()
 	w.writeWaiters++
 	w.Broadcast()
-	for w.win==0 && !w.closed {
+	for w.win == 0 && !w.closed {
 		w.Wait()
 	}
 	w.writeWaiters--

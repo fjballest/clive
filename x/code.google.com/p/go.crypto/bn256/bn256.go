@@ -27,7 +27,7 @@ import (
 
 // G1 is an abstract cyclic group. The zero value is suitable for use as the
 // output of an operation, but cannot be used as an input.
-type G1  {
+type G1 struct {
 	p *curvePoint
 }
 
@@ -99,7 +99,7 @@ func (n *G1) Marshal() []byte {
 	yBytes := new(big.Int).Mod(n.p.y, p).Bytes()
 
 	// Each value is a 256-bit number.
-	const numBytes = 256/8
+	const numBytes = 256 / 8
 
 	ret := make([]byte, numBytes*2)
 	copy(ret[1*numBytes-len(xBytes):], xBytes)
@@ -112,7 +112,7 @@ func (n *G1) Marshal() []byte {
 // a group element and then returns e.
 func (e *G1) Unmarshal(m []byte) (*G1, bool) {
 	// Each value is a 256-bit number.
-	const numBytes = 256/8
+	const numBytes = 256 / 8
 
 	if len(m) != 2*numBytes {
 		return nil, false
@@ -125,7 +125,7 @@ func (e *G1) Unmarshal(m []byte) (*G1, bool) {
 	e.p.x.SetBytes(m[0*numBytes : 1*numBytes])
 	e.p.y.SetBytes(m[1*numBytes : 2*numBytes])
 
-	if e.p.x.Sign()==0 && e.p.y.Sign()==0 {
+	if e.p.x.Sign() == 0 && e.p.y.Sign() == 0 {
 		// This is the point at infinity.
 		e.p.y.SetInt64(1)
 		e.p.z.SetInt64(0)
@@ -144,7 +144,7 @@ func (e *G1) Unmarshal(m []byte) (*G1, bool) {
 
 // G2 is an abstract cyclic group. The zero value is suitable for use as the
 // output of an operation, but cannot be used as an input.
-type G2  {
+type G2 struct {
 	p *twistPoint
 }
 
@@ -209,7 +209,7 @@ func (n *G2) Marshal() []byte {
 	yyBytes := new(big.Int).Mod(n.p.y.y, p).Bytes()
 
 	// Each value is a 256-bit number.
-	const numBytes = 256/8
+	const numBytes = 256 / 8
 
 	ret := make([]byte, numBytes*4)
 	copy(ret[1*numBytes-len(xxBytes):], xxBytes)
@@ -224,7 +224,7 @@ func (n *G2) Marshal() []byte {
 // a group element and then returns e.
 func (e *G2) Unmarshal(m []byte) (*G2, bool) {
 	// Each value is a 256-bit number.
-	const numBytes = 256/8
+	const numBytes = 256 / 8
 
 	if len(m) != 4*numBytes {
 		return nil, false
@@ -239,10 +239,10 @@ func (e *G2) Unmarshal(m []byte) (*G2, bool) {
 	e.p.y.x.SetBytes(m[2*numBytes : 3*numBytes])
 	e.p.y.y.SetBytes(m[3*numBytes : 4*numBytes])
 
-	if e.p.x.x.Sign()==0 &&
-		e.p.x.y.Sign()==0 &&
-		e.p.y.x.Sign()==0 &&
-		e.p.y.y.Sign()==0 {
+	if e.p.x.x.Sign() == 0 &&
+		e.p.x.y.Sign() == 0 &&
+		e.p.y.x.Sign() == 0 &&
+		e.p.y.y.Sign() == 0 {
 		// This is the point at infinity.
 		e.p.y.SetOne()
 		e.p.z.SetZero()
@@ -261,7 +261,7 @@ func (e *G2) Unmarshal(m []byte) (*G2, bool) {
 
 // GT is an abstract cyclic group. The zero value is suitable for use as the
 // output of an operation, but cannot be used as an input.
-type GT  {
+type GT struct {
 	p *gfP12
 }
 
@@ -314,7 +314,7 @@ func (n *GT) Marshal() []byte {
 	yzyBytes := n.p.y.z.y.Bytes()
 
 	// Each value is a 256-bit number.
-	const numBytes = 256/8
+	const numBytes = 256 / 8
 
 	ret := make([]byte, numBytes*12)
 	copy(ret[1*numBytes-len(xxxBytes):], xxxBytes)
@@ -337,7 +337,7 @@ func (n *GT) Marshal() []byte {
 // a group element and then returns e.
 func (e *GT) Unmarshal(m []byte) (*GT, bool) {
 	// Each value is a 256-bit number.
-	const numBytes = 256/8
+	const numBytes = 256 / 8
 
 	if len(m) != 12*numBytes {
 		return nil, false
@@ -370,7 +370,7 @@ func Pair(g1 *G1, g2 *G2) *GT {
 
 // bnPool implements a tiny cache of *big.Int objects that's used to reduce the
 // number of allocations made during processing.
-type bnPool  {
+type bnPool struct {
 	bns   []*big.Int
 	count int
 }

@@ -99,9 +99,9 @@ func mul(v1, v2 value) value {
 	_, ok1 := v1.(uint64)
 	_, ok2 := v2.(uint64)
 	if ok1 && ok2 {
-		return Ival(v1)*Ival(v2)
+		return Ival(v1) * Ival(v2)
 	}
-	return Nval(v1)*Nval(v2)
+	return Nval(v1) * Nval(v2)
 }
 
 func minus(v1 value) value {
@@ -119,12 +119,12 @@ func div(v1, v2 value) value {
 		if Nval(v2) == 0 {
 			panic("divide by 0")
 		}
-		return Nval(v1)/Nval(v2)
+		return Nval(v1) / Nval(v2)
 	}
 	if Ival(v2) == 0 {
 		panic("divide by 0")
 	}
-	return Ival(v1)/Ival(v2)
+	return Ival(v1) / Ival(v2)
 }
 
 func mod(v1, v2 value) value {
@@ -134,7 +134,7 @@ func mod(v1, v2 value) value {
 		if n2 == 0 {
 			panic("divide by 0")
 		}
-		return Ival(v1)%Ival(v2)
+		return Ival(v1) % Ival(v2)
 	}
 	f2 := Nval(v2)
 	if f2 == 0 {

@@ -7,17 +7,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"strconv"
 	"strings"
-	"os"
 )
 
-var DebugSend bool	// set to debug sends/receives of full trees
+var DebugSend bool // set to debug sends/receives of full trees
 var dprintf = dbg.FlagPrintf(os.Stderr, &DebugSend)
 
 func BadName(elem string) error {
-	if strings.Contains(elem, "/") || elem=="." || elem==".." {
+	if strings.Contains(elem, "/") || elem == "." || elem == ".." {
 		return fmt.Errorf("bad element name '%s'", elem)
 	}
 	return nil
@@ -25,7 +25,7 @@ func BadName(elem string) error {
 
 // Make sure s is an abslute path and return it cleaned and never empty.
 func AbsPath(s string) (string, error) {
-	if len(s)==0 || s[0]!='/' {
+	if len(s) == 0 || s[0] != '/' {
 		return "", fmt.Errorf("'%s' is not an absolute path", s)
 	}
 	return path.Clean(s), nil
@@ -37,10 +37,10 @@ func HasPrefix(name, pref string) bool {
 	if name == pref {
 		return true
 	}
-	if pref=="/" || pref=="" {
-		return name=="/" || len(name)>0 && name[0]=='/'
+	if pref == "/" || pref == "" {
+		return name == "/" || len(name) > 0 && name[0] == '/'
 	}
-	return len(name)>len(pref) && strings.HasPrefix(name, pref) && name[len(pref)]=='/'
+	return len(name) > len(pref) && strings.HasPrefix(name, pref) && name[len(pref)] == '/'
 }
 
 // Report if suff is a suffix path name for name.
@@ -62,7 +62,7 @@ func HasSuffix(name, suff string) bool {
 		return false
 	}
 	return strings.HasSuffix(name, suff) &&
-		(suff[0]=='/' || name[len(name)-len(suff)-1]=='/')
+		(suff[0] == '/' || name[len(name)-len(suff)-1] == '/')
 }
 
 // If HasPrefix(name,pref) this returns the suffix for pref to be name (suffix starts with "/").
@@ -83,7 +83,7 @@ func Suffix(name, pref string) string {
 
 // Split path into elements, even if it is empty, absolute or relative.
 func Elems(path string) []string {
-	if path=="" || path=="/" {
+	if path == "" || path == "/" {
 		return []string{}
 	}
 	if path[0] == '/' {
@@ -119,7 +119,7 @@ func ElemsPath(els ...string) string {
 func CommonElems(path0, path1 string) []string {
 	els0 := Elems(path0)
 	els1 := Elems(path1)
-	for i := 0; i<len(els0) && i<len(els1); i++ {
+	for i := 0; i < len(els0) && i < len(els1); i++ {
 		if els0[i] != els1[i] {
 			return els0[0:i]
 		}
@@ -136,7 +136,7 @@ func CommonElems(path0, path1 string) []string {
 func PathCmp(path0, path1 string) int {
 	els0 := Elems(path0)
 	els1 := Elems(path1)
-	for i := 0; i<len(els0) && i<len(els1); i++ {
+	for i := 0; i < len(els0) && i < len(els1); i++ {
 		if els0[i] < els1[i] {
 			return -1
 		}
@@ -226,7 +226,7 @@ func RecvDirs(c <-chan []byte) ([]Dir, error) {
 	ds := []Dir{}
 	for {
 		d, err := RecvDir(c)
-		if err!=nil || len(d)==0 {
+		if err != nil || len(d) == 0 {
 			if err == nil {
 				err = cerror(c)
 			} else {
@@ -354,7 +354,7 @@ func Send(fs Sender, d Dir, c chan<- []byte) (rerr error) {
 	var ds []Dir
 	var err error
 	isdir := d["type"] == "d"
-	if isdir && d["rm"]!="y" {
+	if isdir && d["rm"] != "y" {
 		ds, err = GetDir(fs, d["path"])
 		if err != nil {
 			d["err"] = err.Error()
@@ -366,7 +366,7 @@ func Send(fs Sender, d Dir, c chan<- []byte) (rerr error) {
 		if d["path"] == "/" {
 			adj := 0
 			for _, cd := range ds {
-				if cd["name"]=="Ctl" || cd["name"]=="Chg" {
+				if cd["name"] == "Ctl" || cd["name"] == "Chg" {
 					adj++
 				}
 			}
@@ -381,11 +381,11 @@ func Send(fs Sender, d Dir, c chan<- []byte) (rerr error) {
 	}
 	rerr = nil
 	for _, cd := range ds {
-		if cd["path"]!="/Ctl" && cd["path"]!="/Chg" {
+		if cd["path"] != "/Ctl" && cd["path"] != "/Chg" {
 			rerr = orerr(rerr, Send(fs, cd, c))
 		}
 	}
-	if !isdir && d["rm"]!="y" && err==nil && d["size"] != "0" {
+	if !isdir && d["rm"] != "y" && err == nil && d["size"] != "0" {
 		cc := fs.Get(d["path"], 0, All, "")
 		for x := range cc {
 			if len(x) == 0 {
@@ -437,7 +437,7 @@ func Recv(fs Recver, c <-chan []byte) error {
 		return errors.New(d["err"])
 	}
 	if d["type"] == "d" {
-		if fs!=nil && d["path"]!="/" {
+		if fs != nil && d["path"] != "/" {
 			err = <-fs.Mkdir(mpath, d)
 			if err != nil {
 				dprintf("<= ERR %s\n", err)

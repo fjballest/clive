@@ -1,19 +1,19 @@
 package work
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
-	"sync/atomic"
 	"unicode"
 )
 
 const (
-	tout = 15*time.Second
+	tout   = 15 * time.Second
 	ntests = 20
 )
 
 var (
-	calls [2*ntests]rune
+	calls  [2 * ntests]rune
 	ncalls int32
 )
 
@@ -49,7 +49,7 @@ func TestNewPool(t *testing.T) {
 		close(donec)
 	}()
 	select {
-	case <- donec:
+	case <-donec:
 	case <-time.After(tout):
 		t.Fatalf("poll timed out (deadlock?)")
 	}
@@ -70,7 +70,7 @@ func plot(trz string, ncalls int) {
 	dprintf("trace: %s\n", trz)
 	ch := map[bool]string{true: "-", false: " "}
 	for i := 0; i < ncalls; i++ {
-		st := c+rune(i)
+		st := c + rune(i)
 		end := unicode.ToUpper(st)
 		sted := false
 		for _, ev := range trz {
@@ -96,7 +96,7 @@ func TestPoolGo(t *testing.T) {
 		// the next calls must be called by our own process
 		rc := make(chan bool, ntests)
 		for i := 0; i < ntests; i++ {
-			r := rune('a'+i)
+			r := rune('a' + i)
 			p.Go(rc, func() {
 				fakefn(r, time.Second)
 			})
@@ -111,7 +111,7 @@ func TestPoolGo(t *testing.T) {
 		close(donec)
 	}()
 	select {
-	case <- donec:
+	case <-donec:
 		dprintf("calls:\n")
 		trace := string(calls[:int(ncalls)])
 		plot(trace, ntests)
@@ -123,4 +123,3 @@ func TestPoolGo(t *testing.T) {
 		t.Fatalf("poll timed out (deadlock?)")
 	}
 }
-

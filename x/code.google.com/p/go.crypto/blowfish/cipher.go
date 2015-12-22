@@ -14,7 +14,7 @@ import "strconv"
 const BlockSize = 8
 
 // A Cipher is an instance of Blowfish encryption using a particular key.
-type Cipher  {
+type Cipher struct {
 	p              [18]uint32
 	s0, s1, s2, s3 [256]uint32
 }
@@ -29,7 +29,7 @@ func (k KeySizeError) Error() string {
 // The key argument should be the Blowfish key, from 1 to 56 bytes.
 func NewCipher(key []byte) (*Cipher, error) {
 	var result Cipher
-	if k := len(key); k<1 || k>56 {
+	if k := len(key); k < 1 || k > 56 {
 		return nil, KeySizeError(k)
 	}
 	initCipher(&result)

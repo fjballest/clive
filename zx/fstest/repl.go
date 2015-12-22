@@ -5,9 +5,9 @@ import (
 )
 
 // Wrapper for a replicated or cached file system to be tested
-type Repl {
-	t Fataler
-	ts []zx.Tree
+type Repl struct {
+	t    Fataler
+	ts   []zx.Tree
 	sync func()
 }
 
@@ -28,7 +28,8 @@ func NewRepl(t Fataler, syncfn func(), fss ...zx.Tree) *Repl {
 func ReadAll(t Fataler, fs zx.Tree) {
 	bc := make(chan []byte)
 	go func() {
-		for range bc {}
+		for range bc {
+		}
 	}()
 	rd, err := zx.Stat(fs, "/")
 	if err != nil {
@@ -36,7 +37,6 @@ func ReadAll(t Fataler, fs zx.Tree) {
 	}
 	zx.Send(fs, rd, bc)
 }
-
 
 // Apply MkZXChgs and MkZXChgs2 to the 1st tree and see they are synced.
 func (r *Repl) LfsChanges() {

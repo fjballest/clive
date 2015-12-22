@@ -14,7 +14,7 @@ import (
 	"errors"
 )
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	debug, sflag, nflag, vflag bool
@@ -42,7 +42,7 @@ func (x *xCmd) RunFile(d zx.Dir, dc <-chan []byte) error {
 		}
 		nln++
 		rg := re.ExecStr(s, 0, -1)
-		if rg==nil && !x.vflag || rg!=nil && x.vflag {
+		if rg == nil && !x.vflag || rg != nil && x.vflag {
 			continue
 		}
 		x.found = true
@@ -90,7 +90,7 @@ func Run(c cmd.Ctx) (err error) {
 	}
 	x.re = re
 	sts = cmd.RunFiles(x, args...)
-	if !x.found && sts==nil {
+	if !x.found && sts == nil {
 		return errors.New("no match")
 	}
 	return sts

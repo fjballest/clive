@@ -41,7 +41,7 @@ const (
 	Debugjs       = false
 )
 
-type canvasRenderer  {
+type canvasRenderer struct {
 	fn func() *Context
 }
 
@@ -180,12 +180,12 @@ func (cr canvasRenderer) ServeHTTP(c http.ResponseWriter, req *http.Request) {
 		`</body></html>`)
 }
 
-type Key  {
+type Key struct {
 	k  byte
 	sc byte
 }
 
-type Graphics  {
+type Graphics struct {
 	sync.Mutex
 	name      string
 	isclosed  bool
@@ -233,9 +233,9 @@ func (g *Graphics) Line(x1, y1, x2, y2 int) {
 }
 
 func colfmt(color uint, opacity float32) string {
-	b := color&0xff
-	g := (color>>8)&0xff
-	r := (color>>16)&0xff
+	b := color & 0xff
+	g := (color >> 8) & 0xff
+	r := (color >> 16) & 0xff
 	colstr := fmt.Sprintf("rgba(%d,%d,%d,%g)", r, g, b, opacity)
 	return colstr
 }
@@ -302,7 +302,7 @@ func (g *Graphics) lostui(ws *websocket.Conn) {
 		g.ws = nil
 	}
 	g.Unlock()
-	time.Sleep(time.Duration(ReloadTime)*time.Millisecond)
+	time.Sleep(time.Duration(ReloadTime) * time.Millisecond)
 	l := &graphicsLck
 	l.Lock()
 	defer l.Unlock()
@@ -322,7 +322,7 @@ func (g *Graphics) lostui(ws *websocket.Conn) {
 func (g *Graphics) nouiyet() bool {
 	var hasui bool
 	for i := 0; i < NWaitsForUi; i++ {
-		time.Sleep(time.Duration(WaitForUiTime/NWaitsForUi)*time.Millisecond)
+		time.Sleep(time.Duration(WaitForUiTime/NWaitsForUi) * time.Millisecond)
 		g.Lock()
 		ws := g.ws
 		hasui = ws != nil
@@ -340,7 +340,7 @@ func (g *Graphics) Flush() (errret error) {
 	g.CheckOpen()
 	*g.ctx = *g.zctx
 	g.Unlock()
-	if ws==nil && g.nouiyet() { //no UI yet
+	if ws == nil && g.nouiyet() { //no UI yet
 		return nil
 	}
 	defer func() {
@@ -364,8 +364,8 @@ func sin(x float32) float32 {
 }
 
 func (g *Graphics) Polygon(x, y, radius, nsides int, rotateAngle float32) {
-	r := ((PixelX + PixelY)/2)*float32(radius)
-	sector := (math.Pi*2.0)/float32(nsides)
+	r := ((PixelX + PixelY) / 2) * float32(radius)
+	sector := (math.Pi * 2.0) / float32(nsides)
 	if nsides < 3 {
 		panic("not enough sides")
 	}
@@ -381,7 +381,7 @@ func (g *Graphics) Polygon(x, y, radius, nsides int, rotateAngle float32) {
 	zctx.Translate(PixelX*float32(x), PixelY*float32(y))
 	rotateAngle += -math.Pi + math.Pi*float32(nsides-2)/2.0
 	if nsides == 4 {
-		rotateAngle += -math.Pi/4.0
+		rotateAngle += -math.Pi / 4.0
 	}
 	zctx.Rotate(rotateAngle)
 	zctx.MoveTo(r, 0)
@@ -399,7 +399,7 @@ func (g *Graphics) TextHeight() int {
 	defer g.Unlock()
 	g.CheckOpen()
 	zctx := g.zctx
-	return 3.0*zctx.TextHeight(g.penwd)
+	return 3.0 * zctx.TextHeight(g.penwd)
 }
 
 func (g *Graphics) PosText(x, y int, rotateAngle float32) {
@@ -415,7 +415,7 @@ func (g *Graphics) _Text(text string) {
 	zctx := g.zctx
 	zctx.Set("fillStyle", g.fillcol)
 	zctx.Translate(PixelX*float32(tp.x), PixelY*float32(tp.y))
-	sz := (PixelX + PixelY)*float32(size)
+	sz := (PixelX + PixelY) * float32(size)
 	size = int(sz)
 	g.lasttext = zctx.Text(size, text, tp.angle)
 }
@@ -431,7 +431,7 @@ func (g *Graphics) Text(text string) {
 		g.lasttext = &TextPos{}
 		tp = g.lasttext
 	}
-	if tp.end==0 && tp.start==0 { //never or just positioned
+	if tp.end == 0 && tp.start == 0 { //never or just positioned
 		zctx.Save()
 		g._Text(text)
 		zctx.Restore()
@@ -559,11 +559,11 @@ func (g *Graphics) ReadKeyPresses(kr []byte) {
 	n := len(p)
 	if n != 0 {
 		j := rand.Intn(n)
-		j = j%n
+		j = j % n
 		for i := 0; i < nk; i++ {
 			kr[i] = p[j]
 			g.deletesc(kr[i])
-			j = (1 + j)%n
+			j = (1 + j) % n
 		}
 	}
 	for i := nk; i < len(kr); i++ {
@@ -667,7 +667,7 @@ func (g *Graphics) ReadMouse(x, y, nbut *int) {
 	*nbut = g.mbut
 }
 
-type JqEvent  {
+type JqEvent struct {
 	Which int
 	X     int
 	Y     int
@@ -676,13 +676,13 @@ type JqEvent  {
 }
 
 func scantokey(k uint, shift bool, meta bool) byte {
-	if k>='A' && k<='Z' {
+	if k >= 'A' && k <= 'Z' {
 		return byte(k - 'A' + 'a')
 	}
 	switch {
-	case k=='[' && meta: //meta (command or windows) key
+	case k == '[' && meta: //meta (command or windows) key
 		return paminstr.MetaLeft
-	case k==']' && meta: //meta (command or windows) key
+	case k == ']' && meta: //meta (command or windows) key
 		return paminstr.MetaRight
 	}
 	switch k {
@@ -725,7 +725,7 @@ func scantokey(k uint, shift bool, meta bool) byte {
 	case 0x8:
 		return paminstr.Del
 	}
-	if k>=AsciiSpc && k<ASciiDel {
+	if k >= AsciiSpc && k < ASciiDel {
 		return byte(k)
 	}
 	return BadKey
@@ -794,7 +794,7 @@ func (g *Graphics) key(e JqEvent) {
 		return
 	}
 	g.nkpresses++
-	if k!=BadKey && !g.keyssc[k] {
+	if k != BadKey && !g.keyssc[k] {
 		//fmt.Printf("keydown %v\n", e)
 		g.lastsc = k
 		g.keyssc[k] = true
@@ -814,7 +814,7 @@ func (g *Graphics) keypress(e JqEvent) {
 		if g.keywaitc != nil {
 			g.keywaitc <- true
 		}
-	} else if k>=AsciiSpc && k<ASciiDel {
+	} else if k >= AsciiSpc && k < ASciiDel {
 		key := &Key{k: byte(k), sc: g.lastsc}
 		g.keyq = append(g.keyq, key)
 		if g.keywaitc != nil {
@@ -874,8 +874,8 @@ func events(ws *websocket.Conn) {
 		if g == nil {
 			continue
 		}
-		e.X = int(float32(e.X)/PixelX)
-		e.Y = int(float32(e.Y)/PixelY)
+		e.X = int(float32(e.X) / PixelX)
+		e.Y = int(float32(e.Y) / PixelY)
 		switch {
 		case e.Type == "keypress":
 			g.keypress(e)

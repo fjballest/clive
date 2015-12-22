@@ -1,8 +1,8 @@
 package wr
 
 import (
-	"testing"
 	"clive/app"
+	"testing"
 )
 
 func TestPars(t *testing.T) {
@@ -11,8 +11,8 @@ func TestPars(t *testing.T) {
 	c.Debug = testing.Verbose()
 	in := app.Files("example")
 	app.SetIO(in, 0)
-//	c.Args = []string{"wr.test", "-Sp", "-o", "example.tex"}
+	//	c.Args = []string{"wr.test", "-Sp", "-o", "example.tex"}
 	c.Args = []string{"wr.test", "-o", "example.html", "-c1"}
-//	c.Args = []string{"wr.test", "-ho", "example.html"}
+	//	c.Args = []string{"wr.test", "-ho", "example.html"}
 	Run()
 }

@@ -2,9 +2,9 @@ package qlfs
 
 import (
 	"clive/app"
+	"clive/app/ql"
 	"clive/dbg"
 	"fmt"
-	"clive/app/ql"
 )
 
 func newEnv(name string) *qEnv {
@@ -24,12 +24,12 @@ func (e *qEnv) newCmd(name string) error {
 	if e.cmds[name] != nil {
 		return fmt.Errorf("%s: %s: %s", e, name, dbg.ErrExists)
 	}
-	c := &qCmd {
+	c := &qCmd{
 		name: name,
-		e: e,
-		in: &qIO{},
-		out: &qIO{},
-		err: &qIO{},
+		e:    e,
+		in:   &qIO{},
+		out:  &qIO{},
+		err:  &qIO{},
 	}
 	e.cmds[name] = c
 	return nil
@@ -133,7 +133,7 @@ func (c *qCmd) removed() {
 	c.post("kill")
 }
 
-func (c *qCmd) wait()  {
+func (c *qCmd) wait() {
 	c.Lock()
 	if c.ctx == nil {
 		c.Unlock()
@@ -197,7 +197,7 @@ func (c *qCmd) get(in *qIO, off, count int64, dc chan<- []byte) (int64, error) {
 	return tot, nil
 }
 
-func (c *qCmd) getIn(off, count int64, dc chan<-[]byte) error {
+func (c *qCmd) getIn(off, count int64, dc chan<- []byte) error {
 	_, err := c.get(c.in, off, count, dc)
 	return err
 }

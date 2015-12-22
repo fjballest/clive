@@ -9,7 +9,7 @@ import (
 
 var Printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 
-type tst  {
+type tst struct {
 	txt  string
 	toks []tok
 	vals []string

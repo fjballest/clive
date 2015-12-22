@@ -2,8 +2,8 @@ package bufs
 
 import (
 	"bytes"
-	"clive/dbg"
 	"clive/bufs/rwtest"
+	"clive/dbg"
 	"io"
 	"os"
 	"testing"
@@ -58,7 +58,7 @@ func TestFullReadWrite1(t *testing.T) {
 	resp := make([]byte, 110*len(what))
 	for i := 0; i < 100; i++ {
 		nw, err := b.Write(what)
-		if nw!=len(what) || err!=nil {
+		if nw != len(what) || err != nil {
 			t.Fatalf("wrong write #%d sts %v", nw, err)
 		}
 	}
@@ -67,12 +67,12 @@ func TestFullReadWrite1(t *testing.T) {
 	}
 	bo, _ := b.Open()
 	nr, err := bo.Read(resp[:len(resp)/2])
-	if nr!=len(resp)/2 || err!=nil {
+	if nr != len(resp)/2 || err != nil {
 		t.Fatalf("wrong read #%d sts %v", nr, err)
 	}
 	onr := nr
 	nr, err = bo.Read(resp[len(resp)/2:])
-	if nr!=bo.Len()-onr || err!=io.EOF {
+	if nr != bo.Len()-onr || err != io.EOF {
 		t.Fatalf("wrong read #%d sts %v", nr, err)
 	}
 	onr += nr
@@ -108,7 +108,7 @@ func TestFullReadWrite2(t *testing.T) {
 	resp := make([]byte, 110*len(what))
 	for i := 0; i < 100; i++ {
 		nw, err := b.Write(what)
-		if nw!=len(what) || err!=nil {
+		if nw != len(what) || err != nil {
 			t.Fatalf("wrong write #%d sts %v", nw, err)
 		}
 	}
@@ -127,7 +127,7 @@ func TestFullReadWrite2(t *testing.T) {
 		}
 	}
 	resp = resp[:tot]
-	if len(resp)!=100*len(what) || len(resp)!=b.Len() {
+	if len(resp) != 100*len(what) || len(resp) != b.Len() {
 		t.Fatal("wrong read total")
 	}
 	for i := 0; i < len(resp); i++ {
@@ -143,7 +143,7 @@ func TestTruncate(t *testing.T) {
 	var b Blocks
 	b.Write([]byte{1})
 	for i := 0; i < 10; i++ {
-		b.Truncate(int64(4*i))
+		b.Truncate(int64(4 * i))
 	}
 	if b.Len() != 4*9 {
 		t.Fatalf("bad length %d", b.Len())
@@ -168,7 +168,7 @@ func TestFullReadWriteHole(t *testing.T) {
 			continue
 		}
 		nw, err := b.WriteAt(what, int64(i*len(what)))
-		if nw!=len(what) || err!=nil {
+		if nw != len(what) || err != nil {
 			t.Fatalf("wrong write #%d sts %v", nw, err)
 		}
 	}
@@ -187,14 +187,14 @@ func TestFullReadWriteHole(t *testing.T) {
 		}
 	}
 	resp = resp[:tot]
-	if len(resp)!=100*len(what) || len(resp)!=b.Len() {
+	if len(resp) != 100*len(what) || len(resp) != b.Len() {
 		t.Fatal("wrong read total")
 	}
 	for i := 0; i < len(resp); i++ {
-		nw := i/3
-		if nw%2==0 && resp[i]!=0 {
+		nw := i / 3
+		if nw%2 == 0 && resp[i] != 0 {
 			t.Fatalf("wrong content at off %d", i)
-		} else if nw%2!=0 && resp[i]!=byte(i%3) {
+		} else if nw%2 != 0 && resp[i] != byte(i%3) {
 			t.Fatalf("wrong content %d at off %d", resp[i], i)
 		}
 	}

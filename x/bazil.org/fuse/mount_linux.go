@@ -27,7 +27,7 @@ func mount(dir string, ready chan<- struct{}, errp *error) (fusefd *os.File, err
 	cmd.ExtraFiles = []*os.File{writeFile}
 
 	out, err := cmd.CombinedOutput()
-	if len(out)>0 || err!=nil {
+	if len(out) > 0 || err != nil {
 		return nil, fmt.Errorf("fusermount: %q, %v", out, err)
 	}
 

@@ -1,10 +1,10 @@
 package app
 
 import (
+	"clive/dbg"
+	"os"
 	"testing"
 	"time"
-	"os"
-	"clive/dbg"
 )
 
 // Example app usage.
@@ -63,7 +63,7 @@ func TestSigs(t *testing.T) {
 		defer func() {
 			dprintf("id %d exited %v\n", c.Id, Exited())
 		}()
-		time.Sleep(60*time.Second)
+		time.Sleep(60 * time.Second)
 		rc <- true
 		Fatal()
 		dprintf("hi\n")
@@ -100,7 +100,7 @@ func TestPrints(t *testing.T) {
 	SetIO(OSIn(), 0)
 	in := In()
 	for i := 0; i < 3; i++ {
-		x := <- in
+		x := <-in
 		if x, ok := x.([]byte); ok {
 			dprintf("got [%s]\n", string(x))
 		}
@@ -169,7 +169,7 @@ func TestReadIntr(t *testing.T) {
 	SetIO(PromptIn(prompt), 0)
 	in := In()
 	for i := 0; i < 5; i++ {
-		x := <- in
+		x := <-in
 		if x, ok := x.([]byte); ok {
 			dprintf("got [%s]\n", string(x))
 		}
@@ -182,4 +182,3 @@ func TestReadIntr(t *testing.T) {
 	Fatal("fatal")
 	dprintf("end\n")
 }
-

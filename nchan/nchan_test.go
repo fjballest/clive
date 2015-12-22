@@ -118,7 +118,7 @@ func ExampleConn() {
 	Printf("error from c?: %v", cerror(c.In))
 }
 
-type plain  {
+type plain struct {
 	c   chan bool
 	ops string
 }
@@ -143,7 +143,7 @@ func (p *plain) Close() error {
 	return nil
 }
 
-type dont  {
+type dont struct {
 	*plain
 }
 
@@ -334,7 +334,7 @@ func TestClosedChanSend(t *testing.T) {
 			ok := c <- i
 			if !ok {
 				err := cerror(c)
-				if err!=nil && err.Error()=="no more" {
+				if err != nil && err.Error() == "no more" {
 					x <- 0
 					return
 				}
@@ -430,7 +430,7 @@ func TestWriteErrTo(t *testing.T) {
 	if str != "<0><1><2><3><4><5><6><7><8><9>" {
 		t.Fatalf("got %s", str)
 	}
-	if err==nil || err.Error()!="oops" {
+	if err == nil || err.Error() != "oops" {
 		t.Fatal("didn't get an oops error")
 	}
 }
@@ -465,7 +465,7 @@ func TestReadBytesFrom(t *testing.T) {
 	}
 }
 
-type Err  {
+type Err struct {
 	Msg string
 }
 
@@ -535,7 +535,7 @@ func TestPipeTo(t *testing.T) {
 	}
 	close(c, "oops")
 	err := pipeStrsTo(&buf, c)
-	if err==nil || err.Error()!="oops" {
+	if err == nil || err.Error() != "oops" {
 		t.Fatal(err)
 	}
 	errc := make(chan error, 1)
@@ -685,14 +685,14 @@ func TestMsgErr(t *testing.T) {
 	if tot != 118 {
 		t.Fatalf("didnt' write 118 bytes but %d", tot)
 	}
-	if err==nil || err.Error()!="oops" {
+	if err == nil || err.Error() != "oops" {
 		t.Fatalf("bad err msg %v", err)
 	}
 	c1 := make(chan []byte, 0)
 	go func() {
 		_, tot, err := ReadMsgsFrom(&buf, c1)
 		Printf("tot %d err %v\n", tot, err)
-		if err==nil || err.Error()!="oops" {
+		if err == nil || err.Error() != "oops" {
 			t.Fatalf("bad err msg %v", err)
 		}
 		close(c1, err)
@@ -712,7 +712,7 @@ func TestMsgErr(t *testing.T) {
 		i++
 		out += s
 	}
-	if err := cerror(c1); err==nil || err.Error()!="oops" {
+	if err := cerror(c1); err == nil || err.Error() != "oops" {
 		t.Fatalf("bad err msg %v", err)
 	}
 	if out != "<0><1><2><3><4><5><6><7><8><9>" {
@@ -899,7 +899,7 @@ func TestMux(t *testing.T) {
 		i := 0
 		wc := make(chan int)
 		for x := range m1.In {
-			msg(&out1, "new m1 in %d out %v\n", i, x.Out!=nil)
+			msg(&out1, "new m1 in %d out %v\n", i, x.Out != nil)
 			go func(i int, x Conn) {
 				for im := range x.In {
 					msg(&out1, "m1:%d m %s\n", i, string(im))
@@ -920,11 +920,11 @@ func TestMux(t *testing.T) {
 		i := 0
 		wc := make(chan int)
 		for x := range m2.In {
-			msg(&out2, "new m2 in %d rpc %v\n", i, x.Out!=nil)
+			msg(&out2, "new m2 in %d rpc %v\n", i, x.Out != nil)
 			go func(i int, x Conn) {
 				isrpc := false
 				for im := range x.In {
-					isrpc = isrpc || string(im)=="yyyy"
+					isrpc = isrpc || string(im) == "yyyy"
 					msg(&out2, "m2:%d m %s\n", i, string(im))
 				}
 				msg(&out2, "m2:%d closed %v\n", i, cerror(x.In))
@@ -984,7 +984,7 @@ func TestMux(t *testing.T) {
 	checkmsgs(t, "rpc", outr, rmsgs)
 }
 
-type nw {}
+type nw struct{}
 
 func (nw) Write(data []byte) (int, error) {
 	return len(data), nil
@@ -1074,7 +1074,7 @@ func benchReadWrite(b *testing.B, ospipe, bufio, msgs bool) {
 	}
 	var bytes [128]byte
 	go func() {
-		for i := 0; i<b.N || !msgs; i++ {
+		for i := 0; i < b.N || !msgs; i++ {
 			cw <- bytes[:]
 		}
 		cw <- nil

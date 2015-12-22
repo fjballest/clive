@@ -26,7 +26,7 @@ import (
 var (
 
 	// Timeout for fifo dials.
-	DialTimeout = 5*time.Second
+	DialTimeout = 5 * time.Second
 
 	// directory where fifos are kept.
 	Dir = "/tmp/ds.fifo"
@@ -41,7 +41,7 @@ var (
 )
 
 // A network server handling each client on a different process.
-type Srv  {
+type Srv struct {
 	name    string
 	port    string
 	hndlr   CliHandler
@@ -71,7 +71,7 @@ type CliHandler interface {
 	Close()
 }
 
-type ch  {
+type ch struct {
 	ncc chan *nchan.Conn
 }
 
@@ -96,12 +96,12 @@ func (h ch) HandleCli(tag string, in io.ReadCloser, out io.WriteCloser, endc cha
 	doselect {
 	case <-inc:
 		inc = nil
-		if inc==nil && outc==nil {
+		if inc == nil && outc == nil {
 			return
 		}
 	case <-outc:
 		outc = nil
-		if inc==nil && outc==nil {
+		if inc == nil && outc == nil {
 			return
 		}
 	case <-endc:

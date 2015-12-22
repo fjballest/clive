@@ -11,19 +11,19 @@ import (
 )
 
 type call struct {
-	fn func()
+	fn    func()
 	donec chan bool
 }
 
 // A pool of work to do.
-type Pool {
-	calls chan call
-	wg sync.WaitGroup
+type Pool struct {
+	calls  chan call
+	wg     sync.WaitGroup
 	closed bool
 }
 
 var (
-	Debug bool
+	Debug   bool
 	dprintf = dbg.FlagPrintf(os.Stderr, &Debug)
 )
 
@@ -37,7 +37,7 @@ func NewPool(n int) *Pool {
 	return p
 }
 
-func (p* Pool) worker(id int) {
+func (p *Pool) worker(id int) {
 	defer p.wg.Done()
 	dprintf("worker#%d started\n", id)
 	defer dprintf("worker#%d terminated\n", id)

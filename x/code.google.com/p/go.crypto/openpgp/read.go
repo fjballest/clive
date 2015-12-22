@@ -35,7 +35,7 @@ func readArmored(r io.Reader, expectedType string) (body io.Reader, err error) {
 
 // MessageDetails contains the result of parsing an OpenPGP encrypted and/or
 // signed message.
-type MessageDetails  {
+type MessageDetails struct {
 	IsEncrypted              bool                // true if the message was encrypted.
 	EncryptedToKeyIds        []uint64            // the list of recipient key ids.
 	IsSymmetricallyEncrypted bool                // true if a passphrase could have decrypted the message.
@@ -72,7 +72,7 @@ type PromptFunction func(keys []Key, symmetric bool) ([]byte, error)
 
 // A keyEnvelopePair is used to store a private key with the envelope that
 // contains a symmetric key, encrypted with that key.
-type keyEnvelopePair  {
+type keyEnvelopePair struct {
 	key          Key
 	encryptedKey *packet.EncryptedKey
 }
@@ -130,7 +130,7 @@ ParsePackets:
 			break ParsePackets
 		case *packet.Compressed, *packet.LiteralData, *packet.OnePassSignature:
 			// This message isn't encrypted.
-			if len(symKeys)!=0 || len(pubKeys)!=0 {
+			if len(symKeys) != 0 || len(pubKeys) != 0 {
 				return nil, errors.StructuralError("key material not followed by encrypted message")
 			}
 			packets.Unread(p)
@@ -162,7 +162,7 @@ FindKey:
 					continue
 				}
 				decrypted, err = se.Decrypt(pk.encryptedKey.CipherFunc, pk.encryptedKey.Key)
-				if err!=nil && err!=errors.ErrKeyIncorrect {
+				if err != nil && err != errors.ErrKeyIncorrect {
 					return nil, err
 				}
 				if decrypted != nil {
@@ -179,7 +179,7 @@ FindKey:
 			}
 		}
 
-		if len(candidates)==0 && len(symKeys)==0 {
+		if len(candidates) == 0 && len(symKeys) == 0 {
 			return nil, errors.ErrKeyIncorrect
 		}
 
@@ -187,18 +187,18 @@ FindKey:
 			return nil, errors.ErrKeyIncorrect
 		}
 
-		passphrase, err := prompt(candidates, len(symKeys)!=0)
+		passphrase, err := prompt(candidates, len(symKeys) != 0)
 		if err != nil {
 			return nil, err
 		}
 
 		// Try the symmetric passphrase first
-		if len(symKeys)!=0 && passphrase!=nil {
+		if len(symKeys) != 0 && passphrase != nil {
 			for _, s := range symKeys {
 				err = s.Decrypt(passphrase)
-				if err==nil && !s.Encrypted {
+				if err == nil && !s.Encrypted {
 					decrypted, err = se.Decrypt(s.CipherFunc, s.Key)
-					if err!=nil && err!=errors.ErrKeyIncorrect {
+					if err != nil && err != errors.ErrKeyIncorrect {
 						return nil, err
 					}
 					if decrypted != nil {
@@ -294,7 +294,7 @@ func hashForSignature(hashId crypto.Hash, sigType packet.SignatureType) (hash.Ha
 // checkReader wraps an io.Reader from a LiteralData packet. When it sees EOF
 // it closes the ReadCloser from any SymmetricallyEncrypted packet to trigger
 // MDC checks.
-type checkReader  {
+type checkReader struct {
 	md *MessageDetails
 }
 
@@ -312,7 +312,7 @@ func (cr checkReader) Read(buf []byte) (n int, err error) {
 // signatureCheckReader wraps an io.Reader from a LiteralData packet and hashes
 // the data as it is read. When it sees an EOF from the underlying io.Reader
 // it parses and checks a trailing Signature packet and triggers any MDC checks.
-type signatureCheckReader  {
+type signatureCheckReader struct {
 	packets        *packet.Reader
 	h, wrappedHash hash.Hash
 	md             *MessageDetails
@@ -384,7 +384,7 @@ func CheckDetachedSignature(keyring KeyRing, signed, signature io.Reader) (signe
 	}
 
 	_, err = io.Copy(wrappedHash, signed)
-	if err!=nil && err!=io.EOF {
+	if err != nil && err != io.EOF {
 		return
 	}
 

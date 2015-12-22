@@ -109,7 +109,7 @@ z`
 	}
 )
 
-type lexOut  {
+type lexOut struct {
 	tok rune
 	val []rune
 }
@@ -189,7 +189,7 @@ func TestExecFwd(t *testing.T) {
 		first := -1
 		for pos := 0; ; {
 			rg := p.ExecStr(xtext, pos, len(xtext))
-			if len(rg)==0 || rg[0].P1==first {
+			if len(rg) == 0 || rg[0].P1 == first {
 				break
 			}
 			pos = rg[0].P1
@@ -228,7 +228,7 @@ func TestExecBack(t *testing.T) {
 		ranges := [][]Range{}
 		for pos := len(xtext); pos >= 0; {
 			rg := p.ExecStr(xtext, pos, len(xtext))
-			if len(rg)==0 || rg[0].P0<0 {
+			if len(rg) == 0 || rg[0].P0 < 0 {
 				break
 			}
 			pos = rg[0].P0

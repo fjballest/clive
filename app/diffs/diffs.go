@@ -4,20 +4,20 @@
 package diffs
 
 import (
-	"clive/dbg"
 	"clive/app"
 	"clive/app/opt"
+	"clive/dbg"
 	"clive/zx"
 	"errors"
 	"fmt"
 )
 
-type hash  {
+type hash struct {
 	lines  map[string]int
 	hlines []string
 }
 
-type file  {
+type file struct {
 	name  string
 	lines []int
 }
@@ -28,21 +28,21 @@ const (
 	oDel
 )
 
-type rep  {
+type rep struct {
 	what, i, j int
 }
 
-type xFiles {
-	rpath string
-	f [2]file
-	h hash
+type xFiles struct {
+	rpath  string
+	f      [2]file
+	h      hash
 	prefix []int
 	suffix []int
 	lcs    [][]int
 	repc   chan rep
 }
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
@@ -58,7 +58,7 @@ func prefix(ln1, ln2 []int) ([]int, []int, []int) {
 	ni := len(ln1)
 	nj := len(ln2)
 	i := 0
-	for i<ni && i<nj {
+	for i < ni && i < nj {
 		if ln1[i] != ln2[i] {
 			break
 		}
@@ -71,7 +71,7 @@ func suffix(ln1, ln2 []int) ([]int, []int, []int) {
 	ni := len(ln1)
 	nj := len(ln2)
 	i := 0
-	for i<ni && i<nj {
+	for i < ni && i < nj {
 		if ln1[ni-i-1] != ln2[nj-i-1] {
 			break
 		}
@@ -85,7 +85,7 @@ func (x *xCmd) addLine(ln []byte, fno int) {
 	switch fno {
 	case 0:
 		return
-	case 1,2:
+	case 1, 2:
 		fno--
 		s := string(ln)
 		if x.h.lines == nil {
@@ -104,13 +104,13 @@ func (x *xCmd) addLine(ln []byte, fno int) {
 func (x *xCmd) report(i, j int) {
 	ln1 := x.f[0].lines
 	ln2 := x.f[1].lines
-	if i>0 && j>0 && ln1[i-1]==ln2[j-1] {
+	if i > 0 && j > 0 && ln1[i-1] == ln2[j-1] {
 		x.report(i-1, j-1)
 		x.repc <- rep{oEq, i - 1, j - 1}
-	} else if j>0 && (i==0 || x.lcs[i][j-1]>=x.lcs[i-1][j]) {
+	} else if j > 0 && (i == 0 || x.lcs[i][j-1] >= x.lcs[i-1][j]) {
 		x.report(i, j-1)
 		x.repc <- rep{oAdd, i, j - 1}
-	} else if i>0 && (j==0 || x.lcs[i][j-1]<x.lcs[i-1][j]) {
+	} else if i > 0 && (j == 0 || x.lcs[i][j-1] < x.lcs[i-1][j]) {
 		x.report(i-1, j)
 		x.repc <- rep{oDel, i - 1, j}
 	}
@@ -210,7 +210,7 @@ func (x *xCmd) getFile(in chan interface{}, fno int) zx.Dir {
 	case s := <-x.Sig:
 		app.Dprintf("got sig %s\n", s)
 		app.Fatal(dbg.ErrIntr)
-	case m, ok := <- in:
+	case m, ok := <-in:
 		if !ok {
 			return nil
 		}
@@ -278,7 +278,7 @@ func (x *xCmd) getDirs(i1, i2 chan interface{}) (zx.Dir, zx.Dir) {
 	case s := <-x.Sig:
 		app.Dprintf("got sig %s\n", s)
 		app.Fatal(dbg.ErrIntr)
-	case m1, ok := <- i1:
+	case m1, ok := <-i1:
 		if !ok {
 			app.Dprintf("getdir 2\n")
 			return nil, x.getDir(i2)
@@ -289,7 +289,7 @@ func (x *xCmd) getDirs(i1, i2 chan interface{}) (zx.Dir, zx.Dir) {
 		}
 		app.Dprintf("getdir 2\n")
 		return d1, x.getDir(i2)
-	case m2, ok := <- i2:
+	case m2, ok := <-i2:
 		if !ok {
 			app.Dprintf("getdir 1\n")
 			return x.getDir(i1), nil
@@ -333,7 +333,7 @@ func Run() {
 		app.Dprintf("d1 %s d2 %s\n", d1["rpath"], d2["rpath"])
 
 		switch cmp := zx.PathCmp(d1["rpath"], d2["rpath"]); {
-		case d2 == nil || cmp < 0 :
+		case d2 == nil || cmp < 0:
 			app.Printf("#only %s type %s\n", d1["upath"], d1["type"])
 			d1 = x.getDir(i1)
 			sts = errors.New("diffs")

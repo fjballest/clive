@@ -1,34 +1,34 @@
 package wr
 
 import (
-	"io"
-	"fmt"
-	"strings"
-	"strconv"
-	"html"
-	"clive/sre"
 	"clive/app"
 	"clive/app/nsutil"
+	"clive/sre"
+	"fmt"
+	"html"
+	"io"
+	"strconv"
+	"strings"
 )
 
 const (
-	CSS = `http://lsub.org/ls/class.css`	// CSS used for html output
-	MAN = `http://lsub.org/sys/man`	// base url for man pages in output
-	TEMPLATE =`/zx/usr/web/sys/man/TEMPLATE` // template for clive man pages
+	CSS      = `http://lsub.org/ls/class.css` // CSS used for html output
+	MAN      = `http://lsub.org/sys/man`      // base url for man pages in output
+	TEMPLATE = `/zx/usr/web/sys/man/TEMPLATE` // template for clive man pages
 )
 
 var cliveMan bool
 var sect string
 
-type htmlFmt {
-	lvl int
-	ps int
+type htmlFmt struct {
+	lvl  int
+	ps   int
 	fnts []int
 	*par
 	outfig string
 
-	ups bool		// hacks for clive man
-	hasSeeAlso bool	// hacks for clive man
+	ups        bool // hacks for clive man
+	hasSeeAlso bool // hacks for clive man
 }
 
 func escHtml(s string) string {
@@ -66,7 +66,7 @@ func (f *htmlFmt) citeMan(cite string) bool {
 	}
 	pg := rg[1]
 	sec := rg[2]
-	f.printParCmd(`<a href="`+ MAN + `/` + sec+`/`+pg+`.html">`+cite+`</a>`)
+	f.printParCmd(`<a href="` + MAN + `/` + sec + `/` + pg + `.html">` + cite + `</a>`)
 	return true
 }
 
@@ -95,7 +95,7 @@ func (f *htmlFmt) wrText(e *Elem) {
 		if len(toks) == 1 {
 			f.printParCmd(`<a href="`, e.Data, `">`, x, "</a>")
 		} else {
-			f.printParCmd(`<a href="`, toks[1], `">`, 
+			f.printParCmd(`<a href="`, toks[1], `">`,
 				html.EscapeString(toks[0]), "</a>")
 		}
 		return
@@ -142,47 +142,47 @@ func (f *htmlFmt) wrText(e *Elem) {
 	}
 }
 
-var hfnts = map[Kind]string {
-	Kit: `em`,
-	Kbf: `b`,
-	Ktt: `code`,
+var hfnts = map[Kind]string{
+	Kit:    `em`,
+	Kbf:    `b`,
+	Ktt:    `code`,
 	Kitend: "/em",
 	Kbfend: "/b",
 	Kttend: "/code",
 }
 
-var hhdrs = map[Kind]string {
+var hhdrs = map[Kind]string{
 	Khdr1: "h2",
 	Khdr2: "h3",
 	Khdr3: "h3",
 }
 
-var hlst = map[Kind]string {
-	Kitemize: "ul",
+var hlst = map[Kind]string{
+	Kitemize:     "ul",
 	Kenumeration: "ol",
 	Kdescription: "dl",
 }
 
 func (f *htmlFmt) wrFnt(e *Elem) {
 	if e.Inline {
-		f.printParCmd("<",hfnts[e.Kind], ">")
+		f.printParCmd("<", hfnts[e.Kind], ">")
 	} else {
 		f.printCmd("<%s>\n", hfnts[e.Kind])
 	}
 }
 
-var hszs = map[int] string {
+var hszs = map[int]string{
 	-5: "tiny",
 	-4: "tiny",
 	-3: "scriptsize",
 	-2: "footnotesize",
 	-1: "small",
-	0: "normalsize",
-	1: "large",
-	2: "Large",
-	3: "LARGE",
-	4: "huge",
-	5: "Huge",
+	0:  "normalsize",
+	1:  "large",
+	2:  "Large",
+	3:  "LARGE",
+	4:  "huge",
+	5:  "Huge",
 }
 
 func (f *htmlFmt) fntSz(d string) {
@@ -208,14 +208,14 @@ func (f *htmlFmt) fntSz(d string) {
 	} else {
 		f.printParCmd(`<small>`)
 	}
-		f.fnts = append(f.fnts, n)
+	f.fnts = append(f.fnts, n)
 }
 
-var hcaps = map[Kind] string {
-	Kfig: "Figure",
-	Kpic: "Figure",
-	Ktbl: "Table",
-	Keqn: "Eqn.",
+var hcaps = map[Kind]string{
+	Kfig:  "Figure",
+	Kpic:  "Figure",
+	Ktbl:  "Table",
+	Keqn:  "Eqn.",
 	Kcode: "Listing",
 }
 
@@ -244,9 +244,9 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			f.fntSz(e.Data)
 		case Khdr1, Khdr2, Khdr3:
 			f.closePar()
-			f.printParCmd(`<a name="`+llbl[e.Kind] +
+			f.printParCmd(`<a name="` + llbl[e.Kind] +
 				strings.Replace(e.Nb, ".", "x", -1) + `"></a>`)
-			f.printParCmd("<"+hhdrs[e.Kind]+">")
+			f.printParCmd("<" + hhdrs[e.Kind] + ">")
 			if e.Nb != "" && !cliveMan {
 				f.printPar(e.Nb, ".")
 				f.printPar(" ")
@@ -258,7 +258,7 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			}
 			f.wrText(e)
 			f.ups = false
-			f.printParCmd("</"+hhdrs[e.Kind]+">")
+			f.printParCmd("</" + hhdrs[e.Kind] + ">")
 			f.closePar()
 		case Kpar:
 			f.printCmd("<p>\n")
@@ -275,30 +275,30 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 					continue
 				}
 			}
-			f.printCmd(pref+`<p><ul style="list-style:none;">`+"\n")
+			f.printCmd(pref + `<p><ul style="list-style:none;">` + "\n")
 			f.wrElems(e.Child...)
-			f.printCmd(pref+`</ul><p>`+"\n")
+			f.printCmd(pref + `</ul><p>` + "\n")
 		case Kitemize, Kenumeration, Kdescription:
-			f.printCmd(pref + "<%s>\n", hlst[e.Kind])
+			f.printCmd(pref+"<%s>\n", hlst[e.Kind])
 			f.wrElems(e.Child...)
-			f.printCmd(pref + "</%s>\n", hlst[e.Kind])
+			f.printCmd(pref+"</%s>\n", hlst[e.Kind])
 		case Kname:
 			f.closePar()
 			f.printParCmd(`<dt>`)
 			f.wrText(e)
 			f.printParCmd("</dt><dd>\n")
 			f.wrElems(e.Child...)
-			f.printCmd(pref+"</dd>\n")
+			f.printCmd(pref + "</dd>\n")
 		case Kitem, Kenum:
 			f.closePar()
 			f.printParCmd(`<li>`)
 			f.wrText(e)
 			f.closePar()
 		case Kverb, Ksh:
-			f.printCmd(pref+`<code><pre>`+"\n")
+			f.printCmd(pref + `<code><pre>` + "\n")
 			e.Data = indentVerb(e.Data, f.i0, f.tab)
 			f.printCmd("%s", html.EscapeString(e.Data))
-			f.printCmd(pref+`</pre></code>`+"\n")
+			f.printCmd(pref + `</pre></code>` + "\n")
 		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
 			f.wrText(e)
 		case Kfig:
@@ -308,34 +308,34 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			if strings.HasSuffix(s, ".eps") {
 				s = epstopdf(s)
 			}
-			f.printCmd(pref + `<a name="`+llbl[e.Kind] + e.Nb + `"></a>`+"\n")
-			f.printCmd(pref + "<img src=%s></img>\n", s)
+			f.printCmd(pref + `<a name="` + llbl[e.Kind] + e.Nb + `"></a>` + "\n")
+			f.printCmd(pref+"<img src=%s></img>\n", s)
 			f.printCmd(pref + "</center>\n")
 			f.wrCaption(e)
 			f.printCmd(pref + "<hr><p>\n")
 		case Kcode:
 			f.printCmd(pref + "<p>\n")
 			f.printCmd(pref + "<hr>\n\n")
-			f.printCmd(pref + `<a name="`+llbl[e.Kind] + e.Nb + `"></a>`+"\n")
-			f.printCmd(pref+`<code><pre>`+"\n")
+			f.printCmd(pref + `<a name="` + llbl[e.Kind] + e.Nb + `"></a>` + "\n")
+			f.printCmd(pref + `<code><pre>` + "\n")
 			e.Data = indentVerb(e.Data, f.i0, f.tab)
 			f.printCmd("%s", html.EscapeString(e.Data))
-			f.printCmd(pref+`</pre></code>`+"\n")
+			f.printCmd(pref + `</pre></code>` + "\n")
 			f.wrCaption(e)
 			f.printCmd(pref + "<hr><p>\n")
 		case Kpic, Keqn:
 			f.printCmd(pref + "<p>\n")
 			f.printCmd(pref + "<hr>\n<center>\n")
-			f.printCmd(pref + `<a name="`+llbl[e.Kind] + e.Nb + `"></a>`+"\n")
+			f.printCmd(pref + `<a name="` + llbl[e.Kind] + e.Nb + `"></a>` + "\n")
 			pfn := e.pic(f.outfig)
-			f.printCmd(pref+`<img src="`+pfn+`"></img>`)
+			f.printCmd(pref + `<img src="` + pfn + `"></img>`)
 			f.printCmd(pref + "</center>\n")
 			f.wrCaption(e)
 			f.printCmd(pref + "<hr><p>\n")
 		case Ktbl:
 			f.printCmd(pref + "<p>\n")
 			f.printCmd(pref + "<hr>\n<center>\n")
-			f.printCmd(pref + `<a name="`+llbl[e.Kind] + e.Nb + `"></a>`+"\n")
+			f.printCmd(pref + `<a name="` + llbl[e.Kind] + e.Nb + `"></a>` + "\n")
 			f.lvl++
 			f.i0, f.in = pref+f.tab, pref+f.tab
 			f.wrTbl(e.Tbl)
@@ -349,7 +349,7 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 }
 
 func (f *htmlFmt) wrTbl(rows [][]string) {
-	if len(rows)<2 || len(rows[0])<2 || len(rows[1])<2 {
+	if len(rows) < 2 || len(rows[0]) < 2 || len(rows[1]) < 2 {
 		return
 	}
 	f.printCmd("<table border=\"1\">\n")
@@ -359,7 +359,7 @@ func (f *htmlFmt) wrTbl(rows [][]string) {
 		f.printCmd("<tr>\n")
 		for j, c := range r {
 			s := html.EscapeString(c)
-			if i==0 || j==0 {
+			if i == 0 || j == 0 {
 				f.printCmd("<td><b>%s</b></td>\n", s)
 			} else {
 				f.printCmd("<td>%s</td>\n", s)
@@ -387,7 +387,7 @@ func (f *htmlFmt) wrBib(refs []string) {
 	f.in = f.tab
 	for i, r := range refs {
 		k := fmt.Sprintf("bib%d", i+1)
-		f.printParCmd(`<li> <a name="`+k+`"></a>`)
+		f.printParCmd(`<li> <a name="` + k + `"></a>`)
 		f.printPar(fmt.Sprintf("%s", r))
 		f.printParCmd("</li><p> ")
 		f.closePar()
@@ -400,16 +400,16 @@ func (f *htmlFmt) run(t *Text) {
 	els := t.Elems
 	if cliveMan {
 		if sect != "doc" {
-			f.printCmd(`<b><a href="`+MAN+`">User's manual</a>.</b>`+"\n")
-			f.printCmd(`<b><a href="`+MAN+`/`+sect+`">Section `+sect+`</a>.</b>`+"\n")
+			f.printCmd(`<b><a href="` + MAN + `">User's manual</a>.</b>` + "\n")
+			f.printCmd(`<b><a href="` + MAN + `/` + sect + `">Section ` + sect + `</a>.</b>` + "\n")
 		}
 	} else {
 		f.printCmd(`<html>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <head>
-<link rel="stylesheet" type="text/css" href="`+CSS+`" />
+<link rel="stylesheet" type="text/css" href="` + CSS + `" />
 `)
-		if len(els)>0 && els[0].Kind==Ktitle {
+		if len(els) > 0 && els[0].Kind == Ktitle {
 			s := html.EscapeString(els[0].Data)
 			f.printCmd("<title>%s</title>\n</head>\n", s)
 		} else {
@@ -420,7 +420,7 @@ func (f *htmlFmt) run(t *Text) {
 		f.printCmd("<div id=\"content\" class=\"Content\">\n")
 	}
 	n := 0
-	for len(els)>0 && els[0].Kind==Ktitle {
+	for len(els) > 0 && els[0].Kind == Ktitle {
 		switch n {
 		case 0:
 			f.printParCmd("<h2>")
@@ -444,15 +444,15 @@ func (f *htmlFmt) run(t *Text) {
 		f.printCmd("</div></div>\n")
 		f.printCmd("</body>\n</html>\n")
 	} else if sect != "doc" {
-		f.printCmd(`<b><a href="`+MAN+`">User's manual</a>.</b>`+"\n")
-		f.printCmd(`<b><a href="`+MAN+`/`+sect+`">Section `+sect+`</a>.</b>`+"\n")
+		f.printCmd(`<b><a href="` + MAN + `">User's manual</a>.</b>` + "\n")
+		f.printCmd(`<b><a href="` + MAN + `/` + sect + `">Section ` + sect + `</a>.</b>` + "\n")
 	}
 }
 
 // html writer
 func wrhtml(t *Text, wid int, out io.Writer, outfig string) {
 	f := &htmlFmt{
-		par: &par{fn: escHtml, out: out, wid: wid, tab: "    "},
+		par:    &par{fn: escHtml, out: out, wid: wid, tab: "    "},
 		outfig: outfig,
 	}
 	var tmpl []string

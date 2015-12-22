@@ -4,10 +4,10 @@
 package xp
 
 import (
-	"clive/zx"
-	"clive/dbg"
 	"clive/app"
 	"clive/app/opt"
+	"clive/dbg"
+	"clive/zx"
 	"errors"
 	"fmt"
 	"sort"
@@ -15,12 +15,12 @@ import (
 	"time"
 )
 
-type xCmd  {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
 	result interface{}
-	quiet bool
+	quiet  bool
 }
 
 func (x *xCmd) expr(s string) (result interface{}, err error) {
@@ -99,7 +99,7 @@ func (x *xCmd) xp(in chan interface{}) error {
 	return nil
 }
 
-func Run()  {
+func Run() {
 	x := &xCmd{Ctx: app.AppCtx()}
 	x.Flags = opt.New("[expr]")
 	x.NewFlag("D", "debug", &x.Debug)
@@ -132,7 +132,7 @@ func Run()  {
 	in := app.In()
 	if len(args) != 0 {
 		in = make(chan interface{}, 1)
-		in <- []byte(strings.Join(args, " ") + "\n")
+		in <- []byte(strings.Join(args, " ")+"\n")
 		close(in)
 	}
 	in = app.Lines(in)

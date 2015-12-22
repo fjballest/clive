@@ -11,7 +11,7 @@ import (
 // twistPoint implements the elliptic curve y²=x³+3/ξ over GF(p²). Points are
 // kept in Jacobian form and t=z² when valid. The group G₂ is the set of
 // n-torsion points of this curve over GF(p²) (where n = Order)
-type twistPoint  {
+type twistPoint struct {
 	x, y, z, t *gfP2
 }
 
@@ -76,7 +76,7 @@ func (c *twistPoint) IsOnCurve() bool {
 	yy.Sub(yy, xxx)
 	yy.Sub(yy, twistB)
 	yy.Minimal()
-	return yy.x.Sign()==0 && yy.y.Sign()==0
+	return yy.x.Sign() == 0 && yy.y.Sign() == 0
 }
 
 func (c *twistPoint) SetInfinity() {

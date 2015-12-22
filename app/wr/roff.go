@@ -1,25 +1,24 @@
 package wr
 
 import (
-	"io"
-	"fmt"
-	"strings"
 	"clive/sre"
+	"fmt"
+	"io"
+	"strings"
 )
 
-type par {
-	sc chan<- string
-	dc chan bool
-	right bool
-	fn func(string) string
-	out io.Writer
-	wid int
-	tab string
+type par struct {
+	sc     chan<- string
+	dc     chan bool
+	right  bool
+	fn     func(string) string
+	out    io.Writer
+	wid    int
+	tab    string
 	i0, in string
 }
 
-
-type roffFmt {
+type roffFmt struct {
 	lvl int
 	*par
 }
@@ -39,11 +38,11 @@ func escRoff(s string) string {
 			noesc = false
 			continue
 		case noesc:
-		case atnl && r=='.':
+		case atnl && r == '.':
 			ns += `\&.`
 			atnl = false
 			continue
-		case atnl && r=='\'':
+		case atnl && r == '\'':
 			ns += `\&'`
 			atnl = false
 			continue
@@ -56,7 +55,7 @@ func escRoff(s string) string {
 		ns += string(r)
 		if r == '\n' {
 			atnl = true
-		} else if r!=' ' && r!='\t' {
+		} else if r != ' ' && r != '\t' {
 			atnl = false
 		}
 	}
@@ -103,23 +102,23 @@ func (f *roffFmt) wrText(e *Elem) {
 }
 
 var fnts = map[Kind]string{
-	Kit: "I",
-	Kbf: "B",
-	Ktt: "CW",
+	Kit:    "I",
+	Kbf:    "B",
+	Ktt:    "CW",
 	Kitend: "R",
 	Kbfend: "R",
 	Kttend: "R",
 }
 var ifnts = map[Kind]string{
-	Kit: "I",
-	Kbf: "B",
-	Ktt: "(CW",
+	Kit:    "I",
+	Kbf:    "B",
+	Ktt:    "(CW",
 	Kitend: "P",
 	Kbfend: "P",
 	Kttend: "P",
 }
 
-var hdrs = map[Kind]string {
+var hdrs = map[Kind]string{
 	Khdr1: "NH",
 	Khdr2: "NH 2",
 	Khdr3: "NH 3",
@@ -168,7 +167,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 				inabs = true
 				break
 			}
-			
+
 			f.printCmd(".%s\n", hdrs[e.Kind])
 			f.wrText(e)
 			f.printCmd(".LP\n")
@@ -269,7 +268,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 }
 
 func (f *roffFmt) wrTbl(rows [][]string) {
-	if len(rows)<2 || len(rows[0])<2 || len(rows[1])<2 {
+	if len(rows) < 2 || len(rows[0]) < 2 || len(rows[1]) < 2 {
 		return
 	}
 	f.printCmd(".TS\n")
@@ -323,7 +322,7 @@ func (f *roffFmt) run(t *Text) {
 	fmt.Fprintln(f.out)
 	els := t.Elems
 	n := 0
-	for len(els)>0 && els[0].Kind==Ktitle {
+	for len(els) > 0 && els[0].Kind == Ktitle {
 		switch n {
 		case 0:
 			f.printCmd(".TL\n")

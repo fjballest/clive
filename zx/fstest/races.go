@@ -2,8 +2,8 @@ package fstest
 
 import (
 	"clive/zx"
-	"time"
 	"testing"
+	"time"
 )
 
 const nops = 512
@@ -13,7 +13,7 @@ type raceOp struct {
 	nm string
 }
 
-var ops = []raceOp {
+var ops = []raceOp{
 	raceOp{rcreate, "create"},
 	raceOp{rremove, "remove"},
 	raceOp{rmkdir, "mkdir"},
@@ -22,7 +22,6 @@ var ops = []raceOp {
 	raceOp{rwstat, "wstat"},
 	raceOp{rmove, "move"},
 }
-
 
 func (r raceOp) String() string {
 	return r.nm
@@ -90,9 +89,9 @@ func Races(t Fataler, fss ...zx.Tree) {
 		}
 		alldone <- true
 	}()
-	tout := 60 *time.Second
+	tout := 60 * time.Second
 	if testing.Verbose() {
-		tout = 300 *time.Second
+		tout = 300 * time.Second
 	}
 	select {
 	case <-alldone:
@@ -101,4 +100,3 @@ func Races(t Fataler, fss ...zx.Tree) {
 		t.Fatalf("deadlock after %v", tout)
 	}
 }
-

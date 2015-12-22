@@ -46,7 +46,7 @@ func _Block(dig *digest, p []byte) int {
 		for i := uint(0); i < 16; i++ {
 			x := i
 			s := shift1[i%4]
-			f := ((c ^ d)&b) ^ d
+			f := ((c ^ d) & b) ^ d
 			a += f + X[x]
 			a = a<<s | a>>(32-s)
 			a, b, c, d = d, a, b, c
@@ -56,7 +56,7 @@ func _Block(dig *digest, p []byte) int {
 		for i := uint(0); i < 16; i++ {
 			x := xIndex2[i]
 			s := shift2[i%4]
-			g := (b&c) | (b&d) | (c&d)
+			g := (b & c) | (b & d) | (c & d)
 			a += g + X[x] + 0x5a827999
 			a = a<<s | a>>(32-s)
 			a, b, c, d = d, a, b, c

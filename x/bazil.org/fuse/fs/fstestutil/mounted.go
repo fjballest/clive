@@ -13,7 +13,7 @@ import (
 )
 
 // Mount contains information about the mount for the test to use.
-type Mount  {
+type Mount struct {
 	// Dir is the temporary directory where the filesystem is mounted.
 	Dir string
 
@@ -39,7 +39,7 @@ func (mnt *Mount) Close() {
 		if err != nil {
 			// TODO do more than log?
 			log.Printf("unmount error: %v", err)
-			time.Sleep(10*time.Millisecond)
+			time.Sleep(10 * time.Millisecond)
 			continue
 		}
 		break

@@ -33,7 +33,7 @@ const (
 )
 
 // Signature represents a cryptographic signature.
-type Signature  {
+type Signature struct {
 	Format string
 	Blob   []byte
 }
@@ -44,7 +44,7 @@ const CertTimeInfinity = 1<<64 - 1
 
 // An Certificate represents an OpenSSH certificate as defined in
 // [PROTOCOL.certkeys]?rev=1.8.
-type Certificate  {
+type Certificate struct {
 	Nonce           []byte
 	Key             PublicKey
 	Serial          uint64
@@ -62,7 +62,7 @@ type Certificate  {
 // genericCertData holds the key-independent part of the certificate data.
 // Overall, certificates contain an nonce, public key fields and
 // key-independent fields.
-type genericCertData  {
+type genericCertData struct {
 	Serial          uint64
 	CertType        uint32
 	KeyId           string
@@ -118,7 +118,7 @@ func parseTuples(in []byte) (map[string]string, error) {
 
 		// according to [PROTOCOL.certkeys], the names must be in
 		// lexical order.
-		if haveLastKey && name<=lastKey {
+		if haveLastKey && name <= lastKey {
 			return nil, fmt.Errorf("ssh: certificate options are not in lexical order")
 		}
 		lastKey, haveLastKey = name, true
@@ -180,14 +180,14 @@ func parseCert(in []byte, privAlgo string) (*Certificate, error) {
 
 	c.SignatureKey = k
 	c.Signature, rest, ok = parseSignatureBody(g.Signature)
-	if !ok || len(rest)>0 {
+	if !ok || len(rest) > 0 {
 		return nil, errors.New("ssh: signature parse error")
 	}
 
 	return c, nil
 }
 
-type openSSHCertSigner  {
+type openSSHCertSigner struct {
 	pub    *Certificate
 	signer Signer
 }
@@ -217,7 +217,7 @@ const sourceAddressCriticalOption = "source-address"
 // can be plugged into ClientConfig.HostKeyCallback and
 // ServerConfig.PublicKeyCallback. For the CertChecker to work,
 // minimally, the IsAuthority callback should be set.
-type CertChecker  {
+type CertChecker struct {
 	// SupportedCriticalOptions lists the CriticalOptions that the
 	// server application layer understands. These are only used
 	// for user certificates.
@@ -291,7 +291,7 @@ func (c *CertChecker) Authenticate(conn ConnMetadata, pubKey PublicKey) (*Permis
 // CheckCert checks CriticalOptions, ValidPrincipals, revocation, timestamp and
 // the signature of the certificate.
 func (c *CertChecker) CheckCert(principal string, cert *Certificate) error {
-	if c.IsRevoked!=nil && c.IsRevoked(cert) {
+	if c.IsRevoked != nil && c.IsRevoked(cert) {
 		return fmt.Errorf("ssh: certicate serial %d revoked", cert.Serial)
 	}
 
@@ -338,10 +338,10 @@ func (c *CertChecker) CheckCert(principal string, cert *Certificate) error {
 	}
 
 	unixNow := clock().Unix()
-	if after := int64(cert.ValidAfter); after<0 || unixNow<int64(cert.ValidAfter) {
+	if after := int64(cert.ValidAfter); after < 0 || unixNow < int64(cert.ValidAfter) {
 		return fmt.Errorf("ssh: cert is not yet valid")
 	}
-	if before := int64(cert.ValidBefore); cert.ValidBefore!=CertTimeInfinity && (unixNow>=before || before<0) {
+	if before := int64(cert.ValidBefore); cert.ValidBefore != CertTimeInfinity && (unixNow >= before || before < 0) {
 		return fmt.Errorf("ssh: cert has expired")
 	}
 	if err := cert.SignatureKey.Verify(cert.bytesForSigning(), cert.Signature); err != nil {
@@ -467,7 +467,7 @@ func parseSignature(in []byte) (out *Signature, rest []byte, ok bool) {
 	}
 
 	out, trailing, ok := parseSignatureBody(sigBytes)
-	if !ok || len(trailing)>0 {
+	if !ok || len(trailing) > 0 {
 		return nil, nil, false
 	}
 	return

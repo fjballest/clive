@@ -4,18 +4,18 @@
 package lns
 
 import (
-	"clive/dbg"
 	"clive/app"
 	"clive/app/opt"
+	"clive/dbg"
 	"clive/zx"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
 	all             bool
-	pflag, nflag           bool
+	pflag, nflag    bool
 	nhd, ntl, nfrom int
 	ranges          []string
 	addrs           []opt.Range
@@ -29,25 +29,25 @@ func (x *xCmd) parseRanges() error {
 		}
 		from, to := a.P0, a.P1
 		x.addrs = append(x.addrs, a)
-		if from>0 && x.nhd<from {
+		if from > 0 && x.nhd < from {
 			x.nhd = from
 		}
-		if to>0 && x.nhd<to {
+		if to > 0 && x.nhd < to {
 			x.nhd = to
 		}
-		if from<0 && x.ntl< -from {
+		if from < 0 && x.ntl < -from {
 			x.ntl = -from
 		}
-		if to<0 && x.ntl< -to {
+		if to < 0 && x.ntl < -to {
 			x.ntl = -to
 		}
-		if from>0 && to<0 {
+		if from > 0 && to < 0 {
 			x.nfrom = from
 		}
-		if from<0 && to>0 {
+		if from < 0 && to > 0 {
 			x.nfrom = to
 		}
-		if from==1 && to==-1 {
+		if from == 1 && to == -1 {
 			x.all = true
 		}
 	}
@@ -77,7 +77,7 @@ func (x *xCmd) lns(in chan []byte, donec chan bool) {
 			}
 			continue
 		}
-		if x.ntl==0 && x.nfrom==0 && x.nhd>0 && nln>x.nhd {
+		if x.ntl == 0 && x.nfrom == 0 && x.nhd > 0 && nln > x.nhd {
 			close(in, "done")
 			close(donec)
 			return
@@ -94,11 +94,11 @@ func (x *xCmd) lns(in chan []byte, donec chan bool) {
 				break
 			}
 		}
-		if nln>=x.nfrom || x.ntl>0 {
+		if nln >= x.nfrom || x.ntl > 0 {
 			if lout {
 				s = "" /*already there */
 			}
-			if nln>=x.nfrom || x.ntl>0 && len(last)<x.ntl {
+			if nln >= x.nfrom || x.ntl > 0 && len(last) < x.ntl {
 				last = append(last, s)
 			} else {
 				copy(last, last[1:])
@@ -108,18 +108,18 @@ func (x *xCmd) lns(in chan []byte, donec chan bool) {
 
 	}
 
-	if !x.all && (x.ntl>0 || x.nfrom>0) {
+	if !x.all && (x.ntl > 0 || x.nfrom > 0) {
 		// if len(last) == 3 and nln is 10
 		// last[0] is -3 or 10-2
 		// last[1] is -2 or 10-1
 		// last[2] is -1 or 10
 		for i := 0; i < len(last); i++ {
 			for _, a := range x.addrs {
-				if a.P0>0 && a.P1>0 { // done already
+				if a.P0 > 0 && a.P1 > 0 { // done already
 					continue
 				}
 				app.Dprintf("tl match %d of %d in %s\n", nln-len(last)+1+i, nln, a)
-				if a.Matches(nln-len(last)+1+i, nln) && last[i]!="" {
+				if a.Matches(nln-len(last)+1+i, nln) && last[i] != "" {
 					if x.nflag {
 						app.Printf("%-5d %s", nln-len(last)+1+i, last[i])
 					} else {

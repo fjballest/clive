@@ -13,7 +13,7 @@ import (
 
 // Client implements a traditional SSH client that supports shells,
 // subprocesses, port forwarding and tunneled dialing.
-type Client  {
+type Client struct {
 	Conn
 
 	forwards        forwardList // forwarded tcpip connections from the remote side
@@ -112,7 +112,7 @@ func (c *connection) clientHandshake(dialAddress string, config *ClientConfig) e
 // exchange.
 func verifyHostKeySignature(hostKey PublicKey, result *kexResult) error {
 	sig, rest, ok := parseSignatureBody(result.Signature)
-	if len(rest)>0 || !ok {
+	if len(rest) > 0 || !ok {
 		return errors.New("ssh: signature parse error")
 	}
 
@@ -168,7 +168,7 @@ func parseTCPAddr(b []byte) (*net.TCPAddr, []byte, bool) {
 		return nil, b, false
 	}
 	port, b, ok := parseUint32(b)
-	if !ok || port==0 || port>65535 {
+	if !ok || port == 0 || port > 65535 {
 		return nil, b, false
 	}
 	ip := net.ParseIP(string(addr))
@@ -197,7 +197,7 @@ func Dial(network, addr string, config *ClientConfig) (*Client, error) {
 
 // A ClientConfig structure is used to configure a Client. It must not be
 // modified after having been passed to an SSH function.
-type ClientConfig  {
+type ClientConfig struct {
 	// Config contains configuration that is shared between clients and
 	// servers.
 	Config

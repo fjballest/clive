@@ -1,11 +1,11 @@
 package refs
 
 import (
-	"testing"
-	"os"
-	"strings"
 	"clive/app"
 	"clive/app/nsutil"
+	"os"
+	"strings"
+	"testing"
 )
 
 func TestLoad(t *testing.T) {
@@ -13,7 +13,7 @@ func TestLoad(t *testing.T) {
 	c := app.New()
 	defer app.Exiting()
 	c.Debug = testing.Verbose()
-	b, err:= Load("/zx/lib/bib")
+	b, err := Load("/zx/lib/bib")
 	if err != nil {
 		t.Fatalf("load: %s", err)
 	}
@@ -47,7 +47,7 @@ func TestBibLoad(t *testing.T) {
 	c := app.New()
 	defer app.Exiting()
 	c.Debug = testing.Verbose()
-	b, err:= Load("/zx/lib/bib")
+	b, err := Load("/zx/lib/bib")
 	if err != nil {
 		t.Fatalf("load: %s", err)
 	}
@@ -64,4 +64,3 @@ func TestBibLoad(t *testing.T) {
 		t.Fatalf("did not find visage in bib")
 	}
 }
-

@@ -27,7 +27,7 @@ type Controller interface {
 	raw event data. The event data is encoded in JSON if it's a complex object
 	(other than a string, []string or []byte) and the entire event is also encoded in JSON.
 */
-type Ev  {
+type Ev struct {
 	Id, Src string   // target id and source
 	Vers    int      // version of the control the event is for
 	Args    []string // events with string arguments
@@ -70,10 +70,10 @@ func ParseEv(data []byte) (*Ev, error) {
 }
 
 func (e *Ev) reflects() bool {
-	if e==nil || len(e.Args)==0 || len(e.Args[0])==0 {
+	if e == nil || len(e.Args) == 0 || len(e.Args[0]) == 0 {
 		return false
 	}
-	return e.Args[0][0]>='A' && e.Args[0][0]<='Z'
+	return e.Args[0][0] >= 'A' && e.Args[0][0] <= 'Z'
 }
 
 /*
@@ -84,7 +84,7 @@ func (e *Ev) reflects() bool {
 	Mux() method. The id reported  is
 	Conn.Id + "_0".
 */
-type Conn  {
+type Conn struct {
 	Id        string
 	Evc, Updc chan *Ev
 	DoClose   bool
@@ -95,8 +95,8 @@ type Conn  {
 
 func (c *Conn) wants(id string) bool {
 	cid := c.Id + "_0"
-	return c.Id=="" || cid==id ||
-		len(cid)<len(id) && id[len(cid)]=='_'
+	return c.Id == "" || cid == id ||
+		len(cid) < len(id) && id[len(cid)] == '_'
 }
 
 /*
@@ -150,7 +150,7 @@ func (c *Conn) Mux(evc, updc chan *Ev) string {
 			}()
 		}
 		c.outc = append(c.outc, updc)
-	} else if c.DoClose && updc!=nil {
+	} else if c.DoClose && updc != nil {
 		close(updc, "no Updc")
 	}
 
@@ -159,7 +159,7 @@ func (c *Conn) Mux(evc, updc chan *Ev) string {
 		go func() {
 			for x := range evc {
 				//fmt.Printf("mux %q ev %v\n", c.Id, x)
-				if cevc!=nil && x!=nil && c.wants(x.Id) {
+				if cevc != nil && x != nil && c.wants(x.Id) {
 					if ok := cevc <- x; !ok {
 						if c.DoClose {
 							close(evc, cerror(c.Evc))

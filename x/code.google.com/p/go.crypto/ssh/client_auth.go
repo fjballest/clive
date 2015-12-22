@@ -110,7 +110,7 @@ func (n *noneAuth) method() string {
 type passwordCallback func() (password string, err error)
 
 func (cb passwordCallback) auth(session []byte, user string, c packetConn, rand io.Reader) (bool, []string, error) {
-	type passwordAuthMsg  {
+	type passwordAuthMsg struct {
 		User     string `sshtype:"50"`
 		Service  string
 		Method   string
@@ -154,7 +154,7 @@ func PasswordCallback(prompt func() (secret string, err error)) AuthMethod {
 	return passwordCallback(prompt)
 }
 
-type publickeyAuthMsg  {
+type publickeyAuthMsg struct {
 	User    string `sshtype:"50"`
 	Service string
 	Method  string
@@ -276,7 +276,7 @@ func confirmKeyAck(key PublicKey, c packetConn) (bool, error) {
 			if err := Unmarshal(packet, &msg); err != nil {
 				return false, err
 			}
-			if msg.Algo!=algoname || !bytes.Equal(msg.PubKey, pubKey) {
+			if msg.Algo != algoname || !bytes.Equal(msg.PubKey, pubKey) {
 				return false, nil
 			}
 			return true, nil
@@ -349,7 +349,7 @@ func (cb KeyboardInteractiveChallenge) method() string {
 }
 
 func (cb KeyboardInteractiveChallenge) auth(session []byte, user string, c packetConn, rand io.Reader) (bool, []string, error) {
-	type initiateMsg  {
+	type initiateMsg struct {
 		User       string `sshtype:"50"`
 		Service    string
 		Method     string
@@ -401,11 +401,11 @@ func (cb KeyboardInteractiveChallenge) auth(session []byte, user string, c packe
 		var echos []bool
 		for i := 0; i < int(msg.NumPrompts); i++ {
 			prompt, r, ok := parseString(rest)
-			if !ok || len(r)==0 {
+			if !ok || len(r) == 0 {
 				return false, nil, errors.New("ssh: prompt format error")
 			}
 			prompts = append(prompts, string(prompt))
-			echos = append(echos, r[0]!=0)
+			echos = append(echos, r[0] != 0)
 			rest = r[1:]
 		}
 

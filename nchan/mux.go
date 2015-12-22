@@ -12,7 +12,7 @@ const (
 	/*
 		The tag space is divided so that the caller has
 		even tags and the callee odd tags.
-		Calls that expect a reply use in the reply the tag of the request.
+		Calls that expect a reply using the tag of the request.
 	*/
 	endtag  uint64 = 0x8000000000000000
 	rpctag  uint64 = 0x4000000000000000
@@ -34,7 +34,7 @@ const (
 	One side of the connection is said to be the caller and the other
 	the callee, this is indicated when the Mux is created.
 */
-type Mux  {
+type Mux struct {
 	In chan Conn
 
 	outlk sync.Mutex

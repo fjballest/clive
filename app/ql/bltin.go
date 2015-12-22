@@ -1,36 +1,36 @@
 package ql
 
 import (
-	"clive/zx"
-	"clive/dbg"
 	"clive/app"
-	"clive/app/opt"
 	"clive/app/nsutil"
+	"clive/app/opt"
+	"clive/dbg"
+	"clive/zx"
 
 	"clive/app/ch"
 	"clive/app/cnt"
 	"clive/app/cols"
 	"clive/app/cpm"
+	"clive/app/diffs"
 	"clive/app/echo"
 	"clive/app/flds"
+	"clive/app/frmt"
+	"clive/app/gp"
+	"clive/app/gr"
+	"clive/app/hist"
+	"clive/app/jn"
 	"clive/app/lf"
 	"clive/app/lns"
+	"clive/app/mvm"
 	"clive/app/pf"
 	"clive/app/pwd"
-	"clive/app/sleep"
-	"clive/app/gr"
-	"clive/app/wr"
-	"clive/app/frmt"
-	"clive/app/diffs"
-	"clive/app/jn"
-	"clive/app/srt"
 	"clive/app/rem"
-	"clive/app/mvm"
+	"clive/app/sleep"
+	"clive/app/srt"
 	"clive/app/trex"
-	"clive/app/gp"
-	"clive/app/xp"
-	"clive/app/hist"
 	"clive/app/words"
+	"clive/app/wr"
+	"clive/app/xp"
 )
 
 type bFunc func(*xEnv, ...string) error
@@ -41,12 +41,12 @@ var (
 		"flag": true,
 		"exit": true,
 		"wait": true,
-		"dup": true,
-		"new": true,
+		"dup":  true,
+		"new":  true,
 	}
 	// commands besides those that "isHereCmd" for which ones
 	// we don't want the lf a b c | pf pipe rewrite, to save a '|'
-	noRewrites = []string {
+	noRewrites = []string{
 		"type",
 		"echo",
 		":",
@@ -66,47 +66,47 @@ func importRun(fn func()) bFunc {
 func init() {
 	bltin = map[string]bFunc{
 		// these run here
-		"cd": runCd,
+		"cd":   runCd,
 		"flag": runFlag,
 		"exit": runExit,
 		"wait": runWait,
-		"dup": runDup,
-		"new": runNew,
+		"dup":  runDup,
+		"new":  runNew,
 
 		// these run in their own context
-		"type": runType,
-		"ch": importRun(ch.Run),
-		"cnt": importRun(cnt.Run),
-		"cols": importRun(cols.Run),
-		"cpf": importRun(cpm.Run),
-		"cpm": importRun(cpm.Run),
-		"echo": importRun(echo.Run),
-		"flds": importRun(flds.Run),
-		"gf": importRun(lf.Run),
-		"gr": importRun(gr.Run),
-		"gg": importRun(gr.Run),
-		"gv": importRun(gr.Run),
-		"gx": importRun(gr.Run),
-		"lf": importRun(lf.Run),
-		"lns": importRun(lns.Run),
-		"pf": importRun(pf.Run),
-		"wf": importRun(pf.Run),
-		"pwd": importRun(pwd.Run),
-		"ql": importRun(Run),
+		"type":  runType,
+		"ch":    importRun(ch.Run),
+		"cnt":   importRun(cnt.Run),
+		"cols":  importRun(cols.Run),
+		"cpf":   importRun(cpm.Run),
+		"cpm":   importRun(cpm.Run),
+		"echo":  importRun(echo.Run),
+		"flds":  importRun(flds.Run),
+		"gf":    importRun(lf.Run),
+		"gr":    importRun(gr.Run),
+		"gg":    importRun(gr.Run),
+		"gv":    importRun(gr.Run),
+		"gx":    importRun(gr.Run),
+		"lf":    importRun(lf.Run),
+		"lns":   importRun(lns.Run),
+		"pf":    importRun(pf.Run),
+		"wf":    importRun(pf.Run),
+		"pwd":   importRun(pwd.Run),
+		"ql":    importRun(Run),
 		"sleep": importRun(sleep.Run),
-		"wr": importRun(wr.Run),
-		"frmt": importRun(frmt.Run),
+		"wr":    importRun(wr.Run),
+		"frmt":  importRun(frmt.Run),
 		"diffs": importRun(diffs.Run),
-		"jn": importRun(jn.Run),
-		"srt": importRun(srt.Run),
-		"rem": importRun(rem.Run),
-		"mvf": importRun(mvm.Run),
-		"mvm": importRun(mvm.Run),
-		"trex": importRun(trex.Run),
-		"gp": importRun(gp.Run),
-		"xp": importRun(xp.Run),
-		":": importRun(xp.Run),
-		"hist": importRun(hist.Run),
+		"jn":    importRun(jn.Run),
+		"srt":   importRun(srt.Run),
+		"rem":   importRun(rem.Run),
+		"mvf":   importRun(mvm.Run),
+		"mvm":   importRun(mvm.Run),
+		"trex":  importRun(trex.Run),
+		"gp":    importRun(gp.Run),
+		"xp":    importRun(xp.Run),
+		":":     importRun(xp.Run),
+		"hist":  importRun(hist.Run),
 		"words": importRun(words.Run),
 
 		/* todo
@@ -269,7 +269,7 @@ func runDup(x *xEnv, argv ...string) error {
 		opts.Usage()
 		return dbg.ErrUsage
 	}
-	for _,arg := range args {
+	for _, arg := range args {
 		switch arg {
 		case "ns":
 			app.DupNS()
@@ -295,7 +295,7 @@ func runNew(x *xEnv, argv ...string) error {
 		opts.Usage()
 		return dbg.ErrUsage
 	}
-	for _,arg := range args {
+	for _, arg := range args {
 		switch arg {
 		case "ns":
 			app.NewNS(nil)

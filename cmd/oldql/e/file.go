@@ -23,7 +23,7 @@ const (
 	eDel
 )
 
-type logOp  {
+type logOp struct {
 	kind  opKind
 	data  []rune
 	p0    int
@@ -31,11 +31,11 @@ type logOp  {
 	dirty bool
 }
 
-type log  {
+type log struct {
 	ops []*logOp
 }
 
-type file  {
+type file struct {
 	path           string
 	dirty          bool
 	temp           bool
@@ -46,7 +46,7 @@ type file  {
 }
 
 // Use zx to fetch files but understand "-" and stdin for get, stdout for put
-type lfs  {
+type lfs struct {
 	stdin     []rune
 	out       chan<- string
 	dontwrite bool
@@ -86,7 +86,7 @@ func (fs *lfs) Put(name string, rc <-chan []rune) error {
 	if name == "-" {
 		fs.stdin = []rune{}
 	}
-	if name=="-" || fs.dontwrite {
+	if name == "-" || fs.dontwrite {
 		for r := range rc {
 			fs.out <- string(r)
 			fs.stdin = append(fs.stdin, r...)
@@ -165,7 +165,7 @@ func (f *file) Undo() bool {
 	if e == nil {
 		return false
 	}
-	for e!=nil && e.Contd {
+	for e != nil && e.Contd {
 		e = f.t.Undo()
 	}
 	return true
@@ -176,7 +176,7 @@ func (f *file) Redo() bool {
 	if e == nil {
 		return false
 	}
-	for e!=nil && e.Contd {
+	for e != nil && e.Contd {
 		e = f.t.Undo()
 	}
 	return true
@@ -222,7 +222,7 @@ func (f *file) SetMark(p0, p1 int) {
 
 func (f *file) MenuLine() string {
 	drty := ' '
-	if f.dirty || f.path=="-" {
+	if f.dirty || f.path == "-" {
 		drty = '\''
 	}
 	foc := ' '
@@ -253,12 +253,12 @@ func (lg *log) Clear() {
 func (lg *log) Ins(data []rune, p0 int, dirty bool) {
 	if len(lg.ops) > 0 {
 		last := lg.ops[len(lg.ops)-1]
-		if last.kind==eIns && last.p0+len(last.data)==p0 {
+		if last.kind == eIns && last.p0+len(last.data) == p0 {
 			last.data = append(last.data, data...)
 			last.dirty = last.dirty || dirty
 			return
 		}
-		if last.kind==eIns && p0+len(data)==last.p0 {
+		if last.kind == eIns && p0+len(data) == last.p0 {
 			last.data = append(data, last.data...)
 			last.p0 = p0
 			last.dirty = last.dirty || dirty
@@ -272,12 +272,12 @@ func (lg *log) Ins(data []rune, p0 int, dirty bool) {
 func (lg *log) Del(p0, n int, dirty bool) {
 	if len(lg.ops) > 0 {
 		last := lg.ops[len(lg.ops)-1]
-		if last.kind==eDel && last.p0+last.n==p0 {
+		if last.kind == eDel && last.p0+last.n == p0 {
 			last.n += n
 			last.dirty = last.dirty || dirty
 			return
 		}
-		if last.kind==eDel && p0+n==last.p0 {
+		if last.kind == eDel && p0+n == last.p0 {
 			last.n += n
 			last.p0 = 0
 			last.dirty = last.dirty || dirty

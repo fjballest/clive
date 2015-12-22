@@ -123,7 +123,7 @@ func TestLocal(t *testing.T) {
 	}
 }
 
-type as  {
+type as struct {
 	addr, net, mach, svc string
 }
 
@@ -155,7 +155,7 @@ func TestParseAddr(t *testing.T) {
 	for _, a := range addrs {
 		n, m, s := ParseAddr(a.addr)
 		printf("\t\t{%q, %q, %q, %q},\n", a.addr, n, m, s)
-		if !newrun && (n!=a.net || m!=a.mach || s!=a.svc) {
+		if !newrun && (n != a.net || m != a.mach || s != a.svc) {
 			t.Fatalf("was not %v", a)
 		}
 	}
@@ -456,7 +456,7 @@ func TestCloseFifoNet(t *testing.T) {
 		cc.Out <- []byte(fmt.Sprintf("<%d>", i))
 		msg := string(<-cc.In)
 		printf("got %s back\n", msg)
-		if msg!="" && i==9 {
+		if msg != "" && i == 9 {
 			t.Fatal("got msgs")
 		}
 	}

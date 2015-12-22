@@ -7,39 +7,39 @@
 package trfs
 
 import (
-	"clive/zx"
-	"fmt"
 	"clive/dbg"
-	"sync/atomic"
 	"clive/net/auth"
+	"clive/zx"
 	"errors"
-	"strings"
-	"strconv"
+	"fmt"
 	"io"
+	"strconv"
+	"strings"
+	"sync/atomic"
 )
 
-type Flags {
-	nb int32
-	C chan string
+type Flags struct {
+	nb   int32
+	C    chan string
 	Verb bool
 }
 
 // A zx.RWTree wrapping another zx.Tree that sends
 // log messages to C to report FS activity.
-type Fs {
+type Fs struct {
 	ufs zx.Tree
-	fs zx.RWTree
+	fs  zx.RWTree
 	Tag string // set to prefix each msg with the tag.
 	*Flags
 }
 
 // A Call, parsed from a traced message
-type Call {
-	Fs string	// fs name
-	Dir string	// -> or <-
-	Tag int	// seq number
-	Op string	// op name
-	Args []string	// rest of msg
+type Call struct {
+	Fs   string   // fs name
+	Dir  string   // -> or <-
+	Tag  int      // seq number
+	Op   string   // op name
+	Args []string // rest of msg
 }
 
 // parse a message as printed
@@ -47,7 +47,7 @@ func Parse(s string) *Call {
 	c := &Call{Op: "unknown format"}
 
 	dash := strings.IndexRune(s, '-')
-	if dash < 0 || dash >= len(s)-3{
+	if dash < 0 || dash >= len(s)-3 {
 		return c
 	}
 	c.Fs = s[:dash]
@@ -87,8 +87,8 @@ func (c *Call) String() string {
 
 func New(t zx.Tree) *Fs {
 	fs := &Fs{
-		ufs: t,
-		fs: zx.RWTreeFor(t),
+		ufs:   t,
+		fs:    zx.RWTreeFor(t),
 		Flags: &Flags{},
 	}
 	return fs
@@ -109,13 +109,13 @@ func (t *Fs) Restart() {
 
 func (t *Fs) vprintf(fs string, args ...interface{}) {
 	if t.C != nil && t.Verb {
-		t.C <- t.Tag + fmt.Sprintf(fs, args...)
+		t.C <- t.Tag+fmt.Sprintf(fs, args...)
 	}
 }
 
 func (t *Fs) printf(fs string, args ...interface{}) {
 	if t.C != nil {
-		t.C <- t.Tag + fmt.Sprintf(fs, args...)
+		t.C <- t.Tag+fmt.Sprintf(fs, args...)
 	}
 }
 
@@ -152,7 +152,7 @@ func (t *Fs) Get(rid string, off, count int64, pred string) <-chan []byte {
 	n := atomic.AddInt32(&t.nb, 1)
 	t.printf("->get[%d] %s %d %d '%s'", n, rid, off, count, pred)
 	dc := make(chan []byte)
-	go func(){
+	go func() {
 		xc := t.fs.Get(rid, off, count, pred)
 		nb, nm := 0, 0
 		for d := range xc {
@@ -201,7 +201,7 @@ func (t *Fs) Put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred string)
 			close(datc, err)
 		}
 		t.printf("<-put[%d] %s sts %v", n, d, err)
-		rc <-d
+		rc <- d
 		close(rc, err)
 	}()
 	return rc
@@ -213,7 +213,7 @@ func (t *Fs) Mkdir(rid string, d zx.Dir) chan error {
 	dc := make(chan error, 1)
 	go func() {
 		xc := t.fs.Mkdir(rid, d)
-		err := <- xc
+		err := <-xc
 		t.printf("<-mkdir[%d] sts %v", n, err)
 		dc <- err
 		close(dc, cerror(xc))
@@ -227,7 +227,7 @@ func (t *Fs) Wstat(rid string, d zx.Dir) chan error {
 	dc := make(chan error, 1)
 	go func() {
 		xc := t.fs.Wstat(rid, d)
-		err := <- xc
+		err := <-xc
 		t.printf("<-wstat[%d] sts %v", n, err)
 		dc <- err
 		close(dc, cerror(xc))
@@ -241,7 +241,7 @@ func (t *Fs) Move(from, to string) chan error {
 	dc := make(chan error, 1)
 	go func() {
 		xc := t.fs.Move(from, to)
-		err := <- xc
+		err := <-xc
 		t.printf("<-move[%d] sts %v", n, err)
 		dc <- err
 		close(dc, cerror(xc))
@@ -255,7 +255,7 @@ func (t *Fs) Remove(rid string) chan error {
 	dc := make(chan error, 1)
 	go func() {
 		xc := t.fs.Remove(rid)
-		err := <- xc
+		err := <-xc
 		t.printf("<-remove[%d] sts %v", n, err)
 		dc <- err
 		close(dc, cerror(xc))
@@ -269,7 +269,7 @@ func (t *Fs) RemoveAll(rid string) chan error {
 	dc := make(chan error, 1)
 	go func() {
 		xc := t.fs.RemoveAll(rid)
-		err := <- xc
+		err := <-xc
 		t.printf("<-removeall[%d] sts %v", n, err)
 		dc <- err
 		close(dc, cerror(xc))
@@ -291,7 +291,7 @@ func (t *Fs) Fsys(name string) <-chan error {
 			close(xx, dbg.ErrBug)
 			xc = xx
 		}
-		err := <- xc
+		err := <-xc
 		t.printf("<-fsys[%d] sts %v", n, err)
 		dc <- err
 		close(dc, cerror(xc))

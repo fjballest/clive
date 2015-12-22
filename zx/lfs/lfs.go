@@ -14,6 +14,7 @@ import (
 	"clive/net/auth"
 	"clive/zx"
 	"clive/zx/pred"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
@@ -21,20 +22,19 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"crypto/sha1"
+	"strconv"
 	"strings"
 	"sync"
-	"strconv"
 	"time"
 )
 
 /*
 	A local file system implementation using the underlying OS implementation
 */
-type Lfs  {
-	name string
-	path string
-	rdonly   bool
+type Lfs struct {
+	name   string
+	path   string
+	rdonly bool
 
 	readattrs, saveattrs bool
 	ai                   *auth.Info
@@ -46,7 +46,6 @@ type Lfs  {
 	TODO: Rewrite this to require fewer operations on the underlying OS.
 	In many cases, a ZX call issues many more calls than required.
 */
-
 
 // Arguments to New.
 const (
@@ -71,23 +70,23 @@ var (
 	_w   zx.Walker   = _fs
 	_s   zx.Stater   = _fs
 	_a   zx.AuthTree = _fs
-	_d zx.Dumper = _fs
-	_D zx.Debugger = _fs
+	_d   zx.Dumper   = _fs
+	_D   zx.Debugger = _fs
 )
 
 var ctldir = zx.Dir{
-		"path": "/Ctl",
-		"spath": "/Ctl",
-		"name": "Ctl",
-		"mode": "0644",
-		"proto": "lfs",
-		"size": "0",
-		"type": "c",
-		"Uid": dbg.Usr,
-		"Gid": dbg.Usr,
-		"Wuid": dbg.Usr,
+	"path":  "/Ctl",
+	"spath": "/Ctl",
+	"name":  "Ctl",
+	"mode":  "0644",
+	"proto": "lfs",
+	"size":  "0",
+	"type":  "c",
+	"Uid":   dbg.Usr,
+	"Gid":   dbg.Usr,
+	"Wuid":  dbg.Usr,
 	//	"Sum": zx.Zsum(),
-	}
+}
 
 func (t *Lfs) String() string {
 	return t.name
@@ -128,7 +127,7 @@ func (t *Lfs) Name() string {
 
 func (t *Lfs) dprintf(fs string, args ...interface{}) {
 	if t != nil && t.Dbg {
-		fmt.Fprintf(os.Stderr, t.name+": " + fs, args...)
+		fmt.Fprintf(os.Stderr, t.name+": "+fs, args...)
 	}
 }
 
@@ -142,15 +141,15 @@ func New(name, path string, rdonly bool) (*Lfs, error) {
 		return nil, err
 	}
 	l := &Lfs{
-		name: name,
-		path: p,
-		rdonly:   rdonly,
-		Flags: &zx.Flags{},
+		name:   name,
+		path:   p,
+		rdonly: rdonly,
+		Flags:  &zx.Flags{},
 	}
 	l.Flags.Add("debug", &l.Dbg)
 	l.Flags.AddRO("rdonly", &l.rdonly)
 	l.Flags.AddRO("noperm", &l.NoPermCheck)
-	l.Flags.Add("clear", func(...string)error{
+	l.Flags.Add("clear", func(...string) error {
 		l.IOstats.Clear()
 		return nil
 	})
@@ -282,7 +281,7 @@ func (t *Lfs) Stat(rid string) chan zx.Dir {
 	if err == nil {
 		d, err = t.stat(rid)
 	}
-	if err==nil && t.ai!=nil && !t.NoPermCheck {
+	if err == nil && t.ai != nil && !t.NoPermCheck {
 		_, _, err = t.canWalkTo(rid, 0)
 	}
 	if err != nil {
@@ -316,7 +315,7 @@ func (t *Lfs) getCtl(off, count int64, dc chan<- []byte, cs *zx.CallStat) (int64
 	}
 	resp = resp[o:]
 	n := int(count)
-	if n>len(resp) || n<0 {
+	if n > len(resp) || n < 0 {
 		n = len(resp)
 	}
 	resp = resp[:n]
@@ -336,7 +335,7 @@ func (t *Lfs) get(rid string, off, count int64, dc chan<- []byte, cs *zx.CallSta
 	}
 	path := zx.Path(t.path, rid)
 	fd, err := os.Open(path)
-	if err==nil && t.ai!=nil && !t.NoPermCheck {
+	if err == nil && t.ai != nil && !t.NoPermCheck {
 		_, _, err = t.canWalkTo(rid, 0444)
 	}
 	if err != nil {
@@ -347,7 +346,7 @@ func (t *Lfs) get(rid string, off, count int64, dc chan<- []byte, cs *zx.CallSta
 	if err != nil {
 		return 0, err
 	}
-	if off!=0 && !st.IsDir() {
+	if off != 0 && !st.IsDir() {
 		if _, err := fd.Seek(off, 0); err != nil {
 			return 0, err
 		}
@@ -365,7 +364,7 @@ func (t *Lfs) get(rid string, off, count int64, dc chan<- []byte, cs *zx.CallSta
 		for i := 0; i < len(ds); {
 			if off > 0 {
 				off--
-				if !ctlsent && rid=="/" {
+				if !ctlsent && rid == "/" {
 					ctlsent = true
 				} else {
 					i++
@@ -380,7 +379,7 @@ func (t *Lfs) get(rid string, off, count int64, dc chan<- []byte, cs *zx.CallSta
 			default:
 				count--
 			}
-			if !ctlsent && rid=="/" {
+			if !ctlsent && rid == "/" {
 				ctlsent = true
 				nd++
 				d := ctldir
@@ -505,7 +504,7 @@ func (t *Lfs) Get(rid string, off, count int64, pred string) <-chan []byte {
 	return c
 }
 
-type dontflush  {
+type dontflush struct {
 	io.Writer
 }
 
@@ -521,7 +520,7 @@ func (t *Lfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred string
 	if t.rdonly {
 		return 0, 0, fmt.Errorf("%s: %s", t.name, dbg.ErrRO)
 	}
-	if rid == "/" || path.Base(rid)==afname {
+	if rid == "/" || path.Base(rid) == afname {
 		return 0, 0, fmt.Errorf("%s: %s", rid, dbg.ErrPerm)
 	}
 	prid := path.Dir(rid)
@@ -557,7 +556,7 @@ func (t *Lfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred string
 	if d == nil {
 		d = zx.Dir{}
 	}
-	if d["mode"] == "" || err == nil {	// truncate or rewrite
+	if d["mode"] == "" || err == nil { // truncate or rewrite
 		if err := t.matchDir(d, pred); err != nil {
 			return 0, 0, err
 		}
@@ -576,12 +575,12 @@ func (t *Lfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred string
 			return 0, 0, err
 		}
 	}
-	flg := os.O_RDWR	// in case we resize it
+	flg := os.O_RDWR // in case we resize it
 	whence := 0
 	if d["mode"] == "" {
 		if off < 0 {
 			off = 0
-			whence  = 2
+			whence = 2
 			flg |= os.O_APPEND
 		}
 		if !t.WstatAll || d["Wuid"] == "" {
@@ -599,7 +598,7 @@ func (t *Lfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred string
 				return 0, 0, err
 			}
 		}
-		if err != nil {		// created
+		if err != nil { // created
 			if d["Uid"] == "" {
 				d["Uid"] = u
 			}
@@ -661,7 +660,7 @@ func (t *Lfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred string
 }
 
 func (t *Lfs) putCtl(datc <-chan []byte) (int, error) {
-	if t.ai!=nil && !t.NoPermCheck {
+	if t.ai != nil && !t.NoPermCheck {
 		_, _, err := t.canWalkTo("/", 0444)
 		if err != nil {
 			return 0, err
@@ -738,11 +737,11 @@ func (t *Lfs) Mkdir(rid string, d zx.Dir) chan error {
 	}
 	gid := dbg.Usr
 	pmode := uint64(0777)
-	if err==nil && t.ai!=nil {
+	if err == nil && t.ai != nil {
 		prid := path.Dir(rid)
 		gid, pmode, err = t.canWalkTo(prid, 0222)
 	}
-	if err == nil && (rid == "/" || rid == "/Ctl" || path.Base(rid)==afname) {
+	if err == nil && (rid == "/" || rid == "/Ctl" || path.Base(rid) == afname) {
 		err = fmt.Errorf("%s: %s", rid, dbg.ErrExists)
 	}
 	ud := d.UsrAttrs()
@@ -758,7 +757,7 @@ func (t *Lfs) Mkdir(rid string, d zx.Dir) chan error {
 	}
 	if (!t.WstatAll || t.ai != nil) && !noinherit {
 		ud["type"] = "d"
-		ud.Inherit(pmode&0777)
+		ud.Inherit(pmode & 0777)
 		delete(ud, "type")
 	}
 	if ud["Uid"] == "" {
@@ -779,8 +778,8 @@ func (t *Lfs) Mkdir(rid string, d zx.Dir) chan error {
 		nd := zx.Dir{
 			"mode": ud["mode"],
 			"type": "d",
-			"Uid": u,
-			"Gid": gid,
+			"Uid":  u,
+			"Gid":  gid,
 		}
 		err = nd.CanWstat(ai, ud)
 	}
@@ -798,7 +797,7 @@ func (t *Lfs) Mkdir(rid string, d zx.Dir) chan error {
 	delete(ud, "size")
 	delete(ud, "mode")
 	delete(ud, "Sum")
-	if err==nil && len(ud)>0 {
+	if err == nil && len(ud) > 0 {
 		err = t.wstat(rid, ud)
 	}
 	cs.End(err != nil)
@@ -843,16 +842,16 @@ func (t *Lfs) Move(from, to string) chan error {
 	if err == nil && inconsistent(from, to) {
 		err = fmt.Errorf("%s: inconsistent move", from)
 	}
-	if err==nil && t.ai!=nil && !t.NoPermCheck {
+	if err == nil && t.ai != nil && !t.NoPermCheck {
 		_, _, err = t.canWalkTo(from, 0222)
 	}
-	if err==nil && t.ai!=nil && !t.NoPermCheck {
+	if err == nil && t.ai != nil && !t.NoPermCheck {
 		_, _, err = t.canWalkTo(path.Dir(to), 0222)
 	}
-	if err == nil && (from=="/Ctl" || path.Base(from)==afname) {
+	if err == nil && (from == "/Ctl" || path.Base(from) == afname) {
 		err = fmt.Errorf("%s: %s", from, dbg.ErrPerm)
 	}
-	if err == nil && (to=="/Ctl" || path.Base(to)==afname) {
+	if err == nil && (to == "/Ctl" || path.Base(to) == afname) {
 		err = fmt.Errorf("%s: %s", to, dbg.ErrPerm)
 	}
 	if err == nil && t.readattrs && !t.NoPermCheck {
@@ -908,7 +907,7 @@ func (t *Lfs) remove(rid string, all bool, cs *zx.CallStat) chan error {
 	if err == nil && t.rdonly {
 		err = fmt.Errorf("%s: %s", t.name, dbg.ErrRO)
 	}
-	if err == nil && (rid == "/" || rid == "/Ctl" || path.Base(rid)==afname) {
+	if err == nil && (rid == "/" || rid == "/Ctl" || path.Base(rid) == afname) {
 		err = fmt.Errorf("%s: %s", rid, dbg.ErrPerm)
 	}
 	if err == nil && t.ai != nil && !t.NoPermCheck {
@@ -928,7 +927,7 @@ func (t *Lfs) remove(rid string, all bool, cs *zx.CallStat) chan error {
 		// Remove, getting rid of ".#zx" files lazily if a remove
 		// of a non-empty dir fails because of that.
 		err = os.Remove(xpath)
-		if err!=nil && strings.Contains(err.Error(), "not empty") {
+		if err != nil && strings.Contains(err.Error(), "not empty") {
 			afpath := path.Join(xpath, afname)
 			os.Remove(afpath)
 			err = os.Remove(xpath)
@@ -1003,7 +1002,7 @@ func (t *Lfs) wstat(rid string, d zx.Dir) error {
 		d["type"] = "d"
 	}
 	if _, ok := d["mode"]; ok {
-		mode := d.Int("mode")&0777
+		mode := d.Int("mode") & 0777
 		nerr := os.Chmod(path, os.FileMode(mode))
 		err = orerr(err, nerr)
 	}
@@ -1043,10 +1042,10 @@ func (t *Lfs) Wstat(rid string, d zx.Dir) chan error {
 	if err == nil && !t.NoPermCheck {
 		_, _, err = t.canWalkTo(rid, 0)
 	}
-	if err == nil && (rid == "/Ctl" || path.Base(rid)==afname) {
+	if err == nil && (rid == "/Ctl" || path.Base(rid) == afname) {
 		err = fmt.Errorf("%s: %s", rid, dbg.ErrPerm)
 	}
-	if err == nil {	
+	if err == nil {
 		old, err = t.stat(rid)
 	}
 	if err == nil && !t.WstatAll {
@@ -1139,7 +1138,7 @@ func (t *Lfs) GetDir(rid string) ([]zx.Dir, error) {
 func (t *Lfs) Fsys(name string) <-chan error {
 	t.dprintf("fsys %s\n", name)
 	c := make(chan error, 1)
-	if name!="" && name!="main" {
+	if name != "" && name != "main" {
 		err := errors.New("fsys not supported for local trees")
 		t.dprintf("fsys %s: %s\n", err)
 		c <- err
@@ -1173,11 +1172,11 @@ func (t *Lfs) find(d zx.Dir, p *pred.Pred, spref, dpref string, lvl int, c chan<
 		return
 	}
 	var ds []zx.Dir
-	if t.ai!=nil && !d.CanRead(t.ai) {
+	if t.ai != nil && !d.CanRead(t.ai) {
 		err = dbg.ErrPerm
 	}
-	if err==nil && d["type"]=="d" {
-		if t.ai!=nil && !d.CanWalk(t.ai) {
+	if err == nil && d["type"] == "d" {
+		if t.ai != nil && !d.CanWalk(t.ai) {
 			err = dbg.ErrPerm
 		} else {
 			ds, err = t.GetDir(rid)
@@ -1259,7 +1258,7 @@ func (t *Lfs) FindGet(rid, fpred, spref, dpref string, depth int) <-chan zx.DirD
 		for d := range dc {
 			g := zx.DirData{Dir: d}
 			var datac chan []byte
-			if d["err"]=="" && d["type"]=="-" {
+			if d["err"] == "" && d["type"] == "-" {
 				datac = make(chan []byte)
 				g.Datac = datac
 			}
@@ -1314,7 +1313,7 @@ func (t *Lfs) dump(w io.Writer, d zx.Dir, lvl int) {
 		d["size"] = "0"
 	}
 	fmt.Fprintf(w, "%s%s\n", tabs, d.TestFmt())
-	if d["type"] != "d"  {
+	if d["type"] != "d" {
 		fi, err := os.Stat(zx.Path(t.path, d["path"]))
 		if err == nil {
 			fmt.Fprintf(w, "%s  %d bytes\n", tabs, fi.Size())

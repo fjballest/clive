@@ -4,35 +4,35 @@
 package sync
 
 import (
+	"clive/dbg"
+	"clive/nchan"
+	"clive/zx"
+	"errors"
 	"fmt"
 	"io"
-	"clive/zx"
-	"clive/nchan"
 	"os"
-	"clive/dbg"
-	"errors"
 	"sort"
 )
 
 // A DB for a fs tree
-type DB  {
-	Name   string    // of the db
-	Root   *File     // root
-	Pred string	// find predicate.
+type DB struct {
+	Name     string // of the db
+	Root     *File  // root
+	Pred     string // find predicate.
 	lastpf   *File
 	lastpdir string
 }
 
 // a File in the metadata DB
-type File  {
+type File struct {
 	D     zx.Dir  // for the file
 	Child []*File // for directories
 }
 
 var (
 	Debug, Verb bool
-	dprintf = dbg.FlagPrintf(os.Stderr, &Debug)
-	vprintf = dbg.FlagPrintf(os.Stderr, &Verb)
+	dprintf     = dbg.FlagPrintf(os.Stderr, &Debug)
+	vprintf     = dbg.FlagPrintf(os.Stderr, &Verb)
 )
 
 // predicate to exclude dot files from dbs.
@@ -71,7 +71,7 @@ func (db *DB) String() string {
 	return db.Name
 }
 
-func (f *File) files(rc chan<- *File)  error {
+func (f *File) files(rc chan<- *File) error {
 	if ok := rc <- f; !ok {
 		return cerror(rc)
 	}
@@ -82,7 +82,6 @@ func (f *File) files(rc chan<- *File)  error {
 	}
 	return nil
 }
-
 
 // Enumerate all files in db
 func (db *DB) Files() <-chan *File {
@@ -124,9 +123,9 @@ func (db *DB) Walk(elems ...string) (*File, error) {
 
 type byName []*File
 
-func (b byName) Len() int { return len(b) }
+func (b byName) Len() int           { return len(b) }
 func (b byName) Less(i, j int) bool { return b[i].D["name"] < b[j].D["name"] }
-func (b byName) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func (b byName) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 
 // add or update the entry for a  dir into db.
 func (db *DB) Add(d zx.Dir) error {
@@ -161,7 +160,7 @@ func (db *DB) Add(d zx.Dir) error {
 			return nil
 		}
 	}
-	
+
 	child = append(child, f)
 	if n := len(child); n > 1 && child[n-1].D["name"] < child[n-2].D["name"] {
 		sort.Sort(byName(child))
@@ -197,11 +196,11 @@ func (db *DB) scan(fs Finder) error {
 	if err != nil {
 		return err
 	}
-	return cerror(dc)	
+	return cerror(dc)
 }
 
 // Send the db through c.
-// The channel must preserve message boundaries and is not closed by this function. 
+// The channel must preserve message boundaries and is not closed by this function.
 // The db name is first sent and then one packed dir per file recorded in the db.
 // An empty msg is sent to signal the end of the stream of dir entries
 func (db *DB) SendTo(c chan<- []byte) error {

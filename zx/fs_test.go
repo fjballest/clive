@@ -230,7 +230,7 @@ func BenchmarkNewDir(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		NewDir(dents[id], 0)
 	}
 }
@@ -248,7 +248,7 @@ func BenchmarkDirPack(b *testing.B) {
 	ss := make([][]byte, len(dents))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		ss[id] = ds[id].Pack()
 	}
 }
@@ -267,7 +267,7 @@ func BenchmarkUnpackDir(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		_, _, err := UnpackDir(ss[id])
 		if err != nil {
 			b.Fatalf("couldn't unpack: %s", err)
@@ -288,7 +288,7 @@ func BenchmarkDirGetPath(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		ss[id] = ds[id]["path"]
 	}
 }
@@ -305,7 +305,7 @@ func BenchmarkDirSetPath(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		ds[id]["path"] = "foo"
 	}
 }
@@ -322,7 +322,7 @@ func BenchmarkDirGetTime(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		ds[id].Time("mtime")
 	}
 }
@@ -340,7 +340,7 @@ func BenchmarkDirSetTime(b *testing.B) {
 	t := time.Now()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		ds[id]["mtime"] = fmt.Sprintf("%d", t.UnixNano())
 	}
 }
@@ -357,7 +357,7 @@ func BenchmarkDirGetSize(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		ds[id].Int64("size")
 	}
 }
@@ -374,7 +374,7 @@ func BenchmarkDirSetSize(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		ds[id]["size"] = fmt.Sprintf("%d", 666)
 	}
 }
@@ -387,7 +387,7 @@ func BenchmarkStat(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		_, err := os.Stat("/usr/bin/" + dents[id].Name())
 		if err != nil {
 			b.Fatal(err)
@@ -403,7 +403,7 @@ func BenchmarkStatNewDir(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(dents)
+		id := i % len(dents)
 		fi, err := os.Stat("/usr/bin/" + dents[id].Name())
 		if err != nil {
 			b.Fatal(err)

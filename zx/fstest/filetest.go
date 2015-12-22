@@ -1,17 +1,17 @@
 package fstest
 
 import (
-	"clive/zx"
-	"strconv"
 	"clive/bufs/rwtest"
+	"clive/zx"
 	"io"
+	"strconv"
 )
 
 // Wrapper for a ZX Tree to make it look close enough to an OS file.
 type File struct {
 	path string
-	t zx.RWTree
-	off int64
+	t    zx.RWTree
+	off  int64
 }
 
 // Create a File (with operations close to OS.File) for a zx file.
@@ -58,7 +58,7 @@ func (tf *File) Read(data []byte) (int, error) {
 
 func (tf *File) Truncate(sz int64) error {
 	d := zx.Dir{"size": strconv.FormatInt(sz, 10)}
-	return <- tf.t.Wstat(tf.path, d)
+	return <-tf.t.Wstat(tf.path, d)
 }
 
 func (tf *File) WriteAt(data []byte, off int64) (int, error) {
@@ -84,5 +84,5 @@ func AsAFile(t Fataler, fss ...zx.Tree) {
 		t.Fatalf("put all: %s", err)
 	}
 	zxf := NewFakeOSFile(fs, "/testfile")
-	rwtest.AsAFile(t, zxf, 1000, 128 * 1024, 3803)
+	rwtest.AsAFile(t, zxf, 1000, 128*1024, 3803)
 }

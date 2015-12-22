@@ -3,17 +3,16 @@
 */
 package ch
 
-
 import (
 	"clive/app"
-	"clive/dbg"
 	"clive/app/opt"
+	"clive/dbg"
 	"clive/zx"
 	"strconv"
 	"strings"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 }
@@ -23,10 +22,10 @@ var units = map[uint8]uint64{
 	'B': 1,
 	'k': 1024,
 	'K': 1024,
-	'm': 1024*1024,
-	'M': 1024*1024,
-	'g': 1024*1024,
-	'G': 1024*1024*1024,
+	'm': 1024 * 1024,
+	'M': 1024 * 1024,
+	'g': 1024 * 1024,
+	'G': 1024 * 1024 * 1024,
 }
 
 func size(val string) string {
@@ -84,12 +83,12 @@ func bit(s string) uint64 {
 
 func ugoa(s string, bit uint64) uint64 {
 	b := uint64(0)
-	all := s[0]=='+' || s[0]=='-'
+	all := s[0] == '+' || s[0] == '-'
 	if strings.ContainsRune(s, 'u') || strings.ContainsRune(s, 'a') || all {
-		b |= bit<<6
+		b |= bit << 6
 	}
 	if strings.ContainsRune(s, 'g') || strings.ContainsRune(s, 'a') || all {
-		b |= bit<<3
+		b |= bit << 3
 	}
 	if strings.ContainsRune(s, 'o') || strings.ContainsRune(s, 'a') || all {
 		b |= bit
@@ -154,7 +153,7 @@ func Run() {
 		app.Exits("usage")
 	}
 	nd := chd(args...)
-	
+
 	in := app.In()
 	doselect {
 	case s := <-x.Sig:

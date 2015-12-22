@@ -4,22 +4,22 @@
 package main
 
 import (
-	"os"
-	"clive/zx/zxfs"
 	"clive/app"
 	"clive/app/opt"
+	"clive/app/ql/qlfs"
+	"clive/dbg"
 	"clive/zx"
 	"clive/zx/rfs"
-	"clive/dbg"
-	"clive/app/ql/qlfs"
+	"clive/zx/zxfs"
+	"os"
 )
 
 var (
-	sflag bool
-	opts         = opt.New("[mntdir] &")
+	sflag       bool
+	opts        = opt.New("[mntdir] &")
 	addr, xaddr string
-	mntdir       = "/n/ql"
-	dprintf      = dbg.FlagPrintf(os.Stderr, &zxfs.Debug)
+	mntdir      = "/n/ql"
+	dprintf     = dbg.FlagPrintf(os.Stderr, &zxfs.Debug)
 )
 
 func main() {

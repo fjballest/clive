@@ -54,7 +54,7 @@ type Binder interface {
 	Unmount(name string, d zx.Dir) <-chan error
 }
 
-type prefix  {
+type prefix struct {
 	ns   *Tree
 	name string
 	mnt  []zx.Dir
@@ -64,7 +64,7 @@ type prefix  {
 	A clive name space tree.
 	It implements both the binder and finder interfaces.
 */
-type Tree  {
+type Tree struct {
 	Debug     bool // enable debug diagnostics.
 	DebugFind bool // enable debug diagnostics for find requests (chatty).
 	dprintf   dbg.PrintFunc
@@ -111,7 +111,7 @@ func (ns *Tree) Entries() []zx.Dir {
 	}
 	hasroot := false
 	for _, p := range ns.pref {
-		hasroot = hasroot || p.name=="/"
+		hasroot = hasroot || p.name == "/"
 		if len(p.mnt) == 0 {
 			d := zx.Dir{"path": p.name, "mode": "0644", "type": "p"}
 			ents = append(ents, d)
@@ -141,7 +141,7 @@ func (ns *Tree) Entries() []zx.Dir {
 }
 
 func (ns *Tree) String() string {
-	if ns==nil || ns.pref==nil {
+	if ns == nil || ns.pref == nil {
 		return "/\n"
 	}
 	var buf bytes.Buffer
@@ -170,11 +170,11 @@ func (ns *Tree) Fsys(name string) <-chan error {
 // /one/path
 // the dial the tree and walk to the path.
 func specialForm(ln string) (string, zx.Dir) {
-	if len(ln)==0 || ln[0]!='/' {
+	if len(ln) == 0 || ln[0] != '/' {
 		return "", nil
 	}
 	toks := strings.Fields(ln)
-	if len(toks)!=2 || len(toks[0])==0 || len(toks[1])==0 {
+	if len(toks) != 2 || len(toks[0]) == 0 || len(toks[1]) == 0 {
 		return "", nil
 	}
 	p, addr := toks[0], toks[1]
@@ -191,7 +191,7 @@ func specialForm(ln string) (string, zx.Dir) {
 		return "", nil
 	}
 	path := "/"
-	if len(atoks)>=5 && atoks[2]!="lfs" {
+	if len(atoks) >= 5 && atoks[2] != "lfs" {
 		path = atoks[4]
 	}
 	d, err := zx.Stat(t, path)
@@ -213,7 +213,7 @@ func Parse(s string) (*Tree, error) {
 	lns := strings.SplitN(s, "\n", -1)
 	ns := New()
 	for _, ln := range lns {
-		if len(ln)==0 || ln[0]=='#' {
+		if len(ln) == 0 || ln[0] == '#' {
 			continue
 		}
 		p, d := specialForm(ln)
@@ -222,7 +222,7 @@ func Parse(s string) (*Tree, error) {
 		} else {
 			d["path"] = p
 		}
-		if len(d)==0 || d["path"]=="" {
+		if len(d) == 0 || d["path"] == "" {
 			dbg.Warn("ns: bad entry: %s", ln)
 			continue
 		}
@@ -294,7 +294,7 @@ func (ns *Tree) Mount(fname string, d zx.Dir, flag Flag) <-chan error {
 	c := make(chan error, 1)
 	go func() {
 		name, err := zx.AbsPath(fname)
-		if err==nil && d==nil {
+		if err == nil && d == nil {
 			err = errors.New("no mounted dir")
 		}
 		if err != nil {
@@ -317,7 +317,7 @@ func (ns *Tree) Mount(fname string, d zx.Dir, flag Flag) <-chan error {
 
 func (p *prefix) unmount(d zx.Dir) {
 	for i := 0; i < len(p.mnt); {
-		if d==nil || p.mnt[i].Matches(d) {
+		if d == nil || p.mnt[i].Matches(d) {
 			p.mnt = append(p.mnt[:i], p.mnt[i+1:]...)
 		} else {
 			i++
@@ -330,10 +330,10 @@ func (ns *Tree) unmount(name string, d zx.Dir) error {
 	defer ns.dprintf("%s\n", ns)
 	for i := 0; i < len(ns.pref); {
 		p := ns.pref[i]
-		if name=="" || name==p.name {
+		if name == "" || name == p.name {
 			p.unmount(d)
 		}
-		if len(p.mnt)==0 && p.name!="/" {
+		if len(p.mnt) == 0 && p.name != "/" {
 			ns.pref = append(ns.pref[:i], ns.pref[i+1:]...)
 		} else {
 			i++
@@ -391,7 +391,7 @@ func (ns *Tree) Resolve(name string) (pref string, mnts []zx.Dir, spaths []strin
 	mnts = make([]zx.Dir, 0, len(p.mnt))
 	spaths = []string{}
 	for _, d := range p.mnt {
-		if isfinder(d) || suff=="" || suff=="/" {
+		if isfinder(d) || suff == "" || suff == "/" {
 			mnts = append(mnts, d.Dup())
 			spath := zx.Path(suff, d["spath"])
 			spaths = append(spaths, spath)

@@ -1,11 +1,11 @@
 package mfs
 
 import (
-	"clive/dbg"
 	"clive/bufs"
+	"clive/dbg"
+	"clive/net/auth"
 	"clive/zx"
 	"clive/zx/fstest"
-	"clive/net/auth"
 	"os"
 	"testing"
 )
@@ -13,12 +13,12 @@ import (
 const tdir = "/tmp/mfs_test"
 
 var (
-	printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
+	printf   = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 	moreverb = false
 )
 
 func ExampleNew() {
-	// create a tree 
+	// create a tree
 	fs, err := New("example mfs")
 	if err != nil {
 		dbg.Fatal("lfs: %s", err)
@@ -26,7 +26,6 @@ func ExampleNew() {
 	dbg.Warn("fs %s ready", fs)
 	// Now use it...
 }
-
 
 func TestInitDirs(t *testing.T) {
 	fs, err := New("example mfs")
@@ -38,19 +37,19 @@ func TestInitDirs(t *testing.T) {
 		defer fs.Dump(os.Stdout)
 	}
 	for _, dn := range fstest.Dirs {
-		if err := zx.MkdirAll(fs, dn, zx.Dir{"mode":"0755"}); err != nil {
+		if err := zx.MkdirAll(fs, dn, zx.Dir{"mode": "0755"}); err != nil {
 			t.Fatalf("mkdir: %s", err)
 		}
 	}
 }
 
 func testfn(t *testing.T, fns ...func(t fstest.Fataler, fss ...zx.Tree)) {
-	bufs.Size = 1*1024
+	bufs.Size = 1 * 1024
 	mfs, err := New("example mfs")
 	if err != nil {
 		t.Fatalf("lfs: %s", err)
 	}
-	xfs, _:= mfs.AuthFor(&auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true})
+	xfs, _ := mfs.AuthFor(&auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true})
 	fs := xfs.(zx.RWTree)
 	fstest.MkZXTree(t, fs)
 	mfs.Dbg = testing.Verbose()
@@ -155,4 +154,3 @@ func TestNewPerms(t *testing.T) {
 func TestRWXPerms(t *testing.T) {
 	testfn(t, fstest.RWXPerms)
 }
-

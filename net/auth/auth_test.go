@@ -87,7 +87,7 @@ func TestBadAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	printf("err is %v\n", err)
-	if cerror(c2.In)==nil || cerror(c2.Out)==nil {
+	if cerror(c2.In) == nil || cerror(c2.Out) == nil {
 		t.Fatal("chans are ok")
 	}
 }

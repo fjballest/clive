@@ -20,14 +20,14 @@ import (
 
 type fmtfn func(w io.Writer, bs []byte) bool
 
-type fmtdef  {
+type fmtdef struct {
 	flag  bool
 	usage string
 	flagc string
 	fn    fmtfn
 }
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	debug   bool

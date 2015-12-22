@@ -23,7 +23,7 @@ import (
 // should not be used for signing or encrypting. They are supported here only for
 // parsing version 3 key material and validating signatures.
 // See RFC 4880, section 5.5.2.
-type PublicKeyV3  {
+type PublicKeyV3 struct {
 	CreationTime time.Time
 	DaysToExpire uint16
 	PubKeyAlgo   PublicKeyAlgorithm
@@ -56,7 +56,7 @@ func (pk *PublicKeyV3) parse(r io.Reader) (err error) {
 	if _, err = readFull(r, buf[:]); err != nil {
 		return
 	}
-	if buf[0]<2 || buf[0]>3 {
+	if buf[0] < 2 || buf[0] > 3 {
 		return errors.UnsupportedError("public key version")
 	}
 	pk.CreationTime = time.Unix(int64(uint32(buf[1])<<24|uint32(buf[2])<<16|uint32(buf[3])<<8|uint32(buf[4])), 0)
@@ -121,7 +121,7 @@ func (pk *PublicKeyV3) SerializeSignaturePrefix(w io.Writer) {
 		panic("unknown public key algorithm")
 	}
 	pLength += 6
-	w.Write([]byte{0x99, byte(pLength>>8), byte(pLength)})
+	w.Write([]byte{0x99, byte(pLength >> 8), byte(pLength)})
 	return
 }
 
@@ -154,12 +154,12 @@ func (pk *PublicKeyV3) serializeWithoutHeaders(w io.Writer) (err error) {
 	buf[0] = 3
 	// Creation time
 	t := uint32(pk.CreationTime.Unix())
-	buf[1] = byte(t>>24)
-	buf[2] = byte(t>>16)
-	buf[3] = byte(t>>8)
+	buf[1] = byte(t >> 24)
+	buf[2] = byte(t >> 16)
+	buf[3] = byte(t >> 8)
 	buf[4] = byte(t)
 	// Days to expire
-	buf[5] = byte(pk.DaysToExpire>>8)
+	buf[5] = byte(pk.DaysToExpire >> 8)
 	buf[6] = byte(pk.DaysToExpire)
 	// Public key algorithm
 	buf[7] = byte(pk.PubKeyAlgo)
@@ -193,7 +193,7 @@ func (pk *PublicKeyV3) VerifySignatureV3(signed hash.Hash, sig *SignatureV3) (er
 	signed.Write(suffix)
 	hashBytes := signed.Sum(nil)
 
-	if hashBytes[0]!=sig.HashTag[0] || hashBytes[1]!=sig.HashTag[1] {
+	if hashBytes[0] != sig.HashTag[0] || hashBytes[1] != sig.HashTag[1] {
 		return errors.SignatureError("hash tag doesn't match")
 	}
 

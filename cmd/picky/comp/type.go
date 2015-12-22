@@ -143,7 +143,7 @@ func newtype(op int) *Type {
 }
 
 func tderef(t *Type) *Type {
-	for t!=nil && t.op==Trange {
+	for t != nil && t.op == Trange {
 		t = t.super
 	}
 	if t == nil {
@@ -154,7 +154,7 @@ func tderef(t *Type) *Type {
 
 func (t *Type) Tis(op int) bool {
 	t = tderef(t)
-	if t.op==Tstrength || t.op==Tbutton || t.op==Topacity {
+	if t.op == Tstrength || t.op == Tbutton || t.op == Topacity {
 		t = t.super
 	}
 	return t.op == op
@@ -164,12 +164,12 @@ func tisatom(t *Type) bool {
 	if t == nil {
 		return true
 	}
-	return t.op!=Trec && t.op!=Tarry && t.op!=Tstr
+	return t.op != Trec && t.op != Tarry && t.op != Tstr
 }
 
 func tisord(t *Type) bool {
 	t = tderef(t)
-	return t.op==Tint || t.op==Tbool || t.op==Tchar || t.op==Tenum || t.op==Tstrength || t.op==Tbutton
+	return t.op == Tint || t.op == Tbool || t.op == Tchar || t.op == Tenum || t.op == Tstrength || t.op == Tbutton
 }
 
 func tiscmp(t *Type) bool {
@@ -177,8 +177,8 @@ func tiscmp(t *Type) bool {
 		return true
 	}
 	t = tderef(t)
-	res := t.op==Treal || (t.op==Tarry && tiscmp(t.elem)) || t.op==Tstr
-	return res || t.op==Trec || t.op==Tptr || t.op==Tstrength || t.op==Topacity || t.op==Tbutton
+	res := t.op == Treal || (t.op == Tarry && tiscmp(t.elem)) || t.op == Tstr
+	return res || t.op == Trec || t.op == Tptr || t.op == Tstrength || t.op == Topacity || t.op == Tbutton
 }
 
 func tfirst(t *Type) int {
@@ -218,13 +218,13 @@ func newarrytype(idx *Type, elem *Type) *Type {
 	t.first = idx.first
 	t.last = idx.last
 	sz := tlen(t.idx)
-	if sz<=0 || sz>=Maxidx {
+	if sz <= 0 || sz >= Maxidx {
 		diag("array size is too small or too large")
 		idx.last = idx.first
 		sz = 1
 	}
-	t.sz = uint(sz*int(t.elem.sz))
-	if t.sz<=0 || t.sz>=Maxidx {
+	t.sz = uint(sz * int(t.elem.sz))
+	if t.sz <= 0 || t.sz >= Maxidx {
 		diag("array size is too small or too large")
 		idx.last = idx.first
 		t.sz = t.elem.sz
@@ -270,7 +270,7 @@ func newcast(t *Type, n *Sym) *Sym {
 		dummy *Type
 	)
 
-	if t==nil || n==nil {
+	if t == nil || n == nil {
 		return badnode
 	}
 	if tcompat(t, n.ttype, &dummy) {
@@ -282,21 +282,21 @@ func newcast(t *Type, n *Sym) *Sym {
 		if evaluated(n) {
 			return newreal(n.rval, t)
 		}
-	} else if t.Tis(Treal) && n.ttype.op==Tint {
+	} else if t.Tis(Treal) && n.ttype.op == Tint {
 		if evaluated(n) {
 			return newreal(float64(n.ival), t)
 		}
-	} else if t.op==Tint && n.ttype.Tis(Treal) {
+	} else if t.op == Tint && n.ttype.Tis(Treal) {
 		if evaluated(n) {
 			return newint(int(n.rval), Oint, t)
 		}
-	} else if t.op==Tint && tisord(n.ttype) {
+	} else if t.op == Tint && tisord(n.ttype) {
 		if evaluated(n) {
 			return newint(n.ival, Oint, t)
 		}
-	} else if tisord(t) && n.ttype.op==Tint {
+	} else if tisord(t) && n.ttype.op == Tint {
 		if evaluated(n) {
-			if t.op!=Tint && (n.ival<t.first || n.ival>t.last) {
+			if t.op != Tint && (n.ival < t.first || n.ival > t.last) {
 				diag("value out of range in type cast")
 				return badnode
 			}
@@ -343,7 +343,7 @@ func newaggr(t *Type, nl *List) *Sym {
 	case Trec:
 		n = len(t.fields.item)
 	default:
-		if tisatom(t) && len(nl.item)==1 {
+		if tisatom(t) && len(nl.item) == 1 {
 			return newcast(t, nl.item[0].(*Sym))
 		}
 		diag("can't define aggregates for this type")
@@ -409,7 +409,7 @@ func newrangetype(super *Type, v0 *Sym, v1 *Sym) *Type {
 		s  *Sym
 		e  *Env
 	)
-	if rvalchk(v0)<0 || rvalchk(v1)<0 {
+	if rvalchk(v0) < 0 || rvalchk(v1) < 0 {
 		diag("range limits are not definite constants")
 		return tundef
 	}
@@ -417,15 +417,15 @@ func newrangetype(super *Type, v0 *Sym, v1 *Sym) *Type {
 		diag("empty range")
 		return tundef
 	}
-	if super!=nil && super.op==Tenum {
-		if v0.ival<tfirst(super) || v1.ival>tlast(super) {
+	if super != nil && super.op == Tenum {
+		if v0.ival < tfirst(super) || v1.ival > tlast(super) {
 			diag("range limits are off limits")
 		}
 	}
 	if !tcompat(v0.ttype, v1.ttype, &st) {
 		diag("types not compatible in range")
 	}
-	if super!=nil && !tcompat(st, super, &st) {
+	if super != nil && !tcompat(st, super, &st) {
 		diag("range value types not compatible with super type\n"+"\t%v vs. %v\n", st, super)
 	}
 	t := newtype(Trange)
@@ -530,7 +530,7 @@ func tcompat(t0 *Type, t1 *Type, tp **Type) bool {
 		u int
 		t *Type
 	)
-	if t0==tundef || t1==tundef {
+	if t0 == tundef || t1 == tundef {
 		*tp = tundef
 		return true
 	}
@@ -567,7 +567,7 @@ func tcompat(t0 *Type, t1 *Type, tp **Type) bool {
 		} else {
 			t = t0
 		}
-		if t.Tis(Tarry) && t.idx.Tis(Tint) && t.elem.Tis(Tchar) && tlen(t0)==tlen(t1) {
+		if t.Tis(Tarry) && t.idx.Tis(Tint) && t.elem.Tis(Tchar) && tlen(t0) == tlen(t1) {
 			*tp = t
 			return true
 		}
@@ -586,7 +586,7 @@ func tchkunary(n *Sym) int {
 	if n.ttype != nil {
 		return 0
 	}
-	if n.left.stype==Snone || n.left.ttype==nil {
+	if n.left.stype == Snone || n.left.ttype == nil {
 		return -1
 	}
 
@@ -649,7 +649,7 @@ func tchkbinary(n *Sym) int {
 
 	lt := n.left.ttype
 	rt := n.right.ttype
-	if n.left.stype==Snone || n.right.stype==Snone {
+	if n.left.stype == Snone || n.right.stype == Snone {
 		goto Fail
 	}
 
@@ -705,11 +705,11 @@ func tchkbinary(n *Sym) int {
 		}
 		goto Lchk
 	case ',':
-		if n.left.op!=',' && n.left.op!=Odotdot && !tisord(lt) {
+		if n.left.op != ',' && n.left.op != Odotdot && !tisord(lt) {
 			diag("case requires ordinal values")
 			goto Fail
 		}
-		if n.right.op!=',' && n.right.op!=Odotdot && !tisord(rt) {
+		if n.right.op != ',' && n.right.op != Odotdot && !tisord(rt) {
 			diag("case requires ordinal values")
 			goto Fail
 		}
@@ -744,10 +744,10 @@ Bchk:
 func tchkcall(fs *Sym, args *List) int {
 	var dummy *Type
 
-	if fs.stype==Snone || args==nil {
+	if fs.stype == Snone || args == nil {
 		return -1
 	}
-	if fs.stype!=Sproc && fs.stype!=Sfunc {
+	if fs.stype != Sproc && fs.stype != Sfunc {
 		diag("'%s' is not a %s or %s.", fs.name, topname[Tproc], topname[Tfunc])
 		return -1
 	}
@@ -755,7 +755,7 @@ func tchkcall(fs *Sym, args *List) int {
 		return -1
 	}
 
-	if fs.ttype.op!=Tproc && fs.ttype.op!=Tfunc {
+	if fs.ttype.op != Tproc && fs.ttype.op != Tfunc {
 		diag("'%s' is not a %s or %s.", fs.name, topname[Tproc], topname[Tfunc])
 		return -1
 	}
@@ -779,7 +779,7 @@ func tchkcall(fs *Sym, args *List) int {
 				parms.getsym(i).ttype, args.getsym(i).ttype)
 			return -1
 		}
-		if parms.getsym(i).op==Orefparm && !islval(args.getsym(i)) {
+		if parms.getsym(i).op == Orefparm && !islval(args.getsym(i)) {
 			diag("argument '%s' for '%s': ref requires an l-value\n",
 				parms.getsym(i).name, fs.name)
 			return -1
@@ -847,7 +847,7 @@ func declstdtypes(tl *List) {
 
 func enumname(t *Type, v int) string {
 	t = tderef(t)
-	if v<0 || v>=len(t.lits.item) {
+	if v < 0 || v >= len(t.lits.item) {
 		return "BAD"
 	}
 	return t.lits.getsym(v).name
@@ -893,7 +893,7 @@ func isset(lval *Sym, v *Sym) bool {
 	case Sunary:
 		return isset(lval.left, v)
 	case Sbinary:
-		if lval.op=='.' || lval.op=='[' {
+		if lval.op == '.' || lval.op == '[' {
 			return isset(lval.left, v)
 		}
 		return isset(lval.left, v) || isset(lval.right, v)
@@ -943,7 +943,7 @@ func setusedfcall(fcall *Sym, v *Sym) bool {
 
 func setslval(x *Stmt, v *Sym) bool {
 
-	if x==nil || v==nil {
+	if x == nil || v == nil {
 		return false
 	}
 	switch x.op {
@@ -982,7 +982,7 @@ func setslval(x *Stmt, v *Sym) bool {
 func setused(x *Stmt, v *Sym) bool {
 	var c1, c2 bool
 
-	if x==nil || v==nil {
+	if x == nil || v == nil {
 		return Nop
 	}
 	c := Nop
@@ -991,7 +991,7 @@ func setused(x *Stmt, v *Sym) bool {
 
 	case '{', ELSE:
 		if x.list != nil {
-			for i := 0; c==Nop && i<len(x.list.item); i++ {
+			for i := 0; c == Nop && i < len(x.list.item); i++ {
 				c = setused(x.list.getstmt(i), v)
 			}
 		}
@@ -1005,14 +1005,14 @@ func setused(x *Stmt, v *Sym) bool {
 		if c == Nop {
 			c2 = setused(x.elsearm, v)
 		}
-		if c1==Used || c2==Used {
+		if c1 == Used || c2 == Used {
 			c = Used
-		} else if c1==Set && c2==Set {
+		} else if c1 == Set && c2 == Set {
 			c = Set
 		}
 	case '=':
 		c = isused(x.rval, v)
-		if c==Nop && isset(x.lval, v) {
+		if c == Nop && isset(x.lval, v) {
 			c = Set
 		}
 	case FCALL:
@@ -1042,12 +1042,12 @@ func setused(x *Stmt, v *Sym) bool {
 func returnsok(x *Stmt, rt *Type) int {
 	var dummy *Type
 
-	if x==nil || rt==nil || rt==tundef {
+	if x == nil || rt == nil || rt == tundef {
 		return -1
 	}
 	switch x.op {
 	case '{', ELSE:
-		if x.list==nil || len(x.list.item)==0 {
+		if x.list == nil || len(x.list.item) == 0 {
 			return -1
 		}
 		return returnsok(x.list.getstmt(len(x.list.item)-1), rt)
@@ -1081,7 +1081,7 @@ func firstret(x *Stmt) *Stmt {
 	switch x.op {
 	case IF:
 		xt := firstret(x.thenarm)
-		if xt!=nil || x.elsearm==nil {
+		if xt != nil || x.elsearm == nil {
 			return xt
 		}
 		xt = firstret(x.elsearm)
@@ -1089,7 +1089,7 @@ func firstret(x *Stmt) *Stmt {
 	case RETURN:
 		return x
 	case '{', ELSE:
-		if x.list==nil || len(x.list.item)==0 {
+		if x.list == nil || len(x.list.item) == 0 {
 			return nil
 		}
 		for i := 0; i < len(x.list.item); i++ {
@@ -1099,7 +1099,7 @@ func firstret(x *Stmt) *Stmt {
 			}
 		}
 	default:
-		if x.list==nil || len(x.list.item)==0 {
+		if x.list == nil || len(x.list.item) == 0 {
 			return nil
 		}
 		return firstret(x.list.getstmt(0))
@@ -1111,7 +1111,7 @@ func (t *Type) fstring(ishash bool) string {
 	if t == nil {
 		return fmt.Sprintf("<nilt>")
 	}
-	if t.sym!=nil && !ishash {
+	if t.sym != nil && !ishash {
 		return fmt.Sprintf("%s", t.sym.name)
 	}
 	if t.op >= len(topname) {
@@ -1144,11 +1144,11 @@ func (t *Type) fstring(ishash bool) string {
 				}
 				s := t.fields.getsym(i).swfield
 				sv := t.fields.getsym(i).swval
-				if s!=nil && sv!=nil {
+				if s != nil && sv != nil {
 					xs += fmt.Sprintf("(%s=%s){", s.name, sv.name)
 				}
 				xs += fmt.Sprintf("%v;", t.fields.getsym(i))
-				if s!=nil && sv!=nil {
+				if s != nil && sv != nil {
 					xs += fmt.Sprintf("}")
 				}
 			}
@@ -1192,7 +1192,7 @@ func hasundefs(t *Type) bool {
 		return true
 	case Tptr:
 		if t.ref != nil {
-			if t.ref.op==Tundef || t.ref.op==Tfwd {
+			if t.ref.op == Tundef || t.ref.op == Tfwd {
 				return true
 			}
 		}
@@ -1205,7 +1205,7 @@ func Checkundefs() {
 	if Nerrors > 0 {
 		return
 	}
-	if env==nil || env.prog==nil || env.prog.prog==nil {
+	if env == nil || env.prog == nil || env.prog.prog == nil {
 		panic("checkundefs")
 	}
 	p := env.prog.prog

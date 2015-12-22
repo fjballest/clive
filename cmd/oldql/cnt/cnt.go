@@ -14,12 +14,12 @@ import (
 	"unicode"
 )
 
-type cnt  {
+type cnt struct {
 	name                       string
 	lines, words, runes, bytes int64
 }
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	lflag, wflag, rflag, bflag, nflag bool
@@ -116,7 +116,7 @@ func Run(c cmd.Ctx) (err error) {
 	if cmd.Ns == nil {
 		cmd.MkNS()
 	}
-	x.nflag = x.nflag || len(args)==0
+	x.nflag = x.nflag || len(args) == 0
 	err = cmd.RunFiles(x, args...)
 	tot := &cnt{name: "total"}
 	for i := 0; i < len(x.tots); i++ {
@@ -125,7 +125,7 @@ func Run(c cmd.Ctx) (err error) {
 		tot.runes += x.tots[i].runes
 		tot.bytes += x.tots[i].bytes
 	}
-	if len(x.tots)>1 || x.nflag {
+	if len(x.tots) > 1 || x.nflag {
 		x.report(tot)
 	}
 	return err

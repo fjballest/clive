@@ -4,14 +4,14 @@
 package srt
 
 import (
-	"clive/dbg"
 	"clive/app"
 	"clive/app/opt"
-	"time"
-	"strconv"
-	"strings"
+	"clive/dbg"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type sKind int
@@ -22,27 +22,27 @@ const (
 	sTime              // sort as a time
 )
 
-type addr  {
+type addr struct {
 	from, to int
 	kind     sKind
 	rev      bool
 	all      bool
 }
 
-type xSort  {
-	lines   []string
-	keys    [][]interface{} // field or line keys to sort
-	revs    []bool          // which addr is reverse order?
+type xSort struct {
+	lines []string
+	keys  [][]interface{} // field or line keys to sort
+	revs  []bool          // which addr is reverse order?
 }
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 	one, uniq, xflag bool
-	seps      string
-	addrs     []addr
+	seps             string
+	addrs            []addr
 	*xSort
-	kargs      []string
+	kargs []string
 }
 
 func (x *xSort) Len() int {
@@ -104,7 +104,7 @@ func (x *xCmd) parseKeys() error {
 	for _, r := range x.kargs {
 		rev := false
 		kind := sStr
-		if len(r)>0 && r[len(r)-1]=='r' {
+		if len(r) > 0 && r[len(r)-1] == 'r' {
 			rev = true
 			r = r[:len(r)-1]
 		}
@@ -163,7 +163,7 @@ func (x *xSort) initKey(k sKind, fldnb int, rev bool, all bool, one bool, seps s
 					return strings.ContainsRune(seps, r)
 				})
 			}
-			if fldnb>=1 && fldnb<=len(fields) {
+			if fldnb >= 1 && fldnb <= len(fields) {
 				fld = fields[fldnb-1]
 			} else {
 				fld = ""
@@ -221,7 +221,7 @@ func (x *xCmd) sort() error {
 
 	last := ""
 	for i, ln := range x.lines {
-		if x.uniq && i>0 && last==ln {
+		if x.uniq && i > 0 && last == ln {
 			continue
 		}
 		if err := app.Printf("%s\n", ln); err != nil {
@@ -247,7 +247,7 @@ func (x *xCmd) getFiles(in chan interface{}) error {
 		switch m := m.(type) {
 		case []byte:
 			s := string(m)
-			if len(s)>0 && s[len(s)-1]=='\n' {
+			if len(s) > 0 && s[len(s)-1] == '\n' {
 				s = s[:len(s)-1]
 			}
 			x.lines = append(x.lines, s)
@@ -283,7 +283,7 @@ func (x *xCmd) setSep() {
 
 // Run print lines in the current app context.
 func Run() {
-	x := &xCmd{Ctx: app.AppCtx(), xSort: &xSort{}, }
+	x := &xCmd{Ctx: app.AppCtx(), xSort: &xSort{}}
 	x.Flags = opt.New("{file}")
 	x.NewFlag("D", "debug", &x.Debug)
 	x.NewFlag("u", "(unique) do not print dup lines", &x.uniq)

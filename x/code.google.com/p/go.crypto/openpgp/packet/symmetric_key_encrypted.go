@@ -19,7 +19,7 @@ const maxSessionKeySizeInBytes = 64
 
 // SymmetricKeyEncrypted represents a passphrase protected session key. See RFC
 // 4880, section 5.3.
-type SymmetricKeyEncrypted  {
+type SymmetricKeyEncrypted struct {
 	CipherFunc   CipherFunction
 	Encrypted    bool
 	Key          []byte // Empty unless Encrypted is false.
@@ -54,7 +54,7 @@ func (ske *SymmetricKeyEncrypted) parse(r io.Reader) (err error) {
 	// The session key may follow. We just have to try and read to find
 	// out. If it exists then we limit it to maxSessionKeySizeInBytes.
 	n, err := readFull(r, encryptedKey)
-	if err!=nil && err!=io.ErrUnexpectedEOF {
+	if err != nil && err != io.ErrUnexpectedEOF {
 		return
 	}
 	err = nil

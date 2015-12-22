@@ -18,7 +18,7 @@ var errnoNames = map[Errno]string{
 	ENODATA: "ENODATA",
 }
 
-type getxattrError  {
+type getxattrError struct {
 	error
 }
 

@@ -28,7 +28,7 @@ func failed(w http.ResponseWriter) {
 	When TLS is disabled, or there's no key file, auth is considered ok.
 */
 func Auth(w http.ResponseWriter, r *http.Request) bool {
-	if auth.TLSserver==nil || !auth.Enabled {
+	if auth.TLSserver == nil || !auth.Enabled {
 		return true
 	}
 	clive, err := r.Cookie("clive")

@@ -1,20 +1,20 @@
 package cache
 
 import (
-	"time"
 	"clive/dbg"
 	"clive/work"
 	"clive/zx"
 	"strings"
 	"sync/atomic"
+	"time"
 )
 
 const (
 	// wait for this period of inactivity to sync
-	SyncDelay = 5*time.Second
+	SyncDelay = 5 * time.Second
 
 	// wait at most this to start syncing
-	MaxSyncDelay = 2*SyncDelay
+	MaxSyncDelay = 2 * SyncDelay
 
 	// max # of concurrent syncs
 	Nsyncers = 5
@@ -76,14 +76,14 @@ func (c *FileInfo) checkClean() {
 	}
 }
 
-var bname = map[bool] string{true: " busy", false:""}
-var dname = map[bool] string{true: " was del", false:""}
+var bname = map[bool]string{true: " busy", false: ""}
+var dname = map[bool]string{true: " was del", false: ""}
 
 func (c *FileInfo) dump(n int) {
 	tabs := strings.Repeat("    ", n)
 	c.dprintf("%s%s = %s%s%s\n", tabs, c.path, c.state, bname[c.busy], dname[c.wasdel])
 	for _, cc := range c.child {
-		cc.dump(n+1)
+		cc.dump(n + 1)
 	}
 }
 
@@ -93,7 +93,7 @@ func (ci *Info) Sync(fn func()) int {
 	var n int32
 	ci.QuiescentRun(func() {
 		var nbusy int32
-		ci.lk.Lock()		// not really needed
+		ci.lk.Lock() // not really needed
 		defer ci.lk.Unlock()
 		if *ci.Dbg {
 			ci.dprintf("pre sync:\n")
@@ -120,7 +120,7 @@ func (ci *Info) Sync(fn func()) int {
 	return int(n)
 }
 
-var iname = map[bool]string{true:" ignored", false:""}
+var iname = map[bool]string{true: " ignored", false: ""}
 
 // sync and return how many files we synced
 func (c *FileInfo) sync(p *work.Pool, ignbusy bool) (int32, int32) {
@@ -156,8 +156,8 @@ func (c *FileInfo) sync(p *work.Pool, ignbusy bool) (int32, int32) {
 		cc := c.child[i]
 		p.Call(rc, func() {
 			cn, cnbusy := cc.sync(p, ignbusy)
-			atomic.AddInt32(&n,cn)
-			atomic.AddInt32(&nbusy,cnbusy)
+			atomic.AddInt32(&n, cn)
+			atomic.AddInt32(&nbusy, cnbusy)
 		})
 	}
 	for range c.child {
@@ -235,7 +235,7 @@ func (c *FileInfo) syncDel() {
 	}
 	// There's a potential problem if a file was created remotelly
 	// since we removed a subtree locally, but it's a race anyway.
-	err := <- c.rfs.RemoveAll(c.path)
+	err := <-c.rfs.RemoveAll(c.path)
 	if err != nil && !dbg.IsNotExist(err) {
 		c.dprintf("%s: sync del: %s\n", c.path, err)
 		c.state = CUnread

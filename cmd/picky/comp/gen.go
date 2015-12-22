@@ -18,7 +18,7 @@ import (
 // - code
 //
 
-type Hdr  {
+type Hdr struct {
 	entry  *Sym
 	ntypes uint32
 	nobjs  uint32
@@ -27,12 +27,12 @@ type Hdr  {
 	ntext  uint32
 }
 
-type Ldef  {
+type Ldef struct {
 	addr uint32
 	uses *Luse
 }
 
-type Luse  {
+type Luse struct {
 	next *Luse
 	code *Code
 	np   uint32
@@ -152,7 +152,7 @@ func addpc(s *Stmt) {
 	}
 	xcode.pcstl = e
 	sn, lfn := s.FuncPos()
-	if (sfname=="" || lfn!=int(llno)) && sn==sfname {
+	if (sfname == "" || lfn != int(llno)) && sn == sfname {
 		hdr.npcs++
 	}
 	sfname = sn
@@ -182,15 +182,15 @@ func genentry(s *Sym) {
 	hdr.entry = s
 }
 
-func emithdr() {
-	oprint("#!/bin/pam\n")
+func emithdr(bpath string) {
+	oprint("#!" + bpath + "\n")
 	oprint("entry %d\n", hdr.entry.id)
 }
 
 func genconst(s *Sym) {
 	s.addr = uint(addr)
 	if s.ttype.Tis(Tstr) {
-		addr += uint32(tcchar.sz)*uint32(utf8.RuneCountInString(s.sval))
+		addr += uint32(tcchar.sz) * uint32(utf8.RuneCountInString(s.sval))
 	} else {
 		addr += uint32(s.ttype.Tsz())
 	}
@@ -230,7 +230,7 @@ func emitconst(s *Sym) {
 			fs := fmt.Sprintf(" %d %s %d\n", len(s.vals.item), CEscape(fn), ln)
 			oprint(fs)
 			emitlist := func(ss *Sym) {
-				if ss.name=="" || ss.addr==0 {
+				if ss.name == "" || ss.addr == 0 {
 					emitconst(ss)
 				} else {
 					oprint("%s %d %#x\n", ss.name, ss.ttype.id, ss.addr)
@@ -378,8 +378,8 @@ func emitr(r float32) {
 }
 
 func emitda(addr uint64) {
-	emit32(uint32(addr&0xFFFFFFFF))
-	emit32(uint32(addr>>32))
+	emit32(uint32(addr & 0xFFFFFFFF))
+	emit32(uint32(addr >> 32))
 }
 
 func genjmp(op int, l int) {
@@ -416,7 +416,7 @@ func genlval(nd *Sym) {
 		break
 	case Sconst:
 		addnode(nd)
-		if nd.op!=Ostr && nd.op!=Oaggr {
+		if nd.op != Ostr && nd.op != Oaggr {
 			es := fmt.Sprintf("genlval: const: op %d", nd.op)
 			panic(es)
 		}
@@ -614,7 +614,7 @@ func gencode(x *Stmt) {
 		genjmp(paminstr.ICjmpf, mklbl(&elbl))
 		gencode(x.stmt)
 		if x.incr != nil { // FOR */
-			if x.expr.op==Oge || x.expr.op==Ole {
+			if x.expr.op == Oge || x.expr.op == Ole {
 				saved = x.expr.op
 				x.expr.op = Oeq
 				genexpr(x.expr)
@@ -672,7 +672,7 @@ func emitcode(c *Code) {
 	addr := c.addr
 	e := c.pcs
 	for i := uint32(0); i < uint32(c.np); i++ {
-		for ; e!=nil && uint32(e.pc)<=addr+i && e.st!=nil; e = e.next {
+		for ; e != nil && uint32(e.pc) <= addr+i && e.st != nil; e = e.next {
 			oprint("# %#v\n", (*genStmt)(e.st))
 		}
 		oprint("%05x\t%v", addr+i, paminstr.Instr(c.p[i]))
@@ -681,7 +681,7 @@ func emitcode(c *Code) {
 		if paminstr.Hasarg(c.p[i]) {
 			i++
 			arg = c.p[i]
-			if paminstr.IT(ir)==paminstr.ITreal && ic!=paminstr.ICcast {
+			if paminstr.IT(ir) == paminstr.ITreal && ic != paminstr.ICcast {
 				oprint("\t%e", math.Float32frombits(arg))
 			} else {
 				oprint("\t%#010x", arg)
@@ -690,7 +690,7 @@ func emitcode(c *Code) {
 			oprint("\t")
 		}
 		first := 0
-		for ; e!=nil && uint32(e.pc)<=addr+i && e.nd!=nil; e = e.next {
+		for ; e != nil && uint32(e.pc) <= addr+i && e.nd != nil; e = e.next {
 			if e.nd != nil {
 				if first == 0 {
 					oprint("\t#")
@@ -731,7 +731,7 @@ func genproc(s *Sym) {
 
 func emitproc(s *Sym) {
 	p := s.prog
-	if p==nil || p.parms==nil || p.vars==nil {
+	if p == nil || p.parms == nil || p.vars == nil {
 		return
 	}
 	oprint("%d %s %#05x", s.id, s.name, s.addr)
@@ -746,7 +746,7 @@ func emitproc(s *Sym) {
 
 func emittext(s *Sym) {
 	p := s.prog
-	if p==nil || p.parms==nil || p.vars==nil {
+	if p == nil || p.parms == nil || p.vars == nil {
 		return
 	}
 	xcode = &p.code
@@ -764,7 +764,7 @@ func emitpcs(s *Sym) {
 			continue
 		}
 		sn, ln := st.FuncPos()
-		if sfname!="" && sn==sfname && ln==llno {
+		if sfname != "" && sn == sfname && ln == llno {
 			continue
 		}
 		sfname = sn
@@ -774,14 +774,14 @@ func emitpcs(s *Sym) {
 	}
 }
 
-func Gen(bout *bufio.Writer, nm string) {
+func Gen(bout *bufio.Writer, nm string, bpath string) {
 	Oname = nm
 	out = bout
 	s := lookup("main", Sproc)
-	if s==nil || s.prog==nil || s.stype!=Sproc {
+	if s == nil || s.prog == nil || s.stype != Sproc {
 		panic("missing declaration of procedure 'main'")
 	}
-	if s.prog.parms!=nil && len(s.prog.parms.item)>0 {
+	if s.prog.parms != nil && len(s.prog.parms.item) > 0 {
 		panic("procedure 'main' may not have parameters")
 	}
 	genentry(s)
@@ -800,7 +800,7 @@ func Gen(bout *bufio.Writer, nm string) {
 		mapl(p.procs, genproc)
 	}
 	hdr.ntext = xaddr
-	emithdr()
+	emithdr(bpath)
 	oprint("types %d\n", hdr.ntypes)
 
 	mapl(p.types, emittype)
@@ -822,7 +822,7 @@ func Gen(bout *bufio.Writer, nm string) {
 
 func (x *genStmt) GoString() string {
 	var s string
-	if false && x!=nil {
+	if false && x != nil {
 		sn, ln := (*Stmt)(x).FuncPos()
 		s += fmt.Sprintf("%s:%d", CEscape(sn), ln)
 	}

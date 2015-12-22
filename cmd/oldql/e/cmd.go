@@ -7,7 +7,7 @@ import (
 )
 
 // Addesses as used in Commands
-type Addr  {
+type Addr struct {
 	Kind        rune // # l / ? . $ + - , ;
 	Rexp        []rune
 	N           int
@@ -15,7 +15,7 @@ type Addr  {
 }
 
 // Edit command
-type Cmd  {
+type Cmd struct {
 	Ch    rune   // command char (op code)
 	Adr   *Addr  // address for the command
 	Child []*Cmd // inner commands
@@ -34,7 +34,7 @@ type CFlag int
 const (
 	// which kind of argument does a command take
 	CFnone CFlag = 0
-	CFtxt  CFlag = 1<<iota
+	CFtxt  CFlag = 1 << iota
 	CFrexp
 	CFaddr
 	CFnum
@@ -66,13 +66,13 @@ const (
 // function used to implement a sam command
 type Exec func(*Sam, *Cmd)
 
-type cTab  {
+type cTab struct {
 	flag   CFlag //
 	dflcmd rune  // default child command
 	xfn    Exec
 }
 
-type lex  {
+type lex struct {
 	c     chan rune
 	saved rune
 	atnl  bool
@@ -140,7 +140,7 @@ func DefCmd(c rune, fun Exec, flag CFlag, dflcmd rune) {
 }
 
 func (a *Addr) String() string {
-	if a==nil || a.Kind==0 {
+	if a == nil || a.Kind == 0 {
 		return "<>"
 	}
 	r := ""
@@ -148,10 +148,10 @@ func (a *Addr) String() string {
 		r = fmt.Sprintf(" '%s'", string(a.Rexp))
 	}
 	n := ""
-	if a.N!=0 || a.Kind=='l' || a.Kind=='#' {
+	if a.N != 0 || a.Kind == 'l' || a.Kind == '#' {
 		n = fmt.Sprintf(" %d", a.N)
 	}
-	if a.Left!=nil || a.Right!=nil {
+	if a.Left != nil || a.Right != nil {
 		return fmt.Sprintf("<%s <%c%s%s> %s>",
 			a.Left, a.Kind, n, r, a.Right)
 	}
@@ -210,7 +210,7 @@ func (l *lex) getc() rune {
 }
 
 func (l *lex) dropln() {
-	for c := l.peek(); !l.atnl && c!=0; c = l.getc() {
+	for c := l.peek(); !l.atnl && c != 0; c = l.getc() {
 	}
 }
 
@@ -227,7 +227,7 @@ func (l *lex) peek() rune {
 }
 
 func (l *lex) skipBlanks() {
-	for c := l.peek(); c==' ' || c=='\t'; c = l.peek() {
+	for c := l.peek(); c == ' ' || c == '\t'; c = l.peek() {
 		l.getc()
 	}
 }
@@ -300,7 +300,7 @@ func (l *lex) parseCmd(lvl int) (cmd *Cmd, err error) {
 
 func (l *lex) parseArgs(c *Cmd, ct *cTab, lvl int) {
 	//defer un(trz("parseArgs"))
-	if (ct.flag&CFaddrmask)==0 && c.Adr!=nil {
+	if (ct.flag&CFaddrmask) == 0 && c.Adr != nil {
 		panic(fmt.Sprintf("extra address given to '%c'", c.Ch))
 	}
 	if ct.flag&CFnum != 0 {
@@ -308,11 +308,11 @@ func (l *lex) parseArgs(c *Cmd, ct *cTab, lvl int) {
 	}
 	if ct.flag&CFrexp != 0 {
 		ch := l.peek()
-		if (c.Ch!='x' && c.Ch!='X') ||
-			(ch!=' ' && ch!='\t' && ch!='\n') {
+		if (c.Ch != 'x' && c.Ch != 'X') ||
+			(ch != ' ' && ch != '\t' && ch != '\n') {
 			l.skipBlanks()
 			ch = l.peek()
-			if ch=='\n' || ch==0 {
+			if ch == '\n' || ch == 0 {
 				panic(fmt.Sprintf("missing address for '%c' at '%c'", c.Ch, ch))
 			}
 			var sep rune
@@ -361,12 +361,12 @@ func (l *lex) getTok(w bool) []rune {
 	//defer un(trz("getTok"))
 	s := []rune{}
 	var c rune
-	for c = l.peek(); c==' ' || c=='\t'; c = l.peek() {
+	for c = l.peek(); c == ' ' || c == '\t'; c = l.peek() {
 		s = append(s, l.getc())
 	}
-	for c = l.peek(); c!=0 && c!='\n' &&
-		(!w || (c!=' ' && c!='\t')); c = l.peek() {
-		if w && c=='}' {
+	for c = l.peek(); c != 0 && c != '\n' &&
+		(!w || (c != ' ' && c != '\t')); c = l.peek() {
+		if w && c == '}' {
 			break
 		}
 		s = append(s, l.getc())
@@ -399,7 +399,7 @@ func (l *lex) getText() []rune {
 	l.nl()
 	atnl := true
 	for c := l.getc(); c != 0; c = l.getc() {
-		if atnl && c=='.' {
+		if atnl && c == '.' {
 			if l.peek() == '\n' {
 				l.getc()
 				break
@@ -414,7 +414,7 @@ func (l *lex) getText() []rune {
 func (l *lex) parseText(sep rune, keepbs bool) []rune {
 	//defer un(trz("parseText"))
 	s := []rune{}
-	for c := l.peek(); c!=0 && c!=sep && c!='\n'; c = l.peek() {
+	for c := l.peek(); c != 0 && c != sep && c != '\n'; c = l.peek() {
 		l.getc()
 		if c == '\\' {
 			c = l.peek()
@@ -429,7 +429,7 @@ func (l *lex) parseText(sep rune, keepbs bool) []rune {
 				s = append(s, c)
 				return s
 			default:
-				if c!='\\' || keepbs {
+				if c != '\\' || keepbs {
 					s = append(s, '\\')
 				}
 			}
@@ -448,14 +448,14 @@ func (l *lex) parseCompAddr() *Addr {
 	a.Left = l.parseAddr()
 	l.skipBlanks()
 	c := l.peek()
-	if c!=',' && c!=';' {
+	if c != ',' && c != ';' {
 		return a.Left
 	}
 	a.Kind = l.getc()
 	if a.Right = l.parseCompAddr(); a.Right == nil {
 		return a
 	}
-	if (a.Right.Kind==',' || a.Right.Kind==';') && a.Right.Left==nil {
+	if (a.Right.Kind == ',' || a.Right.Kind == ';') && a.Right.Left == nil {
 		panic("bad address")
 	}
 	return a
@@ -472,12 +472,12 @@ func (l *lex) parseNum() int {
 		l.getc()
 		c = l.peek()
 	}
-	for c>='0' && c<='9' {
+	for c >= '0' && c <= '9' {
 		n = n*10 + (int(c) - '0')
 		l.getc()
 		c = l.peek()
 	}
-	return n*s
+	return n * s
 }
 
 func (l *lex) parseRexp() ([]rune, rune) {
@@ -490,7 +490,7 @@ func (l *lex) parseRexp() ([]rune, rune) {
 			l.ungetc(c)
 			break
 		}
-		if c==sep || c==0 {
+		if c == sep || c == 0 {
 			break
 		}
 		re = append(re, c)
@@ -507,13 +507,13 @@ func (l *lex) parseAddr() *Addr {
 	case c == '#':
 		a.Kind = l.getc()
 		a.N = l.parseNum()
-	case c>='0' && c<='9':
+	case c >= '0' && c <= '9':
 		a.N = l.parseNum()
 		a.Kind = 'l'
-	case c=='/' || c=='?' || c=='"':
+	case c == '/' || c == '?' || c == '"':
 		a.Kind = l.peek()
 		a.Rexp, _ = l.parseRexp()
-	case c=='.' || c=='$' || c=='+' || c=='-' || c=='\'':
+	case c == '.' || c == '$' || c == '+' || c == '-' || c == '\'':
 		a.Kind = l.getc()
 	default:
 		return nil
@@ -529,12 +529,12 @@ func (l *lex) parseAddr() *Addr {
 	case '"':
 		panic("bad address")
 	case 'l', '#':
-		if a.Kind!='"' && a.Kind!='+' && a.Kind!='-' {
+		if a.Kind != '"' && a.Kind != '+' && a.Kind != '-' {
 			na := &Addr{Kind: '+', Left: a.Left}
 			a.Left = na
 		}
 	case '/', '?':
-		if a.Kind!='"' && a.Kind!='+' && a.Kind!='-' {
+		if a.Kind != '"' && a.Kind != '+' && a.Kind != '-' {
 			na := &Addr{Kind: '+', Left: a.Left}
 			a.Left = na
 		}

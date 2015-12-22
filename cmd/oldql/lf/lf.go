@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	rflag, aflag, vflag, lflag, dflag, pflag bool
@@ -65,22 +65,22 @@ func (x *xCmd) run(name string) error {
 		if d == nil {
 			break
 		}
-		if toks[0]!=name && zx.HasPrefix(d["path"], name) {
+		if toks[0] != name && zx.HasPrefix(d["path"], name) {
 			u := zx.Path(toks[0], zx.Suffix(d["path"], name))
 			d["path"] = u
 		}
-		if d["err"]!="" {
+		if d["err"] != "" {
 			if d["err"] != "pruned" {
 				x.Eprintf("%s: %s", d["path"], d["err"])
 				continue
 			}
 		}
 		if nilpred {
-			if i==0 && !x.dflag {
+			if i == 0 && !x.dflag {
 				i++
 				continue
 			}
-			if i>0 && x.dflag {
+			if i > 0 && x.dflag {
 				close(dc, "done")
 				return nil
 			}

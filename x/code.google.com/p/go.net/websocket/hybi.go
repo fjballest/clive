@@ -60,7 +60,7 @@ var (
 )
 
 // A hybiFrameHeader is a frame header as defined in hybi draft.
-type hybiFrameHeader  {
+type hybiFrameHeader struct {
 	Fin        bool
 	Rsv        [3]bool
 	OpCode     byte
@@ -71,7 +71,7 @@ type hybiFrameHeader  {
 }
 
 // A hybiFrameReader is a reader for hybi frame.
-type hybiFrameReader  {
+type hybiFrameReader struct {
 	reader io.Reader
 
 	header hybiFrameHeader
@@ -110,7 +110,7 @@ func (frame *hybiFrameReader) TrailerReader() io.Reader { return nil }
 func (frame *hybiFrameReader) Len() (n int) { return frame.length }
 
 // A hybiFrameReaderFactory creates new frame reader based on its frame type.
-type hybiFrameReaderFactory  {
+type hybiFrameReaderFactory struct {
 	*bufio.Reader
 }
 
@@ -128,12 +128,12 @@ func (buf hybiFrameReaderFactory) NewFrameReader() (frame frameReader, err error
 		return
 	}
 	header = append(header, b)
-	hybiFrame.header.Fin = ((header[0]>>7)&1) != 0
+	hybiFrame.header.Fin = ((header[0] >> 7) & 1) != 0
 	for i := 0; i < 3; i++ {
 		j := uint(6 - i)
-		hybiFrame.header.Rsv[i] = ((header[0]>>j)&1) != 0
+		hybiFrame.header.Rsv[i] = ((header[0] >> j) & 1) != 0
 	}
-	hybiFrame.header.OpCode = header[0]&0x0f
+	hybiFrame.header.OpCode = header[0] & 0x0f
 
 	// Second byte. Mask/Payload len(7bits)
 	b, err = buf.ReadByte()
@@ -141,7 +141,7 @@ func (buf hybiFrameReaderFactory) NewFrameReader() (frame frameReader, err error
 		return
 	}
 	header = append(header, b)
-	mask := (b&0x80) != 0
+	mask := (b & 0x80) != 0
 	b &= 0x7f
 	lengthFields := 0
 	switch {
@@ -178,7 +178,7 @@ func (buf hybiFrameReaderFactory) NewFrameReader() (frame frameReader, err error
 }
 
 // A HybiFrameWriter is a writer for hybi frame.
-type hybiFrameWriter  {
+type hybiFrameWriter struct {
 	writer *bufio.Writer
 
 	header *hybiFrameHeader
@@ -193,7 +193,7 @@ func (frame *hybiFrameWriter) Write(msg []byte) (n int, err error) {
 	for i := 0; i < 3; i++ {
 		if frame.header.Rsv[i] {
 			j := uint(6 - i)
-			b |= 1<<j
+			b |= 1 << j
 		}
 	}
 	b |= frame.header.OpCode
@@ -217,8 +217,8 @@ func (frame *hybiFrameWriter) Write(msg []byte) (n int, err error) {
 	}
 	header = append(header, b)
 	for i := 0; i < lengthFields; i++ {
-		j := uint((lengthFields - i - 1)*8)
-		b = byte((length>>j)&0xff)
+		j := uint((lengthFields - i - 1) * 8)
+		b = byte((length >> j) & 0xff)
 		header = append(header, b)
 	}
 	if frame.header.MaskingKey != nil {
@@ -243,7 +243,7 @@ func (frame *hybiFrameWriter) Write(msg []byte) (n int, err error) {
 
 func (frame *hybiFrameWriter) Close() error { return nil }
 
-type hybiFrameWriterFactory  {
+type hybiFrameWriterFactory struct {
 	*bufio.Writer
 	needMaskingKey bool
 }
@@ -259,7 +259,7 @@ func (buf hybiFrameWriterFactory) NewFrameWriter(payloadType byte) (frame frameW
 	return &hybiFrameWriter{writer: buf.Writer, header: frameHeader}, nil
 }
 
-type hybiFrameHandler  {
+type hybiFrameHandler struct {
 	conn        *Conn
 	payloadType byte
 }
@@ -291,7 +291,7 @@ func (handler *hybiFrameHandler) HandleFrame(frame frameReader) (r frameReader, 
 	case PingFrame:
 		pingMsg := make([]byte, maxControlFramePayloadLength)
 		n, err := io.ReadFull(frame, pingMsg)
-		if err!=nil && err!=io.ErrUnexpectedEOF {
+		if err != nil && err != io.ErrUnexpectedEOF {
 			return nil, err
 		}
 		io.Copy(ioutil.Discard, frame)
@@ -425,8 +425,8 @@ func hybiClientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) (er
 	if resp.StatusCode != 101 {
 		return ErrBadStatus
 	}
-	if strings.ToLower(resp.Header.Get("Upgrade"))!="websocket" ||
-		strings.ToLower(resp.Header.Get("Connection"))!="upgrade" {
+	if strings.ToLower(resp.Header.Get("Upgrade")) != "websocket" ||
+		strings.ToLower(resp.Header.Get("Connection")) != "upgrade" {
 		return ErrBadUpgrade
 	}
 	expectedAccept, err := getNonceAccept(nonce)
@@ -463,7 +463,7 @@ func newHybiClientConn(config *Config, buf *bufio.ReadWriter, rwc io.ReadWriteCl
 }
 
 // A HybiServerHandshaker performs a server handshake using hybi draft protocol.
-type hybiServerHandshaker  {
+type hybiServerHandshaker struct {
 	*Config
 	accept []byte
 }
@@ -475,7 +475,7 @@ func (c *hybiServerHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Reques
 	}
 	// HTTP version can be safely ignored.
 
-	if strings.ToLower(req.Header.Get("Upgrade"))!="websocket" ||
+	if strings.ToLower(req.Header.Get("Upgrade")) != "websocket" ||
 		!strings.Contains(strings.ToLower(req.Header.Get("Connection")), "upgrade") {
 		return http.StatusBadRequest, ErrNotWebSocket
 	}

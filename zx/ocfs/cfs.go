@@ -79,32 +79,32 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
-	"os"
 )
 
 // changes made
-type chg  {
+type chg struct {
 	d  zx.Dir         // what changed (dup of zd.d)
 	ci *zx.ClientInfo // who changed it
 }
 
 // request to get changes
-type getchgreq  {
+type getchgreq struct {
 	getc chan chg       // where to post them
 	ci   *zx.ClientInfo // who issued the get changes request
 }
 
 // Debug fields that can be set by the user.
-type CfsDebug  {
+type CfsDebug struct {
 	IOstats *zx.IOstats // set to &zx.IOstats{} to account
 
 	// calls made to cfs
-	Debug bool       // requested ops and general debug
+	Debug  bool // requested ops and general debug
 	Zdebug bool // operations performed on the remote tree
 	// cache operations
 	Cdebug bool
@@ -121,7 +121,7 @@ type CfsDebug  {
 
 	Those files with no recorded uid/gid/muid have dbg.Usr set for them.
 */
-type Cfs  {
+type Cfs struct {
 	Tag  string
 	fs   zx.Tree
 	root *Dir
@@ -155,10 +155,10 @@ var (
 	// poll the underlying tree for changes, and this is the
 	// polling interval.
 	// Each interval, we stat the entire tree.
-	CachePollIval = 5*time.Minute
+	CachePollIval = 5 * time.Minute
 
 	// Timeout in cache before refreshing meta-data
-	CacheMetaTout = 5*time.Minute
+	CacheMetaTout = 5 * time.Minute
 )
 
 var (
@@ -239,7 +239,7 @@ func New(tag string, fs zx.Tree, rdonly bool) (*Cfs, error) {
 	z.zprintf = mkDprintf("    >"+z.Tag, &z.Zdebug)
 	z.cprintf = mkDprintf("    "+z.Tag, &z.Cdebug)
 	z.root.z = z
-	z.root.mode = uint(d.Uint64("mode")&0777)
+	z.root.mode = uint(d.Uint64("mode") & 0777)
 	z.root.refreshMeta()
 	go z.chgProc()
 	go z.pollProc()
@@ -257,7 +257,7 @@ func New(tag string, fs zx.Tree, rdonly bool) (*Cfs, error) {
 
 // Implement the rfs LogInOutTree interface.
 func (z *Cfs) LogIn(who string) {
-	if z==nil || z.who==nil {
+	if z == nil || z.who == nil {
 		return
 	}
 	z.wholk.Lock()
@@ -267,7 +267,7 @@ func (z *Cfs) LogIn(who string) {
 
 // Implement the rfs LogInOutTree interface.
 func (z *Cfs) LogOut(who string) {
-	if z==nil || z.who==nil {
+	if z == nil || z.who == nil {
 		return
 	}
 	z.wholk.Lock()
@@ -387,7 +387,7 @@ func (z *Cfs) setUids(zd *Dir) {
 			uid, gid = els[1], els[1]
 		}
 	}
-	if p := zd.parent; p!=nil && (uid=="" || gid=="") {
+	if p := zd.parent; p != nil && (uid == "" || gid == "") {
 		uid, gid = p.d["Uid"], p.d["Gid"]
 	}
 	if uid == "" {
@@ -486,7 +486,7 @@ func (z *Cfs) get(path string, off, count int64, c chan []byte, cs *zx.CallStat,
 		zd.RUnlock()
 		return 0, 0, err
 	}
-	if err==nil && !zd.canRead(z.ai) {
+	if err == nil && !zd.canRead(z.ai) {
 		err = dbg.ErrPerm
 	}
 	if err == nil {
@@ -618,7 +618,7 @@ func (z *Cfs) FindGet(path, fpred, spref, dpref string, depth int) <-chan zx.Dir
 		for d := range dc {
 			g := zx.DirData{Dir: d}
 			var datac chan []byte
-			if d["err"]=="" && d["type"]=="-" {
+			if d["err"] == "" && d["type"] == "-" {
 				datac = make(chan []byte)
 				g.Datac = datac
 			}
@@ -661,21 +661,21 @@ func (z *Cfs) create(fpath string, d zx.Dir, fpred string) (*Dir, error) {
 		return nil, dbg.ErrPerm
 	}
 	d["Uid"] = d["Wuid"]
-	if m := d.Int64("mode"); m!=0 && pzd.mode!=0 {
+	if m := d.Int64("mode"); m != 0 && pzd.mode != 0 {
 		pmode := int64(pzd.mode)
 		m &= pmode
-		if pmode&020!=0 && m&0200!=0 {
+		if pmode&020 != 0 && m&0200 != 0 {
 			m |= 020
 		}
-		if pmode&010!=0 && m&0100!=0 {
+		if pmode&010 != 0 && m&0100 != 0 {
 			m |= 010
 		}
-		if pmode&040!=0 && m&0400!=0 {
+		if pmode&040 != 0 && m&0400 != 0 {
 			m |= 040
 		}
 		d["mode"] = "0" + strconv.FormatInt(m, 8)
 	}
-	if pg := pzd.d["Gid"]; pg!="" && d["Gid"]=="" {
+	if pg := pzd.d["Gid"]; pg != "" && d["Gid"] == "" {
 		d["Gid"] = pg
 	}
 	zd, ok := pzd.child[elem]
@@ -726,7 +726,7 @@ func (z *Cfs) create(fpath string, d zx.Dir, fpred string) (*Dir, error) {
 
 func noRootPath(path string) (string, error) {
 	p, err := zx.AbsPath(path)
-	if err==nil && p=="/" {
+	if err == nil && p == "/" {
 		return p, errors.New("won't do on /")
 	}
 	return p, err
@@ -761,10 +761,10 @@ func (z *Cfs) Put(fpath string, d zx.Dir, off int64, datc <-chan []byte, pred st
 		var sz int64
 		var nm int
 		var zd *Dir
-		if d["Uid"]!="" && !z.ai.InGroup("sys") {
+		if d["Uid"] != "" && !z.ai.InGroup("sys") {
 			delete(d, "Uid")
 		}
-		if d["Gid"]!="" && !z.ai.InGroup("sys") && !z.ai.InGroup(d["Gid"]) {
+		if d["Gid"] != "" && !z.ai.InGroup("sys") && !z.ai.InGroup(d["Gid"]) {
 			delete(d, "Gid")
 		}
 		d = z.setwuid(d)
@@ -774,7 +774,7 @@ func (z *Cfs) Put(fpath string, d zx.Dir, off int64, datc <-chan []byte, pred st
 			zd, err = z.create(fpath, d, pred)
 		} else {
 			zd, err = z.walk(fpath)
-			if err==nil && !zd.canWrite(z.ai) {
+			if err == nil && !zd.canWrite(z.ai) {
 				err = dbg.ErrPerm
 			}
 			if err == nil {
@@ -820,7 +820,7 @@ func (z *Cfs) mkdir(fpath string, d zx.Dir) error {
 		return err
 	}
 	wfs, ok := z.fs.(zx.RWTree)
-	if !ok || fpath=="/Ctl" || z.ronly {
+	if !ok || fpath == "/Ctl" || z.ronly {
 		return dbg.ErrRO
 	}
 	ppath, elem := path.Dir(fpath), path.Base(fpath)
@@ -836,16 +836,16 @@ func (z *Cfs) mkdir(fpath string, d zx.Dir) error {
 	if err := zd.updData(false); err != nil {
 		return err
 	}
-	if !zd.canWrite(z.ai) || d==nil || d["mode"]=="" {
+	if !zd.canWrite(z.ai) || d == nil || d["mode"] == "" {
 		return dbg.ErrPerm
 	}
-	if d["Uid"]!="" && !z.ai.InGroup("sys") {
+	if d["Uid"] != "" && !z.ai.InGroup("sys") {
 		delete(d, "Uid")
 	}
-	if d["Gid"]!="" && !z.ai.InGroup("sys") && !z.ai.InGroup(d["Gid"]) {
+	if d["Gid"] != "" && !z.ai.InGroup("sys") && !z.ai.InGroup(d["Gid"]) {
 		delete(d, "Gid")
 	}
-	if pg := zd.d["Gid"]; pg!="" && d["Gid"]=="" {
+	if pg := zd.d["Gid"]; pg != "" && d["Gid"] == "" {
 		d["Gid"] = pg
 	}
 	if z.ai != nil {
@@ -916,7 +916,7 @@ func (z *Cfs) move(from, to string) error {
 		return err
 	}
 	wfs, ok := z.fs.(zx.RWTree)
-	if !ok || from=="/Ctl" || to=="/Ctl" || z.ronly {
+	if !ok || from == "/Ctl" || to == "/Ctl" || z.ronly {
 		return dbg.ErrRO
 	}
 	pfrom, err := z.walk(from)
@@ -927,7 +927,7 @@ func (z *Cfs) move(from, to string) error {
 		return fmt.Errorf("%s: %s", from, dbg.ErrPerm)
 	}
 	pto, err := z.walk(to)
-	if err==nil && !pto.canWrite(z.ai) {
+	if err == nil && !pto.canWrite(z.ai) {
 		return fmt.Errorf("%s: %s", to, dbg.ErrPerm)
 	}
 
@@ -992,7 +992,7 @@ func (z *Cfs) remove(fpath string, all bool) error {
 		return err
 	}
 	wfs, ok := z.fs.(zx.RWTree)
-	if !ok || fpath=="/Ctl" || z.ronly {
+	if !ok || fpath == "/Ctl" || z.ronly {
 		return dbg.ErrRO
 	}
 	zd, err := z.walk(fpath)
@@ -1110,7 +1110,7 @@ func (z *Cfs) wstat(path string, d zx.Dir) error {
 				}
 			}
 		}
-		zd.mode = uint(zd.d.Uint64("mode")&0777)
+		zd.mode = uint(zd.d.Uint64("mode") & 0777)
 		zd.refreshMeta()
 		z.changed(zd)
 	} else {

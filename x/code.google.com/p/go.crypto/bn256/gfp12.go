@@ -14,7 +14,7 @@ import (
 
 // gfP12 implements the field of size p¹² as a quadratic extension of gfP6
 // where ω²=τ.
-type gfP12  {
+type gfP12 struct {
 	x, y *gfP6 // value is xω + y
 }
 

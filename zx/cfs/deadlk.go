@@ -1,23 +1,23 @@
 package cfs
 
 import (
-	"sync"
+	"clive/dbg"
 	"fmt"
 	"runtime"
-	"clive/dbg"
+	"sync"
 )
 
-type lockTrz {
-	rid string	// set to "" when unlocked
-	pc uintptr	
+type lockTrz struct {
+	rid  string // set to "" when unlocked
+	pc   uintptr
 	file string
 	line int
 }
 
 // Used to trace missing unlocks
-type lockTrzs {
+type lockTrzs struct {
 	sync.Mutex
-	locks map[int64] []lockTrz
+	locks map[int64][]lockTrz
 }
 
 func (lk lockTrz) String() string {
@@ -30,7 +30,7 @@ func (t *lockTrzs) Locking(rid string, skip int) {
 	}
 	id := runtime.GoId()
 	lk := lockTrz{rid: rid}
-	lk.pc, lk.file, lk.line, _ = runtime.Caller(skip+1)
+	lk.pc, lk.file, lk.line, _ = runtime.Caller(skip + 1)
 	t.Lock()
 	if t.locks == nil {
 		t.locks = make(map[int64][]lockTrz)
@@ -54,7 +54,7 @@ func (t *lockTrzs) Unlocking(rid string) {
 	n := len(locks)
 	for i := 0; i < n; i++ {
 		if locks[i].rid == rid {
-			if i < n - 1 {
+			if i < n-1 {
 				locks[i] = locks[n-1]
 			}
 			locks = locks[:n-1]

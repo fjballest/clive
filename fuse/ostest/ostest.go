@@ -5,18 +5,18 @@
 package ostest
 
 import (
-	"clive/dbg"
+	"bytes"
 	"clive/bufs/rwtest"
+	"clive/dbg"
+	"clive/zx"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
+	"strings"
 	"testing"
 	"time"
-	"errors"
-	"sort"
-	"clive/zx"
-	"bytes"
-	"strings"
 )
 
 /*
@@ -66,16 +66,16 @@ var (
 //	- Create /a/n /a/n/m /a/n/m/m1
 func MkChgs(t Fataler, tdir string) {
 	Touch(tdir + "/a/a1")
-	if err := os.Chmod(tdir + "/a/a2", 0750); err != nil {
+	if err := os.Chmod(tdir+"/a/a2", 0750); err != nil {
 		t.Fatalf("chmod: %s", err)
 	}
 	if err := os.RemoveAll(tdir + "/a/b/c"); err != nil {
 		t.Fatalf("rm: %s", err)
 	}
-	if err := os.MkdirAll(tdir + "/a/n/m", 0750); err != nil {
+	if err := os.MkdirAll(tdir+"/a/n/m", 0750); err != nil {
 		t.Fatalf("mkdir: %s", err)
 	}
-	if err := ioutil.WriteFile(tdir + "/a/n/m/m1", []byte("a new file\n"), 0640); err != nil {
+	if err := ioutil.WriteFile(tdir+"/a/n/m/m1", []byte("a new file\n"), 0640); err != nil {
 		t.Fatalf("new file: %s", err)
 	}
 	Touch(tdir + "/a/n/m/m1")
@@ -92,7 +92,7 @@ func MkChgs2(t Fataler, tdir string) {
 	if err := os.Remove(tdir + "/2"); err != nil {
 		t.Fatalf("rm: %s", err)
 	}
-	if err := os.MkdirAll(tdir + "/2/n2", 0750); err != nil {
+	if err := os.MkdirAll(tdir+"/2/n2", 0750); err != nil {
 		t.Fatalf("mkdir: %s", err)
 	}
 	Touch(tdir + "/2/n2")
@@ -155,7 +155,7 @@ func RmTree(t Fataler, tdir string) {
 
 // arg to Diff
 const (
-	WithMtime = true
+	WithMtime    = true
 	WithoutMtime = false
 )
 
@@ -256,7 +256,7 @@ func diff(rc chan<- string, fn string, mtime bool, dirs ...string) {
 		}
 		c0 := Children(p0)
 		c1 := Children(pi)
-		if len(c0) ==0 && len(c1) == 0 {
+		if len(c0) == 0 && len(c1) == 0 {
 			continue
 		}
 		for _, c := range c0 {
@@ -297,11 +297,11 @@ func AsAFile(t Fataler, dirs ...string) {
 			t.Fatalf("create: %s: %s", d, err)
 		}
 		fds := []rwtest.Object{fd, fd1, fd2}
-		rwtest.AsAConcFile(t, fds, 1000, 128 * 1024, 3803)
+		rwtest.AsAConcFile(t, fds, 1000, 128*1024, 3803)
 	}
 }
 
-type StatTest  {
+type StatTest struct {
 	Path  string
 	Res   string
 	Fails bool
@@ -355,7 +355,7 @@ var (
 	GetDOuts  = map[string]string{
 		"/": `1 2 a d e`,
 	}
-	BadPaths  = []string{"zz", "/a/b/c/c5"}
+	BadPaths = []string{"zz", "/a/b/c/c5"}
 )
 
 func Gets(t Fataler, dirs ...string) {
@@ -396,20 +396,20 @@ func Gets(t Fataler, dirs ...string) {
 	}
 }
 
-type PutTest  {
+type PutTest struct {
 	Path  string
 	Mode  string
 	Fails bool
 }
 
 var PutTests = []PutTest{
-		PutTest{Path: "/n1"},
-		PutTest{Path: "/n1"},
-		PutTest{Path: "/a/n2"},
-		PutTest{Path: "/", Fails: true},
-		PutTest{Path: "/a", Fails: true},
-		PutTest{Path: "/a/b/c/d/e/f", Fails: true},
-	}
+	PutTest{Path: "/n1"},
+	PutTest{Path: "/n1"},
+	PutTest{Path: "/a/n2"},
+	PutTest{Path: "/", Fails: true},
+	PutTest{Path: "/a", Fails: true},
+	PutTest{Path: "/a/b/c/d/e/f", Fails: true},
+}
 
 func Puts(t Fataler, dirs ...string) {
 	if len(dirs) == 0 {
@@ -531,40 +531,40 @@ func Removes(t Fataler, dirs ...string) {
 	}
 }
 
-type WstatTest {
-	Path string
-	Mode os.FileMode
+type WstatTest struct {
+	Path  string
+	Mode  os.FileMode
 	Mtime int64
 	Fails bool
 }
 
-var WstatTests = []WstatTest {
+var WstatTests = []WstatTest{
 	WstatTest{
-		Path: "/d",
-		Mode: 0700,
+		Path:  "/d",
+		Mode:  0700,
 		Mtime: 5,
 	},
 	WstatTest{
-		Path: "/e/f",
-		Mode: 0704,
+		Path:  "/e/f",
+		Mode:  0704,
 		Mtime: 500,
 	},
 	WstatTest{
-		Path: "/e",
-		Mode: 0704,
+		Path:  "/e",
+		Mode:  0704,
 		Mtime: 500,
 	},
 	WstatTest{
-		Path: "/a/a2",
-		Mode: 0704,
+		Path:  "/a/a2",
+		Mode:  0704,
 		Mtime: 500,
 	},
 	WstatTest{
-		Path: "/xxx",
+		Path:  "/xxx",
 		Fails: true,
 	},
 	WstatTest{
-		Path: "/a/xxx",
+		Path:  "/a/xxx",
 		Fails: true,
 	},
 }

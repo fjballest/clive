@@ -30,7 +30,7 @@ func (sel eSel) chrAddr(n int, d eDir) eSel {
 		sel.P0 -= n
 		sel.P1 -= n
 	}
-	if sel.P0<0 || sel.P1>sel.F.Len() {
+	if sel.P0 < 0 || sel.P1 > sel.F.Len() {
 		panic("address out of range")
 	}
 	return sel
@@ -53,14 +53,14 @@ func (sel eSel) lnAddr(n int, d eDir) eSel {
 		sel.P1 = 0
 	} else {
 		/* go to end of last line in dot, right after \n */
-		for sel.P1>0 && sel.P1<sel.F.Len() &&
-			sel.F.Getc(sel.P1-1)!='\n' {
+		for sel.P1 > 0 && sel.P1 < sel.F.Len() &&
+			sel.F.Getc(sel.P1-1) != '\n' {
 			sel.P1++
 		}
 		sel.P0 = sel.P1
 	}
 	/* move after the \n, n lines fwd (current counts as 1)  */
-	for i := 1; i<n && sel.P1<sel.F.Len(); sel.P1++ {
+	for i := 1; i < n && sel.P1 < sel.F.Len(); sel.P1++ {
 		if sel.F.Getc(sel.P1) == '\n' {
 			sel.P0 = sel.P1 + 1
 			i++
@@ -71,7 +71,7 @@ func (sel eSel) lnAddr(n int, d eDir) eSel {
 		return sel
 	}
 	/* now advance P1 to the end of that line, unless n was 0 */
-	for sel.P1<sel.F.Len() && sel.F.Getc(sel.P1)!='\n' {
+	for sel.P1 < sel.F.Len() && sel.F.Getc(sel.P1) != '\n' {
 		sel.P1++
 	}
 	/* and include the \n */
@@ -83,7 +83,7 @@ func (sel eSel) lnAddr(n int, d eDir) eSel {
 
 func (sel eSel) backLine(n int) eSel {
 	/* go to start of first line in dot, right after \n */
-	for sel.P0>0 && sel.F.Getc(sel.P0-1)!='\n' {
+	for sel.P0 > 0 && sel.F.Getc(sel.P0-1) != '\n' {
 		sel.P0--
 	}
 	sel.P1 = sel.P0
@@ -92,7 +92,7 @@ func (sel eSel) backLine(n int) eSel {
 		sel.P0--
 	}
 	/* now go back n lines, including this one, right before the \n */
-	for i := 0; i<n && sel.P0>0; sel.P0-- {
+	for i := 0; i < n && sel.P0 > 0; sel.P0-- {
 		if sel.F.Getc(sel.P0-1) == '\n' {
 			i++
 			if i < n {
@@ -117,7 +117,7 @@ func (s eSel) matchFwd(re []rune) []sre.Range {
 		panic(err)
 	}
 	rg := prg.Exec(s.F, s.P1, s.F.Len())
-	if len(rg)==0 && s.P1>=s.F.Len() {
+	if len(rg) == 0 && s.P1 >= s.F.Len() {
 		rg = prg.Exec(s.F, s.P0, s.F.Len())
 	}
 	return rg
@@ -129,7 +129,7 @@ func (s eSel) matchBck(re []rune) []sre.Range {
 		panic(err)
 	}
 	rg := prg.Exec(s.F, s.P0, s.F.Len())
-	if len(rg)==0 && s.P0==0 {
+	if len(rg) == 0 && s.P0 == 0 {
 		rg = prg.Exec(s.F, s.F.Len(), s.F.Len())
 	}
 	return rg
@@ -182,14 +182,14 @@ func (sel eSel) backRefs(txt []rune, rg []sre.Range) []rune {
 	sel.P0, sel.P1 = rg[0].P0, rg[0].P1
 	repl := make([]rune, 0, len(txt))
 	for i := 0; i < len(txt); i++ {
-		if txt[i]=='\\' && i<len(txt)-1 && txt[i+1]=='\\' {
+		if txt[i] == '\\' && i < len(txt)-1 && txt[i+1] == '\\' {
 			repl = append(repl, txt[i:i+2]...)
 			i++
-		} else if txt[i]=='\\' && i<len(txt)-1 &&
-			txt[i+1]>='0' && txt[i+1]<='9' {
+		} else if txt[i] == '\\' && i < len(txt)-1 &&
+			txt[i+1] >= '0' && txt[i+1] <= '9' {
 			i++
 			n := int(txt[i] - '0')
-			if n>=0 && n<len(rg) {
+			if n >= 0 && n < len(rg) {
 				msel := sel
 				msel.P0, msel.P1 = rg[n].P0, rg[n].P1
 				match := msel.Get()

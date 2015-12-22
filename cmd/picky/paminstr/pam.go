@@ -355,11 +355,11 @@ func Hasarg(ir uint32) bool {
 }
 
 func IC(c uint32) uint32 {
-	return c&0x3f
+	return c & 0x3f
 }
 
 func IT(c uint32) uint32 {
-	return c&ITmask
+	return c & ITmask
 }
 
 type Instr uint32

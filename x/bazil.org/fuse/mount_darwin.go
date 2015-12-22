@@ -38,7 +38,7 @@ func openOSXFUSEDev() (*os.File, error) {
 			return nil, errNoAvail
 		}
 
-		if err2, ok := err.(*os.PathError); ok && err2.Err==syscall.EBUSY {
+		if err2, ok := err.(*os.PathError); ok && err2.Err == syscall.EBUSY {
 			// try the next one
 			continue
 		}

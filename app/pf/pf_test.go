@@ -1,24 +1,24 @@
 package pf
 
 import (
-	"testing"
-	"clive/app/lf"
 	"clive/app"
+	"clive/app/lf"
 	"clive/dbg"
-	"os"
 	"clive/zx"
+	"os"
 	"strings"
+	"testing"
 )
 
 var (
-	debug bool
+	debug   bool
 	dprintf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 )
 
-type test  {
+type test struct {
 	largs []string
-	args []string
-	out []string
+	args  []string
+	out   []string
 	fails bool
 }
 
@@ -26,30 +26,30 @@ var (
 	tests = []test{
 		test{
 			largs: []string{"lf", "-g", "app/lf,"},
-			args: []string{"pf", "-d"},
+			args:  []string{"pf", "-d"},
 		},
 		test{
 			largs: []string{"lf", "-g", "app/lf"},
-			args: []string{"pf", "-dp"},
+			args:  []string{"pf", "-dp"},
 		},
 		test{
 			largs: []string{"lf", "-g", "app/lf,0", "app/lf/lf.go"},
-			args: []string{"pf", "-dl"},
+			args:  []string{"pf", "-dl"},
 		},
 		test{
 			largs: []string{"lf", "-g", "app/lf,type=-"},
-			args: []string{"pf", "-da"},
+			args:  []string{"pf", "-da"},
 		},
 		test{
 			largs: []string{"lf", "-g", "app/lf,0", "fds", "app/lf/lf.go"},
-			args: []string{"pf", "-l"},
+			args:  []string{"pf", "-l"},
 			fails: true,
 		},
 	}
 )
 
 func TestPf(t *testing.T) {
-	app.New()	// prevent app.Fatal from calling dbg.Fatal
+	app.New() // prevent app.Fatal from calling dbg.Fatal
 	//app.Debug = testing.Verbose()
 	for i := range tests {
 		lt := tests[i]
@@ -103,7 +103,7 @@ func TestPf(t *testing.T) {
 				t.Fatalf("unexpected type %T", x)
 			}
 		}
-		if nbytes >0 {
+		if nbytes > 0 {
 			outs = append(outs, "[]")
 		}
 		err := cerror(out)

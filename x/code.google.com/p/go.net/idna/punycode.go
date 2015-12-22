@@ -57,7 +57,7 @@ func decode(encoded string) (string, error) {
 				return "", fmt.Errorf("idna: invalid label %q", encoded)
 			}
 			pos++
-			i += digit*w
+			i += digit * w
 			if i < 0 {
 				return "", fmt.Errorf("idna: invalid label %q", encoded)
 			}
@@ -76,10 +76,10 @@ func decode(encoded string) (string, error) {
 			}
 		}
 		x := int32(len(output) + 1)
-		bias = adapt(i-oldI, x, oldI==0)
-		n += i/x
+		bias = adapt(i-oldI, x, oldI == 0)
+		n += i / x
 		i %= x
-		if n>utf8.MaxRune || len(output)>=1024 {
+		if n > utf8.MaxRune || len(output) >= 1024 {
 			return "", fmt.Errorf("idna: invalid label %q", encoded)
 		}
 		output = append(output, 0)
@@ -115,11 +115,11 @@ func encode(prefix, s string) (string, error) {
 	for remaining != 0 {
 		m := int32(0x7fffffff)
 		for _, r := range s {
-			if m>r && r>=n {
+			if m > r && r >= n {
 				m = r
 			}
 		}
-		delta += (m - n)*(h + 1)
+		delta += (m - n) * (h + 1)
 		if delta < 0 {
 			return "", fmt.Errorf("idna: invalid label %q", s)
 		}
@@ -147,10 +147,10 @@ func encode(prefix, s string) (string, error) {
 					break
 				}
 				output = append(output, encodeDigit(t+(q-t)%(base-t)))
-				q = (q - t)/(base - t)
+				q = (q - t) / (base - t)
 			}
 			output = append(output, encodeDigit(q))
-			bias = adapt(delta, h+1, h==b)
+			bias = adapt(delta, h+1, h == b)
 			delta = 0
 			h++
 			remaining--
@@ -163,11 +163,11 @@ func encode(prefix, s string) (string, error) {
 
 func decodeDigit(x byte) (digit int32, ok bool) {
 	switch {
-	case '0'<=x && x<='9':
+	case '0' <= x && x <= '9':
 		return int32(x - ('0' - 26)), true
-	case 'A'<=x && x<='Z':
+	case 'A' <= x && x <= 'Z':
 		return int32(x - 'A'), true
-	case 'a'<=x && x<='z':
+	case 'a' <= x && x <= 'z':
 		return int32(x - 'a'), true
 	}
 	return 0, false
@@ -175,9 +175,9 @@ func decodeDigit(x byte) (digit int32, ok bool) {
 
 func encodeDigit(digit int32) byte {
 	switch {
-	case 0<=digit && digit<26:
+	case 0 <= digit && digit < 26:
 		return byte(digit + 'a')
-	case 26<=digit && digit<36:
+	case 26 <= digit && digit < 36:
 		return byte(digit + ('0' - 26))
 	}
 	panic("idna: internal error in punycode encoding")
@@ -190,7 +190,7 @@ func adapt(delta, numPoints int32, firstTime bool) int32 {
 	} else {
 		delta /= 2
 	}
-	delta += delta/numPoints
+	delta += delta / numPoints
 	k := int32(0)
 	for delta > ((base-tmin)*tmax)/2 {
 		delta /= base - tmin

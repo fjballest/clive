@@ -274,10 +274,10 @@ func Sum(out *[16]byte, m []byte, key *[32]byte) {
 	r3low := math.Float64frombits(uint64(d3))
 
 	r1high := r1low + alpha50
-	sr1low := scale*r1low
+	sr1low := scale * r1low
 
 	r2high := r2low + alpha82
-	sr2low := scale*r2low
+	sr2low := scale * r2low
 
 	r0high -= alpha18
 	r0high_stack := r0high
@@ -292,7 +292,7 @@ func Sum(out *[16]byte, m []byte, key *[32]byte) {
 	r0low -= r0high
 
 	r2high -= alpha82
-	sr3low = scale*r3low
+	sr3low = scale * r3low
 
 	sr2high := sr2low + alpham48
 
@@ -561,114 +561,114 @@ multiplyaddatleast16bytes:
 	r0low = r0low_stack
 
 	x5 = h5 - y5
-	r3lowx0 = r3low*x0
+	r3lowx0 = r3low * x0
 	r3high = r3high_stack
 
 	x4 = h4 - y4
-	r0lowx6 = r0low*x6
+	r0lowx6 = r0low * x6
 	r0high = r0high_stack
 
 	x3 = h3 - y3
-	r3highx0 = r3high*x0
+	r3highx0 = r3high * x0
 	sr1low = sr1low_stack
 
 	x2 = h2 - y2
-	r0highx6 = r0high*x6
+	r0highx6 = r0high * x6
 	sr1high = sr1high_stack
 
 	x5 += y3
-	r0lowx0 = r0low*x0
+	r0lowx0 = r0low * x0
 	r1low = r1low_stack
 
 	h6 = r3lowx0 + r0lowx6
-	sr1lowx6 = sr1low*x6
+	sr1lowx6 = sr1low * x6
 	r1high = r1high_stack
 
 	x4 += y2
-	r0highx0 = r0high*x0
+	r0highx0 = r0high * x0
 	sr2low = sr2low_stack
 
 	h7 = r3highx0 + r0highx6
-	sr1highx6 = sr1high*x6
+	sr1highx6 = sr1high * x6
 	sr2high = sr2high_stack
 
 	x3 += y1
-	r1lowx0 = r1low*x0
+	r1lowx0 = r1low * x0
 	r2low = r2low_stack
 
 	h0 = r0lowx0 + sr1lowx6
-	sr2lowx6 = sr2low*x6
+	sr2lowx6 = sr2low * x6
 	r2high = r2high_stack
 
 	x2 += y0
-	r1highx0 = r1high*x0
+	r1highx0 = r1high * x0
 	sr3low = sr3low_stack
 
 	h1 = r0highx0 + sr1highx6
-	sr2highx6 = sr2high*x6
+	sr2highx6 = sr2high * x6
 	sr3high = sr3high_stack
 
 	x4 += x5
-	r2lowx0 = r2low*x0
+	r2lowx0 = r2low * x0
 	z2 = math.Float64frombits(uint64(d2))
 
 	h2 = r1lowx0 + sr2lowx6
-	sr3lowx6 = sr3low*x6
+	sr3lowx6 = sr3low * x6
 
 	x2 += x3
-	r2highx0 = r2high*x0
+	r2highx0 = r2high * x0
 	z3 = math.Float64frombits(uint64(d3))
 
 	h3 = r1highx0 + sr2highx6
-	sr3highx6 = sr3high*x6
+	sr3highx6 = sr3high * x6
 
-	r1highx4 = r1high*x4
+	r1highx4 = r1high * x4
 	z2 -= alpha64
 
 	h4 = r2lowx0 + sr3lowx6
-	r1lowx4 = r1low*x4
+	r1lowx4 = r1low * x4
 
-	r0highx4 = r0high*x4
+	r0highx4 = r0high * x4
 	z3 -= alpha96
 
 	h5 = r2highx0 + sr3highx6
-	r0lowx4 = r0low*x4
+	r0lowx4 = r0low * x4
 
 	h7 += r1highx4
-	sr3highx4 = sr3high*x4
+	sr3highx4 = sr3high * x4
 
 	h6 += r1lowx4
-	sr3lowx4 = sr3low*x4
+	sr3lowx4 = sr3low * x4
 
 	h5 += r0highx4
-	sr2highx4 = sr2high*x4
+	sr2highx4 = sr2high * x4
 
 	h4 += r0lowx4
-	sr2lowx4 = sr2low*x4
+	sr2lowx4 = sr2low * x4
 
 	h3 += sr3highx4
-	r0lowx2 = r0low*x2
+	r0lowx2 = r0low * x2
 
 	h2 += sr3lowx4
-	r0highx2 = r0high*x2
+	r0highx2 = r0high * x2
 
 	h1 += sr2highx4
-	r1lowx2 = r1low*x2
+	r1lowx2 = r1low * x2
 
 	h0 += sr2lowx4
-	r1highx2 = r1high*x2
+	r1highx2 = r1high * x2
 
 	h2 += r0lowx2
-	r2lowx2 = r2low*x2
+	r2lowx2 = r2low * x2
 
 	h3 += r0highx2
-	r2highx2 = r2high*x2
+	r2highx2 = r2high * x2
 
 	h4 += r1lowx2
-	sr3lowx2 = sr3low*x2
+	sr3lowx2 = sr3low * x2
 
 	h5 += r1highx2
-	sr3highx2 = sr3high*x2
+	sr3highx2 = sr3high * x2
 
 	p += 16
 	l -= 16
@@ -757,110 +757,110 @@ multiplyaddatmost15bytes:
 	r0low = r0low_stack
 
 	x5 = h5 - y5
-	r3lowx0 = r3low*x0
+	r3lowx0 = r3low * x0
 	r3high = r3high_stack
 
 	x4 = h4 - y4
-	r0lowx6 = r0low*x6
+	r0lowx6 = r0low * x6
 	r0high = r0high_stack
 
 	x3 = h3 - y3
-	r3highx0 = r3high*x0
+	r3highx0 = r3high * x0
 	sr1low = sr1low_stack
 
 	x2 = h2 - y2
-	r0highx6 = r0high*x6
+	r0highx6 = r0high * x6
 	sr1high = sr1high_stack
 
 	x5 += y3
-	r0lowx0 = r0low*x0
+	r0lowx0 = r0low * x0
 	r1low = r1low_stack
 
 	h6 = r3lowx0 + r0lowx6
-	sr1lowx6 = sr1low*x6
+	sr1lowx6 = sr1low * x6
 	r1high = r1high_stack
 
 	x4 += y2
-	r0highx0 = r0high*x0
+	r0highx0 = r0high * x0
 	sr2low = sr2low_stack
 
 	h7 = r3highx0 + r0highx6
-	sr1highx6 = sr1high*x6
+	sr1highx6 = sr1high * x6
 	sr2high = sr2high_stack
 
 	x3 += y1
-	r1lowx0 = r1low*x0
+	r1lowx0 = r1low * x0
 	r2low = r2low_stack
 
 	h0 = r0lowx0 + sr1lowx6
-	sr2lowx6 = sr2low*x6
+	sr2lowx6 = sr2low * x6
 	r2high = r2high_stack
 
 	x2 += y0
-	r1highx0 = r1high*x0
+	r1highx0 = r1high * x0
 	sr3low = sr3low_stack
 
 	h1 = r0highx0 + sr1highx6
-	sr2highx6 = sr2high*x6
+	sr2highx6 = sr2high * x6
 	sr3high = sr3high_stack
 
 	x4 += x5
-	r2lowx0 = r2low*x0
+	r2lowx0 = r2low * x0
 
 	h2 = r1lowx0 + sr2lowx6
-	sr3lowx6 = sr3low*x6
+	sr3lowx6 = sr3low * x6
 
 	x2 += x3
-	r2highx0 = r2high*x0
+	r2highx0 = r2high * x0
 
 	h3 = r1highx0 + sr2highx6
-	sr3highx6 = sr3high*x6
+	sr3highx6 = sr3high * x6
 
-	r1highx4 = r1high*x4
+	r1highx4 = r1high * x4
 
 	h4 = r2lowx0 + sr3lowx6
-	r1lowx4 = r1low*x4
+	r1lowx4 = r1low * x4
 
-	r0highx4 = r0high*x4
+	r0highx4 = r0high * x4
 
 	h5 = r2highx0 + sr3highx6
-	r0lowx4 = r0low*x4
+	r0lowx4 = r0low * x4
 
 	h7 += r1highx4
-	sr3highx4 = sr3high*x4
+	sr3highx4 = sr3high * x4
 
 	h6 += r1lowx4
-	sr3lowx4 = sr3low*x4
+	sr3lowx4 = sr3low * x4
 
 	h5 += r0highx4
-	sr2highx4 = sr2high*x4
+	sr2highx4 = sr2high * x4
 
 	h4 += r0lowx4
-	sr2lowx4 = sr2low*x4
+	sr2lowx4 = sr2low * x4
 
 	h3 += sr3highx4
-	r0lowx2 = r0low*x2
+	r0lowx2 = r0low * x2
 
 	h2 += sr3lowx4
-	r0highx2 = r0high*x2
+	r0highx2 = r0high * x2
 
 	h1 += sr2highx4
-	r1lowx2 = r1low*x2
+	r1lowx2 = r1low * x2
 
 	h0 += sr2lowx4
-	r1highx2 = r1high*x2
+	r1highx2 = r1high * x2
 
 	h2 += r0lowx2
-	r2lowx2 = r2low*x2
+	r2lowx2 = r2low * x2
 
 	h3 += r0highx2
-	r2highx2 = r2high*x2
+	r2highx2 = r2high * x2
 
 	h4 += r1lowx2
-	sr3lowx2 = sr3low*x2
+	sr3lowx2 = sr3low * x2
 
 	h5 += r1highx2
-	sr3highx2 = sr3high*x2
+	sr3highx2 = sr3high * x2
 
 	h6 += r2lowx2
 
@@ -1157,110 +1157,110 @@ addatmost15bytes:
 	r0low = r0low_stack
 
 	x5 = h5 - y5
-	r3lowx0 = r3low*x0
+	r3lowx0 = r3low * x0
 	r3high = r3high_stack
 
 	x4 = h4 - y4
-	r0lowx6 = r0low*x6
+	r0lowx6 = r0low * x6
 	r0high = r0high_stack
 
 	x3 = h3 - y3
-	r3highx0 = r3high*x0
+	r3highx0 = r3high * x0
 	sr1low = sr1low_stack
 
 	x2 = h2 - y2
-	r0highx6 = r0high*x6
+	r0highx6 = r0high * x6
 	sr1high = sr1high_stack
 
 	x5 += y3
-	r0lowx0 = r0low*x0
+	r0lowx0 = r0low * x0
 	r1low = r1low_stack
 
 	h6 = r3lowx0 + r0lowx6
-	sr1lowx6 = sr1low*x6
+	sr1lowx6 = sr1low * x6
 	r1high = r1high_stack
 
 	x4 += y2
-	r0highx0 = r0high*x0
+	r0highx0 = r0high * x0
 	sr2low = sr2low_stack
 
 	h7 = r3highx0 + r0highx6
-	sr1highx6 = sr1high*x6
+	sr1highx6 = sr1high * x6
 	sr2high = sr2high_stack
 
 	x3 += y1
-	r1lowx0 = r1low*x0
+	r1lowx0 = r1low * x0
 	r2low = r2low_stack
 
 	h0 = r0lowx0 + sr1lowx6
-	sr2lowx6 = sr2low*x6
+	sr2lowx6 = sr2low * x6
 	r2high = r2high_stack
 
 	x2 += y0
-	r1highx0 = r1high*x0
+	r1highx0 = r1high * x0
 	sr3low = sr3low_stack
 
 	h1 = r0highx0 + sr1highx6
-	sr2highx6 = sr2high*x6
+	sr2highx6 = sr2high * x6
 	sr3high = sr3high_stack
 
 	x4 += x5
-	r2lowx0 = r2low*x0
+	r2lowx0 = r2low * x0
 
 	h2 = r1lowx0 + sr2lowx6
-	sr3lowx6 = sr3low*x6
+	sr3lowx6 = sr3low * x6
 
 	x2 += x3
-	r2highx0 = r2high*x0
+	r2highx0 = r2high * x0
 
 	h3 = r1highx0 + sr2highx6
-	sr3highx6 = sr3high*x6
+	sr3highx6 = sr3high * x6
 
-	r1highx4 = r1high*x4
+	r1highx4 = r1high * x4
 
 	h4 = r2lowx0 + sr3lowx6
-	r1lowx4 = r1low*x4
+	r1lowx4 = r1low * x4
 
-	r0highx4 = r0high*x4
+	r0highx4 = r0high * x4
 
 	h5 = r2highx0 + sr3highx6
-	r0lowx4 = r0low*x4
+	r0lowx4 = r0low * x4
 
 	h7 += r1highx4
-	sr3highx4 = sr3high*x4
+	sr3highx4 = sr3high * x4
 
 	h6 += r1lowx4
-	sr3lowx4 = sr3low*x4
+	sr3lowx4 = sr3low * x4
 
 	h5 += r0highx4
-	sr2highx4 = sr2high*x4
+	sr2highx4 = sr2high * x4
 
 	h4 += r0lowx4
-	sr2lowx4 = sr2low*x4
+	sr2lowx4 = sr2low * x4
 
 	h3 += sr3highx4
-	r0lowx2 = r0low*x2
+	r0lowx2 = r0low * x2
 
 	h2 += sr3lowx4
-	r0highx2 = r0high*x2
+	r0highx2 = r0high * x2
 
 	h1 += sr2highx4
-	r1lowx2 = r1low*x2
+	r1lowx2 = r1low * x2
 
 	h0 += sr2lowx4
-	r1highx2 = r1high*x2
+	r1highx2 = r1high * x2
 
 	h2 += r0lowx2
-	r2lowx2 = r2low*x2
+	r2lowx2 = r2low * x2
 
 	h3 += r0highx2
-	r2highx2 = r2high*x2
+	r2highx2 = r2high * x2
 
 	h4 += r1lowx2
-	sr3lowx2 = sr3low*x2
+	sr3lowx2 = sr3low * x2
 
 	h5 += r1highx2
-	sr3highx2 = sr3high*x2
+	sr3highx2 = sr3high * x2
 
 	h6 += r2lowx2
 
@@ -1368,7 +1368,7 @@ nomorebytes:
 	bits32 >>= 32
 
 	f3 = uint64(d3)
-	f = f0>>32
+	f = f0 >> 32
 
 	f0 &= bits32
 	f &= 255
@@ -1376,19 +1376,19 @@ nomorebytes:
 	f1 += f
 	g0 = f0 + 5
 
-	g = g0>>32
+	g = g0 >> 32
 	g0 &= bits32
 
-	f = f1>>32
+	f = f1 >> 32
 	f1 &= bits32
 
 	f &= 255
 	g1 = f1 + g
 
-	g = g1>>32
+	g = g1 >> 32
 	f2 += f
 
-	f = f2>>32
+	f = f2 >> 32
 	g1 &= bits32
 
 	f2 &= bits32
@@ -1397,16 +1397,16 @@ nomorebytes:
 	f3 += f
 	g2 = f2 + g
 
-	g = g2>>32
+	g = g2 >> 32
 	g2 &= bits32
 
-	f4 = f3>>32
+	f4 = f3 >> 32
 	f3 &= bits32
 
 	f4 &= 255
 	g3 = f3 + g
 
-	g = g3>>32
+	g = g3 >> 32
 	g3 &= bits32
 
 	g4 = f4 + g
@@ -1414,7 +1414,7 @@ nomorebytes:
 	g4 = g4 - 4
 	s00 = uint32(s[0])
 
-	f = uint64(int64(g4)>>63)
+	f = uint64(int64(g4) >> 63)
 	s01 = uint32(s[1])
 
 	f0 &= f

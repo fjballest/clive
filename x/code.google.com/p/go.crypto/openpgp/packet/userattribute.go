@@ -18,7 +18,7 @@ const UserAttrImageSubpacket = 1
 // beyond name, email and a text comment. In practice, user attributes are typically used
 // to store a signed thumbnail photo JPEG image of the user.
 // See RFC 4880, section 5.12.
-type UserAttribute  {
+type UserAttribute struct {
 	Contents []*OpaqueSubpacket
 }
 
@@ -83,7 +83,7 @@ func (uat *UserAttribute) Serialize(w io.Writer) (err error) {
 // the user attribute packet.
 func (uat *UserAttribute) ImageData() (imageData [][]byte) {
 	for _, sp := range uat.Contents {
-		if sp.SubType==UserAttrImageSubpacket && len(sp.Contents)>16 {
+		if sp.SubType == UserAttrImageSubpacket && len(sp.Contents) > 16 {
 			imageData = append(imageData, sp.Contents[16:])
 		}
 	}

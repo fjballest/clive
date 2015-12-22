@@ -4,23 +4,23 @@
 package flds
 
 import (
-	"clive/dbg"
+	"bytes"
 	"clive/app"
 	"clive/app/opt"
-	"bytes"
-	"strings"
+	"clive/dbg"
 	"fmt"
+	"strings"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
-	ranges  []string
-	one     bool
-	seps    string
-	osep    string
-	addrs   []opt.Range
-	all     bool
+	ranges []string
+	one    bool
+	seps   string
+	osep   string
+	addrs  []opt.Range
+	all    bool
 }
 
 func (x *xCmd) parseRanges() error {
@@ -29,7 +29,7 @@ func (x *xCmd) parseRanges() error {
 		if err != nil {
 			return err
 		}
-		if a.P0==1 && a.P1==-1 {
+		if a.P0 == 1 && a.P1 == -1 {
 			x.all = true
 		}
 		x.addrs = append(x.addrs, a)
@@ -65,7 +65,7 @@ func (x *xCmd) flds(in, out chan interface{}) {
 			continue
 		}
 		s := string(dat)
-		if len(s)>0 && s[len(s)-1]=='\n' {
+		if len(s) > 0 && s[len(s)-1] == '\n' {
 			s = s[:len(s)-1]
 		}
 		var fields []string

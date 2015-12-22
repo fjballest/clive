@@ -3,21 +3,21 @@
 
 	One is used as a cache of the other.
 	The cache is write-behind.
-	No cached content is ever evicted. 
+	No cached content is ever evicted.
 	It is wise not to use cfs to cache a dump file tree.
 */
 package cfs
 
 import (
-	"clive/zx"
 	"clive/dbg"
-	"clive/zx/cfs/cache"
 	"clive/net/auth"
-	"sync"
-	"time"
+	"clive/zx"
+	"clive/zx/cfs/cache"
+	"errors"
 	"fmt"
 	"os"
-	"errors"
+	"sync"
+	"time"
 )
 
 // Arguments to New
@@ -31,21 +31,21 @@ const (
 // to the files.
 
 // Users
-type cUsers {
+type cUsers struct {
 	who map[string]time.Time
 	sync.Mutex
 }
 
 // A caching file system. Uses one tree to cache another.
-type Cfs {
-	Tag  string
-	lfs, rfs, cfs zx.RWTree	// cfs is lfs with no ai, to wstat uids from rfs
+type Cfs struct {
+	Tag           string
+	lfs, rfs, cfs zx.RWTree // cfs is lfs with no ai, to wstat uids from rfs
 
 	*zx.Flags
 
 	rdonly, noinvalproto bool
-	ai *auth.Info
-	ci *zx.ClientInfo
+	ai                   *auth.Info
+	ci                   *zx.ClientInfo
 	*cUsers
 	tpath string
 
@@ -66,14 +66,14 @@ type Cfs {
 
 var (
 	// Timeout in cache before refreshing
-	CacheTout = 5*time.Second
+	CacheTout = 5 * time.Second
 
 	// polling interval when we don't have /Chg in the cached fs.
 	// i.e., to detect external changes made to the server not going through cfs
 	PollIval = time.Minute
 
 	// Timeout while posting invalidations to clients
-	IvalTout = 2*time.Second
+	IvalTout = 2 * time.Second
 
 	// default debug values for new trees
 	Debug bool
@@ -121,7 +121,7 @@ func (fs *Cfs) Sync() {
 
 func chkok(fs zx.Tree, attr string) error {
 	d, err := zx.Stat(fs, "/")
-	if err != nil  {
+	if err != nil {
 		return fmt.Errorf("%s: %s", fs.Name(), err)
 	}
 	rwfs, ok := fs.(zx.RWTree)
@@ -132,7 +132,7 @@ func chkok(fs zx.Tree, attr string) error {
 		return err
 	}
 	d, err = zx.Stat(fs, "/")
-	if err != nil  {
+	if err != nil {
 		return fmt.Errorf("%s: %s", fs.Name(), err)
 	}
 	if d[attr] != "666" {
@@ -166,19 +166,19 @@ func New(tag string, lfs zx.RWTree, rfs zx.Tree, rdonly bool) (*Cfs, error) {
 	if tag == "" {
 		tag = "cfs!" + rfs.Name()
 	}
-	fs := &Cfs {
-		Tag: tag,
-		lfs: lfs,
-		cfs: lfs,		// but will keep its ai as nil to wstat uids
-		rfs: rwrfs,
-		rdonly: rdonly,
+	fs := &Cfs{
+		Tag:          tag,
+		lfs:          lfs,
+		cfs:          lfs, // but will keep its ai as nil to wstat uids
+		rfs:          rwrfs,
+		rdonly:       rdonly,
 		noinvalproto: NoInvalProto,
-		Flags: &zx.Flags{Dbg: Debug},
-		cUsers: &cUsers {
+		Flags:        &zx.Flags{Dbg: Debug},
+		cUsers: &cUsers{
 			who: make(map[string]time.Time),
 		},
-		cache: cache.New(),
-		closedc: make(chan bool),
+		cache:     cache.New(),
+		closedc:   make(chan bool),
 		polldonec: make(chan bool),
 	}
 	if DebugLocks {
@@ -212,7 +212,7 @@ func New(tag string, lfs zx.RWTree, rfs zx.Tree, rdonly bool) (*Cfs, error) {
 	}
 	fs.Flags.AddRO("rdonly", &fs.rdonly)
 	fs.Flags.AddRO("noperm", &fs.NoPermCheck)
-	fs.Flags.Add("clear", func(...string)error{
+	fs.Flags.Add("clear", func(...string) error {
 		fs.IOstats.Clear()
 		return nil
 	})
@@ -221,7 +221,7 @@ func New(tag string, lfs zx.RWTree, rfs zx.Tree, rdonly bool) (*Cfs, error) {
 
 func (fs *Cfs) dprintf(fstr string, args ...interface{}) {
 	if fs != nil && fs.Flags.Dbg {
-		fmt.Fprintf(os.Stderr, fs.Tag+": " + fstr, args...)
+		fmt.Fprintf(os.Stderr, fs.Tag+": "+fstr, args...)
 	}
 }
 
@@ -315,4 +315,3 @@ func (fs *Cfs) ServerFor(ci *zx.ClientInfo) (zx.Tree, error) {
 	}
 	return ncfs, nil
 }
-

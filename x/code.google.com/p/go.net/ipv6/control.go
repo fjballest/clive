@@ -33,7 +33,7 @@ var (
 // all protocol implementations prohibit using a combination of RFC
 // 2292 and RFC 3542 for some practical reasons.
 
-type rawOpt  {
+type rawOpt struct {
 	sync.Mutex
 	cflags ControlFlags
 }
@@ -47,17 +47,17 @@ func (c *rawOpt) isset(f ControlFlags) bool { return c.cflags&f != 0 }
 type ControlFlags uint
 
 const (
-	FlagTrafficClass ControlFlags = 1<<iota // pass the traffic class on the received packet
-	FlagHopLimit                            // pass the hop limit on the received packet
-	FlagSrc                                 // pass the source address on the received packet
-	FlagDst                                 // pass the destination address on the received packet
-	FlagInterface                           // pass the interface index on the received packet
-	FlagPathMTU                             // pass the path MTU on the received packet path
+	FlagTrafficClass ControlFlags = 1 << iota // pass the traffic class on the received packet
+	FlagHopLimit                              // pass the hop limit on the received packet
+	FlagSrc                                   // pass the source address on the received packet
+	FlagDst                                   // pass the destination address on the received packet
+	FlagInterface                             // pass the interface index on the received packet
+	FlagPathMTU                               // pass the path MTU on the received packet path
 )
 
 // A ControlMessage represents per packet basis IP-level socket
 // options.
-type ControlMessage  {
+type ControlMessage struct {
 	// Receiving socket options: SetControlMessage allows to
 	// receive the options from the protocol stack using ReadFrom
 	// method of PacketConn.

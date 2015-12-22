@@ -154,9 +154,9 @@ func mul(v1, v2 value) value {
 		return Uval(v1) * Uval(v2)
 	}
 	if ints(v1, v2) {
-		return Ival(v1)*Ival(v2)
+		return Ival(v1) * Ival(v2)
 	}
-	return Nval(v1)*Nval(v2)
+	return Nval(v1) * Nval(v2)
 }
 
 func minus(v1 value) value {
@@ -177,15 +177,15 @@ func div(v1, v2 value) value {
 		if Nval(v2) == 0 {
 			panic("divide by 0")
 		}
-		return Nval(v1)/Nval(v2)
+		return Nval(v1) / Nval(v2)
 	}
 	if Ival(v2) == 0 {
 		panic("divide by 0")
 	}
 	if uints(v1, v2) {
-		return Uval(v1)/Uval(v2)
+		return Uval(v1) / Uval(v2)
 	}
-	return Ival(v1)/Ival(v2)
+	return Ival(v1) / Ival(v2)
 }
 
 func mod(v1, v2 value) value {
@@ -194,13 +194,13 @@ func mod(v1, v2 value) value {
 		if n2 == 0 {
 			panic("divide by 0")
 		}
-		return Uval(v1)%Uval(v2)
+		return Uval(v1) % Uval(v2)
 	}
 	if ints(v1, v2) {
 		if n2 == 0 {
 			panic("divide by 0")
 		}
-		return Ival(v1)%Ival(v2)
+		return Ival(v1) % Ival(v2)
 	}
 	f2 := Nval(v2)
 	if f2 == 0 {

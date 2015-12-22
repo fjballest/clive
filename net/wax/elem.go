@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-type el  {
+type el struct {
 	op   tok // tId, tDot, tLbra
 	name string
 	idx  string
@@ -53,7 +53,7 @@ func sliceidx(v reflect.Value, nm string) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s not an index", nm)
 	}
-	if idx<0 || idx>=v.Len() {
+	if idx < 0 || idx >= v.Len() {
 		return nil, fmt.Errorf("out of range")
 	}
 	ei := v.Index(idx).Interface()
@@ -105,7 +105,7 @@ func (e *el) lookupAt(ei interface{}) (interface{}, string, error) {
 		var err error
 		v := reflect.ValueOf(ei)
 		k := v.Kind()
-		for k==reflect.Interface || k==reflect.Ptr {
+		for k == reflect.Interface || k == reflect.Ptr {
 			if v.IsNil() {
 				err := fmt.Errorf("%s is nil", nm)
 				return nil, "", err

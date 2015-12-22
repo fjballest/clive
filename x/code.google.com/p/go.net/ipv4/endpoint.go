@@ -13,15 +13,15 @@ import (
 // A Conn represents a network endpoint that uses the IPv4 transport.
 // It is used to control basic IP-level socket options such as TOS and
 // TTL.
-type Conn  {
+type Conn struct {
 	genericOpt
 }
 
-type genericOpt  {
+type genericOpt struct {
 	net.Conn
 }
 
-func (c *genericOpt) ok() bool { return c!=nil && c.Conn!=nil }
+func (c *genericOpt) ok() bool { return c != nil && c.Conn != nil }
 
 // NewConn returns a new Conn.
 func NewConn(c net.Conn) *Conn {
@@ -35,17 +35,17 @@ func NewConn(c net.Conn) *Conn {
 // options including multicasting.  It also provides datagram based
 // network I/O methods specific to the IPv4 and higher layer protocols
 // such as UDP.
-type PacketConn  {
+type PacketConn struct {
 	genericOpt
 	dgramOpt
 	payloadHandler
 }
 
-type dgramOpt  {
+type dgramOpt struct {
 	net.PacketConn
 }
 
-func (c *dgramOpt) ok() bool { return c!=nil && c.PacketConn!=nil }
+func (c *dgramOpt) ok() bool { return c != nil && c.PacketConn != nil }
 
 // SetControlMessage sets the per packet IP-level socket options.
 func (c *PacketConn) SetControlMessage(cf ControlFlags, on bool) error {
@@ -109,7 +109,7 @@ func NewPacketConn(c net.PacketConn) *PacketConn {
 // including IPv4 header manipulation.  It also provides datagram
 // based network I/O methods specific to the IPv4 and higher layer
 // protocols that handle IPv4 datagram directly such as OSPF, GRE.
-type RawConn  {
+type RawConn struct {
 	genericOpt
 	dgramOpt
 	packetHandler

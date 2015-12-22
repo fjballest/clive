@@ -4,11 +4,11 @@
 package nsutil
 
 import (
-	"clive/nchan"
-	"fmt"
-	"clive/dbg"
-	"clive/zx"
 	"clive/app"
+	"clive/dbg"
+	"clive/nchan"
+	"clive/zx"
+	"fmt"
 )
 
 // zx.Stat using the app ns and dot.
@@ -19,7 +19,7 @@ func Stat(path string) (zx.Dir, error) {
 			return nil, fmt.Errorf("%s: %s", path, err)
 		}
 		d := zx.Dir{"path": path, "name": path,
-			"upath": path, "type":"c"}
+			"upath": path, "type": "c"}
 		return d, nil
 	}
 	path = app.AbsPath(path)
@@ -112,7 +112,7 @@ func Put(path string, d zx.Dir, off int64, dc <-chan []byte, pred string) chan z
 				}
 			}
 			d := zx.Dir{"path": path, "name": path,
-				"upath": path, "type":"c"}
+				"upath": path, "type": "c"}
 			rc <- d
 			close(ioc, cerror(dc))
 		}()
@@ -135,7 +135,7 @@ func PutAll(path string, d zx.Dir, dat []byte) error {
 	for len(dat) > 0 {
 		n := len(dat)
 		if n > 32*1024 {
-			n = 32*1024
+			n = 32 * 1024
 		}
 		dc <- dat[:n]
 		dat = dat[n:]

@@ -6,22 +6,24 @@ import (
 	"reflect"
 )
 
-// See NewSplitConn.
-type CloseReader interface {
-	CloseRead() error
-}
+interface (
+	// See NewSplitConn.
+	CloseReader {
+		CloseRead() error
+	}
 
-// See NewSplitConn.
-type CloseWriter interface {
-	CloseWrite() error
-}
+	// See NewSplitConn.
+	CloseWriter {
+		CloseWrite() error
+	}
+)
 
 /*
 	A Conn is a channel-pair used as a duplex connection.
 	The tag may be used for debugging or to convey the address
 	of the other end of the connection.
 */
-type Conn  {
+struct Conn {
 	Tag string // debug
 	In  <-chan []byte
 	Out chan<- []byte
@@ -112,7 +114,7 @@ func NewSplitConn(r io.Reader, w io.Writer, nbuf int, win, wout chan bool) Conn 
 		_, _, err := WriteMsgsTo(wr, out)
 		if closewriter != nil {
 			closewriter.CloseWrite()
-		} else if reflect.ValueOf(r)!=reflect.ValueOf(w) && wcloser!=nil && rcloser!=nil {
+		} else if reflect.ValueOf(r) != reflect.ValueOf(w) && wcloser != nil && rcloser != nil {
 			wcloser.Close()
 		}
 		close(out, err)

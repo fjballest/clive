@@ -31,7 +31,7 @@ import (
 	"strings"
 )
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	src, dst                      string
@@ -105,7 +105,7 @@ func (x *xCmd) cprm(sfs, dfs zx.RWTree, spath, dpath string, d zx.Dir) error {
 	}
 	if d["type"] == "d" {
 		x.vprintf("mkdir %s\n", dpath)
-		if err := <-sfs.Mkdir(dpath, nd); err!=nil && !dbg.IsExists(err) {
+		if err := <-sfs.Mkdir(dpath, nd); err != nil && !dbg.IsExists(err) {
 			dbg.Warn("%s", err)
 			return err
 		}
@@ -229,7 +229,7 @@ func Run(c cmd.Ctx) (err error) {
 	}
 	srcs := args[:len(args)-1]
 	var sts error
-	x.many = x.many || len(srcs)>1
+	x.many = x.many || len(srcs) > 1
 	for _, src := range srcs {
 		select {
 		case <-x.Intr():
@@ -238,7 +238,7 @@ func Run(c cmd.Ctx) (err error) {
 		}
 		stoks := strings.SplitN(src, ",", 2)
 		x.src = path.Clean(stoks[0])
-		if x.many && len(stoks)==1 {
+		if x.many && len(stoks) == 1 {
 			x.src = path.Dir(x.src)
 		}
 		if x.src == "." {
@@ -259,7 +259,7 @@ func Run(c cmd.Ctx) (err error) {
 		dc := cmd.Files(src)
 		doselect {
 		case d, ok := <-dc:
-			if !ok || d==nil {
+			if !ok || d == nil {
 				break
 			}
 			if err := x.mv(d); err != nil {

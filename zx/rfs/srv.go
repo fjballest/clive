@@ -15,7 +15,7 @@ type handler func(*Msg, <-chan []byte, chan<- []byte)
 /*
 	a server for a set of zx.Trees.
 */
-type Srv  {
+type Srv struct {
 	t       []zx.Tree
 	ro      bool
 	c       *nchan.Mux
@@ -28,7 +28,7 @@ type Srv  {
 	donec chan bool
 	tid   int
 
-	Pings bool	// set if you issue ping requests to auto close if tout.
+	Pings bool // set if you issue ping requests to auto close if tout.
 }
 
 const (
@@ -162,7 +162,7 @@ func (xs *Srv) loop() {
 	defer xs.logUsr(logOut)
 	s.dprintf("%s loop started\n", xs.Tag)
 	doselect {
-	case <-time.After(60*time.Second):
+	case <-time.After(60 * time.Second):
 		if xs.Pings {
 			break
 		}
@@ -339,7 +339,7 @@ func (s *Srv) findget(m *Msg, c <-chan []byte, rc chan<- []byte) {
 			close(gc, cerror(rc))
 			return
 		}
-		if d["type"]=="-" && d["err"]=="" {
+		if d["type"] == "-" && d["err"] == "" {
 			for data := range g.Datac {
 				if len(data) == 0 {
 					break

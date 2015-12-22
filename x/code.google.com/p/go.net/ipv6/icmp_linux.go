@@ -4,15 +4,15 @@
 
 package ipv6
 
-type sysICMPFilter  {
+type sysICMPFilter struct {
 	Data [8]uint32
 }
 
 func (f *sysICMPFilter) set(typ ICMPType, block bool) {
 	if block {
-		f.Data[typ>>5] |= 1<<(uint32(typ)&31)
+		f.Data[typ>>5] |= 1 << (uint32(typ) & 31)
 	} else {
-		f.Data[typ>>5] &^= 1<<(uint32(typ)&31)
+		f.Data[typ>>5] &^= 1 << (uint32(typ) & 31)
 	}
 }
 

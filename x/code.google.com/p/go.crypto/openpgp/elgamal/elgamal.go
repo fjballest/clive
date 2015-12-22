@@ -21,12 +21,12 @@ import (
 )
 
 // PublicKey represents an ElGamal public key.
-type PublicKey  {
+type PublicKey struct {
 	G, P, Y *big.Int
 }
 
 // PrivateKey represents an ElGamal private key.
-type PrivateKey  {
+type PrivateKey struct {
 	PublicKey
 	X *big.Int
 }
@@ -35,7 +35,7 @@ type PrivateKey  {
 // pair of integers. Errors can result from reading random, or because msg is
 // too large to be encrypted to the public key.
 func Encrypt(random io.Reader, pub *PublicKey, msg []byte) (c1, c2 *big.Int, err error) {
-	pLen := (pub.P.BitLen() + 7)/8
+	pLen := (pub.P.BitLen() + 7) / 8
 	if len(msg) > pLen-11 {
 		err = errors.New("elgamal: message too long")
 		return
@@ -96,7 +96,7 @@ func Decrypt(priv *PrivateKey, c1, c2 *big.Int) (msg []byte, err error) {
 		lookingForIndex = subtle.ConstantTimeSelect(equals0, 0, lookingForIndex)
 	}
 
-	if firstByteIsTwo!=1 || lookingForIndex!=0 || index<9 {
+	if firstByteIsTwo != 1 || lookingForIndex != 0 || index < 9 {
 		return nil, errors.New("elgamal: decryption error")
 	}
 	return em[index+1:], nil

@@ -12,13 +12,13 @@ var printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 
 const port = ":9191"
 
-type tree  {
+type tree struct {
 	Name, Path string "rw"
 	unexported int
 	Peers      []string
 }
 
-type repl  {
+type repl struct {
 	Debug bool "rw"
 	Trees []*tree
 }
@@ -210,7 +210,7 @@ var p2out = `
 	</article>
 `
 
-type ui  {
+type ui struct {
 	Name string
 	Sub  *Part
 }

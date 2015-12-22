@@ -4,12 +4,12 @@
 package echo
 
 import (
+	"bytes"
 	"clive/app"
 	"clive/app/opt"
-	"bytes"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 	nflag bool

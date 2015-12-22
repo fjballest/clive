@@ -1,15 +1,14 @@
 package wr
 
 import (
-	"strings"
 	"clive/app"
 	"clive/app/wr/refs"
-	"os/exec"
 	"fmt"
+	"os/exec"
 	"strconv"
+	"strings"
 	"unicode"
 )
-
 
 func (s *scan) get() string {
 	if s.saved {
@@ -39,7 +38,7 @@ func (s *scan) skipBlanks() bool {
 	some := false
 	for !s.eof {
 		ln := s.get()
-		if len(ln)==0 || ln[0]=='#' {
+		if len(ln) == 0 || ln[0] == '#' {
 			continue
 		}
 		if strings.TrimSpace(ln) != "" {
@@ -66,7 +65,7 @@ func lookLine(ln string) (int, Kind, string) {
 		return 0, Kpar, ""
 	}
 	nt := 0
-	for ; nt<len(ln) && ln[nt]=='\t'; nt++ {
+	for ; nt < len(ln) && ln[nt] == '\t'; nt++ {
 	}
 	ln = ln[nt:]
 	if ln == "" {
@@ -90,8 +89,8 @@ func lookLine(ln string) (int, Kind, string) {
 			return nt, k, dat
 		}
 	}
-	if len(ln)>1 && (ln[0]=='+' || ln[0]=='-') &&
-		len(strings.TrimLeft(ln[1:], "0123456789"))==0 {
+	if len(ln) > 1 && (ln[0] == '+' || ln[0] == '-') &&
+		len(strings.TrimLeft(ln[1:], "0123456789")) == 0 {
 		return nt, Kfont, ln
 	}
 	return nt, Ktext, ln
@@ -114,7 +113,7 @@ func (x *xCmd) Parse() (chan<- string, <-chan *Text) {
 	tc := make(chan *Text, 1)
 	go func() {
 		t := &Text{
-			scan: &scan{lnc: lnc, fname: x.uname},
+			scan:    &scan{lnc: lnc, fname: x.uname},
 			pprintf: app.FlagEprintf(&x.debugPars),
 			sprintf: app.FlagEprintf(&x.debugSplit),
 			iprintf: app.FlagEprintf(&x.debugIndent),
@@ -135,8 +134,8 @@ func (t *Text) parse() {
 		t.splitMarks(p)
 		t.pprintf("PAR %s\n", p)
 		t.Elems = append(t.Elems, p)
-		if p.Kind==Ktitle || p.Kind==Khdr1 || p.Kind==Khdr2 ||
-			p.Kind==Khdr3 {
+		if p.Kind == Ktitle || p.Kind == Khdr1 || p.Kind == Khdr2 ||
+			p.Kind == Khdr3 {
 			t.skipBlanks()
 		}
 	}
@@ -173,7 +172,7 @@ func (e *Elem) sh() {
 		stdin.Close()
 	}()
 	out, err := cmd.CombinedOutput()
-	if err!=nil && len(out)==0 {
+	if err != nil && len(out) == 0 {
 		e.Warn("command: %s", err)
 		return
 	}
@@ -253,7 +252,7 @@ func (t *Text) parsePar() (el *Elem) {
 			}
 			el.sh()
 		}
-		
+
 		return el
 	}
 	el = &Elem{Kind: k, Data: ln, indent: nt}
@@ -264,7 +263,7 @@ func (t *Text) parsePar() (el *Elem) {
 	// must consume Ktext lines while the indent level remains the same
 	for !t.eof {
 		nt, k, ln = lookLine(t.get())
-		if nt!=el.indent || k!=Ktext {
+		if nt != el.indent || k != Ktext {
 			t.unget()
 			break
 		}
@@ -294,7 +293,7 @@ func (t *Text) contdRaw(el *Elem) *Elem {
 			nt = lnt
 			first = false
 		}
-		if el.Kind!=Kverb && el.Kind!=Ksh && strings.TrimSpace(ln) != "" && lnt <= el.indent {
+		if el.Kind != Kverb && el.Kind != Ksh && strings.TrimSpace(ln) != "" && lnt <= el.indent {
 			incap = true
 		}
 		ln = rmtabs(ln, nt)
@@ -319,7 +318,7 @@ func keys(s string) []string {
 	return words
 }
 
-func (ek *eKeys) setKeys()  {
+func (ek *eKeys) setKeys() {
 	e := ek.el
 	ks := keys(e.Tag)
 	if e.Caption != nil {
@@ -350,7 +349,7 @@ func (t *Text) addRef(el *Elem, k Kind) {
 		t.nhdr2 = 0
 		t.nhdr3 = 0
 		nb = t.nhdr1
-		prev=""
+		prev = ""
 	case Khdr2:
 		t.nhdr2++
 		t.nhdr3 = 0
@@ -395,7 +394,7 @@ func rmtabs(s string, n int) string {
 // parses raw tbl data and fills e.Tbl
 func (e *Elem) parseTbl() {
 	lines := strings.SplitN(e.Data, "\n", -1)
-	if len(lines)>0 && lines[len(lines)-1]=="" {
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
 		lines = lines[:len(lines)-1]
 	}
 	if len(lines) < 2 {
@@ -424,7 +423,7 @@ func appText(els []*Elem, k Kind, indent int, s string) []*Elem {
 	el := &Elem{Kind: k, indent: indent, Data: s}
 	if len(els) > 0 {
 		last := els[len(els)-1]
-		if last.Kind==k && last.indent==indent {
+		if last.Kind == k && last.indent == indent {
 			last.Data += s
 			return els
 		}
@@ -433,7 +432,7 @@ func appText(els []*Elem, k Kind, indent int, s string) []*Elem {
 }
 
 func splitCite(els []*Elem, k Kind, i int, key, tag, s string) ([]*Elem, string, bool) {
-	if !strings.HasPrefix(tag, "[" + key + ":") {
+	if !strings.HasPrefix(tag, "["+key+":") {
 		return els, s, false
 	}
 	s = s[len(tag):]
@@ -447,12 +446,12 @@ func splitCite(els []*Elem, k Kind, i int, key, tag, s string) ([]*Elem, string,
 
 var cites = map[string]Kind{
 	"sect": Ksref,
-	"fig": Kfref,
+	"fig":  Kfref,
 	"code": Kcref,
-	"tbl": Ktref,
-	"eqn": Keref,
-	"url": Kurl,
-	"bib": Kbib,
+	"tbl":  Ktref,
+	"eqn":  Keref,
+	"url":  Kurl,
+	"bib":  Kbib,
 	"cite": Kcite,
 }
 
@@ -474,7 +473,8 @@ func (t *Text) splitMarks(p *Elem) {
 	k := p.Kind
 	indent := p.indent
 	var els []*Elem
-Loop:	for len(s) > 0 {
+Loop:
+	for len(s) > 0 {
 		i := strings.IndexAny(s, "*_|[")
 		if t.ttset {
 			i = strings.Index(s, "|")
@@ -483,7 +483,7 @@ Loop:	for len(s) > 0 {
 			els = appText(els, k, indent, s)
 			break
 		}
-		if i<len(s)-1 && strings.ContainsRune("*_|", rune(s[i])) && s[i]==s[i+1] {
+		if i < len(s)-1 && strings.ContainsRune("*_|", rune(s[i])) && s[i] == s[i+1] {
 			// scaped mark
 			els = appText(els, k, indent, s[:i+1])
 			s = s[i+2:]
@@ -593,7 +593,7 @@ func (t *Text) addRefer(ref []string) int {
 	rs := strings.Join(ref, "\n")
 	for i, r := range t.bibrefs {
 		if r == rs {
-			return i+1
+			return i + 1
 		}
 	}
 	t.bibrefs = append(t.bibrefs, rs)
@@ -605,7 +605,7 @@ func (t *Text) addRefer(ref []string) int {
 func sameIndent(els []*Elem, indent int) (res, left []*Elem) {
 	res = []*Elem{}
 	left = els
-	for len(left)>0 && (left[0].indent==indent || left[0].Kind==Kpar || left[0].Kind==Kbr) {
+	for len(left) > 0 && (left[0].indent == indent || left[0].Kind == Kpar || left[0].Kind == Kbr) {
 		res = append(res, left[0])
 		left = left[1:]
 	}
@@ -615,11 +615,11 @@ func sameIndent(els []*Elem, indent int) (res, left []*Elem) {
 // take a flat list of els with indentation level and group them in a tree
 // according to their indentation.
 func indentedPars(top *Elem, els []*Elem) []*Elem {
-	for len(els)>0 && els[0].indent>=top.indent {
+	for len(els) > 0 && els[0].indent >= top.indent {
 		pars, nels := sameIndent(els, top.indent)
 		top.Child = append(top.Child, pars...)
 		els = nels
-		if len(els)>0 && els[0].indent>top.indent {
+		if len(els) > 0 && els[0].indent > top.indent {
 			ri := &Elem{Kind: Kindent, indent: els[0].indent}
 			top.Child = append(top.Child, ri)
 			els = indentedPars(ri, els)
@@ -643,7 +643,7 @@ func (t *Text) indentPars() {
 }
 
 func (top *Elem) checkDescList() {
-	if top.Kind!=Kitemize || len(top.Child)<2 {
+	if top.Kind != Kitemize || len(top.Child) < 2 {
 		return
 	}
 	nchild := []*Elem{}
@@ -652,15 +652,15 @@ func (top *Elem) checkDescList() {
 	fontk := Knone
 	for i := 0; i < len(top.Child); i++ {
 		c := top.Child[i]
-		if c.Kind==Kit || c.Kind==Kbf || c.Kind==Ktt {
+		if c.Kind == Kit || c.Kind == Kbf || c.Kind == Ktt {
 			fontk = c.Kind
 			continue
 		}
-		if c.Kind==Kitend || c.Kind==Kbfend || c.Kind==Kttend {
+		if c.Kind == Kitend || c.Kind == Kbfend || c.Kind == Kttend {
 			continue
 		}
 		if initem {
-			if c.Kind!=Kindent || last==nil {
+			if c.Kind != Kindent || last == nil {
 				return
 			}
 			last.Child = c.Child
@@ -699,7 +699,7 @@ func listKind(els []*Elem) Kind {
 		if e.Kind == Kname {
 			return Kdescription
 		}
-		if e.Kind!=Kfont && e.Kind!=Kit && e.Kind!=Kbf && e.Kind!=Ktt {
+		if e.Kind != Kfont && e.Kind != Kit && e.Kind != Kbf && e.Kind != Ktt {
 			break
 		}
 	}
@@ -716,7 +716,7 @@ func (top *Elem) splitList() []*Elem {
 		nc = append(nc, c.splitList()...)
 	}
 	top.Child = nc
-	if top.Kind!=Kindent || len(top.Child)==0 {
+	if top.Kind != Kindent || len(top.Child) == 0 {
 		return []*Elem{top}
 	}
 	els := top.Child
@@ -803,7 +803,7 @@ func (e *Elem) fixRefs(refs map[Kind][]*eKeys) {
 	case Kcref:
 		e.setRef(refs[Kcode])
 	}
-	
+
 }
 
 func (ek *eKeys) matches(ks []string) bool {

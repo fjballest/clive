@@ -18,9 +18,9 @@ const (
 	// channelMaxPacket contains the maximum number of bytes that will be
 	// sent in a single packet. As per RFC 4253, section 6.1, 32k is also
 	// the minimum.
-	channelMaxPacket = 1<<15
+	channelMaxPacket = 1 << 15
 	// We follow OpenSSH here.
-	channelWindowSize = 64*channelMaxPacket
+	channelWindowSize = 64 * channelMaxPacket
 )
 
 // NewChannel represents an incoming request to a channel. It must either be
@@ -77,7 +77,7 @@ type Channel interface {
 // Request is a request sent outside of the normal stream of
 // data. Requests can either be specific to an SSH channel, or they
 // can be global.
-type Request  {
+type Request struct {
 	Type      string
 	WantReply bool
 	Payload   []byte
@@ -143,7 +143,7 @@ const (
 
 // channel is an implementation of the Channel interface that works
 // with the mux class.
-type channel  {
+type channel struct {
 	// R/O after creation
 	chanType          string
 	extraData         []byte
@@ -335,7 +335,7 @@ func (c *channel) ReadExtended(data []byte, extended uint32) (n int, err error) 
 		// peer has closed the connection, however we want to
 		// defer forwarding io.EOF to the caller of Read until
 		// the buffer has been drained.
-		if n>0 && err==io.EOF {
+		if n > 0 && err == io.EOF {
 			err = nil
 		}
 	}
@@ -404,7 +404,7 @@ func (c *channel) handlePacket(packet []byte) error {
 		if err := c.responseMessageReceived(); err != nil {
 			return err
 		}
-		if msg.MaxPacketSize<minPacketLength || msg.MaxPacketSize>1<<31 {
+		if msg.MaxPacketSize < minPacketLength || msg.MaxPacketSize > 1<<31 {
 			return fmt.Errorf("ssh: invalid MaxPacketSize %d from peer", msg.MaxPacketSize)
 		}
 		c.remoteId = msg.MyId
@@ -450,7 +450,7 @@ func (m *mux) newChannel(chanType string, direction channelDirection, extraData 
 var errUndecided = errors.New("ssh: must Accept or Reject channel")
 var errDecidedAlready = errors.New("ssh: can call Accept or Reject only once")
 
-type extChannel  {
+type extChannel struct {
 	code uint32
 	ch   *channel
 }

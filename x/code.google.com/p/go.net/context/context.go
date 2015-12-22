@@ -61,7 +61,7 @@ import (
 //     foo, ok := ctx.Value(contextKey).(*Foo)
 //     return foo, ok
 //   }
-type Key  {
+type Key struct {
 	name string
 }
 
@@ -143,7 +143,7 @@ var DeadlineExceeded = errors.New("context deadline exceeded")
 // A ctx is a Context that automatically propagates cancellation signals to
 // other ctxs (those created using this ctx as their parent).  A ctx also
 // manages its own deadline timer.
-type ctx  {
+type ctx struct {
 	parent Context       // set by newCtx
 	done   chan struct{} // closed by the first cancel call.  nil if uncancelable.
 
@@ -284,7 +284,7 @@ const neverCanceled = false
 
 func newCtx(parent Context, childMayCancel bool) *ctx {
 	c := &ctx{parent: parent}
-	parentMayCancel := parent!=nil && parent.Done()!=nil
+	parentMayCancel := parent != nil && parent.Done() != nil
 	if childMayCancel || parentMayCancel {
 		c.done = make(chan struct{})
 	}
@@ -347,7 +347,7 @@ func (c *ctx) cancel(removeFromParent bool, err error) {
 	c.children = nil
 	c.mu.Unlock()
 
-	if p, ok := c.parent.(*ctx); ok && p!=nil && removeFromParent {
+	if p, ok := c.parent.(*ctx); ok && p != nil && removeFromParent {
 		p.mu.Lock()
 		if p.children != nil {
 			delete(p.children, c)

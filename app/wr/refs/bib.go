@@ -2,15 +2,15 @@ package refs
 
 import (
 	"clive/app"
-	"strings"
 	"clive/app/nsutil"
-	"io"
 	"fmt"
+	"io"
+	"strings"
 )
 
 func (b *Bib) loadBib(fn string) error {
 	lnc := nsutil.GetLines(fn)
-	ln := <- lnc
+	ln := <-lnc
 	if !strings.Contains(ln, "bib2ref ok") {
 		close(lnc, "not for me")
 		return nil
@@ -65,7 +65,7 @@ func parse1Bib(lnc <-chan string) ([]string, error) {
 		ln = ln[brace+1:]
 		toks := strings.Fields(ln)
 		if len(toks) > 0 {
-			out = append(out, "%K " + toks[0] + "\n")
+			out = append(out, "%K "+toks[0]+"\n")
 		}
 		for fld, err := parseField(lnc); err != io.EOF && fld != nil; fld, err = parseField(lnc) {
 			out = append(out, fld...)
@@ -74,22 +74,22 @@ func parse1Bib(lnc <-chan string) ([]string, error) {
 	}
 }
 
-var keys = map[string]string {
-	"author": "A",
-	"title": "T",
-	"note": "O",
-	"booktitle": "B",
-	"series": "S",
-	"year": "D",
-	"location": "C",
-	"address": "C",
-	"pages": "P",
-	"url": "O",
-	"publisher": "I",
-	"key": "K",
-	"volume": "V",
-	"journal": "J",
-	"keywords": "K",
+var keys = map[string]string{
+	"author":       "A",
+	"title":        "T",
+	"note":         "O",
+	"booktitle":    "B",
+	"series":       "S",
+	"year":         "D",
+	"location":     "C",
+	"address":      "C",
+	"pages":        "P",
+	"url":          "O",
+	"publisher":    "I",
+	"key":          "K",
+	"volume":       "V",
+	"journal":      "J",
+	"keywords":     "K",
 	"organization": "I",
 }
 

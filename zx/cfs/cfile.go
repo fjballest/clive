@@ -1,14 +1,14 @@
 package cfs
 
 import (
+	"clive/dbg"
 	"clive/work"
 	"clive/zx"
+	"clive/zx/cfs/cache"
 	"crypto/sha1"
 	"fmt"
-	"time"
-	"clive/zx/cfs/cache"
-	"clive/dbg"
 	"path"
+	"time"
 )
 
 /*
@@ -29,12 +29,11 @@ import (
 	see cache/cache.go for details on cache handling.
 */
 
-
 // a file as far as cfs is concerned, taken from lfs.
-type cFile {
-	d zx.Dir
-	t *Cfs
-	dirty bool	// d must be updated in lfs
+type cFile struct {
+	d     zx.Dir
+	t     *Cfs
+	dirty bool // d must be updated in lfs
 }
 
 var zsum string
@@ -78,9 +77,9 @@ func (fs *Cfs) lockc(rid string, isrlock bool) {
 
 func (fs *Cfs) _lockc(rid string, isrlock bool) {
 	if isrlock {
-		fs.cache.RLockData(rid)	// locks cache info; not file data
+		fs.cache.RLockData(rid) // locks cache info; not file data
 	} else {
-		fs.cache.LockData(rid)	// locks cache info; not file data
+		fs.cache.LockData(rid) // locks cache info; not file data
 	}
 }
 
@@ -91,9 +90,9 @@ func (fs *Cfs) unlockc(rid string, isrlock bool) {
 
 func (fs *Cfs) _unlockc(rid string, isrlock bool) {
 	if isrlock {
-		fs.cache.RUnlockData(rid)	// unlocks cache info; not file data
+		fs.cache.RUnlockData(rid) // unlocks cache info; not file data
 	} else {
-		fs.cache.UnlockData(rid)	// unlocks cache info; not file data
+		fs.cache.UnlockData(rid) // unlocks cache info; not file data
 	}
 }
 
@@ -139,7 +138,7 @@ func (f *cFile) staleMeta() bool {
 	if f.d["path"] == "/Ctl" || f.d["path"] == "/Chg" {
 		return false
 	}
-	
+
 	if st := f.cstate(); st != cache.CUnread && st != cache.CClean {
 		return false
 	}
@@ -252,17 +251,19 @@ func (f *cFile) setRtime() {
 
 // for gotMeta results: what changed
 type fchg int
+
 const (
 	cNothing fchg = iota
 	cMeta
 	cData
 )
 
-var cnames = map[fchg]string {
+var cnames = map[fchg]string{
 	cNothing: "nothing",
-	cMeta: "meta",
-	cData: "data",
+	cMeta:    "meta",
+	cData:    "data",
 }
+
 func (fc fchg) String() string {
 	return cnames[fc]
 }
@@ -314,7 +315,7 @@ func (f *cFile) gotMeta(nd zx.Dir) (fchg, string) {
 		case k == "mtime":
 			if od["type"] != "d" {
 				od[k] = v
-				if od["Cache"] != "unread" {	// else no data
+				if od["Cache"] != "unread" { // else no data
 					cdata = true
 				} else {
 					cmeta = true
@@ -322,12 +323,12 @@ func (f *cFile) gotMeta(nd zx.Dir) (fchg, string) {
 			}
 		case k == "size":
 			od[k] = v
-			if od["Cache"] != "unread" {	// else no data
+			if od["Cache"] != "unread" { // else no data
 				cdata = true
 			} else if od["type"] != "d" {
 				cmeta = true
 			}
-		case zx.IsUpper(k) || k == "mode":	// includes all Uids
+		case zx.IsUpper(k) || k == "mode": // includes all Uids
 			od[k] = v
 			cmeta = true
 		}
@@ -423,7 +424,7 @@ func (f *cFile) getDirData(datc <-chan []byte, chgfn func(...zx.Dir)) error {
 			f.t.unlockc(d["path"], RW)
 			continue
 		}
-		if st := cf.cstate(); st != cache.CUnread && st != cache.CClean  {
+		if st := cf.cstate(); st != cache.CUnread && st != cache.CClean {
 			// have changes pending, disregard
 			f.t.unlockc(d["path"], RW)
 			continue
@@ -506,7 +507,7 @@ func (f *cFile) needData(isrlock bool, chgfn func(...zx.Dir)) error {
 			}
 		}
 		// now we have a w lock on the cache and have stale data
-	
+
 		nd, err := zx.Stat(f.t.rfs, f.d["path"])
 		if err != nil {
 			f.dprintf("refresh data %s: %s\n", f.d["path"], err)
@@ -529,7 +530,7 @@ func (f *cFile) needData(isrlock bool, chgfn func(...zx.Dir)) error {
 		forced := f.d["type"] == "d" && f.t.epoch == ""
 
 		if !forced && chg != cData && st != cache.CUnread &&
-				st != cache.CUnreadMeta {
+			st != cache.CUnreadMeta {
 			// data did not change, updating meta is enough.
 			if f.dirty {
 				f.dprintf("refreshed meta: %s: %s\n", why, f.d)
@@ -671,7 +672,7 @@ func (fs *Cfs) poll(p *work.Pool, fn string) {
 		return
 	}
 
-	if f.d["type"] != "d" || f.d["Cache"] == "unread" {	// check if we raced
+	if f.d["type"] != "d" || f.d["Cache"] == "unread" { // check if we raced
 		fs.unlockc(fn, RW)
 		return
 	}
@@ -706,7 +707,7 @@ func (fs *Cfs) pollproc() {
 	fs.dprintf("pollproc started\n")
 	p := work.NewPool(Npollers)
 	doselect {
-	case <- fs.closedc:
+	case <-fs.closedc:
 		fs.dprintf("pollproc terminated\n")
 		p.Wait()
 		close(fs.polldonec)
@@ -716,4 +717,3 @@ func (fs *Cfs) pollproc() {
 		fs.poll(p, "/")
 	}
 }
-

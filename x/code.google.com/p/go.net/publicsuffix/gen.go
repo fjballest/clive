@@ -161,7 +161,7 @@ func main1() error {
 			icann = false
 			continue
 		}
-		if s=="" || strings.HasPrefix(s, "//") {
+		if s == "" || strings.HasPrefix(s, "//") {
 			continue
 		}
 		s, err = idna.ToASCII(s)
@@ -174,22 +174,22 @@ func main1() error {
 
 		if *subset {
 			switch {
-			case s=="ac.jp" || strings.HasSuffix(s, ".ac.jp"):
-			case s=="ak.us" || strings.HasSuffix(s, ".ak.us"):
-			case s=="ao" || strings.HasSuffix(s, ".ao"):
-			case s=="ar" || strings.HasSuffix(s, ".ar"):
-			case s=="arpa" || strings.HasSuffix(s, ".arpa"):
-			case s=="cy" || strings.HasSuffix(s, ".cy"):
-			case s=="dyndns.org" || strings.HasSuffix(s, ".dyndns.org"):
+			case s == "ac.jp" || strings.HasSuffix(s, ".ac.jp"):
+			case s == "ak.us" || strings.HasSuffix(s, ".ak.us"):
+			case s == "ao" || strings.HasSuffix(s, ".ao"):
+			case s == "ar" || strings.HasSuffix(s, ".ar"):
+			case s == "arpa" || strings.HasSuffix(s, ".arpa"):
+			case s == "cy" || strings.HasSuffix(s, ".cy"):
+			case s == "dyndns.org" || strings.HasSuffix(s, ".dyndns.org"):
 			case s == "jp":
-			case s=="kobe.jp" || strings.HasSuffix(s, ".kobe.jp"):
-			case s=="kyoto.jp" || strings.HasSuffix(s, ".kyoto.jp"):
-			case s=="om" || strings.HasSuffix(s, ".om"):
-			case s=="uk" || strings.HasSuffix(s, ".uk"):
-			case s=="uk.com" || strings.HasSuffix(s, ".uk.com"):
-			case s=="tw" || strings.HasSuffix(s, ".tw"):
-			case s=="zw" || strings.HasSuffix(s, ".zw"):
-			case s=="xn--p1ai" || strings.HasSuffix(s, ".xn--p1ai"):
+			case s == "kobe.jp" || strings.HasSuffix(s, ".kobe.jp"):
+			case s == "kyoto.jp" || strings.HasSuffix(s, ".kyoto.jp"):
+			case s == "om" || strings.HasSuffix(s, ".om"):
+			case s == "uk" || strings.HasSuffix(s, ".uk"):
+			case s == "uk.com" || strings.HasSuffix(s, ".uk.com"):
+			case s == "tw" || strings.HasSuffix(s, ".tw"):
+			case s == "zw" || strings.HasSuffix(s, ".zw"):
+			case s == "xn--p1ai" || strings.HasSuffix(s, ".xn--p1ai"):
 				// xn--p1ai is Russian-Cyrillic "рф".
 			default:
 				continue
@@ -211,7 +211,7 @@ func main1() error {
 			label := labels[i]
 			n = n.child(label)
 			if i == 0 {
-				if nt!=nodeTypeParentOnly && n.nodeType==nodeTypeParentOnly {
+				if nt != nodeTypeParentOnly && n.nodeType == nodeTypeParentOnly {
 					n.nodeType = nt
 				}
 				n.icann = n.icann && icann
@@ -300,7 +300,7 @@ const numTLD = %d
 			return fmt.Errorf("internal error: could not find %q in text %q", label, text)
 		}
 		maxTextOffset, maxTextLength = max(maxTextOffset, offset), max(maxTextLength, length)
-		if offset>=1<<nodesBitsTextOffset || length>=1<<nodesBitsTextLength {
+		if offset >= 1<<nodesBitsTextOffset || length >= 1<<nodesBitsTextLength {
 			return fmt.Errorf("text offset/length is too large: %d/%d", offset, length)
 		}
 		labelEncoding[label] = uint32(offset)<<nodesBitsTextLength | uint32(length)
@@ -360,12 +360,12 @@ var children=[...]uint32{
 		childrenBitsWildcard, childrenBitsNodeType, childrenBitsHi, childrenBitsLo)
 	for i, c := range childrenEncoding {
 		s := "---------------"
-		lo := c&(1<<childrenBitsLo - 1)
-		hi := (c>>childrenBitsLo)&(1<<childrenBitsHi - 1)
+		lo := c & (1<<childrenBitsLo - 1)
+		hi := (c >> childrenBitsLo) & (1<<childrenBitsHi - 1)
 		if lo != hi {
 			s = fmt.Sprintf("n0x%04x-n0x%04x", lo, hi)
 		}
-		nodeType := int(c>>(childrenBitsLo+childrenBitsHi))&(1<<childrenBitsNodeType - 1)
+		nodeType := int(c>>(childrenBitsLo+childrenBitsHi)) & (1<<childrenBitsNodeType - 1)
 		wildcard := c>>(childrenBitsLo+childrenBitsHi+childrenBitsNodeType) != 0
 		fmt.Fprintf(w, "0x%08x, // c0x%04x (%s)%s %s\n",
 			c, i, s, wildcardStr(wildcard), nodeTypeStr(nodeType))
@@ -379,7 +379,7 @@ var children=[...]uint32{
 	return nil
 }
 
-type node  {
+type node struct {
 	label    string
 	nodeType int
 	icann    bool
@@ -435,12 +435,12 @@ var nextNodesIndex int
 // childrenEncoding are the encoded entries in the generated children array.
 // All these pre-defined entries have no children.
 var childrenEncoding = []uint32{
-	0<<(childrenBitsLo + childrenBitsHi), // Without wildcard bit, nodeTypeNormal.
-	1<<(childrenBitsLo + childrenBitsHi), // Without wildcard bit, nodeTypeException.
-	2<<(childrenBitsLo + childrenBitsHi), // Without wildcard bit, nodeTypeParentOnly.
-	4<<(childrenBitsLo + childrenBitsHi), // With wildcard bit, nodeTypeNormal.
-	5<<(childrenBitsLo + childrenBitsHi), // With wildcard bit, nodeTypeException.
-	6<<(childrenBitsLo + childrenBitsHi), // With wildcard bit, nodeTypeParentOnly.
+	0 << (childrenBitsLo + childrenBitsHi), // Without wildcard bit, nodeTypeNormal.
+	1 << (childrenBitsLo + childrenBitsHi), // Without wildcard bit, nodeTypeException.
+	2 << (childrenBitsLo + childrenBitsHi), // Without wildcard bit, nodeTypeParentOnly.
+	4 << (childrenBitsLo + childrenBitsHi), // With wildcard bit, nodeTypeNormal.
+	5 << (childrenBitsLo + childrenBitsHi), // With wildcard bit, nodeTypeException.
+	6 << (childrenBitsLo + childrenBitsHi), // With wildcard bit, nodeTypeParentOnly.
 }
 
 var firstCallToAssignIndexes = true
@@ -469,13 +469,13 @@ func assignIndexes(w io.Writer, n *node) error {
 		lo := uint32(n.firstChild)
 		hi := lo + uint32(len(n.children))
 		maxLo, maxHi = u32max(maxLo, lo), u32max(maxHi, hi)
-		if lo>=1<<childrenBitsLo || hi>=1<<childrenBitsHi {
+		if lo >= 1<<childrenBitsLo || hi >= 1<<childrenBitsHi {
 			return fmt.Errorf("children lo/hi is too large: %d/%d", lo, hi)
 		}
 		enc := hi<<childrenBitsLo | lo
-		enc |= uint32(n.nodeType)<<(childrenBitsLo + childrenBitsHi)
+		enc |= uint32(n.nodeType) << (childrenBitsLo + childrenBitsHi)
 		if n.wildcard {
-			enc |= 1<<(childrenBitsLo + childrenBitsHi + childrenBitsNodeType)
+			enc |= 1 << (childrenBitsLo + childrenBitsHi + childrenBitsNodeType)
 		}
 		childrenEncoding = append(childrenEncoding, enc)
 	} else {
@@ -495,9 +495,9 @@ func printNode(w io.Writer, n *node) error {
 		}
 		encoding := labelEncoding[c.label]
 		if c.icann {
-			encoding |= 1<<(nodesBitsTextLength + nodesBitsTextOffset)
+			encoding |= 1 << (nodesBitsTextLength + nodesBitsTextOffset)
 		}
-		encoding |= uint32(c.childrenIndex)<<(nodesBitsTextLength + nodesBitsTextOffset + nodesBitsICANN)
+		encoding |= uint32(c.childrenIndex) << (nodesBitsTextLength + nodesBitsTextOffset + nodesBitsICANN)
 		fmt.Fprintf(w, "0x%08x, // n0x%04x c0x%04x (%s)%s %s %s %s\n",
 			encoding, c.nodesIndex, c.childrenIndex, s, wildcardStr(c.wildcard),
 			nodeTypeStr(c.nodeType), icannStr(c.icann), c.label,
@@ -551,7 +551,7 @@ func makeText() string {
 				continue
 			}
 			for j, t := range ss {
-				if i!=j && t!="" && strings.Contains(s, t) {
+				if i != j && t != "" && strings.Contains(s, t) {
 					changed = true
 					ss[j] = ""
 				}
@@ -561,7 +561,7 @@ func makeText() string {
 
 	// Remove the empty strings.
 	sort.Strings(ss)
-	for len(ss)>0 && ss[0]=="" {
+	for len(ss) > 0 && ss[0] == "" {
 		ss = ss[1:]
 	}
 
@@ -580,7 +580,7 @@ func makeText() string {
 				if i == j {
 					continue
 				}
-				for k := bestk + 1; k<=len(s) && k<=len(t); k++ {
+				for k := bestk + 1; k <= len(s) && k <= len(t); k++ {
 					if s[len(s)-k:] == t[:k] {
 						besti = i
 						bestj = j

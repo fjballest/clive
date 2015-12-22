@@ -94,12 +94,12 @@ func loop(ei interface{}, c chan interface{}) {
 	}
 }
 
-type itemizer {}
+type itemizer struct{}
 
 // A Formatter for parts generating lists of items.
 var Itemizer itemizer
 
-type divider {}
+type divider struct{}
 
 // A Formatter for parts generating nested div tags.
 var Divider divider

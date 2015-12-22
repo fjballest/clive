@@ -80,13 +80,13 @@ func DelPipe(name string) {
 	Return true if the machine address given seems to address the local host.
 */
 func IsLocal(mach string) bool {
-	if mach=="" || mach=="*" || mach=="localhost" {
+	if mach == "" || mach == "*" || mach == "localhost" {
 		return true
 	}
-	if hn, err := os.Hostname(); err==nil && hn==mach {
+	if hn, err := os.Hostname(); err == nil && hn == mach {
 		return true
 	}
-	if mach[0]=='[' && len(mach)>2 && mach[len(mach)-1]==']' {
+	if mach[0] == '[' && len(mach) > 2 && mach[len(mach)-1] == ']' {
 		mach = mach[1 : len(mach)-1]
 	}
 	if addrs, err := net.InterfaceAddrs(); err == nil {
@@ -137,7 +137,7 @@ func Dial(addr string) (nchan.Conn, error) {
 		net = "tcp"
 	}
 	lk.Lock()
-	if net!="pipe" && net!="fifo" && svcs[svc]!="" {
+	if net != "pipe" && net != "fifo" && svcs[svc] != "" {
 		svc = svcs[svc]
 	}
 	lk.Unlock()
@@ -196,7 +196,7 @@ func dial(netw, addr, svc string) (nchan.Conn, error) {
 			return nchan.Conn{}, err
 		}
 		// Beware this is not enough if you have NATs
-		c.SetKeepAlivePeriod(2*time.Second)
+		c.SetKeepAlivePeriod(2 * time.Second)
 		c.SetKeepAlive(true)
 		tc := tls.Client(c, auth.TLSclient)
 		nc := nchan.NewConn(tc, 5, nil, nil)

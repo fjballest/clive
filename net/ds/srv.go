@@ -86,7 +86,7 @@ func Serve(tag, addr string) (<-chan *nchan.Conn, chan<- error, error) {
 			if serr != nil {
 				dbg.Warn("serve %s: %s", addr, serr)
 			}
-			if serr!=nil && err==nil {
+			if serr != nil && err == nil {
 				err = serr
 			}
 			if cc != nil {

@@ -5,19 +5,19 @@ package frmt
 
 import (
 	"clive/app"
-	"clive/dbg"
 	"clive/app/opt"
 	"clive/app/wr/frmt"
+	"clive/dbg"
 	"strconv"
 	"strings"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
 	wid, tabwid int
-	right bool
+	right       bool
 }
 
 func tabsOf(s []byte) int {
@@ -29,10 +29,10 @@ func tabsOf(s []byte) int {
 	return 0
 }
 
-type par {
-	lnc <-chan []rune
+type par struct {
+	lnc   <-chan []rune
 	ntabs int
-	x interface{}
+	x     interface{}
 }
 
 func (x *xCmd) frmt(parc chan par) {
@@ -63,8 +63,10 @@ func (x *xCmd) frmt(parc chan par) {
 			}
 			s := string(m)
 			if rawc == nil {
-				wid := x.wid - ntabs * x.tabwid
-				if wid < 5 { wid = 5 }
+				wid := x.wid - ntabs*x.tabwid
+				if wid < 5 {
+					wid = 5
+				}
 				rawc, wordc = frmt.Words()
 				lnc := frmt.Fmt(wordc, wid, x.right, frmt.OneBlankLine)
 				p := par{ntabs: ntabs, lnc: lnc}
@@ -147,4 +149,3 @@ func Run() {
 	}
 	app.Exits(nil)
 }
-

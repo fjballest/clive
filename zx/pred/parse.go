@@ -25,7 +25,7 @@ const (
 	tEqs   tok = '='
 	tNeqs  tok = '≠'
 	tMatch tok = '~'
-	tRexp tok = '≈'
+	tRexp  tok = '≈'
 	tNot   tok = '!'
 	tOr    tok = ':'
 	tAnd   tok = ','
@@ -59,7 +59,7 @@ func ispunct(r rune) bool {
 }
 
 func isspace(t rune) bool {
-	return t==' ' || t=='\t' || t=='\n'
+	return t == ' ' || t == '\t' || t == '\n'
 }
 
 func (t tok) class() tClass {
@@ -215,7 +215,7 @@ func (t tok) String() string {
 	return fmt.Sprintf("%c", t)
 }
 
-type lex  {
+type lex struct {
 	t     []rune
 	debug bool
 }
@@ -240,7 +240,7 @@ func (l *lex) scan() (tok, string, error) {
 }
 
 func (l *lex) next() (tok, string, error) {
-	for len(l.t)>0 && isspace(l.t[0]) {
+	for len(l.t) > 0 && isspace(l.t[0]) {
 		l.t = l.t[1:]
 	}
 	if len(l.t) == 0 {
@@ -248,7 +248,7 @@ func (l *lex) next() (tok, string, error) {
 	}
 	switch c := l.t[0]; c {
 	case '~':
-		if len(l.t)>1 && l.t[1]=='~' {
+		if len(l.t) > 1 && l.t[1] == '~' {
 			l.t = l.t[2:]
 			return tRexp, "~~", nil
 		}
@@ -264,10 +264,10 @@ func (l *lex) next() (tok, string, error) {
 		l.t = l.t[1:]
 		return tok(c), t, nil
 	case '>', '<', '!', '=':
-		if len(l.t)>1 && l.t[1]=='=' {
+		if len(l.t) > 1 && l.t[1] == '=' {
 			l.t = l.t[2:]
 			if c == '!' {
-				if len(l.t)>0 && l.t[0]=='=' {
+				if len(l.t) > 0 && l.t[0] == '=' {
 					l.t = l.t[1:]
 					return tNeq, "!==", nil
 				}
@@ -355,8 +355,8 @@ func (l *lex) parseOrs() (*Pred, error) {
 	args = append(args, a1)
 	for {
 		op, _, err := l.peek()
-		if err!=nil || op!=tOr {
-			if err==io.EOF || op==tRpar {
+		if err != nil || op != tOr {
+			if err == io.EOF || op == tRpar {
 				err = nil
 			}
 			if len(args) == 1 {
@@ -386,8 +386,8 @@ func (l *lex) parseAnds() (*Pred, error) {
 	args = append(args, a1)
 	for {
 		op, _, err := l.peek()
-		if err!=nil || op!=tAnd {
-			if err==io.EOF || op==tRpar || op==tOr {
+		if err != nil || op != tAnd {
+			if err == io.EOF || op == tRpar || op == tOr {
 				err = nil
 			}
 			if len(args) == 1 {
@@ -420,11 +420,11 @@ func (l *lex) parsePrim() (*Pred, error) {
 	case t == tPrune, t == tTrue, t == tFalse:
 		l.scan()
 		return &Pred{op: op(t)}, nil
-	case t==tMatch || t==tEqs || t==tRexp:
+	case t == tMatch || t == tEqs || t == tRexp:
 		// unary usage assumes path op ...
 		l.scan()
 		t2, v2, err := l.scan()
-		if err!=nil || t2.class()!=cName {
+		if err != nil || t2.class() != cName {
 			return nil, errors.New("name expected")
 		}
 		return &Pred{op: op(t), name: "path", value: v2}, nil
@@ -440,11 +440,11 @@ func (l *lex) parsePrim() (*Pred, error) {
 			return &Pred{op: oLe, name: "depth", value: v1}, nil
 		}
 		x, _, err := l.scan()
-		if err!=nil || x.class()!=cOp {
+		if err != nil || x.class() != cOp {
 			return nil, errors.New("op expected")
 		}
 		t2, v2, err := l.scan()
-		if err!=nil || t2.class()!=cName {
+		if err != nil || t2.class() != cName {
 			return nil, errors.New("name expected")
 		}
 		return &Pred{op: op(x), name: v1, value: v2}, nil
@@ -462,7 +462,7 @@ func (l *lex) parsePrim() (*Pred, error) {
 			return nil, err
 		}
 		r, _, err := l.scan()
-		if err!=nil || r!=tRpar {
+		if err != nil || r != tRpar {
 			return nil, errors.New("')' expected")
 		}
 		return arg, nil

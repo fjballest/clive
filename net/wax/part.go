@@ -17,7 +17,7 @@ import (
 	A part of a user interface. See the package documentation
 	for a description. You shouldn't use any field directly.
 */
-type Part  {
+type Part struct {
 	*Conn // used only for parts used as a control
 	sync.Mutex
 	l          *lex
@@ -139,7 +139,7 @@ func (p *Part) ws() {
 	http.Handle(wspath, websocket.Handler(func(ws *websocket.Conn) {
 		vprintf("%s: ws started\n", wspath)
 		defer vprintf("%s: ws done\n", wspath)
-		var buf [8*1024]byte
+		var buf [8 * 1024]byte
 		defer ws.Close()
 		inc := make(chan *Ev)
 		outc := make(chan *Ev)
@@ -234,7 +234,7 @@ func (p *Part) Serve(path string) {
 		panic("serve with no path")
 	}
 	p.path = path
-	if p.Evc==nil || p.Updc==nil {
+	if p.Evc == nil || p.Updc == nil {
 		panic("part: no evc/updc")
 	}
 	p.ws()

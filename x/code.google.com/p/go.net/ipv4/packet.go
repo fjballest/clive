@@ -10,12 +10,12 @@ import (
 )
 
 // A packetHandler represents the IPv4 datagram handler.
-type packetHandler  {
+type packetHandler struct {
 	c *net.IPConn
 	rawOpt
 }
 
-func (c *packetHandler) ok() bool { return c!=nil && c.c!=nil }
+func (c *packetHandler) ok() bool { return c != nil && c.c != nil }
 
 // ReadFrom reads an IPv4 datagram from the endpoint c, copying the
 // datagram into b.  It returns the received datagram as the IPv4
@@ -39,7 +39,7 @@ func (c *packetHandler) ReadFrom(b []byte) (h *Header, p []byte, cm *ControlMess
 	if cm, err = parseControlMessage(oob[:oobn]); err != nil {
 		return nil, nil, nil, err
 	}
-	if src!=nil && cm!=nil {
+	if src != nil && cm != nil {
 		cm.Src = src.IP
 	}
 	return
@@ -49,7 +49,7 @@ func slicePacket(b []byte) (h, p []byte, err error) {
 	if len(b) < HeaderLen {
 		return nil, nil, errHeaderTooShort
 	}
-	hdrlen := int(b[0]&0x0f)<<2
+	hdrlen := int(b[0]&0x0f) << 2
 	return b[:hdrlen], b[hdrlen:], nil
 }
 

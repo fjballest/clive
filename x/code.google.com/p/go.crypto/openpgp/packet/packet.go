@@ -38,14 +38,14 @@ func readLength(r io.Reader) (length int64, isPartial bool, err error) {
 	case buf[0] < 192:
 		length = int64(buf[0])
 	case buf[0] < 224:
-		length = int64(buf[0]-192)<<8
+		length = int64(buf[0]-192) << 8
 		_, err = readFull(r, buf[0:1])
 		if err != nil {
 			return
 		}
 		length += int64(buf[0]) + 192
 	case buf[0] < 255:
-		length = int64(1)<<(buf[0]&0x1f)
+		length = int64(1) << (buf[0] & 0x1f)
 		isPartial = true
 	default:
 		_, err = readFull(r, buf[0:4])
@@ -63,7 +63,7 @@ func readLength(r io.Reader) (length int64, isPartial bool, err error) {
 // partialLengthReader wraps an io.Reader and handles OpenPGP partial lengths.
 // The continuation lengths are parsed and removed from the stream and EOF is
 // returned at the end of the packet. See RFC 4880, section 4.2.2.4.
-type partialLengthReader  {
+type partialLengthReader struct {
 	r         io.Reader
 	remaining int64
 	isPartial bool
@@ -87,7 +87,7 @@ func (r *partialLengthReader) Read(p []byte) (n int, err error) {
 
 	n, err = r.r.Read(p[:int(toRead)])
 	r.remaining -= int64(n)
-	if n<int(toRead) && err==io.EOF {
+	if n < int(toRead) && err == io.EOF {
 		err = io.ErrUnexpectedEOF
 	}
 	return
@@ -95,7 +95,7 @@ func (r *partialLengthReader) Read(p []byte) (n int, err error) {
 
 // partialLengthWriter writes a stream of data using OpenPGP partial lengths.
 // See RFC 4880, section 4.2.2.4.
-type partialLengthWriter  {
+type partialLengthWriter struct {
 	w          io.WriteCloser
 	lengthByte [1]byte
 }
@@ -103,7 +103,7 @@ type partialLengthWriter  {
 func (w *partialLengthWriter) Write(p []byte) (n int, err error) {
 	for len(p) > 0 {
 		for power := uint(14); power < 32; power-- {
-			l := 1<<power
+			l := 1 << power
 			if len(p) >= l {
 				w.lengthByte[0] = 224 + uint8(power)
 				_, err = w.w.Write(w.lengthByte[:])
@@ -135,7 +135,7 @@ func (w *partialLengthWriter) Close() error {
 
 // A spanReader is an io.LimitReader, but it returns ErrUnexpectedEOF if the
 // underlying Reader returns EOF before the limit has been reached.
-type spanReader  {
+type spanReader struct {
 	r io.Reader
 	n int64
 }
@@ -149,7 +149,7 @@ func (l *spanReader) Read(p []byte) (n int, err error) {
 	}
 	n, err = l.r.Read(p)
 	l.n -= int64(n)
-	if l.n>0 && err==io.EOF {
+	if l.n > 0 && err == io.EOF {
 		err = io.ErrUnexpectedEOF
 	}
 	return
@@ -169,14 +169,14 @@ func readHeader(r io.Reader) (tag packetType, length int64, contents io.Reader, 
 	}
 	if buf[0]&0x40 == 0 {
 		// Old format packet
-		tag = packetType((buf[0]&0x3f)>>2)
-		lengthType := buf[0]&3
+		tag = packetType((buf[0] & 0x3f) >> 2)
+		lengthType := buf[0] & 3
 		if lengthType == 3 {
 			length = -1
 			contents = r
 			return
 		}
-		lengthBytes := 1<<lengthType
+		lengthBytes := 1 << lengthType
 		_, err = readFull(r, buf[0:lengthBytes])
 		if err != nil {
 			return
@@ -190,7 +190,7 @@ func readHeader(r io.Reader) (tag packetType, length int64, contents io.Reader, 
 	}
 
 	// New format packet
-	tag = packetType(buf[0]&0x3f)
+	tag = packetType(buf[0] & 0x3f)
 	length, isPartial, err := readLength(r)
 	if err != nil {
 		return
@@ -225,9 +225,9 @@ func serializeHeader(w io.Writer, ptype packetType, length int) (err error) {
 		n = 3
 	} else {
 		buf[1] = 255
-		buf[2] = byte(length>>24)
-		buf[3] = byte(length>>16)
-		buf[4] = byte(length>>8)
+		buf[2] = byte(length >> 24)
+		buf[3] = byte(length >> 16)
+		buf[4] = byte(length >> 8)
 		buf[5] = byte(length)
 		n = 6
 	}
@@ -498,7 +498,7 @@ func readMPI(r io.Reader) (mpi []byte, bitLength uint16, err error) {
 		return
 	}
 	bitLength = uint16(buf[0])<<8 | uint16(buf[1])
-	numBytes := (int(bitLength) + 7)/8
+	numBytes := (int(bitLength) + 7) / 8
 	mpi = make([]byte, numBytes)
 	_, err = readFull(r, mpi)
 	return
@@ -508,13 +508,13 @@ func readMPI(r io.Reader) (mpi []byte, bitLength uint16, err error) {
 // MPI.
 func mpiLength(n *big.Int) (mpiLengthInBytes int) {
 	mpiLengthInBytes = 2 /* MPI length */
-	mpiLengthInBytes += (n.BitLen() + 7)/8
+	mpiLengthInBytes += (n.BitLen() + 7) / 8
 	return
 }
 
 // writeMPI serializes a big integer to w.
 func writeMPI(w io.Writer, bitLength uint16, mpiBytes []byte) (err error) {
-	_, err = w.Write([]byte{byte(bitLength>>8), byte(bitLength)})
+	_, err = w.Write([]byte{byte(bitLength >> 8), byte(bitLength)})
 	if err == nil {
 		_, err = w.Write(mpiBytes)
 	}

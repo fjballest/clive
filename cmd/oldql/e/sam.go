@@ -7,13 +7,13 @@ import (
 	"clive/sre"
 )
 
-type eSel  {
+type eSel struct {
 	P0, P1 int
 	F      *file
 }
 
 // Editor in the Plan 9's sam style.
-type Sam  {
+type Sam struct {
 	fs      Fsys
 	In      chan string
 	Out     chan string

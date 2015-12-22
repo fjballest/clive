@@ -35,7 +35,7 @@ const (
 	LexerId
 )
 
-type Scan  {
+type Scan struct {
 	fname      string
 	lineno     int
 	sval       []rune
@@ -98,10 +98,10 @@ func (sc *Scan) toknum(c rune, isreal bool, Yylval *YySymType) (int, bool) {
 		for c = sc.nextrune(); unicode.IsDigit(c); c = sc.nextrune() {
 		}
 	}
-	if c=='E' || c=='e' {
+	if c == 'E' || c == 'e' {
 		isreal = true
 		c = sc.nextrune()
-		if c=='+' || c=='-' {
+		if c == '+' || c == '-' {
 			c = sc.nextrune()
 		}
 		for ; unicode.IsDigit(c); c = sc.nextrune() {
@@ -144,7 +144,7 @@ func (sc *Scan) tokstr() (c rune) {
 	sc.sval = sc.sval[0:0]
 	for {
 		c = sc.nextr()
-		if c=='"' || c==Eof {
+		if c == '"' || c == Eof {
 			break
 		}
 		if len(sc.sval) < cap(sc.sval) {
@@ -192,14 +192,14 @@ Again:
 	}
 	sc.putback(c)
 	sc.nextrune() // save in sval
-	if c>=utf8.RuneSelf || unicode.IsLetter(c) {
+	if c >= utf8.RuneSelf || unicode.IsLetter(c) {
 		for {
 			if cap(sc.sval) <= len(sc.sval) {
 				panic("max word size exceeded")
 			}
 			c = sc.nextrune()
 			valrune := unicode.IsDigit(c)
-			valrune = valrune || unicode.IsLetter(c) || c=='_' || c>utf8.RuneSelf
+			valrune = valrune || unicode.IsLetter(c) || c == '_' || c > utf8.RuneSelf
 			if !valrune {
 				break
 			}
@@ -428,7 +428,7 @@ func (d Derr) Error() string {
 	return string(d)
 }
 
-type Dflag  {
+type Dflag struct {
 	name rune
 }
 

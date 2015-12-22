@@ -5,23 +5,22 @@ import (
 	"clive/net/auth"
 	"clive/net/fifo"
 	"clive/zx"
-	"clive/zx/mfs"
 	"clive/zx/fstest"
 	"clive/zx/lfs"
+	"clive/zx/mfs"
 	"clive/zx/rfs"
 	"os"
-	"time"
 	"testing"
+	"time"
 )
 
 const tdir = "/tmp/lfs_test"
 
 var (
-	printf = dbg.FuncPrintf(os.Stderr, testing.Verbose)
-	mktrees = mklfstrees
+	printf   = dbg.FuncPrintf(os.Stderr, testing.Verbose)
+	mktrees  = mklfstrees
 	moreverb = false
 )
-
 
 func TestParse(t *testing.T) {
 	os.Args[0] = "nstest"
@@ -136,7 +135,7 @@ func mkrns(t *testing.T, d bool) *Tree {
 	go func() {
 		for c := range hc {
 			ai, err := auth.AtServer(*c, "", "zx", "finder")
-			if err!=nil && err!=auth.ErrDisabled {
+			if err != nil && err != auth.ErrDisabled {
 				dbg.Warn("auth %s: %s\n", c.Tag, err)
 				close(c.In, err)
 				close(c.Out, err)
@@ -269,7 +268,7 @@ path:"/d" name:"d" type:"p" mode:"0644" proto:"p2"
 	printf("ns is `%s`\n", ns)
 }
 
-type ResolveTest  {
+type ResolveTest struct {
 	Path  string
 	Dirs  []string
 	Paths []string
@@ -363,10 +362,10 @@ func TestResolve(t *testing.T) {
 	for _, r := range resolves {
 		_, dirs, paths, err := ns.Resolve(r.Path)
 		printf("sts %v\n", err)
-		if err!=nil && !r.Fails {
+		if err != nil && !r.Fails {
 			t.Fatalf("failed with %v", err)
 		}
-		if err==nil && r.Fails {
+		if err == nil && r.Fails {
 			t.Fatal("didn't fail")
 		}
 		if len(dirs) != len(paths) {
@@ -384,7 +383,7 @@ func TestResolve(t *testing.T) {
 		for _, p := range paths {
 			printf("\t`%s`,\n", p)
 		}
-		for i := 0; i<len(r.Dirs) && i<len(dirs); i++ {
+		for i := 0; i < len(r.Dirs) && i < len(dirs); i++ {
 			if r.Dirs[i] != dirs[i].String() {
 				t.Fatalf("bad result [%d]\n\tgot %s\n\twant %s\n",
 					i, dirs[i], r.Dirs[i])
@@ -398,7 +397,7 @@ func TestResolve(t *testing.T) {
 				t.Fatalf("did expect %s", r.Dirs[len(dirs)])
 			}
 		}
-		for i := 0; i<len(r.Paths) && i<len(paths); i++ {
+		for i := 0; i < len(r.Paths) && i < len(paths); i++ {
 			if r.Paths[i] != paths[i] {
 				t.Fatalf("bad result [%d]\n\tgot %s\n\twant %s\n",
 					i, paths[i], r.Paths[i])
@@ -415,7 +414,7 @@ func TestResolve(t *testing.T) {
 	}
 }
 
-type FindTest  {
+type FindTest struct {
 	Path         string
 	Pred         string
 	Spref, Dpref string
@@ -562,13 +561,13 @@ func testFind(t *testing.T) {
 			if d["err"] != "" {
 				continue
 			}
-			if d["type"] == "c" {		// for fuse&cfs
+			if d["type"] == "c" { // for fuse&cfs
 				d["type"] = "-"
 			}
 			outs = append(outs, d.TestFmt())
 		}
 		printf("done find %s %s sts %v\n", f.Path, f.Pred, cerror(dc))
-		for i := 0; i<len(f.Res) && i<len(outs); i++ {
+		for i := 0; i < len(f.Res) && i < len(outs); i++ {
 			if outs[i] != f.Res[i] {
 				t.Fatalf("bad result [%d]\n\tgot <%s>\n\twant <%s>\n", i, outs[i], f.Res[i])
 			}
@@ -599,7 +598,7 @@ func TestFindGet(t *testing.T) {
 			if d["err"] != "" {
 				continue
 			}
-			if d["type"] == "c" {		// for fuse&cfs
+			if d["type"] == "c" { // for fuse&cfs
 				d["type"] = "-"
 			}
 			outs = append(outs, d.TestFmt())
@@ -613,7 +612,7 @@ func TestFindGet(t *testing.T) {
 			printf("got %d bytes\n", tot)
 		}
 		printf("done find %s %s sts %v\n", f.Path, f.Pred, cerror(gc))
-		for i := 0; i<len(f.Res) && i<len(outs); i++ {
+		for i := 0; i < len(f.Res) && i < len(outs); i++ {
 			if outs[i] != f.Res[i] {
 				t.Fatalf("bad result [%d]\n\tgot %s\n\twant %s\n", i, outs[i], f.Res[i])
 			}
@@ -642,13 +641,13 @@ func TestRFind(t *testing.T) {
 			if d["err"] != "" {
 				continue
 			}
-			if d["type"] == "c" {		// for fuse&cfs
+			if d["type"] == "c" { // for fuse&cfs
 				d["type"] = "-"
 			}
 			outs = append(outs, d.TestFmt())
 		}
 		printf("done find %s %s sts %v\n", f.Path, f.Pred, cerror(dc))
-		for i := 0; i<len(f.Res) && i<len(outs); i++ {
+		for i := 0; i < len(f.Res) && i < len(outs); i++ {
 			if outs[i] != f.Res[i] {
 				t.Fatalf("bad result [%d]\n\tgot %s\n\twant %s\n", i, outs[i], f.Res[i])
 			}

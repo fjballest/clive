@@ -23,7 +23,7 @@ const (
 )
 
 // kexResult captures the outcome of a key exchange.
-type kexResult  {
+type kexResult struct {
 	// Session hash. See also RFC 4253, section 8.
 	H []byte
 
@@ -48,7 +48,7 @@ type kexResult  {
 
 // handshakeMagics contains data that is always included in the
 // session hash.
-type handshakeMagics  {
+type handshakeMagics struct {
 	clientVersion, serverVersion []byte
 	clientKexInit, serverKexInit []byte
 }
@@ -72,12 +72,12 @@ type kexAlgorithm interface {
 }
 
 // dhGroup is a multiplicative group suitable for implementing Diffie-Hellman key agreement.
-type dhGroup  {
+type dhGroup struct {
 	g, p *big.Int
 }
 
 func (group *dhGroup) diffieHellman(theirPublic, myPrivate *big.Int) (*big.Int, error) {
-	if theirPublic.Sign()<=0 || theirPublic.Cmp(group.p)>=0 {
+	if theirPublic.Sign() <= 0 || theirPublic.Cmp(group.p) >= 0 {
 		return nil, errors.New("ssh: DH parameter out of bounds")
 	}
 	return new(big.Int).Exp(theirPublic, myPrivate, group.p), nil
@@ -193,7 +193,7 @@ func (group *dhGroup) Server(c packetConn, randSource io.Reader, magics *handsha
 
 // ecdh performs Elliptic Curve Diffie-Hellman key exchange as
 // described in RFC 5656, section 4.
-type ecdh  {
+type ecdh struct {
 	curve elliptic.Curve
 }
 
@@ -263,7 +263,7 @@ func unmarshalECKey(curve elliptic.Curve, pubkey []byte) (x, y *big.Int, err err
 // validateECPublicKey checks that the point is a valid public key for
 // the given curve. See [SEC1], 3.2.2
 func validateECPublicKey(curve elliptic.Curve, x, y *big.Int) bool {
-	if x.Sign()==0 && y.Sign()==0 {
+	if x.Sign() == 0 && y.Sign() == 0 {
 		return false
 	}
 

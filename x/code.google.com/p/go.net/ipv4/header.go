@@ -51,12 +51,12 @@ const (
 type HeaderFlags int
 
 const (
-	MoreFragments HeaderFlags = 1<<iota // more fragments flag
-	DontFragment                        // don't fragment flag
+	MoreFragments HeaderFlags = 1 << iota // more fragments flag
+	DontFragment                          // don't fragment flag
 )
 
 // A Header represents an IPv4 header.
-type Header  {
+type Header struct {
 	Version  int         // protocol version
 	Len      int         // header length
 	TOS      int         // type-of-service
@@ -81,7 +81,7 @@ func (h *Header) String() string {
 
 // Please refer to the online manual; IP(4) on Darwin, FreeBSD and
 // OpenBSD.  IP(7) on Linux.
-const supportsNewIPInput = runtime.GOOS=="linux" || runtime.GOOS=="openbsd"
+const supportsNewIPInput = runtime.GOOS == "linux" || runtime.GOOS == "openbsd"
 
 // Marshal returns the binary encoding of the IPv4 header h.
 func (h *Header) Marshal() ([]byte, error) {
@@ -93,9 +93,9 @@ func (h *Header) Marshal() ([]byte, error) {
 	}
 	hdrlen := HeaderLen + len(h.Options)
 	b := make([]byte, hdrlen)
-	b[0] = byte(Version<<4 | (hdrlen>>2&0x0f))
+	b[0] = byte(Version<<4 | (hdrlen >> 2 & 0x0f))
 	b[posTOS] = byte(h.TOS)
-	flagsAndFragOff := (h.FragOff&0x1fff) | int(h.Flags<<13)
+	flagsAndFragOff := (h.FragOff & 0x1fff) | int(h.Flags<<13)
 	if supportsNewIPInput {
 		b[posTotalLen], b[posTotalLen+1] = byte(h.TotalLen>>8), byte(h.TotalLen)
 		b[posFragOff], b[posFragOff+1] = byte(flagsAndFragOff>>8), byte(flagsAndFragOff)
@@ -129,12 +129,12 @@ func ParseHeader(b []byte) (*Header, error) {
 	if len(b) < HeaderLen {
 		return nil, errHeaderTooShort
 	}
-	hdrlen := int(b[0]&0x0f)<<2
+	hdrlen := int(b[0]&0x0f) << 2
 	if hdrlen > len(b) {
 		return nil, errBufferTooShort
 	}
 	h := &Header{}
-	h.Version = int(b[0]>>4)
+	h.Version = int(b[0] >> 4)
 	h.Len = hdrlen
 	h.TOS = int(b[posTOS])
 	if supportsNewIPInput {
@@ -142,13 +142,13 @@ func ParseHeader(b []byte) (*Header, error) {
 		h.FragOff = int(b[posFragOff])<<8 | int(b[posFragOff+1])
 	} else {
 		h.TotalLen = int(*(*uint16)(unsafe.Pointer(&b[posTotalLen : posTotalLen+1][0])))
-		if runtime.GOOS!="freebsd" || freebsdVersion<1000000 {
+		if runtime.GOOS != "freebsd" || freebsdVersion < 1000000 {
 			h.TotalLen += hdrlen
 		}
 		h.FragOff = int(*(*uint16)(unsafe.Pointer(&b[posFragOff : posFragOff+1][0])))
 	}
-	h.Flags = HeaderFlags(h.FragOff&0xe000)>>13
-	h.FragOff = h.FragOff&0x1fff
+	h.Flags = HeaderFlags(h.FragOff&0xe000) >> 13
+	h.FragOff = h.FragOff & 0x1fff
 	h.ID = int(b[posID])<<8 | int(b[posID+1])
 	h.TTL = int(b[posTTL])
 	h.Protocol = int(b[posProtocol])

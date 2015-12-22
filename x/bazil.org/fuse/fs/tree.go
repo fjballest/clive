@@ -14,7 +14,7 @@ import (
 
 // A Tree implements a basic read-only directory tree for FUSE.
 // The Nodes contained in it may still be writable.
-type Tree  {
+type Tree struct {
 	tree
 }
 
@@ -53,12 +53,12 @@ func (t *Tree) Add(path string, node Node) {
 	}
 }
 
-type treeDir  {
+type treeDir struct {
 	name string
 	node Node
 }
 
-type tree  {
+type tree struct {
 	dir []treeDir
 }
 

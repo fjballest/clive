@@ -27,7 +27,7 @@ const (
 /*
 	Edition operation
 */
-type Edit  {
+type Edit struct {
 	Op    Tedit  // Eins | Edel
 	Off   int    // offset for the edit
 	Data  []rune // data inserted or deleted
@@ -37,7 +37,7 @@ type Edit  {
 /*
 	A position kept in text despite insertions/removals
 */
-type Mark  {
+type Mark struct {
 	Off      int
 	equaltoo bool
 }
@@ -68,7 +68,7 @@ type Edition interface {
 	Text kept in a series of rune slices with insert, delete,
 	marks, undo, and redo.
 */
-type Text  {
+type Text struct {
 	data   [][]rune
 	edits  []*Edit
 	nedits int // edits applied in edits
@@ -79,7 +79,7 @@ type Text  {
 	vers   int
 }
 
-type seek  {
+type seek struct {
 	off, i, n int
 }
 
@@ -113,7 +113,7 @@ func pdel(old, delp0, delp1 int) int {
 
 func (t *Text) markins(p0, n int) {
 	for _, m := range t.marks {
-		if m.Off!=p0 || m.equaltoo {
+		if m.Off != p0 || m.equaltoo {
 			m.Off = pdel(m.Off, p0, n)
 		}
 	}
@@ -188,17 +188,17 @@ func (t *Text) addEdit(op Tedit, pos int, data []rune, same bool) *Edit {
 	if t.nedits < len(t.edits) {
 		t.edits = t.edits[:t.nedits]
 	}
-	if op==Eins && t.nedits>0 {
+	if op == Eins && t.nedits > 0 {
 		e := t.edits[t.nedits-1]
-		if e.Op==Eins && e.Off+len(e.Data)==pos &&
-			len(e.Data)<1024 {
+		if e.Op == Eins && e.Off+len(e.Data) == pos &&
+			len(e.Data) < 1024 {
 			e.Data = append(e.Data, data...)
 			return &Edit{op, pos, data, e.Contd}
 		}
-	} else if op==Edel && t.nedits>0 {
+	} else if op == Edel && t.nedits > 0 {
 		e := t.edits[t.nedits-1]
-		if e.Op==Edel && e.Off+len(e.Data)==pos &&
-			len(e.Data)<1024 {
+		if e.Op == Edel && e.Off+len(e.Data) == pos &&
+			len(e.Data) < 1024 {
 			e.Data = append(e.Data, data...)
 			return &Edit{op, pos, data, e.Contd}
 		}
@@ -228,7 +228,7 @@ func (t *Text) edit(e *Edit) error {
 	(and apply the edit to the text)
 */
 func (t *Text) Undo() *Edit {
-	if t.edits==nil || t.nedits==0 {
+	if t.edits == nil || t.nedits == 0 {
 		return nil
 	}
 	t.vers++
@@ -250,12 +250,12 @@ func (t *Text) Undo() *Edit {
 	(and apply the edit to the text).
 */
 func (t *Text) Redo() *Edit {
-	if t.edits==nil || t.nedits==len(t.edits) {
+	if t.edits == nil || t.nedits == len(t.edits) {
 		return nil
 	}
 	t.vers++
 	e := *t.edits[t.nedits]
-	e.Contd = t.nedits<len(t.edits)-1 && t.edits[t.nedits+1].Contd
+	e.Contd = t.nedits < len(t.edits)-1 && t.edits[t.nedits+1].Contd
 	t.nedits++
 	t.edit(&e)
 	t.markEdit(&e)
@@ -327,7 +327,7 @@ func (t *Text) del(off int, n int) []rune {
 		off -= len(d[i])
 	}
 	nd, tot := 0, 0
-	for ; i<len(d) && tot<n; tot += nd {
+	for ; i < len(d) && tot < n; tot += nd {
 		nd = len(d[i]) - off
 		if nd > n-tot {
 			nd = n - tot
@@ -430,7 +430,7 @@ func (t *Text) Get(off int, n int) <-chan []rune {
 			off -= len(d[i])
 		}
 		nd, tot := 0, 0
-		for ; i<len(d) && tot<n; tot += nd {
+		for ; i < len(d) && tot < n; tot += nd {
 			nd = len(d[i]) - off
 			if nd > n-tot {
 				nd = n - tot
@@ -480,7 +480,7 @@ func (t *Text) Getc(off int) rune {
 		t.seek.off++
 		return d[t.seek.i][t.seek.n]
 	}
-	if off<0 || off>=t.sz {
+	if off < 0 || off >= t.sz {
 		t.seek.off = -2
 		return rune(0)
 	}

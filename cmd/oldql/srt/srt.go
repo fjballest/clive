@@ -26,21 +26,21 @@ const (
 	sTime              // sort as a time
 )
 
-type addr  {
+type addr struct {
 	from, to int
 	kind     sKind
 	rev      bool
 	all      bool
 }
 
-type xSort  {
+type xSort struct {
 	lines   []string
 	keys    [][]interface{} // field or line keys to sort
 	revs    []bool          // which addr is reverse order?
 	dprintf dbg.PrintFunc
 }
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	debug     bool
@@ -56,7 +56,7 @@ func (x *xCmd) parseKeys() error {
 	for _, r := range x.keys {
 		rev := false
 		kind := sStr
-		if len(r)>0 && r[len(r)-1]=='r' {
+		if len(r) > 0 && r[len(r)-1] == 'r' {
 			rev = true
 			r = r[:len(r)-1]
 		}
@@ -102,17 +102,17 @@ func (x *xCmd) parseKeys() error {
 }
 
 func (a addr) match(fno, nfld int) bool {
-	if a.from>0 && fno<a.from {
+	if a.from > 0 && fno < a.from {
 		return false
 	}
-	if a.to>0 && fno>a.to {
+	if a.to > 0 && fno > a.to {
 		return false
 	}
 	negfno := nfld - fno + 1
-	if a.from<0 && negfno>-a.from {
+	if a.from < 0 && negfno > -a.from {
 		return false
 	}
-	if a.to<0 && negfno< -a.to {
+	if a.to < 0 && negfno < -a.to {
 		return false
 	}
 	return true
@@ -225,7 +225,7 @@ func (x *xSort) initKey(k sKind, fldnb int, rev bool, all bool, one bool, seps s
 					return strings.ContainsRune(seps, r)
 				})
 			}
-			if fldnb>=1 && fldnb<=len(fields) {
+			if fldnb >= 1 && fldnb <= len(fields) {
 				fld = fields[fldnb-1]
 			} else {
 				fld = ""
@@ -269,7 +269,7 @@ func (x *xCmd) RunFile(d zx.Dir, dc <-chan []byte) error {
 		if !ok {
 			break
 		}
-		if len(s)>0 && s[len(s)-1]=='\n' {
+		if len(s) > 0 && s[len(s)-1] == '\n' {
 			s = s[:len(s)-1]
 		}
 		xs.lines = append(xs.lines, s)
@@ -317,7 +317,7 @@ func (x *xCmd) sort() error {
 
 	last := ""
 	for i, ln := range xs.lines {
-		if x.uniq && i>0 && last==ln {
+		if x.uniq && i > 0 && last == ln {
 			continue
 		}
 		x.Printf("%s\n", ln)

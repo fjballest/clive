@@ -20,7 +20,7 @@ import (
 // PublicSuffix function.
 var List cookiejar.PublicSuffixList = list{}
 
-type list {}
+type list struct{}
 
 func (list) PublicSuffix(domain string) string {
 	ps, _ := PublicSuffix(domain)
@@ -59,15 +59,15 @@ loop:
 			break
 		}
 
-		u := nodes[f]>>(nodesBitsTextOffset + nodesBitsTextLength)
+		u := nodes[f] >> (nodesBitsTextOffset + nodesBitsTextLength)
 		icann = u&(1<<nodesBitsICANN-1) != 0
 		u >>= nodesBitsICANN
 		u = children[u&(1<<nodesBitsChildren-1)]
-		lo = u&(1<<childrenBitsLo - 1)
+		lo = u & (1<<childrenBitsLo - 1)
 		u >>= childrenBitsLo
-		hi = u&(1<<childrenBitsHi - 1)
+		hi = u & (1<<childrenBitsHi - 1)
 		u >>= childrenBitsHi
-		switch u&(1<<childrenBitsNodeType - 1) {
+		switch u & (1<<childrenBitsNodeType - 1) {
 		case nodeTypeNormal:
 			suffix = 1 + dot
 		case nodeTypeException:
@@ -112,9 +112,9 @@ func find(label string, lo, hi uint32) uint32 {
 // nodeLabel returns the label for the i'th node.
 func nodeLabel(i uint32) string {
 	x := nodes[i]
-	length := x&(1<<nodesBitsTextLength - 1)
+	length := x & (1<<nodesBitsTextLength - 1)
 	x >>= nodesBitsTextLength
-	offset := x&(1<<nodesBitsTextOffset - 1)
+	offset := x & (1<<nodesBitsTextOffset - 1)
 	return text[offset : offset+length]
 }
 

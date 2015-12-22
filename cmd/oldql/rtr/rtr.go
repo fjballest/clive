@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	debug                 bool
@@ -32,8 +32,8 @@ func matches(r rune, from []rune, to []rune) rune {
 			}
 			return to[i]
 		}
-		if i+2<len(from) && from[i+1]=='-' {
-			if r>=from[i] && r<=from[i+2] {
+		if i+2 < len(from) && from[i+1] == '-' {
+			if r >= from[i] && r <= from[i+2] {
 				if len(to) == 1 {
 					return to[0]
 				}
@@ -114,7 +114,7 @@ func Run(c cmd.Ctx) (err error) {
 		x.Usage(x.Stderr)
 		return err
 	}
-	if !x.up && !x.low && !x.title && del=="" {
+	if !x.up && !x.low && !x.title && del == "" {
 		if len(args) < 2 {
 			x.Usage(x.Stderr)
 			return err
@@ -126,14 +126,14 @@ func Run(c cmd.Ctx) (err error) {
 		x.Usage(x.Stderr)
 		return err
 	}
-	if (x.up || x.low || x.title || del!="") && from!="" {
+	if (x.up || x.low || x.title || del != "") && from != "" {
 		x.Usage(x.Stderr)
 		return err
 	}
 	x.del = []rune(del)
 	x.from = []rune(from)
 	x.to = []rune(to)
-	if len(x.from)!=len(x.to) && len(x.to)!=1 {
+	if len(x.from) != len(x.to) && len(x.to) != 1 {
 		x.Usage(x.Stderr)
 		return err
 	}

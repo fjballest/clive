@@ -12,7 +12,7 @@ import (
 // buffer provides a linked list buffer for data exchange
 // between producer and consumer. Theoretically the buffer is
 // of unlimited capacity as it does no allocation of its own.
-type buffer  {
+type buffer struct {
 	// protects concurrent access to head, tail and closed
 	*sync.Cond
 
@@ -23,7 +23,7 @@ type buffer  {
 }
 
 // An element represents a single link in a linked list.
-type element  {
+type element struct {
 	buf  []byte
 	next *element
 }
@@ -75,7 +75,7 @@ func (b *buffer) Read(buf []byte) (n int, err error) {
 			continue
 		}
 		// if there is a next buffer, make it the head
-		if len(b.head.buf)==0 && b.head!=b.tail {
+		if len(b.head.buf) == 0 && b.head != b.tail {
 			b.head = b.head.next
 			continue
 		}

@@ -13,15 +13,15 @@ import (
 // A Conn represents a network endpoint that uses IPv6 transport.
 // It allows to set basic IP-level socket options such as traffic
 // class and hop limit.
-type Conn  {
+type Conn struct {
 	genericOpt
 }
 
-type genericOpt  {
+type genericOpt struct {
 	net.Conn
 }
 
-func (c *genericOpt) ok() bool { return c!=nil && c.Conn!=nil }
+func (c *genericOpt) ok() bool { return c != nil && c.Conn != nil }
 
 // PathMTU returns a path MTU value for the destination associated
 // with the endpoint.
@@ -48,17 +48,17 @@ func NewConn(c net.Conn) *Conn {
 // including IPv6 header manipulation.  It also provides datagram
 // based network I/O methods specific to the IPv6 and higher layer
 // protocols such as OSPF, GRE, and UDP.
-type PacketConn  {
+type PacketConn struct {
 	genericOpt
 	dgramOpt
 	payloadHandler
 }
 
-type dgramOpt  {
+type dgramOpt struct {
 	net.PacketConn
 }
 
-func (c *dgramOpt) ok() bool { return c!=nil && c.PacketConn!=nil }
+func (c *dgramOpt) ok() bool { return c != nil && c.PacketConn != nil }
 
 // SetControlMessage allows to receive the per packet basis IP-level
 // socket options.

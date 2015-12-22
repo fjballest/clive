@@ -35,51 +35,50 @@ package main
 */
 
 import (
-	"clive/dbg"
+	"bytes"
 	"clive/app/opt"
+	"clive/dbg"
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
-	"bytes"
-	"io/ioutil"
-	"errors"
 	"path"
-	"fmt"
-	"strings"
-	"time"
 	"strconv"
+	"strings"
 	"syscall"
+	"time"
 )
 
 // A command to be run under xcmd control.
-type Cmd {
-	Ln string	// command line
-	Restart bool	// restart if the command dies
-	At string	// run at time times (cron format: min hour day month wday)
-	Bin string	// restart if the binary changes
-	Env map[string]string
-	x *exec.Cmd
-	name string	// Base(dir)
-	dir string	// path of the dir for the cmd
-	runt time.Time	// start time
+type Cmd struct {
+	Ln      string // command line
+	Restart bool   // restart if the command dies
+	At      string // run at time times (cron format: min hour day month wday)
+	Bin     string // restart if the binary changes
+	Env     map[string]string
+	x       *exec.Cmd
+	name    string    // Base(dir)
+	dir     string    // path of the dir for the cmd
+	runt    time.Time // start time
 
-	donec chan bool
+	donec      chan bool
 	sigrestart bool
-	bint time.Time
+	bint       time.Time
 }
 
 var (
-	opts = opt.New("")
+	opts        = opt.New("")
 	debug, verb bool
-	dprintf = dbg.FlagPrintf(os.Stderr, &debug)
-	vprintf = dbg.FlagPrintf(os.Stderr, &verb)
-	shell = "rc"
-	dir = "/tmp/xcmd"
-	cmd1 string
-	ErrNotYet = errors.New("not ready to start")
-	ErrExited = errors.New("command has exited")
-	ErrRestart = errors.New("restart required")
+	dprintf     = dbg.FlagPrintf(os.Stderr, &debug)
+	vprintf     = dbg.FlagPrintf(os.Stderr, &verb)
+	shell       = "rc"
+	dir         = "/tmp/xcmd"
+	cmd1        string
+	ErrNotYet   = errors.New("not ready to start")
+	ErrExited   = errors.New("command has exited")
+	ErrRestart  = errors.New("restart required")
 )
-
 
 func walk(ds []os.FileInfo, name string) os.FileInfo {
 	for _, d := range ds {
@@ -122,7 +121,7 @@ func (c *Cmd) exit(s string) {
 	fn := path.Join(c.dir, "exit")
 	ioutil.WriteFile(fn, []byte(s+"\n"), 0640)
 	if s != "" {
-		flag := os.O_WRONLY|os.O_APPEND|os.O_CREATE
+		flag := os.O_WRONLY | os.O_APPEND | os.O_CREATE
 		fd, err := os.OpenFile(path.Join(c.dir, "err"), flag, 0644)
 		if err != nil {
 			return
@@ -133,7 +132,7 @@ func (c *Cmd) exit(s string) {
 }
 
 func setEnv(env []string, name, val string) []string {
-	pref := name + "=";
+	pref := name + "="
 	nv := fmt.Sprintf("%s=%s", name, val)
 	for i, e := range env {
 		if strings.HasPrefix(e, pref) {
@@ -161,7 +160,7 @@ func (c *Cmd) Start() error {
 		return fmt.Errorf("%s: out: %s", c.name, err)
 	}
 	x.Stdout = fd
-	flag := os.O_WRONLY|os.O_APPEND|os.O_CREATE
+	flag := os.O_WRONLY | os.O_APPEND | os.O_CREATE
 	fd, err = os.OpenFile(path.Join(c.dir, "err"), flag, 0644)
 	if err != nil {
 		return fmt.Errorf("%s: err: %s", c.name, err)
@@ -169,7 +168,7 @@ func (c *Cmd) Start() error {
 	if len(c.Env) > 0 {
 		env := os.Environ()
 		for k, v := range c.Env {
-			env = setEnv(env, k , v)
+			env = setEnv(env, k, v)
 		}
 		x.Env = env
 	}
@@ -187,7 +186,7 @@ func (c *Cmd) ctlproc() {
 	doselect {
 	case <-c.donec:
 		return
-	case <-time.After(5*time.Second):
+	case <-time.After(5 * time.Second):
 		sig := ""
 		if c.Bin != "" {
 			if d, err := os.Stat(c.Bin); err == nil {
@@ -224,7 +223,7 @@ func (c *Cmd) ctlproc() {
 			p.Signal(syscall.SIGTERM)
 			time.Sleep(time.Second)
 			p.Kill()
-			
+
 		default:
 			dprintf("%s: sig: intr\n", c.name)
 			p.Signal(os.Interrupt)
@@ -316,7 +315,7 @@ func (c *Cmd) Go() error {
 		}
 		vprintf("%s: exit sts '%v'\n", c.name, err)
 		if err != ErrRestart && c.Restart && time.Since(c.runt) < 5*time.Second {
-			time.Sleep(5*time.Second)
+			time.Sleep(5 * time.Second)
 		}
 		if err := c.load(); err != nil {
 			vprintf("%s: load: %s\n", c.name, err)
@@ -327,9 +326,9 @@ func (c *Cmd) Go() error {
 
 func NewCmd(dir string) (*Cmd, error) {
 	c := &Cmd{
-		dir: dir,
+		dir:  dir,
 		name: path.Base(dir),
-		Env: make(map[string]string),
+		Env:  make(map[string]string),
 	}
 	return c, c.load()
 }
@@ -375,7 +374,7 @@ func (c *Cmd) load() error {
 		if err := ioutil.WriteFile(fn, []byte{}, 0640); err != nil {
 			return fmt.Errorf("%s: in: %s", c.name, err)
 		}
-	}	
+	}
 	return nil
 }
 
@@ -393,7 +392,7 @@ func xcmd() error {
 			ncmds[nm] = true
 			c := cmds[nm]
 			if c != nil {
-				continue	// old
+				continue // old
 			}
 			c, err = NewCmd(path.Join(dir, nm))
 			if err == ErrNotYet {
@@ -423,7 +422,7 @@ func xcmd() error {
 				delete(cmds, nm)
 			}
 		}
-		time.Sleep(5*time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 

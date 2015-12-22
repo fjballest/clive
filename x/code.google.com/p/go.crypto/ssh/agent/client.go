@@ -80,7 +80,7 @@ const (
 
 // maxAgentResponseBytes is the maximum agent reply size that is accepted. This
 // is a sanity check, not a limit in the spec.
-const maxAgentResponseBytes = 16<<20
+const maxAgentResponseBytes = 16 << 20
 
 // Agent messages:
 // These structures mirror the wire format of the corresponding ssh agent
@@ -89,21 +89,21 @@ const maxAgentResponseBytes = 16<<20
 // 3.4 Generic replies from agent to client
 const agentFailure = 5
 
-type failureAgentMsg {}
+type failureAgentMsg struct{}
 
 const agentSuccess = 6
 
-type successAgentMsg {}
+type successAgentMsg struct{}
 
 // See [PROTOCOL.agent], section 2.5.2.
 const agentRequestIdentities = 11
 
-type requestIdentitiesAgentMsg {}
+type requestIdentitiesAgentMsg struct{}
 
 // See [PROTOCOL.agent], section 2.5.2.
 const agentIdentitiesAnswer = 12
 
-type identitiesAnswerAgentMsg  {
+type identitiesAnswerAgentMsg struct {
 	NumKeys uint32 `sshtype:"12"`
 	Keys    []byte `ssh:"rest"`
 }
@@ -111,7 +111,7 @@ type identitiesAnswerAgentMsg  {
 // See [PROTOCOL.agent], section 2.6.2.
 const agentSignRequest = 13
 
-type signRequestAgentMsg  {
+type signRequestAgentMsg struct {
 	KeyBlob []byte `sshtype:"13"`
 	Data    []byte
 	Flags   uint32
@@ -122,18 +122,18 @@ type signRequestAgentMsg  {
 // 3.6 Replies from agent to client for protocol 2 key operations
 const agentSignResponse = 14
 
-type signResponseAgentMsg  {
+type signResponseAgentMsg struct {
 	SigBlob []byte `sshtype:"14"`
 }
 
-type publicKey  {
+type publicKey struct {
 	Format string
 	Rest   []byte `ssh:"rest"`
 }
 
 // Key represents a protocol 2 public key as defined in
 // [PROTOCOL.agent], section 2.5.2.
-type Key  {
+type Key struct {
 	Format  string
 	Blob    []byte
 	Comment string
@@ -171,7 +171,7 @@ func (k *Key) Verify(data []byte, sig *ssh.Signature) error {
 	return errors.New("agent: agent key does not know how to verify")
 }
 
-type wireKey  {
+type wireKey struct {
 	Format string
 	Rest   []byte `ssh:"rest"`
 }
@@ -200,7 +200,7 @@ func parseKey(in []byte) (out *Key, rest []byte, err error) {
 }
 
 // client is a client for an ssh-agent process.
-type client  {
+type client struct {
 	// conn is typically a *net.UnixConn
 	conn io.ReadWriter
 	// mu is used to prevent concurrent access to the agent
@@ -367,7 +367,7 @@ func unmarshal(packet []byte) (interface{}, error) {
 	return msg, nil
 }
 
-type rsaKeyMsg  {
+type rsaKeyMsg struct {
 	Type     string `sshtype:"17"`
 	N        *big.Int
 	E        *big.Int
@@ -378,7 +378,7 @@ type rsaKeyMsg  {
 	Comments string
 }
 
-type dsaKeyMsg  {
+type dsaKeyMsg struct {
 	Type     string `sshtype:"17"`
 	P        *big.Int
 	Q        *big.Int
@@ -388,7 +388,7 @@ type dsaKeyMsg  {
 	Comments string
 }
 
-type ecdsaKeyMsg  {
+type ecdsaKeyMsg struct {
 	Type     string `sshtype:"17"`
 	Curve    string
 	KeyBytes []byte
@@ -447,7 +447,7 @@ func (c *client) insertKey(s interface{}, comment string) error {
 	return errors.New("agent: failure")
 }
 
-type rsaCertMsg  {
+type rsaCertMsg struct {
 	Type      string `sshtype:"17"`
 	CertBytes []byte
 	D         *big.Int
@@ -457,14 +457,14 @@ type rsaCertMsg  {
 	Comments  string
 }
 
-type dsaCertMsg  {
+type dsaCertMsg struct {
 	Type      string `sshtype:"17"`
 	CertBytes []byte
 	X         *big.Int
 	Comments  string
 }
 
-type ecdsaCertMsg  {
+type ecdsaCertMsg struct {
 	Type      string `sshtype:"17"`
 	CertBytes []byte
 	D         *big.Int
@@ -548,7 +548,7 @@ func (c *client) Signers() ([]ssh.Signer, error) {
 	return result, nil
 }
 
-type agentKeyringSigner  {
+type agentKeyringSigner struct {
 	agent *client
 	pub   ssh.PublicKey
 }

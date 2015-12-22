@@ -16,7 +16,7 @@ import (
 	"unicode"
 )
 
-type parFmt  {
+type parFmt struct {
 	rc chan string
 	ec chan bool
 }
@@ -58,7 +58,7 @@ func startPar(out io.Writer, indent0, indent string, max int) *parFmt {
 				pos, _ = fmt.Fprintf(out, "%s", indent)
 				firstword = true
 			}
-			if !firstword && len(w)>0 && !unicode.IsPunct(rune(w[0])) {
+			if !firstword && len(w) > 0 && !unicode.IsPunct(rune(w[0])) {
 				lastr := rune(lastword[len(lastword)-1])
 				if !strings.ContainsRune("([{", lastr) {
 					fmt.Fprintf(out, " ")
@@ -90,7 +90,7 @@ func (pf *parFmt) Close() {
 	<-pf.ec
 }
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	wid int
@@ -123,7 +123,7 @@ func (x *xCmd) RunFile(d zx.Dir, dc <-chan []byte) error {
 			pf.Close()
 			return cerror(rc)
 		}
-		if s=="\n" || s=="" {
+		if s == "\n" || s == "" {
 			pf.Close()
 			pf = nil
 			x.Printf("\n")

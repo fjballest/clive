@@ -16,11 +16,11 @@ import (
 	"strings"
 )
 
-type addr  {
+type addr struct {
 	from, to int
 }
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	debug   bool
@@ -55,7 +55,7 @@ func (x *xCmd) parseRanges() error {
 		}
 		a := addr{from, to}
 		x.addrs = append(x.addrs, a)
-		if from==1 && to==-1 {
+		if from == 1 && to == -1 {
 			x.all = true
 		}
 	}
@@ -63,17 +63,17 @@ func (x *xCmd) parseRanges() error {
 }
 
 func (a addr) match(fno, nfld int) bool {
-	if a.from>0 && fno<a.from {
+	if a.from > 0 && fno < a.from {
 		return false
 	}
-	if a.to>0 && fno>a.to {
+	if a.to > 0 && fno > a.to {
 		return false
 	}
 	negfno := nfld - fno + 1
-	if a.from<0 && negfno>-a.from {
+	if a.from < 0 && negfno > -a.from {
 		return false
 	}
-	if a.to<0 && negfno< -a.to {
+	if a.to < 0 && negfno < -a.to {
 		return false
 	}
 	return true
@@ -105,7 +105,7 @@ func (x *xCmd) RunFile(d zx.Dir, dc <-chan []byte) error {
 		if !ok {
 			break
 		}
-		if len(s)>0 && s[len(s)-1]=='\n' {
+		if len(s) > 0 && s[len(s)-1] == '\n' {
 			s = s[:len(s)-1]
 		}
 		var fields []string

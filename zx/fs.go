@@ -91,7 +91,7 @@ type Dir map[string]string
 /*
 	Results from FindGets: A Dir and a chan for regular file data.
 */
-type DirData  {
+type DirData struct {
 	Dir   Dir           // Dir found
 	Datac <-chan []byte // Data or nil
 }
@@ -221,7 +221,7 @@ type RWTree interface {
 /*
 	A File records together a Tree and a Dir used within the tree.
 */
-type File  {
+type File struct {
 	T Tree
 	D Dir
 }
@@ -239,7 +239,7 @@ type AuthTree interface {
 }
 
 // Information provided to ServerTrees per-client
-type ClientInfo  {
+type ClientInfo struct {
 	Ai  *auth.Info // auth info for the client
 	Tag string     // from the conn to the client
 	Id  int        // unique per-client id

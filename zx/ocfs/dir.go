@@ -20,7 +20,7 @@ import (
 /*
 	Cached directory entry (and file data)
 */
-type Dir  {
+type Dir struct {
 	// inmutable
 	z    *Cfs
 	path string // cached from d
@@ -62,7 +62,7 @@ func (z *Cfs) newDir(d zx.Dir) *Dir {
 		z:     z,
 		d:     d,
 		path:  d["path"],
-		mode:  uint(d.Uint64("mode")&0777),
+		mode:  uint(d.Uint64("mode") & 0777),
 		epoch: *z.epoch,
 	}
 	if zd.mode == 0 {
@@ -142,10 +142,10 @@ func (zd *Dir) DumpTo(w io.Writer, lvl int) {
 }
 
 func (zd *Dir) canWstat(ai *auth.Info, nd zx.Dir) error {
-	isowner := ai==nil || zd.d["Uid"]=="" || zd.d["Uid"]==ai.Uid
+	isowner := ai == nil || zd.d["Uid"] == "" || zd.d["Uid"] == ai.Uid
 	canwrite := zd.canWrite(ai)
 	for k, v := range nd {
-		if v==zd.d[k] || ai!=nil && ai.Uid=="elf" {
+		if v == zd.d[k] || ai != nil && ai.Uid == "elf" {
 			continue // no change really
 		}
 		switch k {
@@ -168,7 +168,7 @@ func (zd *Dir) canWstat(ai *auth.Info, nd zx.Dir) error {
 				return fmt.Errorf("%s: %s", k, dbg.ErrPerm)
 			}
 		default:
-			if len(k)>0 && k[0]>='A' && k[0]<='Z' &&
+			if len(k) > 0 && k[0] >= 'A' && k[0] <= 'Z' &&
 				!canwrite && !isowner {
 				return fmt.Errorf("mtime: %s", dbg.ErrPerm)
 			}
@@ -178,11 +178,11 @@ func (zd *Dir) canWstat(ai *auth.Info, nd zx.Dir) error {
 }
 
 func (zd *Dir) canExec(ai *auth.Info) bool {
-	if ai==nil || ai.Uid=="elf" {
+	if ai == nil || ai.Uid == "elf" {
 		return zd.mode&0111 != 0
 	}
 	uid := zd.d["Uid"]
-	if uid=="" || ai.Uid==uid || ai.Uid=="elf" {
+	if uid == "" || ai.Uid == uid || ai.Uid == "elf" {
 		return zd.mode&0111 != 0
 	}
 	if ai.InGroup(zd.d["Gid"]) {
@@ -192,11 +192,11 @@ func (zd *Dir) canExec(ai *auth.Info) bool {
 }
 
 func (zd *Dir) canWrite(ai *auth.Info) bool {
-	if ai==nil || ai.Uid=="elf" {
+	if ai == nil || ai.Uid == "elf" {
 		return zd.mode&0222 != 0
 	}
 	uid := zd.d["Uid"]
-	if uid=="" || ai.Uid==uid {
+	if uid == "" || ai.Uid == uid {
 		return zd.mode&0222 != 0
 	}
 	if ai.InGroup(zd.d["Gid"]) {
@@ -206,11 +206,11 @@ func (zd *Dir) canWrite(ai *auth.Info) bool {
 }
 
 func (zd *Dir) canRead(ai *auth.Info) bool {
-	if ai==nil || ai.Uid=="elf" {
+	if ai == nil || ai.Uid == "elf" {
 		return zd.mode&0444 != 0
 	}
 	uid := zd.d["Uid"]
-	if uid=="" || ai.Uid==uid {
+	if uid == "" || ai.Uid == uid {
 		return zd.mode&0444 != 0
 	}
 	if ai.InGroup(zd.d["Gid"]) {

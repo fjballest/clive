@@ -81,7 +81,7 @@ func (zd *Dir) refreshData() {
 }
 
 func (zd *Dir) staleMeta() bool {
-	if zd.path=="/Ctl" || zd.path=="/Chg" {
+	if zd.path == "/Ctl" || zd.path == "/Chg" {
 		return false
 	}
 	if zd.ghost {
@@ -89,7 +89,7 @@ func (zd *Dir) staleMeta() bool {
 		return true
 	}
 	if *zd.z.epoch != 0 {
-		if *zd.z.epoch!=zd.epoch || zd.mct==zt {
+		if *zd.z.epoch != zd.epoch || zd.mct == zt {
 			zd.cprintf("mstale", "invalidated")
 			return true
 		}
@@ -108,15 +108,15 @@ func (zd *Dir) staleMeta() bool {
 
 // see comment in pollProc.
 func (zd *Dir) poll(force bool) {
-	if zd.ghost || *zd.z.epoch!=0 || zd.child==nil {
+	if zd.ghost || *zd.z.epoch != 0 || zd.child == nil {
 		return
 	}
 	zd.Lock()
-	if zd.ghost || *zd.z.epoch!=0 || zd.child==nil {
+	if zd.ghost || *zd.z.epoch != 0 || zd.child == nil {
 		zd.Unlock()
 		return
 	}
-	if time.Since(zd.dct)>=CachePollIval || force {
+	if time.Since(zd.dct) >= CachePollIval || force {
 		zd.getDir()
 	}
 	ds := zd.children()
@@ -145,7 +145,7 @@ func (zd *Dir) updmeta(rlocked bool) (bool, bool, error) {
 		zd.Unlock()
 		zd.RLock()
 	}
-	return mchg || err!=nil, dchg || err!=nil, err
+	return mchg || err != nil, dchg || err != nil, err
 }
 
 func (zd *Dir) updMeta(rlocked bool) error {
@@ -167,8 +167,8 @@ func (zd *Dir) updData(rlocked bool) error {
 	}
 	isdir := zd.d["type"] == "d"
 	mustread := dchg ||
-		isdir && (zd.child==nil || zd.dct==zt) ||
-		!isdir && (zd.data==nil || zd.dct==zt)
+		isdir && (zd.child == nil || zd.dct == zt) ||
+		!isdir && (zd.data == nil || zd.dct == zt)
 
 	// dirs might have stale children, yet the dir might be up-to-date
 	// (the dir mtime might be ok  because inodes keep metadata.
@@ -184,12 +184,12 @@ func (zd *Dir) updData(rlocked bool) error {
 	}
 
 	if mustread {
-		if zd.child==nil && zd.data==nil {
+		if zd.child == nil && zd.data == nil {
 			zd.cprintf("upddata", "unread")
 		} else {
 			zd.cprintf("upddata", "invalidated")
 		}
-		inval := zd.child!=nil || zd.data!=nil
+		inval := zd.child != nil || zd.data != nil
 		if rlocked {
 			zd.RUnlock()
 			zd.Lock()
@@ -203,7 +203,7 @@ func (zd *Dir) updData(rlocked bool) error {
 			zd.Unlock()
 			zd.RLock()
 		}
-		if inval || err!=nil {
+		if inval || err != nil {
 			zd.z.changed(zd)
 			return err
 		}
@@ -220,16 +220,16 @@ func (zd *Dir) updData(rlocked bool) error {
 // this does not can changed(), the caller should do that.
 func (zd *Dir) stated(from string, d zx.Dir, err error) (mchanged, dchanged bool, rerr error) {
 	pzd := zd.parent
-	if zd.path=="/Ctl" || zd.path=="/Chg" {
+	if zd.path == "/Ctl" || zd.path == "/Chg" {
 		return false, false, nil
 	}
-	if d==nil || d["rm"]!="" {
+	if d == nil || d["rm"] != "" {
 		if zd.ghost {
 			zd.d["rm"] = "y" // safety first, but it's ok
 			return false, false, dbg.ErrNotExist
 		}
 		zd.kill(from)
-		if pzd!=nil && zd.epoch==0 {
+		if pzd != nil && zd.epoch == 0 {
 			pzd.invalData() // cause a re-read.
 		}
 		return true, true, err
@@ -260,12 +260,12 @@ func (zd *Dir) stated(from string, d zx.Dir, err error) (mchanged, dchanged bool
 
 	ot, nt := zd.d["type"], d["type"]
 	overs, nvers := zd.d.Int("vers"), d.Int("vers")
-	if nt==ot && nt!="d" && nvers!=0 && nvers<overs {
+	if nt == ot && nt != "d" && nvers != 0 && nvers < overs {
 		zd.cprintf("stated", "old update ignored v %d (%s)\n", nvers, from)
 		return dchanged, dchanged, nil
 	}
 	switch {
-	case ot!=nt && (nt=="d" || ot=="d"):
+	case ot != nt && (nt == "d" || ot == "d"):
 		// file became dir or dir became file
 		zd.child = nil
 		dchanged = true
@@ -273,14 +273,14 @@ func (zd *Dir) stated(from string, d zx.Dir, err error) (mchanged, dchanged bool
 	case zd.d["mtime"] != d["mtime"]:
 		zd.cprintf(zd.path, "dchanged mtime %s (%s)\n", d["mtime"], from)
 		dchanged = true
-	case d["Sum"]!="" && zd.d["Sum"]!=d["Sum"]:
+	case d["Sum"] != "" && zd.d["Sum"] != d["Sum"]:
 		ns := d["Sum"]
 		if len(ns) > 6 {
 			ns = ns[:6] + "..."
 		}
 		zd.cprintf(zd.path, "dchanged Sum %s (%s)\n", ns, from)
 		dchanged = true
-	case nt!="d" && zd.d["size"]!=d["size"]:
+	case nt != "d" && zd.d["size"] != d["size"]:
 		zd.cprintf(zd.path, "dchanged size %s (%s)\n", d["size"], from)
 		dchanged = true
 	}
@@ -291,7 +291,7 @@ func (zd *Dir) stated(from string, d zx.Dir, err error) (mchanged, dchanged bool
 		d["vers"] = zd.d["vers"]
 	}
 	zd.d = d
-	zd.mode = uint(zd.d.Uint64("mode")&0777)
+	zd.mode = uint(zd.d.Uint64("mode") & 0777)
 	zd.refreshMeta()
 	if dchanged {
 		zd.invalData()
@@ -302,7 +302,7 @@ func (zd *Dir) stated(from string, d zx.Dir, err error) (mchanged, dchanged bool
 // Lfs does not provide up Uid, Gid, Wuid, and Sum attributes,
 // this updates those when the underlying file system is just Lfs.
 func (zd *Dir) wstatAttrs(names ...string) {
-	if zd.path=="/Ctl" || zd.path=="/Chg" || zd.path=="/" {
+	if zd.path == "/Ctl" || zd.path == "/Chg" || zd.path == "/" {
 		return
 	}
 	wt, ok := zd.z.fs.(*lfs.Lfs)
@@ -369,7 +369,7 @@ func (zd *Dir) getDir() error {
 	for i := 0; i < len(ds); i++ {
 		cd := ds[i]
 		cname := cd["name"]
-		if cname=="" || cname=="." || cname==".." || cname==".#zx" {
+		if cname == "" || cname == "." || cname == ".." || cname == ".#zx" {
 			continue
 		}
 		zcd, ok := zd.child[cname]

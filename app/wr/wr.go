@@ -5,30 +5,30 @@
 package wr
 
 import (
-	"clive/dbg"
+	"bytes"
 	"clive/app"
 	"clive/app/nsutil"
 	"clive/app/opt"
+	"clive/app/wr/refs"
+	"clive/dbg"
+	"clive/zx"
+	"fmt"
 	"io"
 	"path/filepath"
-	"clive/app/wr/refs"
-	"clive/zx"
-	"bytes"
-	"fmt"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
-	debugPars   bool
-	debugIndent bool
-	debugSplit  bool
+	debugPars                                 bool
+	debugIndent                               bool
+	debugSplit                                bool
 	hflag, tflag, lflag, mflag, pflag, psflag bool
-	outdir, outfig, outpdf string
-	uname, oname, oext	string
-	max int
-	refsdir string
+	outdir, outfig, outpdf                    string
+	uname, oname, oext                        string
+	max                                       int
+	refsdir                                   string
 }
 
 var (
@@ -88,7 +88,7 @@ func (x *xCmd) outExt() string {
 	}
 }
 
-func (x *xCmd) startFile(d zx.Dir) (chan<-string, <-chan *Text) {
+func (x *xCmd) startFile(d zx.Dir) (chan<- string, <-chan *Text) {
 	app.Dprintf("file %s\n", d["path"])
 	iname := d["name"]
 	x.uname = d["upath"]
@@ -106,7 +106,7 @@ func (x *xCmd) startFile(d zx.Dir) (chan<-string, <-chan *Text) {
 			x.outdir = filepath.Dir(a)
 		}
 	}
-	x.outpdf = ibase+".pdf"
+	x.outpdf = ibase + ".pdf"
 	x.outfig = zx.Path(x.outdir, ibase)
 	app.Dprintf("oname %s\n", x.oname)
 	app.Dprintf("outfig %s\n", x.outfig)
@@ -130,8 +130,8 @@ func (x *xCmd) out(t *Text) error {
 	}
 	var b bytes.Buffer
 	if x.oext == ".ms" {
-		fmt.Fprintf(&b,`.\" pic %s | tbl | eqn | ` +
-			`groff -ms -m pspic  |pstopdf -i -o  %s` + "\n",
+		fmt.Fprintf(&b, `.\" pic %s | tbl | eqn | `+
+			`groff -ms -m pspic  |pstopdf -i -o  %s`+"\n",
 			x.oname, x.outpdf)
 	}
 	wr(t, x.max, &b, x.outfig)
@@ -147,7 +147,7 @@ func (x *xCmd) out(t *Text) error {
 	for len(dat) > 0 {
 		n := len(dat)
 		if n > 16*1024 {
-			n = 16*1024
+			n = 16 * 1024
 		}
 		var ok bool
 		if fout != nil {
@@ -197,7 +197,7 @@ func (x *xCmd) wr(in chan interface{}) error {
 				lnc, tc = x.startFile(m)
 			}
 		case []byte:
-			if lnc == nil  {
+			if lnc == nil {
 				lnc, tc = x.startFile(stdin)
 			}
 			lnc <- string(m)
@@ -216,11 +216,11 @@ func (x *xCmd) wr(in chan interface{}) error {
 
 func Run() {
 	x := &xCmd{
-		Ctx: app.AppCtx(),
-		max: 70,
+		Ctx:     app.AppCtx(),
+		max:     70,
 		refsdir: refs.Dir,
-		outdir: ".",
-		outfig: "./wrfig",
+		outdir:  ".",
+		outfig:  "./wrfig",
 	}
 	x.Flags = opt.New("{file}")
 	x.NewFlag("D", "debug", &x.Debug)
@@ -244,7 +244,7 @@ func Run() {
 		x.Usage()
 		app.Exits("usage")
 	}
-	
+
 	x.hflag = x.hflag || sect != ""
 	cliveMan = sect != "" || x.mflag
 	if len(args) != 0 {

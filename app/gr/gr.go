@@ -4,37 +4,37 @@
 package gr
 
 import (
-	"clive/dbg"
+	"bytes"
 	"clive/app"
+	"clive/app/opt"
+	"clive/dbg"
 	"clive/sre"
 	"clive/zx"
-	"clive/app/opt"
-	"bytes"
 	"fmt"
 	"unicode/utf8"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
-	found	bool
-	re, ere	*sre.ReProg
-	out chan interface{}
+	found   bool
+	re, ere *sre.ReProg
+	out     chan interface{}
 
 	sflag, aflag, mflag, vflag, fflag, lflag, xflag, eflag bool
 }
 
-type rgRep {
-	name string
+type rgRep struct {
+	name   string
 	p0, p1 int
-	b bytes.Buffer
+	b      bytes.Buffer
 }
 
 // addresses written by gr under the -x flag
-type Addr {
-	Name string
-	Ln0, Ln1 int	// line range for next output
-	P0, P1 int		// point (rune) range for next output
+type Addr struct {
+	Name     string
+	Ln0, Ln1 int // line range for next output
+	P0, P1   int // point (rune) range for next output
 }
 
 func (a Addr) String() string {
@@ -62,7 +62,7 @@ func (x *xCmd) rgreport(rg *rgRep) {
 		m := rg.b.String()
 		eln := ""
 		if len(m) == 0 || m[len(m)-1] != '\n' {
-			eln="\n"
+			eln = "\n"
 		}
 		err = app.Printf("%s%s", m, eln)
 	case x.xflag:
@@ -72,7 +72,7 @@ func (x *xCmd) rgreport(rg *rgRep) {
 		m := rg.b.String()
 		eln := ""
 		if len(m) == 0 || m[len(m)-1] != '\n' {
-			eln="\n"
+			eln = "\n"
 		}
 		err = app.Printf("%s:%d,%d:\n%s%s", rg.name, rg.p0, rg.p1, m, eln)
 	}
@@ -138,7 +138,7 @@ func (x *xCmd) gr(in chan interface{}) {
 			x.out <- m
 		case []byte:
 			s := string(d)
-			nln +=nlines(s)
+			nln += nlines(s)
 			matches := matching
 			if x.ere != nil {
 				if matching {
@@ -158,7 +158,7 @@ func (x *xCmd) gr(in chan interface{}) {
 				x.rgreport(rg)
 				rg = nil
 				if x.xflag {
-					x.out <- s	// fwd as a string
+					x.out <- s // fwd as a string
 				}
 				continue
 			}
@@ -219,17 +219,17 @@ func (x *xCmd) freport(name string, rs []rune, rg sre.Range, off int) {
 		m := match(rs, rg.P0, rg.P1)
 		eln := ""
 		if len(m) == 0 || m[len(m)-1] != '\n' {
-			eln="\n"
+			eln = "\n"
 		}
 		err = app.Printf("%s%s", m, eln)
 	case x.xflag:
-		x.out <- Addr{Name: name, P0: rg.P0+off, P1: rg.P1+off}
+		x.out <- Addr{Name: name, P0: rg.P0 + off, P1: rg.P1 + off}
 		err = app.Printf("%s", match(rs, rg.P0, rg.P1))
 	default:
 		m := match(rs, rg.P0, rg.P1)
 		eln := ""
 		if len(m) == 0 || m[len(m)-1] != '\n' {
-			eln="\n"
+			eln = "\n"
 		}
 		err = app.Printf("%s:#%d,#%d:\n%s%s", name, rg.P0+off, rg.P1+off, m, eln)
 	}
@@ -240,10 +240,10 @@ func (x *xCmd) freport(name string, rs []rune, rg sre.Range, off int) {
 
 func (x *xCmd) xreport(rs []rune, rg sre.Range) {
 	m := match(rs, rg.P0, rg.P1)
-	x.out <- m	// fwd as string, not as []byte
+	x.out <- m // fwd as string, not as []byte
 }
 
-type gRange {
+type gRange struct {
 	sre.Range
 	matches bool
 }
@@ -300,7 +300,7 @@ func (x *xCmd) fullgr(in chan interface{}) {
 			x.out <- m
 			off = 0
 		case string:
-			off += utf8.RuneCountInString(d)	// Ada people came to Golang?
+			off += utf8.RuneCountInString(d) // Ada people came to Golang?
 			x.out <- d
 		case []byte:
 			s := string(d)
@@ -353,7 +353,7 @@ func (x *xCmd) chkFlags() {
 }
 
 // update ql/builtin.go bltin table if new aliases are added or some are removed.
-var aliases = map[string]string {
+var aliases = map[string]string{
 	"gg": "-xef",
 	"gv": "-xvef",
 	"gx": "-xf",

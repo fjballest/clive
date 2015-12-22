@@ -42,8 +42,8 @@ func (s *Sam) runCmd(c *Cmd) (err error) {
 		}
 	}()
 
-	if (c.Adr==nil || c.Adr.Kind!='"') && c.dot.F==nil &&
-		c.tab.flag&CFnowin==0 {
+	if (c.Adr == nil || c.Adr.Kind != '"') && c.dot.F == nil &&
+		c.tab.flag&CFnowin == 0 {
 		return fmt.Errorf("cmd '%c': no current panel", c.Ch)
 	}
 	if c.tab.flag&CFinsist != 0 {
@@ -70,7 +70,7 @@ func (s *Sam) runCmd(c *Cmd) (err error) {
 				a.Kind = '*'
 			}
 			c.Adr = a
-		case c.Adr.Kind=='"' && c.Adr.Left==nil:
+		case c.Adr.Kind == '"' && c.Adr.Left == nil:
 			a := &Addr{Kind: '.'}
 			if c.tab.flag&CFall != 0 {
 				a.Kind = '*'
@@ -168,8 +168,8 @@ func (s *Sam) cmdSel(a *Addr, sel eSel, d eDir) eSel {
 			if a.Kind == '-' {
 				d = eBck
 			}
-			if a.Left==nil ||
-				a.Left.Kind=='+' || a.Left.Kind=='-' {
+			if a.Left == nil ||
+				a.Left.Kind == '+' || a.Left.Kind == '-' {
 				sel = sel.lnAddr(1, d)
 			}
 		default:
@@ -324,7 +324,7 @@ func cmdb(s *Sam, c *Cmd) {
 		panic("b: empty name")
 	}
 	flds := strings.Fields(str)
-	if len(flds)==0 || len(flds[0])==0 {
+	if len(flds) == 0 || len(flds[0]) == 0 {
 		panic("b: empty name")
 	}
 	str = flds[0]
@@ -429,7 +429,7 @@ func cmdr(s *Sam, c *Cmd) {
 	if err != nil {
 		panic(err)
 	}
-	dirty := c.dot.P0==0 && c.dot.P1==len(data) && str==f.path
+	dirty := c.dot.P0 == 0 && c.dot.P1 == len(data) && str == f.path
 	f.log.Repl(c.dot.P0, c.dot.P1-c.dot.P0, data, dirty)
 	c.dot.P1 = c.dot.P1 + len(data)
 }
@@ -469,7 +469,7 @@ func cmdgv(s *Sam, c *Cmd) {
 		panic(fmt.Sprintf("g: regexp: %s", err))
 	}
 	rg := re.Exec(c.dot.F, c.dot.P0, c.dot.P1)
-	if (len(rg)==0 && c.Ch=='v') || (len(rg)>0 && c.Ch=='g') {
+	if (len(rg) == 0 && c.Ch == 'v') || (len(rg) > 0 && c.Ch == 'g') {
 		for _, child := range c.Child {
 			child.dot = c.dot
 			child.dot.setFileSel()
@@ -482,7 +482,7 @@ func cmdmt(s *Sam, c *Cmd) {
 	f := c.dot.F
 	sel := s.cmdSel(c.Xaddr, c.dot, eAbs)
 	txt := c.dot.Get()
-	if c.dot.P0==sel.P1 && c.dot.F==sel.F {
+	if c.dot.P0 == sel.P1 && c.dot.F == sel.F {
 		return
 	}
 	/*
@@ -506,7 +506,7 @@ func cmdmt(s *Sam, c *Cmd) {
 
 func cmdp(s *Sam, c *Cmd) {
 	txt := c.dot.Get()
-	if c.Ch=='p' || (len(txt)>0 && txt[len(txt)-1]=='\n') {
+	if c.Ch == 'p' || (len(txt) > 0 && txt[len(txt)-1] == '\n') {
 		s.Out <- string(txt)
 	} else {
 		s.Out <- fmt.Sprintf("%s\n", string(txt))
@@ -519,13 +519,13 @@ func cmdEq(s *Sam, c *Cmd) {
 	out := f.path + ":"
 	n0 := dot.P0
 	n1 := dot.P1
-	if len(c.Txt)>0 && c.Txt[0]=='#' {
+	if len(c.Txt) > 0 && c.Txt[0] == '#' {
 		out += "#"
 	} else {
 		sel := eSel{P0: 0, P1: dot.P0, F: f}
 		n0 = sel.nlines() + 1
 		n1 = n0 + dot.nlines()
-		if dot.P1>0 && dot.P1>dot.P0 && f.Getc(dot.P1-1)=='\n' {
+		if dot.P1 > 0 && dot.P1 > dot.P0 && f.Getc(dot.P1-1) == '\n' {
 			n1--
 		}
 	}
@@ -541,14 +541,14 @@ func cmds(s *Sam, c *Cmd) {
 	if err != nil {
 		panic(fmt.Sprintf("s: %s", err))
 	}
-	if c.Flag==0 && c.N==0 {
+	if c.Flag == 0 && c.N == 0 {
 		c.N = 1
 	}
 	nth := 0
 	sel := c.dot
 	for _, rg := range sels {
 		nth++
-		if c.N!=nth && c.Flag==0 {
+		if c.N != nth && c.Flag == 0 {
 			continue
 		}
 		sel = c.dot
@@ -597,7 +597,7 @@ func cmdxy(s *Sam, c *Cmd) {
 		return
 	}
 	dprintf("loop dot %s\n", c.dot)
-	sels, err := c.dot.matches(c.Rexp, c.Ch=='y')
+	sels, err := c.dot.matches(c.Rexp, c.Ch == 'y')
 	if err != nil {
 		panic(fmt.Sprintf("%c: %s", c.Ch, err))
 	}
@@ -611,7 +611,7 @@ func cmdsh(s *Sam, c *Cmd) {
 	if err != nil {
 		panic(err)
 	}
-	if c.Ch=='|' || c.Ch=='>' {
+	if c.Ch == '|' || c.Ch == '>' {
 		txt := c.dot.Get()
 		data := []byte(string(txt))
 		go func() {
@@ -627,13 +627,13 @@ func cmdsh(s *Sam, c *Cmd) {
 	if err != nil {
 		panic(err)
 	}
-	if c.Ch=='|' || c.Ch=='<' {
+	if c.Ch == '|' || c.Ch == '<' {
 		txt := []rune(string(data))
 		f := c.dot.F
 		f.log.Repl(c.dot.P0, c.dot.P1-c.dot.P0, txt, true)
 		c.dot.P1 = c.dot.P0 + len(txt)
 	}
-	if c.Ch=='!' || c.Ch=='>' {
+	if c.Ch == '!' || c.Ch == '>' {
 		s.Out <- string(data)
 	}
 }
@@ -649,7 +649,7 @@ func cmdw(s *Sam, c *Cmd) {
 	if err := s.fs.Put(str, rc); err != nil {
 		panic(err)
 	}
-	if str==f.path && c.dot.P0==0 && c.dot.P1==f.Len() {
+	if str == f.path && c.dot.P0 == 0 && c.dot.P1 == f.Len() {
 		f.dirty = false
 	}
 }
@@ -679,7 +679,7 @@ func cmdXY(s *Sam, c *Cmd) {
 			rg := re.ExecStr(nm, 0, len(nm))
 			matches = len(rg) > 0
 		}
-		if (c.Ch=='X' && !matches) || (c.Ch=='Y' && matches) {
+		if (c.Ch == 'X' && !matches) || (c.Ch == 'Y' && matches) {
 			continue
 		}
 		c.dot = f.Sel()

@@ -1,11 +1,11 @@
 package ql
 
 import (
-	"testing"
 	"clive/app"
 	"clive/dbg"
-	"os"
 	"io"
+	"os"
+	"testing"
 )
 
 func TestParseError(t *testing.T) {
@@ -16,7 +16,7 @@ func TestParseError(t *testing.T) {
 		Run()
 	}
 	x := app.Go(ql, "ql", "-n", "-c", "pw{d")
-	<- x.Wait
+	<-x.Wait
 	if x.Sts == nil {
 		t.Logf("warn: ql didn't fail")
 	}
@@ -30,7 +30,7 @@ func TestParseCmd(t *testing.T) {
 		Run()
 	}
 	x := app.Go(ql, "ql", "-n", "-c", "pwd")
-	<- x.Wait
+	<-x.Wait
 	if x.Sts != nil {
 		t.Fatalf("did fail")
 	}
@@ -47,93 +47,93 @@ func TestParseCmd(t *testing.T) {
 	`|gf ../echo,1 | gr -x '(^[a-z][^\n]*$)' '(^}$)' | gr -xvef Run | pf -x`,
 	`|gf ../echo,1 | gr -xf  '(^[a-z][^\n]*\n)' '(^}\n)' | gr -xef Run | srt -x | pf -sx`,
 	`|gf /tmp/echo,1 | gx  '(^[a-z][^\n]*\n)' '(^}\n)' | gg Run | gv foobar | pf -x`,
-	`|gf /tmp/echo,1 | gx  '(^[a-z][^\n]*\n)' '(^}\n)' | gg Run | 
+	`|gf /tmp/echo,1 | gx  '(^[a-z][^\n]*\n)' '(^}\n)' | gg Run |
 		gp '~m.*&1' | trex -u | pf -x`,
 */
-var cmds = []string {
-/*
-	`,1`,
-	`,1|pf -l`,
-	`/tmp | cd ; |pwd`
-	`/tmp |cd |pf`,
-	`/tmkkp |cd |pf`,
-	`,- |> gr '^var '`,
-	`{date;pwd}`,
-	`|{date; pwd } | trex -u`,
-	`exit oops`,
-	`|exit oops`,
-	`|sleep 5`,
-	`-|trex -u`,
-	`trex -u <`,
-	`flag`,
-	`flag +D; flag -D`,
-	`type sleep`,
-	`|echo <{.,1|pf -l}`,
-	`|echo <<{.,1 |pf -l}`,
-	`|echo <<<{.,1 |pf -l}`,
-	`|echo ' quoted {}$
-string'`,
-	`|echo a >/tmp/a; |cat /tmp/a`, 
-	`|echo a >>/tmp/a; |cat /tmp/a`, 
-	`/tmp/a /fdsfds >[2]/tmp/c| pf >/tmp/b ; |cat /tmp/b; |cat /tmp/c`,
-	`lf /tmp/a /fdsfds  |[21] pf >/tmp/b ; |cat /tmp/b`,
-	`|ls /tmp/a /fdsfds  >[2=1] ; date`,
-	`|echo a |> grep x  >[2]/dev/null | cat |[21] wc >[21] /tmp/b ; |cat /tmp/b`,
-	`|echo script name is $argv0 and has $#argv args`,
-	`v1←x ; |echo $v1`,
-	`v1 = {a b c} ; |echo $v1 $v1[1] $#v1`,
-	`v1 = {a b c} ; v1[2] = x; |echo $v1 $v1[1] $#v1`,
-	`v1 = {a b c} ; v1[2] = <{|echo a b c}; |echo $v1 $v1[1] $#v1`,
-	`v1 ={[temp]/tmp [home]/usr/foo} ; v1[temp] = {foo bar}; |echo $v1 X $v1[home] X $v1[temp] $#v1`,
-	`{echo a ; echo b } &x; wait x`,
-	`|echo $status`,
-	`argv ={a b c}; for arg $argv {
-	echo arg is $arg
-} > /tmp/a &x; wait x; |cat /tmp/a`,
-	`func testfn {
-	ls /tmp y z
-	echo ls status is $status
-	echo testfn has $#argv args $argv
-	 /fsfs
-	status = {testfn: $status}
-}
-	|testfn a b c
-	|echo x $status x
-`,
-	`{echo a ; echo  b} | >{
-	pf
-	trex -u
-} ; |echo`,
-	`/tmp/df, |> diffs  <|{|gf ../diffs,}`,
-	`|: 3 + 3 '<' 2`,
-	`. && /fsd >[2] /dev/null && /fdsfds || |echo x && sdsd && |echo x || |echo q && |echo w`,
+var cmds = []string{
+	/*
+	   	`,1`,
+	   	`,1|pf -l`,
+	   	`/tmp | cd ; |pwd`
+	   	`/tmp |cd |pf`,
+	   	`/tmkkp |cd |pf`,
+	   	`,- |> gr '^var '`,
+	   	`{date;pwd}`,
+	   	`|{date; pwd } | trex -u`,
+	   	`exit oops`,
+	   	`|exit oops`,
+	   	`|sleep 5`,
+	   	`-|trex -u`,
+	   	`trex -u <`,
+	   	`flag`,
+	   	`flag +D; flag -D`,
+	   	`type sleep`,
+	   	`|echo <{.,1|pf -l}`,
+	   	`|echo <<{.,1 |pf -l}`,
+	   	`|echo <<<{.,1 |pf -l}`,
+	   	`|echo ' quoted {}$
+	   string'`,
+	   	`|echo a >/tmp/a; |cat /tmp/a`,
+	   	`|echo a >>/tmp/a; |cat /tmp/a`,
+	   	`/tmp/a /fdsfds >[2]/tmp/c| pf >/tmp/b ; |cat /tmp/b; |cat /tmp/c`,
+	   	`lf /tmp/a /fdsfds  |[21] pf >/tmp/b ; |cat /tmp/b`,
+	   	`|ls /tmp/a /fdsfds  >[2=1] ; date`,
+	   	`|echo a |> grep x  >[2]/dev/null | cat |[21] wc >[21] /tmp/b ; |cat /tmp/b`,
+	   	`|echo script name is $argv0 and has $#argv args`,
+	   	`v1←x ; |echo $v1`,
+	   	`v1 = {a b c} ; |echo $v1 $v1[1] $#v1`,
+	   	`v1 = {a b c} ; v1[2] = x; |echo $v1 $v1[1] $#v1`,
+	   	`v1 = {a b c} ; v1[2] = <{|echo a b c}; |echo $v1 $v1[1] $#v1`,
+	   	`v1 ={[temp]/tmp [home]/usr/foo} ; v1[temp] = {foo bar}; |echo $v1 X $v1[home] X $v1[temp] $#v1`,
+	   	`{echo a ; echo b } &x; wait x`,
+	   	`|echo $status`,
+	   	`argv ={a b c}; for arg $argv {
+	   	echo arg is $arg
+	   } > /tmp/a &x; wait x; |cat /tmp/a`,
+	   	`func testfn {
+	   	ls /tmp y z
+	   	echo ls status is $status
+	   	echo testfn has $#argv args $argv
+	   	 /fsfs
+	   	status = {testfn: $status}
+	   }
+	   	|testfn a b c
+	   	|echo x $status x
+	   `,
+	   	`{echo a ; echo  b} | >{
+	   	pf
+	   	trex -u
+	   } ; |echo`,
+	   	`/tmp/df, |> diffs  <|{|gf ../diffs,}`,
+	   	`|: 3 + 3 '<' 2`,
+	   	`. && /fsd >[2] /dev/null && /fdsfds || |echo x && sdsd && |echo x || |echo q && |echo w`,
 
-	`. && /fsd >[2] /dev/null && {
-	/fdsfds
-} || |echo x && sdsd && {
-	|echo x 
-} || |echo q && /fdsfds && {
-	echo y
-} || {
-	echo else
-}
-`,
-	`,- | for file {
-		echo file is $file
-	}`,
-	`,~fns |> words | for w {
-		echo word is $w
-	}`,
-	`,~fns |> lns | for ln {
-		echo line is $ln
-		flds = <{echo $ln}
-		echo $#flds fields:  $flds^'X'
-	}`,
-	`x = 3; while : $x '>' 0 {
-		echo $x
-		x = <{: $x - 1}
-	}`,
-*/
+	   	`. && /fsd >[2] /dev/null && {
+	   	/fdsfds
+	   } || |echo x && sdsd && {
+	   	|echo x
+	   } || |echo q && /fdsfds && {
+	   	echo y
+	   } || {
+	   	echo else
+	   }
+	   `,
+	   	`,- | for file {
+	   		echo file is $file
+	   	}`,
+	   	`,~fns |> words | for w {
+	   		echo word is $w
+	   	}`,
+	   	`,~fns |> lns | for ln {
+	   		echo line is $ln
+	   		flds = <{echo $ln}
+	   		echo $#flds fields:  $flds^'X'
+	   	}`,
+	   	`x = 3; while : $x '>' 0 {
+	   		echo $x
+	   		x = <{: $x - 1}
+	   	}`,
+	*/
 	`,~fns |> lns | for ln {
 		echo line is $ln
 		flds = <{echo $ln}
@@ -164,7 +164,7 @@ func TestCmds(t *testing.T) {
 			args = []string{"ql", "-X", "-c", c}
 		}
 		x := app.Go(ql, args...)
-		<- x.Wait
+		<-x.Wait
 		if x.Sts != nil {
 			t.Logf("did fail with sts %v", x.Sts)
 		}
@@ -179,7 +179,7 @@ func TestParseFile(t *testing.T) {
 		Run()
 	}
 	x := app.Go(ql, "ql", "-n", "example")
-	<- x.Wait
+	<-x.Wait
 	if x.Sts != nil {
 		t.Fatalf("did fail")
 	}
@@ -197,7 +197,7 @@ func TestParseStdin(t *testing.T) {
 	defer fd.Close()
 	go func() {
 		io.Copy(w, fd)
-		w.Close()		
+		w.Close()
 	}()
 	os.Stdin = r
 	app.New()
@@ -209,7 +209,7 @@ func TestParseStdin(t *testing.T) {
 		Run()
 	}
 	x := app.Go(ql, "ql", "-n")
-	<- x.Wait
+	<-x.Wait
 	if x.Sts != nil {
 		t.Fatalf("did fail")
 	}

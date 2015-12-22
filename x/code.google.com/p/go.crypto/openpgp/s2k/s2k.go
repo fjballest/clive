@@ -116,7 +116,7 @@ func Parse(r io.Reader) (f func(out, in []byte), err error) {
 		if err != nil {
 			return
 		}
-		count := (16 + int(buf[8]&15))<<(uint32(buf[8]>>4) + 6)
+		count := (16 + int(buf[8]&15)) << (uint32(buf[8]>>4) + 6)
 		f := func(out, in []byte) {
 			Iterated(out, h, in, buf[:8], count)
 		}

@@ -1,9 +1,9 @@
 package zxfs
 
 import (
-	"clive/zx"
 	fs "clive/fuse"
 	"clive/x/bazil.org/fuse"
+	"clive/zx"
 	"fmt"
 )
 

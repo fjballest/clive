@@ -21,7 +21,7 @@ import (
 
 const Poison = 242
 
-type Vent  {
+type Vent struct {
 	name   string // of variable or constant
 	tid    uint   // type
 	addr   uint32 // in memory (offset for args, l.vars.)
@@ -31,7 +31,7 @@ type Vent  {
 	fields []Vent // aggregate members
 }
 
-type Tent  {
+type Tent struct {
 	name   string   // of the type
 	fmt    rune     // value format character
 	first  int      // legal value or index
@@ -43,7 +43,7 @@ type Tent  {
 	fields []Vent   // only name, tid, and addr defined
 }
 
-type Pent  {
+type Pent struct {
 	name   string // for procedure/function
 	addr   uint   // for its code in text
 	nargs  int    // # of arguments
@@ -57,7 +57,7 @@ type Pent  {
 	vars   []Vent // Var descriptors for local vars.
 }
 
-type Pc  {
+type Pc struct {
 	pc     uint32
 	fname  string
 	lineno uint
@@ -65,7 +65,7 @@ type Pc  {
 	n      uint // # of leaks in this Pc; for leaks
 }
 
-type FileSt  {
+type FileSt struct {
 	bin    *bufio.Reader
 	fname  string
 	lineno uint
@@ -74,7 +74,7 @@ type FileSt  {
 }
 
 //ints here are indexes in bytes
-type MachSt  {
+type MachSt struct {
 	text                     []uint32
 	stack                    []byte
 	globend, stackend, maxsp int
@@ -84,7 +84,7 @@ type MachSt  {
 	sp, fp, vp, ap int
 }
 
-type MachAbs  {
+type MachAbs struct {
 	entry  uint
 	ninstr uint
 	tents  []Tent
@@ -415,7 +415,7 @@ func poison(p []byte) {
 
 }
 
-const Stack = 64*1024*1024
+const Stack = 64 * 1024 * 1024
 
 func datainit() {
 	sz := int(Stack)
@@ -467,7 +467,7 @@ func dumpxstck(nn int) {
 	n := nn
 	fmt.Fprintf(os.Stderr, "stack:\t\tsp %x fp %x vp %x ap %x\n", mst.sp, mst.fp, mst.vp, mst.ap)
 	for e := mst.sp - 4; e >= mst.globend; e -= 4 {
-		ux := (uint32(mst.stack[e+3])<<24) | (uint32(mst.stack[e+2])<<16) | (uint32(mst.stack[e+1])<<8) | uint32(mst.stack[e])
+		ux := (uint32(mst.stack[e+3]) << 24) | (uint32(mst.stack[e+2]) << 16) | (uint32(mst.stack[e+1]) << 8) | uint32(mst.stack[e])
 		fmt.Fprintf(os.Stderr, "%#x\t%#x\n", e, ux)
 		n--
 		if n <= 0 {
@@ -489,7 +489,7 @@ func fetch() uint {
 }
 
 func tfetch(tid int) *Tent {
-	if tid<0 || tid>=len(mabs.tents) {
+	if tid < 0 || tid >= len(mabs.tents) {
 		errs := fmt.Sprintf("bad tid: %d", tid)
 		panic(errs)
 	}
@@ -500,10 +500,10 @@ func idx(tid int) {
 	addr := popduaddr()
 	t := tfetch(tid)
 	v := int(pop32())
-	if v<t.first || v>t.last {
+	if v < t.first || v > t.last {
 		panic("index value out of range")
 	}
-	addr += uintptr((v - t.first)*int(mabs.tents[t.etid].sz))
+	addr += uintptr((v - t.first) * int(mabs.tents[t.etid].sz))
 	pushduaddr(addr)
 }
 
@@ -530,7 +530,7 @@ func tchk(t *Tent, s interface{}) uint {
 		default:
 			panic("wrong type in tchk")
 		}
-		if ep<t.first || ep>t.last {
+		if ep < t.first || ep > t.last {
 			panic("assigned value out of range")
 		}
 	case 'l':
@@ -539,7 +539,7 @@ func tchk(t *Tent, s interface{}) uint {
 			panic("tchk float")
 		}
 		f := ifc.(float32)
-		if f<float32(t.first) || f>float32(t.last) {
+		if f < float32(t.first) || f > float32(t.last) {
 			panic("assigned value out of range")
 		}
 	case 'p':
@@ -615,7 +615,7 @@ func cast(t *Tent, v int) {
 //
 
 func call(pid int) {
-	if pid<0 || pid>=len(mabs.pents) {
+	if pid < 0 || pid >= len(mabs.pents) {
 		panic("bad pid")
 	}
 	spc := mst.pc
@@ -704,7 +704,7 @@ func pami() {
 	for int(mst.pc) < len(mst.text) {
 		mabs.ninstr++
 		if debug['S'] != 0 {
-			dumpxstck(10*debug['S'])
+			dumpxstck(10 * debug['S'])
 		}
 		if debug['D'] > 1 {
 			dumpglobals()
@@ -796,10 +796,10 @@ func pami() {
 			pushbool(b == 0)
 		case paminstr.ICor: // or -sp -sp +sp
 			a1, a2 := pop2u()
-			pushbool(a1!=0 || a2!=0)
+			pushbool(a1 != 0 || a2 != 0)
 		case paminstr.ICand: // and -sp -sp +sp
 			a1, a2 := pop2u()
-			pushbool(a1!=0 && a2!=0)
+			pushbool(a1 != 0 && a2 != 0)
 		case paminstr.ICeq: // eq -sp -sp +sp
 			switch it {
 			case paminstr.ITreal:
@@ -891,10 +891,10 @@ func pami() {
 		case paminstr.ICmul: // mul -sp -sp +sp
 			if it == paminstr.ITreal {
 				r1, r2 := pop2r()
-				pushr(r1*r2)
+				pushr(r1 * r2)
 			} else {
 				a1, a2 := pop2i()
-				push32(uint32(a1*a2))
+				push32(uint32(a1 * a2))
 			}
 
 		case paminstr.ICdiv: // div -sp -sp +sp
@@ -903,13 +903,13 @@ func pami() {
 				if r2 == 0.0 {
 					panic("divide by 0.0")
 				}
-				pushr(r1/r2)
+				pushr(r1 / r2)
 			} else {
 				a1, a2 := pop2i()
 				if a2 == 0 {
 					panic("divide by 0")
 				}
-				push32(uint32(a1/a2))
+				push32(uint32(a1 / a2))
 			}
 
 		case paminstr.ICmod: // mod -sp -sp +sp
@@ -917,11 +917,11 @@ func pami() {
 			if a2 == 0 {
 				panic("divide by zero")
 			}
-			push32(uint32(a1%a2))
+			push32(uint32(a1 % a2))
 
 		case paminstr.ICcall: // call pid
 			n := uint32(fetch())
-			if (n&paminstr.PAMbuiltin) != 0 {
+			if (n & paminstr.PAMbuiltin) != 0 {
 				n &= ^uint32(paminstr.PAMbuiltin)
 				if n >= paminstr.Nbuiltins {
 					s := fmt.Sprintf("bad builtin call #%d", n)
@@ -1070,7 +1070,7 @@ func ScanCEscWords(data []byte, atEOF bool) (advance int, token []byte, err erro
 			break
 		}
 	}
-	if atEOF && len(data)==0 {
+	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
 	nslash := false
@@ -1103,14 +1103,14 @@ func ScanCEscWords(data []byte, atEOF bool) (advance int, token []byte, err erro
 				}
 			}
 		}
-		if lr=='\'' && r=='\'' {
+		if lr == '\'' && r == '\'' {
 			lr = rune(0)
 		} else {
 			lr = r
 		}
 	}
 	// If we're at EOF, we have a final, non-empty, non-terminated word. Return it.
-	if atEOF && len(data)>start {
+	if atEOF && len(data) > start {
 		return len(data), data[start:], nil
 	}
 	// Request more data.
@@ -1155,7 +1155,7 @@ func (f *FileSt) rventfield() *Vent {
 		if err != nil {
 			badbin("bad vent")
 		}
-		for i := 0; i<len(mabs.vents) && mabs.vents[i].name!=""; i++ {
+		for i := 0; i < len(mabs.vents) && mabs.vents[i].name != ""; i++ {
 			if mabs.vents[i].addr == uint32(addr) {
 				return &mabs.vents[i]
 			}
@@ -1297,7 +1297,7 @@ func (f *FileSt) rpc(i uint) {
 	mabs.pcs = append(mabs.pcs, pc)
 	mabs.pcs[i].pc = uint32(n)
 
-	if lfname=="" && f.toks[1]==lfname {
+	if lfname == "" && f.toks[1] == lfname {
 		mabs.pcs[i].fname = lfname
 	} else {
 		mabs.pcs[i].fname = f.toks[1]
@@ -1413,7 +1413,7 @@ func (f *FileSt) rtext() {
 			ndata -= 4
 			continue
 		}
-		if f.toks[1][0]<'a' || f.toks[1][0]>'z' {
+		if f.toks[1][0] < 'a' || f.toks[1][0] > 'z' {
 			n, err = strconv.ParseInt(f.toks[1], 0, 64)
 			if err != nil {
 				badbin("bad rtext")
@@ -1436,7 +1436,7 @@ func (f *FileSt) rtext() {
 			panic("truncated instruction")
 		}
 		ir := mst.text[i]
-		if paminstr.IT(ir)==paminstr.ITreal && paminstr.IC(ir)!=paminstr.ICcast {
+		if paminstr.IT(ir) == paminstr.ITreal && paminstr.IC(ir) != paminstr.ICcast {
 			r, err = strconv.ParseFloat(f.toks[2], 64)
 			if err != nil {
 				badbin("bad rtext")
@@ -1455,7 +1455,7 @@ func (f *FileSt) rtext() {
 			mst.text[i] = uint32(n)
 			if paminstr.IC(ir) == paminstr.ICdata {
 				ndata = int(mst.text[i])
-				if (ndata%4) != 0 {
+				if (ndata % 4) != 0 {
 					badbin("bad data argument in text")
 				}
 			}
@@ -1497,7 +1497,7 @@ func (d Derr) Error() string {
 	return string(d)
 }
 
-type Dflag  {
+type Dflag struct {
 	name rune
 }
 

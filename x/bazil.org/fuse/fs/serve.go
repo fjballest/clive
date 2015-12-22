@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	attrValidTime  = 1*time.Minute
-	entryValidTime = 1*time.Minute
+	attrValidTime  = 1 * time.Minute
+	entryValidTime = 1 * time.Minute
 )
 
 // TODO: FINISH DOCS
@@ -290,7 +290,7 @@ type HandleReleaser interface {
 	Release(*fuse.ReleaseRequest, Intr) fuse.Error
 }
 
-type Server  {
+type Server struct {
 	FS FS
 
 	// Function to send debug log messages to. If nil, use fuse.Debug.
@@ -346,9 +346,9 @@ func Serve(c *fuse.Conn, fs FS) error {
 	return server.Serve(c)
 }
 
-type nothing {}
+type nothing struct{}
 
-type serveConn  {
+type serveConn struct {
 	meta         sync.Mutex
 	fs           FS
 	req          map[fuse.RequestID]*serveRequest
@@ -361,12 +361,12 @@ type serveConn  {
 	dynamicInode func(parent uint64, name string) uint64
 }
 
-type serveRequest  {
+type serveRequest struct {
 	Request fuse.Request
 	Intr    Intr
 }
 
-type serveNode  {
+type serveNode struct {
 	inode uint64
 	node  Node
 	refs  uint64
@@ -380,7 +380,7 @@ func (sn *serveNode) attr() (attr fuse.Attr) {
 	return
 }
 
-type serveHandle  {
+type serveHandle struct {
 	handle   Handle
 	readData []byte
 	nodeID   fuse.NodeID
@@ -392,7 +392,7 @@ type serveHandle  {
 // Without this, each Node will get a new NodeID, causing spurious
 // cache invalidations, extra lookups and aliasing anomalies. This may
 // not matter for a simple, read-only filesystem.
-type NodeRef  {
+type NodeRef struct {
 	id         fuse.NodeID
 	generation uint64
 }
@@ -457,7 +457,7 @@ func (c *serveConn) saveHandle(handle Handle, nodeID fuse.NodeID) (id fuse.Handl
 	return
 }
 
-type nodeRefcountDropBug  {
+type nodeRefcountDropBug struct {
 	N    uint64
 	Refs uint64
 	Node fuse.NodeID
@@ -508,7 +508,7 @@ func (c *serveConn) dropHandle(id fuse.HandleID) {
 	c.meta.Unlock()
 }
 
-type missingHandle  {
+type missingHandle struct {
 	Handle    fuse.HandleID
 	MaxHandle fuse.HandleID
 }
@@ -533,7 +533,7 @@ func (c *serveConn) getHandle(id fuse.HandleID) (shandle *serveHandle) {
 	return
 }
 
-type request  {
+type request struct {
 	Op      string
 	Request *fuse.Header
 	In      interface{} `json:",omitempty"`
@@ -543,7 +543,7 @@ func (r request) String() string {
 	return fmt.Sprintf("<- %s", r.In)
 }
 
-type logResponseHeader  {
+type logResponseHeader struct {
 	ID fuse.RequestID
 }
 
@@ -551,7 +551,7 @@ func (m logResponseHeader) String() string {
 	return fmt.Sprintf("ID=%#x", m.ID)
 }
 
-type response  {
+type response struct {
 	Op      string
 	Request logResponseHeader
 	Out     interface{} `json:",omitempty"`
@@ -572,7 +572,7 @@ func (r response) errstr() string {
 
 func (r response) String() string {
 	switch {
-	case r.Errno!="" && r.Out!=nil:
+	case r.Errno != "" && r.Out != nil:
 		return fmt.Sprintf("-> %s error=%s %s", r.Request, r.errstr(), r.Out)
 	case r.Errno != "":
 		return fmt.Sprintf("-> %s error=%s", r.Request, r.errstr())
@@ -591,7 +591,7 @@ func (r response) String() string {
 	}
 }
 
-type logMissingNode  {
+type logMissingNode struct {
 	MaxNode fuse.NodeID
 }
 
@@ -602,7 +602,7 @@ func opName(req fuse.Request) string {
 	return s
 }
 
-type logLinkRequestOldNodeNotFound  {
+type logLinkRequestOldNodeNotFound struct {
 	Request *fuse.Header
 	In      *fuse.LinkRequest
 }
@@ -611,7 +611,7 @@ func (m *logLinkRequestOldNodeNotFound) String() string {
 	return fmt.Sprintf("In LinkRequest (request %#x), node %d not found", m.Request.Hdr().ID, m.In.OldNode)
 }
 
-type renameNewDirNodeNotFound  {
+type renameNewDirNodeNotFound struct {
 	Request *fuse.Header
 	In      *fuse.RenameRequest
 }
@@ -955,7 +955,7 @@ func (c *serveConn) serve(r fuse.Request) {
 			r.RespondError(err)
 			break
 		}
-		if r.Size!=0 && uint64(len(s.Xattr))>uint64(r.Size) {
+		if r.Size != 0 && uint64(len(s.Xattr)) > uint64(r.Size) {
 			done(fuse.ERANGE)
 			r.RespondError(fuse.ERANGE)
 			break
@@ -977,7 +977,7 @@ func (c *serveConn) serve(r fuse.Request) {
 			r.RespondError(err)
 			break
 		}
-		if r.Size!=0 && uint64(len(s.Xattr))>uint64(r.Size) {
+		if r.Size != 0 && uint64(len(s.Xattr)) > uint64(r.Size) {
 			done(fuse.ERANGE)
 			r.RespondError(fuse.ERANGE)
 			break
@@ -1235,7 +1235,7 @@ func (c *serveConn) serve(r fuse.Request) {
 	case *fuse.InterruptRequest:
 		c.meta.Lock()
 		ireq := c.req[r.IntrID]
-		if ireq!=nil && ireq.Intr!=nil {
+		if ireq != nil && ireq.Intr != nil {
 			close(ireq.Intr)
 			ireq.Intr = nil
 		}
@@ -1283,7 +1283,7 @@ func DataHandle(data []byte) Handle {
 	return &dataHandle{data}
 }
 
-type dataHandle  {
+type dataHandle struct {
 	data []byte
 }
 

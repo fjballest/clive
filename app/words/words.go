@@ -4,18 +4,18 @@
 package words
 
 import (
-	"clive/dbg"
 	"clive/app"
 	"clive/app/opt"
+	"clive/dbg"
 	"strings"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
-	ranges  []string
-	one     bool
-	seps    string
+	ranges []string
+	one    bool
+	seps   string
 }
 
 func (x *xCmd) words(in, out chan interface{}) {
@@ -33,7 +33,7 @@ func (x *xCmd) words(in, out chan interface{}) {
 			continue
 		}
 		s := string(dat)
-		if len(s)>0 && s[len(s)-1]=='\n' {
+		if len(s) > 0 && s[len(s)-1] == '\n' {
 			s = s[:len(s)-1]
 		}
 		var words []string
@@ -76,7 +76,7 @@ func Run() {
 		in := app.Files(args...)
 		app.SetIO(in, 0)
 	}
-	in := app.Lines(app.In())	// to make sure we don't break a word in recvs.
+	in := app.Lines(app.In()) // to make sure we don't break a word in recvs.
 	x.words(in, app.Out())
 	app.Exits(cerror(in))
 }

@@ -25,14 +25,14 @@ import (
 	"unicode/utf8"
 )
 
-type def  {
+type def struct {
 	name, help string
 	valp       interface{}
 	argname    string
 }
 
 // A set of command line options
-type Flags  {
+type Flags struct {
 	Argv0       string // program name from the last call to Parse
 	usage       string // usage string w/o program name
 	defs        map[string]*def
@@ -274,7 +274,7 @@ func (f *Flags) NewFlag(name, help string, vp interface{}) {
 	default:
 		dbg.Fatal("flag %s: unknown flag type", name)
 	}
-	if name[0]=='+' || name[0]=='-' {
+	if name[0] == '+' || name[0] == '-' {
 		dbg.Fatal("name '±...' is only for *int")
 	}
 	f.defs[name] = &def{name: name, help: help, valp: vp, argname: aname}
@@ -294,19 +294,19 @@ func (f *Flags) Parse(argv []string) ([]string, error) {
 	args := make([]string, len(argv))
 	copy(args, argv)
 Loop:
-	for len(args)>0 && len(args[0])>0 && (args[0][0]=='-' || args[0][0]=='+') {
+	for len(args) > 0 && len(args[0]) > 0 && (args[0][0] == '-' || args[0][0] == '+') {
 		if args[0] == "-?" {
 			return nil, errors.New("usage")
 		}
-		if f.plus!=nil && args[0][0]=='+' {
+		if f.plus != nil && args[0][0] == '+' {
 			args, err = f.plus.parsePlus(args)
 			if err != nil {
 				return nil, err
 			}
 			continue Loop
 		}
-		isdigit := len(args[0])>1 && args[0][1]>='0' && args[0][1]<='9'
-		if f.minus!=nil && isdigit {
+		isdigit := len(args[0]) > 1 && args[0][1] >= '0' && args[0][1] <= '9'
+		if f.minus != nil && isdigit {
 			args, err = f.minus.parseMinus(args)
 			if err != nil {
 				return nil, err
@@ -332,7 +332,7 @@ Loop:
 			}
 		}
 		// try combined flags now
-		for len(args)>0 && len(args[0])>0 {
+		for len(args) > 0 && len(args[0]) > 0 {
 			r, nr := utf8.DecodeRuneInString(args[0])
 			name = args[0][:nr]
 			for n, def := range f.defs {
@@ -352,7 +352,7 @@ Loop:
 }
 
 func optArg(argv []string) ([]string, string, error) {
-	if len(argv)>0 && len(argv[0])==0 {
+	if len(argv) > 0 && len(argv[0]) == 0 {
 		argv = argv[1:]
 	}
 	if len(argv) == 0 {

@@ -19,7 +19,7 @@ import (
 	"strings"
 )
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	src, dst         string
@@ -72,7 +72,7 @@ func (x *xCmd) RunFile(d zx.Dir, dc <-chan []byte) error {
 	name := d["path"]
 	rel := name[len(x.src):]
 	dst := zx.Path(x.dst, rel)
-	x.dprintf("cpc name '%s' isdir %v dst '%s'\n", name, dc==nil, dst)
+	x.dprintf("cpc name '%s' isdir %v dst '%s'\n", name, dc == nil, dst)
 	nd := zx.Dir{"mode": d["mode"]}
 	if x.aflag {
 		nd = d.UsrAttrs()
@@ -157,11 +157,11 @@ func Run(c cmd.Ctx) (err error) {
 
 	srcs := args[:len(args)-1]
 	var sts error
-	x.many = x.many || len(srcs)>1
+	x.many = x.many || len(srcs) > 1
 	for _, src := range srcs {
 		stoks := strings.SplitN(src, ",", 2)
 		x.src = path.Clean(stoks[0])
-		if x.many && len(stoks)==1 {
+		if x.many && len(stoks) == 1 {
 			x.src = path.Dir(x.src)
 		}
 		if x.src == "." {

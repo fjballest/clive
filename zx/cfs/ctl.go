@@ -1,43 +1,43 @@
 package cfs
 
 import (
-	"clive/dbg"
-	"clive/zx"
 	"bytes"
+	"clive/dbg"
+	"clive/nchan"
+	"clive/zx"
 	"fmt"
 	"strings"
-	"clive/nchan"
 )
 
-var ctldir = zx.Dir {
-	"path": "/Ctl",
+var ctldir = zx.Dir{
+	"path":  "/Ctl",
 	"spath": "/Ctl",
-	"name": "Ctl",
-	"size": "8192",	// using size 0 prevents fuse from reading the file
-	"type": "-",	// Using "c" makes fuse return an empty file
-	"Uid":  dbg.Usr,
-	"Gid":  dbg.Usr,
-	"Wuid": dbg.Usr,
-//	"Sum":  zsum,
-	"mode": "0644",
+	"name":  "Ctl",
+	"size":  "8192", // using size 0 prevents fuse from reading the file
+	"type":  "-",    // Using "c" makes fuse return an empty file
+	"Uid":   dbg.Usr,
+	"Gid":   dbg.Usr,
+	"Wuid":  dbg.Usr,
+	//	"Sum":  zsum,
+	"mode":  "0644",
 	"proto": "proc",
 }
 
-var chgdir = zx.Dir {
-	"path": "/Chg",
+var chgdir = zx.Dir{
+	"path":  "/Chg",
 	"spath": "/Chg",
-	"name": "Chg",
-	"size": "0",
-	"type": "c",
-	"Uid":  dbg.Usr,
-	"Gid":  dbg.Usr,
-	"Wuid": dbg.Usr,
-//	"Sum":  zsum,
-	"mode": "0440",
+	"name":  "Chg",
+	"size":  "0",
+	"type":  "c",
+	"Uid":   dbg.Usr,
+	"Gid":   dbg.Usr,
+	"Wuid":  dbg.Usr,
+	//	"Sum":  zsum,
+	"mode":  "0440",
 	"proto": "proc",
 }
 
-func (fs *Cfs) getCtl(off, count int64, pred string, c chan<- []byte, cs *zx.CallStat) (int, error){
+func (fs *Cfs) getCtl(off, count int64, pred string, c chan<- []byte, cs *zx.CallStat) (int, error) {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, "%s:\n", fs.Name())
 
@@ -67,7 +67,7 @@ func (fs *Cfs) getCtl(off, count int64, pred string, c chan<- []byte, cs *zx.Cal
 	}
 	resp = resp[o:]
 	n := int(count)
-	if n>len(resp) || n<0 {
+	if n > len(resp) || n < 0 {
 		n = len(resp)
 	}
 	resp = resp[:n]
@@ -96,4 +96,3 @@ func (fs *Cfs) putCtl(dc <-chan []byte) error {
 	}
 	return fs.Ctl(ctl)
 }
-

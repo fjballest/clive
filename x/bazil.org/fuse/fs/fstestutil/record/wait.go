@@ -8,13 +8,13 @@ import (
 	"clive/x/bazil.org/fuse/fs"
 )
 
-type nothing {}
+type nothing struct{}
 
 // ReleaseWaiter notes whether a FUSE Release call has been seen.
 //
 // Releases are not guaranteed to happen synchronously with any client
 // call, so they must be waited for.
-type ReleaseWaiter  {
+type ReleaseWaiter struct {
 	once sync.Once
 	seen chan nothing
 }

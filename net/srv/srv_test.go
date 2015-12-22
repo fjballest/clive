@@ -44,7 +44,7 @@ func ExampleNew() {
 	}
 }
 
-type th {}
+type th struct{}
 
 func (h th) HandleCli(c net.Conn, endc chan bool) {
 	io.Copy(c, c)
@@ -303,7 +303,7 @@ func TestSrvChanClose(t *testing.T) {
 				ec <- fmt.Errorf("send: %s", cerror(ch.Out))
 				return
 			}
-			time.Sleep(100*time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 		close(ch.Out)
 		ec <- nil
@@ -316,7 +316,7 @@ func TestSrvChanClose(t *testing.T) {
 		Printf("cli echo %s\n", string(m))
 		n++
 	}
-	if err := cerror(ch.In); err==nil || err.Error()!="closing" {
+	if err := cerror(ch.In); err == nil || err.Error() != "closing" {
 		t.Fatalf("bad error %v", err)
 	}
 	if err := <-ec; err != nil {

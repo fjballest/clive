@@ -28,12 +28,12 @@ const (
 	// the same. maxPacket is also used to ensure that uint32
 	// length fields do not overflow, so it should remain well
 	// below 4G.
-	maxPacket = 256*1024
+	maxPacket = 256 * 1024
 )
 
 // noneCipher implements cipher.Stream and provides no encryption. It is used
 // by the transport before the first key-exchange.
-type noneCipher {}
+type noneCipher struct{}
 
 func (c noneCipher) XORKeyStream(dst, src []byte) {
 	copy(dst, src)
@@ -51,7 +51,7 @@ func newRC4(key, iv []byte) (cipher.Stream, error) {
 	return rc4.NewCipher(key)
 }
 
-type streamCipherMode  {
+type streamCipherMode struct {
 	keySize    int
 	ivSize     int
 	skip       int
@@ -120,14 +120,14 @@ var cipherModes = map[string]*streamCipherMode{
 const prefixLen = 5
 
 // streamPacketCipher is a packetCipher using a stream cipher.
-type streamPacketCipher  {
+type streamPacketCipher struct {
 	mac    hash.Hash
 	cipher cipher.Stream
 
 	// The following members are to avoid per-packet allocations.
 	prefix      [prefixLen]byte
 	seqNumBytes [4]byte
-	padding     [2*packetSizeMultiple]byte
+	padding     [2 * packetSizeMultiple]byte
 	packetData  []byte
 	macResult   []byte
 }
@@ -237,7 +237,7 @@ func (s *streamPacketCipher) writePacket(seqNum uint32, w io.Writer, rand io.Rea
 	return nil
 }
 
-type gcmCipher  {
+type gcmCipher struct {
 	aead   cipher.AEAD
 	prefix [4]byte
 	iv     []byte
@@ -332,7 +332,7 @@ func (c *gcmCipher) readPacket(seqNum uint32, r io.Reader) ([]byte, error) {
 	c.incIV()
 
 	padding := plain[0]
-	if padding<4 || padding>=20 {
+	if padding < 4 || padding >= 20 {
 		return nil, fmt.Errorf("ssh: illegal padding %d", padding)
 	}
 

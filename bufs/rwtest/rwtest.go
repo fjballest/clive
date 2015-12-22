@@ -4,11 +4,11 @@
 package rwtest
 
 import (
+	"bytes"
+	"clive/dbg"
+	"io"
 	"io/ioutil"
 	"math/rand"
-	"bytes"
-	"io"
-	"clive/dbg"
 )
 
 // Usually testing.T or testing.B
@@ -36,7 +36,7 @@ type FullyReadable interface {
 type Resizeable interface {
 	Truncate(int64) error
 }
- 
+
 // If the object tested as a file has Truncate, it is also tested.
 // Test a rw object by comparing what a real file does and what it does.
 // 10% of the operations are resizes (if any) and the rest are half read, half writes.
@@ -67,7 +67,7 @@ func asAFile(t Fataler, rws []Object, nops, maxoff, maxsz int) {
 		nrsz = nops / 10
 		nops -= nrsz
 	}
-	nrd := nops/2
+	nrd := nops / 2
 	nwr := nops - nrd
 	defer t.Logf("%d reads, %d writes, %d resizes\n", nrd, nwr, nrsz)
 	go func() {
@@ -105,8 +105,8 @@ func asAFile(t Fataler, rws []Object, nops, maxoff, maxsz int) {
 		rw = pick(rws)
 		switch <-opc {
 		case 0:
-			dataf:= make([]byte, sz)
-			datarw:= make([]byte, sz)
+			dataf := make([]byte, sz)
+			datarw := make([]byte, sz)
 			nf, errf := fd.ReadAt(dataf, int64(off))
 			nrw, errrw := rw.ReadAt(datarw, int64(off))
 			if nf != nrw {
@@ -131,7 +131,9 @@ func asAFile(t Fataler, rws []Object, nops, maxoff, maxsz int) {
 				t.Fatalf("didn't read the same content")
 			}
 		case 1:
-			if sz == 0 { sz++ }
+			if sz == 0 {
+				sz++
+			}
 			nf, errf := fd.WriteAt(wdata[:sz], int64(off))
 			nrw, errrw := rw.WriteAt(wdata[:sz], int64(off))
 			if nf != nrw {

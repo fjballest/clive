@@ -11,7 +11,7 @@ import (
 // curvePoint implements the elliptic curve y²=x³+3. Points are kept in
 // Jacobian form and t=z² when valid. G₁ is the set of points of this curve on
 // GF(p).
-type curvePoint  {
+type curvePoint struct {
 	x, y, z, t *big.Int
 }
 
@@ -60,7 +60,7 @@ func (c *curvePoint) IsOnCurve() bool {
 	xxx.Mul(xxx, c.x)
 	yy.Sub(yy, xxx)
 	yy.Sub(yy, curveB)
-	if yy.Sign()<0 || yy.Cmp(p)>=0 {
+	if yy.Sign() < 0 || yy.Cmp(p) >= 0 {
 		yy.Mod(yy, p)
 	}
 	return yy.Sign() == 0
@@ -246,7 +246,7 @@ func (c *curvePoint) Mul(a *curvePoint, scalar *big.Int, pool *bnPool) *curvePoi
 }
 
 func (c *curvePoint) MakeAffine(pool *bnPool) *curvePoint {
-	if words := c.z.Bits(); len(words)==1 && words[0]==1 {
+	if words := c.z.Bits(); len(words) == 1 && words[0] == 1 {
 		return c
 	}
 

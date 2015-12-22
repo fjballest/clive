@@ -52,7 +52,7 @@ type rekeyingTransport interface {
 
 // handshakeTransport implements rekeying on top of a keyingTransport
 // and offers a thread-safe writePacket() interface.
-type handshakeTransport  {
+type handshakeTransport struct {
 	conn   keyingTransport
 	config *Config
 
@@ -136,7 +136,7 @@ func (t *handshakeTransport) readLoop() {
 			close(t.incoming)
 			break
 		}
-		if p[0]==msgIgnore || p[0]==msgDebug {
+		if p[0] == msgIgnore || p[0] == msgDebug {
 			continue
 		}
 		t.incoming <- p
@@ -319,7 +319,7 @@ func (t *handshakeTransport) enterKeyExchange(otherInitPacket []byte) error {
 	}
 
 	// We don't send FirstKexFollows, but we handle receiving it.
-	if otherInit.FirstKexFollows && algs.kex!=otherInit.KexAlgos[0] {
+	if otherInit.FirstKexFollows && algs.kex != otherInit.KexAlgos[0] {
 		// other side sent a kex message for the wrong algorithm,
 		// which we have to ignore.
 		if _, err := t.conn.readPacket(); err != nil {

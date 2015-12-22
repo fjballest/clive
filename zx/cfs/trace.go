@@ -1,17 +1,17 @@
 package cfs
 
 import (
-	"sync"
+	"clive/zx/trfs"
+	"fmt"
 	"io"
 	"strings"
-	"fmt"
-	"clive/zx/trfs"
+	"sync"
 )
 
-type Tracer {
-	c <-chan string
+type Tracer struct {
+	c       <-chan string
 	callslk sync.Mutex
-	calls []string
+	calls   []string
 	callsok chan bool
 }
 
@@ -19,10 +19,10 @@ type Tracer {
 type Traces []string
 
 // Used by tests to check lfs and rfs requests made by each cfs call.
-type TraceDep {
-	Op string		// request
-	Lfsops []string	// lfs requests implied
-	Rfsops []string	// rfs requests implied
+type TraceDep struct {
+	Op     string   // request
+	Lfsops []string // lfs requests implied
+	Rfsops []string // rfs requests implied
 }
 
 type TraceDeps []TraceDep

@@ -9,7 +9,7 @@ import (
 	clear r to return it to the user (if there's no match, it's nil).
 */
 func retsel(r []Range) []Range {
-	if len(r)==0 || r[0].P0<0 {
+	if len(r) == 0 || r[0].P0 < 0 {
 		return nil
 	}
 	return r
@@ -18,14 +18,14 @@ func retsel(r []Range) []Range {
 /*
 	lists of states reached in the FNA and their selections
 */
-type states  {
+type states struct {
 	lst []state
 }
 
 /*
 	NFA state reached (executed by the virtual machine)
 */
-type state  {
+type state struct {
 	i   pinst   // instruction we start with
 	sel []Range // selection
 }
@@ -59,8 +59,8 @@ func (ss *states) clear() {
 	previous match (perhaps none)
 */
 func (prg *ReProg) newmatch(sel, r []Range) {
-	if sel[0].P0<0 || r[0].P0<sel[0].P0 ||
-		r[0].P0==sel[0].P0 && r[0].P1>sel[0].P1 {
+	if sel[0].P0 < 0 || r[0].P0 < sel[0].P0 ||
+		r[0].P0 == sel[0].P0 && r[0].P1 > sel[0].P1 {
 		copy(sel, r)
 	}
 }
@@ -71,14 +71,14 @@ func (prg *ReProg) newmatch(sel, r []Range) {
 func classMatch(cls []rune, c rune) bool {
 	for i := 0; i < len(cls); i++ {
 		r := cls[i]
-		if r==tWORD && (unicode.IsLetter(c) || unicode.IsNumber(c)) {
+		if r == tWORD && (unicode.IsLetter(c) || unicode.IsNumber(c)) {
 			return true
 		}
-		if r==tBLANK && unicode.IsSpace(c) {
+		if r == tBLANK && unicode.IsSpace(c) {
 			return true
 		}
 		if r == cRange {
-			if cls[i+1]<=c && c<=cls[i+2] {
+			if cls[i+1] <= c && c <= cls[i+2] {
 				return true
 			}
 			i += 2
@@ -149,7 +149,7 @@ func (prg *ReProg) Exec(txt Text, start int, end int) []Range {
 	/* Run the regexp machine for each rune in text */
 	p := start
 	for ; ; p++ {
-		if p>end || sel[0].P0>=0 && len(statel.lst)==0 {
+		if p > end || sel[0].P0 >= 0 && len(statel.lst) == 0 {
 			return retsel(sel)
 		}
 		if p == end {
@@ -166,7 +166,7 @@ func (prg *ReProg) Exec(txt Text, start int, end int) []Range {
 		}
 
 		// skip first char fast
-		if startc!=0 && len(statel.lst)==0 && c!=startc {
+		if startc != 0 && len(statel.lst) == 0 && c != startc {
 			if Debug {
 				fmt.Printf("\tskip\n")
 			}
@@ -204,7 +204,7 @@ func (prg *ReProg) Exec(txt Text, start int, end int) []Range {
 				i = x.left
 				goto Exec
 			case tANY:
-				if c!='\n' && c!=0 {
+				if c != '\n' && c != 0 {
 					nextl.add(x.left, s.sel)
 				}
 			case tWORD:
@@ -212,16 +212,16 @@ func (prg *ReProg) Exec(txt Text, start int, end int) []Range {
 					nextl.add(x.left, s.sel)
 				}
 			case tBLANK:
-				if unicode.IsSpace(c) && c!='\n' {
+				if unicode.IsSpace(c) && c != '\n' {
 					nextl.add(x.left, s.sel)
 				}
 			case tBOL:
-				if p==0 || txt.Getc(p-1)=='\n' && p<end {
+				if p == 0 || txt.Getc(p-1) == '\n' && p < end {
 					i = x.left
 					goto Exec
 				}
 			case tEOL:
-				if c=='\n' || c==0 {
+				if c == '\n' || c == 0 {
 					i = x.left
 					goto Exec
 				}
@@ -250,8 +250,8 @@ func (prg *ReProg) Exec(txt Text, start int, end int) []Range {
 }
 
 func (prg *ReProg) newbackmatch(sel, r []Range) {
-	if sel[0].P0<0 || r[0].P0>sel[0].P1 ||
-		r[0].P0==sel[0].P1 && r[0].P1<sel[0].P0 {
+	if sel[0].P0 < 0 || r[0].P0 > sel[0].P1 ||
+		r[0].P0 == sel[0].P1 && r[0].P1 < sel[0].P0 {
 		for i := range r {
 			sel[i].P0, sel[i].P1 = r[i].P1, r[i].P0
 		}
@@ -276,11 +276,11 @@ func (prg *ReProg) execBack(txt Text, start int, end int) []Range {
 	/* Run the regexp machine for each rune in text */
 	onemore := false
 	for p := start; ; p-- {
-		if (!onemore && p<0) || sel[0].P0>=0 && len(statel.lst)==0 {
+		if (!onemore && p < 0) || sel[0].P0 >= 0 && len(statel.lst) == 0 {
 			return retsel(sel)
 		}
 
-		if p==0 || onemore {
+		if p == 0 || onemore {
 			/* the string is exhausted but we might have
 			 * an accept state pending, so go one more round.
 			 */
@@ -293,7 +293,7 @@ func (prg *ReProg) execBack(txt Text, start int, end int) []Range {
 			fmt.Printf("c[%d] '%c' %x:\n", p, c, c)
 		}
 		// skip first char fast
-		if startc!=0 && len(statel.lst)==0 && c!=startc {
+		if startc != 0 && len(statel.lst) == 0 && c != startc {
 			if Debug {
 				fmt.Printf("\tskip\n")
 			}
@@ -332,7 +332,7 @@ func (prg *ReProg) execBack(txt Text, start int, end int) []Range {
 				i = x.left
 				goto Exec
 			case tANY:
-				if c!='\n' && c!=0 {
+				if c != '\n' && c != 0 {
 					nextl.add(x.left, s.sel)
 				}
 			case tWORD:
@@ -340,11 +340,11 @@ func (prg *ReProg) execBack(txt Text, start int, end int) []Range {
 					nextl.add(x.left, s.sel)
 				}
 			case tBLANK:
-				if unicode.IsSpace(c) && c!='\n' {
+				if unicode.IsSpace(c) && c != '\n' {
 					nextl.add(x.left, s.sel)
 				}
 			case tBOL:
-				if c==0 || p>0 && txt.Getc(p-1)=='\n' && p<end {
+				if c == 0 || p > 0 && txt.Getc(p-1) == '\n' && p < end {
 					i = x.left
 					if c == 0 {
 						// if we are at the start of text (c == 0)
@@ -356,7 +356,7 @@ func (prg *ReProg) execBack(txt Text, start int, end int) []Range {
 					goto Exec
 				}
 			case tEOL:
-				if p==start || txt.Getc(p)=='\n' {
+				if p == start || txt.Getc(p) == '\n' {
 					i = x.left
 					goto Exec
 				}

@@ -14,7 +14,7 @@ import (
 func (ns *Tree) exclSuffixes(name string, fpred *pred.Pred) *pred.Pred {
 	var xpreds []*pred.Pred
 	for _, p := range ns.pref {
-		if p.name!=name && zx.HasPrefix(p.name, name) {
+		if p.name != name && zx.HasPrefix(p.name, name) {
 			x, _ := pred.New(fmt.Sprintf("path=%q", p.name))
 			xpreds = append(xpreds, x)
 		}
@@ -39,7 +39,7 @@ func isfinder(d zx.Dir) bool {
 	}
 	proto := d["proto"]
 	if (strings.Contains(proto, "finder") || strings.Contains(proto, "zx")) &&
-		d["addr"]!="" {
+		d["addr"] != "" {
 		return true
 	}
 	return strings.Contains(proto, "lfs") || strings.Contains(proto, "proc")
@@ -49,7 +49,7 @@ func isfinder(d zx.Dir) bool {
 // f.walked is what we walked so far, perhaps a suffix of f.name during search.
 // f.p is a prefix of the name where we are finding, perhaps exactly at name.
 // f.pred is f.upred with prunes for all suffixes mounted.
-type finder  {
+type finder struct {
 	ns           *Tree
 	name         string            // where the find starts, as given by the user
 	upred        *pred.Pred        // predicate, as given by the user
@@ -85,7 +85,7 @@ func (f *finder) find1get(d zx.Dir) error {
 	if !isfinder(d) {
 		f.ns.dfprintf("fnd:\t\tnot a finder\n")
 		// it's ok to find it if it's just the name where we are finding.
-		if f.name==f.walked || !searching {
+		if f.name == f.walked || !searching {
 			d["name"] = pname
 			d["path"] = f.walked
 			v, _, _ := f.pred.EvalAt(d, f.depth)
@@ -127,14 +127,14 @@ func (f *finder) find1get(d zx.Dir) error {
 		// note we get pruned errors also for depth < N predicates.
 		rpath := rd["path"]
 		np := f.suffs[rpath]
-		if np!=nil && np.name!=f.p.name {
+		if np != nil && np.name != f.p.name {
 			nf := &finder{}
 			*nf = *f
 			nf.p = np
 			nf.pred = nf.spreds[rpath]
 			nf.walked = rpath // == p.name
 			nf.depth = 0
-			if nf.walked!=nf.name && zx.HasPrefix(nf.walked, nf.name) {
+			if nf.walked != nf.name && zx.HasPrefix(nf.walked, nf.name) {
 				els := zx.Elems(zx.Suffix(nf.walked, nf.name))
 				nf.depth = len(els)
 			}
@@ -172,7 +172,7 @@ func (f *finder) find1(d zx.Dir) error {
 	if !isfinder(d) {
 		f.ns.dfprintf("fnd:\t\tnot a finder: %s\n", d)
 		// it's ok to find it if it's just the name where we are finding.
-		if f.name==f.walked || !searching {
+		if f.name == f.walked || !searching {
 			d["name"] = pname
 			d["path"] = f.walked
 			v, _, _ := f.pred.EvalAt(d, f.depth)
@@ -210,14 +210,14 @@ func (f *finder) find1(d zx.Dir) error {
 		// note we get pruned errors also for depth < N predicates.
 		rpath := rd["path"]
 		np := f.suffs[rpath]
-		if np!=nil && np.name!=f.p.name {
+		if np != nil && np.name != f.p.name {
 			nf := &finder{}
 			*nf = *f
 			nf.p = np
 			nf.pred = nf.spreds[rpath]
 			nf.walked = rpath // == p.name
 			nf.depth = 0
-			if nf.walked!=nf.name && zx.HasPrefix(nf.walked, nf.name) {
+			if nf.walked != nf.name && zx.HasPrefix(nf.walked, nf.name) {
 				els := zx.Elems(zx.Suffix(nf.walked, nf.name))
 				nf.depth = len(els)
 			}
@@ -274,7 +274,7 @@ func (f *finder) find() error {
 	f.suffs = map[string]*prefix{}
 	f.spreds = map[string]*pred.Pred{}
 	for _, xp := range ns.pref {
-		if f.p!=xp && zx.HasPrefix(xp.name, f.name) {
+		if f.p != xp && zx.HasPrefix(xp.name, f.name) {
 			f.suffs[xp.name] = xp
 			f.spreds[xp.name] = ns.exclSuffixes(xp.name, f.upred)
 		}

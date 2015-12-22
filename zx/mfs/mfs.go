@@ -9,24 +9,24 @@
 package mfs
 
 import (
+	"bytes"
+	"clive/bufs"
 	"clive/dbg"
 	"clive/nchan"
-	"clive/bufs"
-	"clive/zx/pred"
 	"clive/net/auth"
 	"clive/zx"
-	"errors"
-	"time"
-	"sync"
-	"fmt"
-	"path"
-	"strconv"
-	"bytes"
-	"sort"
-	"io"
-	"strings"
+	"clive/zx/pred"
 	"crypto/sha1"
+	"errors"
+	"fmt"
+	"io"
 	"os"
+	"path"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 // REFERENCE: clive/zx(x): for zx interfaces and basic data types.
@@ -34,46 +34,45 @@ import (
 /*
 	A ram file system
 */
-type Fs {
+type Fs struct {
 	name string
-	path string	// fake tpath
+	path string // fake tpath
 	root *mFile
-	ai                   *auth.Info
+	ai   *auth.Info
 
 	*zx.Flags
 }
 
-
-type mFile {
+type mFile struct {
 	name string
 
 	d zx.Dir
 
-	data *bufs.Blocks
+	data  *bufs.Blocks
 	child []*mFile
 
 	// lock order: meta and then data|child
-	mlk sync.Mutex	// for the meta
-	clk sync.Mutex	// for the child
+	mlk sync.Mutex // for the meta
+	clk sync.Mutex // for the child
 	// data has its own lock.
 
-	t *Fs		// for dprintf, mostly
-	
+	t *Fs // for dprintf, mostly
+
 }
 
 var (
 	ctldir = zx.Dir{
-		"path": "/Ctl",
+		"path":  "/Ctl",
 		"spath": "/Ctl",
-		"name": "Ctl",
+		"name":  "Ctl",
 		"proto": "proc",
-		"size": "0",
-		"type": "c",
-		"Uid": dbg.Usr,
-		"Gid": dbg.Usr,
-		"Wuid": dbg.Usr,
-		"mode": "0644",
-	//	"Sum": zx.Zsum(),
+		"size":  "0",
+		"type":  "c",
+		"Uid":   dbg.Usr,
+		"Gid":   dbg.Usr,
+		"Wuid":  dbg.Usr,
+		"mode":  "0644",
+		//	"Sum": zx.Zsum(),
 	}
 
 	// When DoSum is set, mfs computes the Sum attribute for
@@ -89,10 +88,9 @@ var (
 	_w   zx.Walker   = _fs
 	_s   zx.Stater   = _fs
 	_a   zx.AuthTree = _fs
-	_d zx.Dumper = _fs
-	_D zx.Debugger = _fs
+	_d   zx.Dumper   = _fs
+	_D   zx.Debugger = _fs
 )
-
 
 func (t *Fs) String() string {
 	return t.name
@@ -107,27 +105,27 @@ func (t *Fs) Name() string {
 }
 
 func New(name string) (*Fs, error) {
-	r := &mFile {
+	r := &mFile{
 		name: "/",
 		d: zx.Dir{
-			"name": "/",
-			"path": "/",
+			"name":  "/",
+			"path":  "/",
 			"spath": "/",
 			"proto": "proc",
-			"type": "d",
-			"mode": "0755",
-			"Uid": dbg.Usr,
-			"Gid": dbg.Usr,
-			"Wuid": dbg.Usr,
-		//	"Sum": zx.Zsum(),
+			"type":  "d",
+			"mode":  "0755",
+			"Uid":   dbg.Usr,
+			"Gid":   dbg.Usr,
+			"Wuid":  dbg.Usr,
+			//	"Sum": zx.Zsum(),
 			"size": "0",
 		},
 		child: []*mFile{},
 	}
 	r.d.SetTime("mtime", time.Now())
 	l := &Fs{
-		name: name,
-		root: r,
+		name:  name,
+		root:  r,
 		Flags: &zx.Flags{},
 	}
 	p := fmt.Sprintf("mfs%p", l)
@@ -135,7 +133,7 @@ func New(name string) (*Fs, error) {
 	r.d["tpath"] = p
 	l.Flags.Add("debug", &l.Dbg)
 	l.Flags.AddRO("noperm", &l.NoPermCheck)
-	l.Flags.Add("clear", func(...string)error{
+	l.Flags.Add("clear", func(...string) error {
 		l.IOstats.Clear()
 		return nil
 	})
@@ -147,7 +145,6 @@ func (t *Fs) Close(e error) {
 	t.dprintf("close sts %v\n", e)
 	zx.UnregisterProcTree(t.path)
 }
-
 
 // Ask the tree to perform auth checks on behalf of ai.
 func (t *Fs) AuthFor(ai *auth.Info) (zx.Tree, error) {
@@ -170,13 +167,13 @@ func (f *mFile) String() string {
 
 func (t *Fs) dprintf(fs string, args ...interface{}) {
 	if t != nil && t.Dbg {
-		fmt.Fprintf(os.Stderr, t.name + ":" + fs, args...)
+		fmt.Fprintf(os.Stderr, t.name+":"+fs, args...)
 	}
 }
 
 func (f *mFile) dprintf(fs string, args ...interface{}) {
 	if f != nil && f.t.Dbg {
-		f.t.dprintf(f.d["path"] + ":" + fs, args...)
+		f.t.dprintf(f.d["path"]+":"+fs, args...)
 	}
 }
 
@@ -242,7 +239,6 @@ func (t *Fs) stat(rid string) (zx.Dir, error) {
 	return f.d.Dup(), nil
 }
 
-
 func (t *Fs) Stat(rid string) chan zx.Dir {
 	t.dprintf("stat %s\n", rid)
 	cs := t.IOstats.NewCall(zx.Sstat)
@@ -273,7 +269,7 @@ Dloop:
 	for i := 0; i < len(ds); {
 		if off > 0 {
 			off--
-			if !ctlsent && f.d["name"] =="/" {
+			if !ctlsent && f.d["name"] == "/" {
 				ctlsent = true
 			} else {
 				i++
@@ -288,7 +284,7 @@ Dloop:
 		default:
 			count--
 		}
-		if !ctlsent && f.d["name"]=="/" {
+		if !ctlsent && f.d["name"] == "/" {
 			ctlsent = true
 			nd++
 			d := ctldir.Dup()
@@ -324,7 +320,7 @@ func (t *Fs) getCtl(off, count int64, dc chan<- []byte, cs *zx.CallStat) error {
 	}
 	resp = resp[o:]
 	n := int(count)
-	if n>len(resp) || n<0 {
+	if n > len(resp) || n < 0 {
 		n = len(resp)
 	}
 	resp = resp[:n]
@@ -362,7 +358,7 @@ func (t *Fs) get(rid string, off, count int64, dc chan<- []byte, cs *zx.CallStat
 	cs.Sending()
 	n, nm, err := f.data.SendTo(off, count, dc)
 	cs.Sends(int64(nm), n)
-	return err	
+	return err
 }
 
 var ErrNoMatch = errors.New("false")
@@ -458,7 +454,7 @@ func (f *mFile) attach(cf *mFile) error {
 	sort.Sort(byName(f.child))
 	n := len(f.child)
 	if f.d["path"] == "/" {
-		n++	// for Ctl
+		n++ // for Ctl
 	}
 	f.d["size"] = strconv.Itoa(n)
 	f.d.SetTime("mtime", time.Now())
@@ -492,7 +488,7 @@ func (t *Fs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred string)
 	}
 	var pf *mFile
 	f, left, err := t.walk(rid, &pf)
-	if err != nil && !dbg.IsNotExist(err) || len(left) > 1|| d["mode"] == "" && err != nil {
+	if err != nil && !dbg.IsNotExist(err) || len(left) > 1 || d["mode"] == "" && err != nil {
 		return nil, 0, 0, err
 	}
 	pmode := uint64(0755)
@@ -524,7 +520,7 @@ func (t *Fs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred string)
 	if t.NoPermCheck {
 		ai = nil
 	}
-	if d["mode"] == "" || err == nil {	// truncate or rewrite
+	if d["mode"] == "" || err == nil { // truncate or rewrite
 		if err := t.matchDir(rid, f.d, pred); err != nil {
 			f.mlk.Unlock()
 			return nil, 0, 0, err
@@ -569,25 +565,25 @@ func (t *Fs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred string)
 		}
 	} else {
 		// create a new file
-		nf := &mFile {
+		nf := &mFile{
 			name: left[0],
 			d: zx.Dir{
-				"mode": d["mode"],
-				"name": left[0],
-				"path": rid,
+				"mode":  d["mode"],
+				"name":  left[0],
+				"path":  rid,
 				"spath": rid,
 				"tpath": f.d["tpath"],
-				"Uid": u,
-				"Gid": f.d["Gid"],
-				"Wuid": u,
-				"type": "-",
-				"size": "0",
+				"Uid":   u,
+				"Gid":   f.d["Gid"],
+				"Wuid":  u,
+				"type":  "-",
+				"size":  "0",
 				"proto": "proc",
 			},
 			data: &bufs.Blocks{Mutex: &sync.Mutex{}},
-			t: t,
+			t:    t,
 		}
-		if !t.WstatAll || t.ai != nil  {
+		if !t.WstatAll || t.ai != nil {
 			if !noinherit {
 				nf.d.Inherit(pmode)
 				d["mode"] = nf.d["mode"]
@@ -716,7 +712,7 @@ func (f *mFile) wstat(d zx.Dir) error {
 		delete(d, "size")
 	}
 	if _, ok := d["mode"]; ok {
-		mode := d.Int("mode")&0777
+		mode := d.Int("mode") & 0777
 		d["mode"] = "0" + strconv.FormatInt(int64(mode), 8)
 	}
 	if _, ok := d["mtime"]; ok {
@@ -751,7 +747,7 @@ func (t *Fs) wstat(rid string, d zx.Dir) error {
 		ai = nil
 	}
 	ud := d.UsrAttrs()
-	if !t.WstatAll || t.ai != nil  {
+	if !t.WstatAll || t.ai != nil {
 		if err := f.d.CanWstat(ai, d); err != nil {
 			return err
 		}
@@ -768,7 +764,7 @@ func (t *Fs) Mkdir(rid string, d zx.Dir) chan error {
 	cs := t.IOstats.NewCall(zx.Smkdir)
 	c := make(chan error, 1)
 	rid, err := zx.AbsPath(rid)
-	if rid == "/" || rid=="/Ctl" {
+	if rid == "/" || rid == "/Ctl" {
 		err = dbg.ErrExists
 	}
 	var f *mFile
@@ -810,23 +806,23 @@ func (t *Fs) Mkdir(rid string, d zx.Dir) chan error {
 	if t.ai != nil {
 		u = t.ai.Uid
 	}
-	nf := &mFile {
+	nf := &mFile{
 		name: left[0],
 		d: zx.Dir{
-			"mode": ud["mode"],
-			"name": left[0],
-			"path": rid,
+			"mode":  ud["mode"],
+			"name":  left[0],
+			"path":  rid,
 			"spath": rid,
 			"tpath": f.t.path,
-			"Uid": u,
-			"Gid": f.d["Gid"],
-			"Wuid": u,
-			"type": "d",
-			"size": "0",
+			"Uid":   u,
+			"Gid":   f.d["Gid"],
+			"Wuid":  u,
+			"type":  "d",
+			"size":  "0",
 			"proto": "proc",
 		},
 		child: []*mFile{},
-		t: t,
+		t:     t,
 	}
 	if DoSum {
 		nf.d["Sum"] = zx.Zsum()
@@ -839,7 +835,7 @@ func (t *Fs) Mkdir(rid string, d zx.Dir) chan error {
 	if t.NoPermCheck {
 		ai = nil
 	}
-	if err == nil && (!t.WstatAll || t.ai != nil)  {
+	if err == nil && (!t.WstatAll || t.ai != nil) {
 		err = nf.d.CanWstat(ai, ud)
 	}
 	if err != nil {
@@ -1009,7 +1005,7 @@ func (t *Fs) Move(from, to string) chan error {
 		goto Fail
 	}
 
-	if from=="/Ctl" || to=="/Ctl" || from == "/" || to == "/" {
+	if from == "/Ctl" || to == "/Ctl" || from == "/" || to == "/" {
 		err = dbg.ErrPerm
 	} else if pfrom, _, ferr = t.walk(from, nil); ferr != nil {
 		err = ferr
@@ -1024,7 +1020,8 @@ func (t *Fs) Move(from, to string) chan error {
 	} else if len(leftto) == 0 && pto.d["type"] != pfrom.d["type"] { // race: no lock in types
 		err = fmt.Errorf("%s: incosistent move", pfrom)
 	}
-Fail:	if err != nil {
+Fail:
+	if err != nil {
 		c <- err
 		t.dprintf("move %s: %s\n", from, err)
 		close(c, err)
@@ -1033,7 +1030,7 @@ Fail:	if err != nil {
 	}
 	t.detach(pfrom)
 	pfrom.mlk.Lock()
-	pfrom.name= path.Base(to)
+	pfrom.name = path.Base(to)
 	pfrom.d["name"] = pfrom.name
 	pfrom.d["path"] = zx.Path(pdpath, pfrom.name)
 	pfrom.d["spath"] = zx.Path(pdspath, pfrom.name)
@@ -1053,7 +1050,7 @@ Fail:	if err != nil {
 func (t *Fs) remove(rid string, all bool, cs *zx.CallStat) chan error {
 	c := make(chan error, 1)
 	rid, err := zx.AbsPath(rid)
-	if rid=="/Ctl" || rid == "/" {
+	if rid == "/Ctl" || rid == "/" {
 		t.dprintf("remove %s: %s\n", rid, dbg.ErrPerm)
 		err := fmt.Errorf("%s: %s", rid, dbg.ErrPerm)
 		c <- err
@@ -1106,7 +1103,7 @@ func (t *Fs) RemoveAll(rid string) chan error {
 func (t *Fs) Fsys(name string) <-chan error {
 	t.dprintf("fsys %s\n", name)
 	c := make(chan error, 1)
-	if name!="" && name!="main" {
+	if name != "" && name != "main" {
 		err := errors.New("fsys not supported for local trees")
 		t.dprintf(name, "fsys", err)
 		c <- err
@@ -1139,7 +1136,7 @@ func (f *mFile) find(d zx.Dir, p *pred.Pred, spref, dpref string, lvl int, c cha
 	}
 	if err != nil {
 		d["err"] = err.Error()
-		c <-d
+		c <- d
 		return
 	}
 	if d["rm"] != "" {
@@ -1232,7 +1229,7 @@ func (t *Fs) FindGet(rid, fpred, spref, dpref string, depth int) <-chan zx.DirDa
 		for d := range dc {
 			g := zx.DirData{Dir: d}
 			var datac chan []byte
-			if d["err"]=="" && d["type"]=="-" {
+			if d["err"] == "" && d["type"] == "-" {
 				datac = make(chan []byte)
 				g.Datac = datac
 			}
@@ -1278,13 +1275,12 @@ func (f *mFile) Dump(w io.Writer, lvl int) {
 		d["size"] = "0"
 	}
 	fmt.Fprintf(w, "%s%s\n", tabs, d.TestFmt())
-	if d["type"] != "d"  {
+	if d["type"] != "d" {
 		fmt.Fprintf(w, "%s  %d bytes\n", tabs, f.data.Len())
 		return
 	}
 	for _, c := range f.child {
 		c.Dump(w, lvl+1)
 	}
-	
-}
 
+}

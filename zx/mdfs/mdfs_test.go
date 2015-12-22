@@ -3,10 +3,10 @@ package mdfs
 import (
 	"clive/bufs"
 	"clive/dbg"
-	"clive/zx"
-	"clive/zx/lfs"
-	"clive/zx/fstest"
 	"clive/net/auth"
+	"clive/zx"
+	"clive/zx/fstest"
+	"clive/zx/lfs"
 	"os"
 	"testing"
 )
@@ -15,7 +15,7 @@ const tdir = "/tmp/mdfs_test"
 const tlfsdir = "/tmp/mdfslfs_test"
 
 var (
-	printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
+	printf   = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 	moreverb = true
 )
 
@@ -32,7 +32,6 @@ func ExampleNew() {
 	dbg.Warn("fs %s ready", fs)
 	// Now use it...
 }
-
 
 func TestInitDirs(t *testing.T) {
 	os.Args[0] = "mdfs_test"
@@ -61,14 +60,14 @@ func TestInitDirs(t *testing.T) {
 		}()
 	}
 	for _, dn := range fstest.Dirs {
-		if err := zx.MkdirAll(fs, dn, zx.Dir{"mode":"0755"}); err != nil {
+		if err := zx.MkdirAll(fs, dn, zx.Dir{"mode": "0755"}); err != nil {
 			t.Fatalf("mkdir: %s", err)
 		}
 	}
 }
 
 func testfn(t *testing.T, fns ...func(t fstest.Fataler, fss ...zx.Tree)) {
-	bufs.Size = 1*1024
+	bufs.Size = 1 * 1024
 	os.RemoveAll(tlfsdir)
 	defer os.RemoveAll(tlfsdir)
 	if err := os.Mkdir(tlfsdir, 0755); err != nil {
@@ -84,11 +83,11 @@ func testfn(t *testing.T, fns ...func(t fstest.Fataler, fss ...zx.Tree)) {
 	if err != nil {
 		t.Fatalf("lfs: %s", err)
 	}
-	xfs, _:= mfs.AuthFor(&auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true})
+	xfs, _ := mfs.AuthFor(&auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true})
 	fs := xfs.(zx.RWTree)
 	fstest.MkZXTree(t, fs)
 	mfs.Dbg = testing.Verbose()
-	dfs.Dbg = testing.Verbose() 
+	dfs.Dbg = testing.Verbose()
 	var fn func(t fstest.Fataler, fss ...zx.Tree)
 	if len(fns) > 0 {
 		fn = fns[0]
@@ -114,7 +113,7 @@ func testfn(t *testing.T, fns ...func(t fstest.Fataler, fss ...zx.Tree)) {
 			t.Fatalf("lfs: %s", err)
 		}
 		mfs.Dbg = testing.Verbose()
-		xfs, _= mfs.AuthFor(&auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true})
+		xfs, _ = mfs.AuthFor(&auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true})
 		fs = xfs.(zx.RWTree)
 		if mfs.Dbg {
 			defer func() {
@@ -186,7 +185,7 @@ func TestMoves(t *testing.T) {
 
 func TestSendRecv(t *testing.T) {
 	t.Skip("TODO: this does not work but we are no longer sending trees")
-	os.RemoveAll(tlfsdir+"2")
+	os.RemoveAll(tlfsdir + "2")
 	os.RemoveAll(tlfsdir)
 	if err := os.Mkdir(tlfsdir, 0755); err != nil {
 		t.Fatalf("lfs: %s", err)
@@ -194,7 +193,7 @@ func TestSendRecv(t *testing.T) {
 	if err := os.Mkdir(tlfsdir+"2", 0755); err != nil {
 		t.Fatalf("lfs: %s", err)
 	}
-	defer os.RemoveAll(tlfsdir+"2")
+	defer os.RemoveAll(tlfsdir + "2")
 	defer os.RemoveAll(tlfsdir)
 	os.Args[0] = "mdfs_test"
 
@@ -242,4 +241,3 @@ func TestNewPerms(t *testing.T) {
 func TestRWXPerms(t *testing.T) {
 	testfn(t, fstest.RWXPerms)
 }
-

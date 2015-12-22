@@ -17,7 +17,7 @@ import (
 	"io/ioutil"
 )
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	nflag, wflag  bool

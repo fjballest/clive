@@ -74,7 +74,7 @@ const (
 )
 
 // A selection in the string implied by a regexp.
-type Range  {
+type Range struct {
 	P0, P1 int
 }
 
@@ -85,7 +85,7 @@ type pinst int
 	NFA instruction.
 	It might continue through left, right, or both.
 */
-type inst  {
+type inst struct {
 	op    rune   // op code
 	class []rune // opt. char class
 	subid int    // expr. subid used (\0, \1, ...)
@@ -94,12 +94,12 @@ type inst  {
 }
 
 // parsing node
-type node  {
+type node struct {
 	first, last pinst
 }
 
 // entry in operator stack
-type opRec  {
+type opRec struct {
 	op    rune // operator
 	subid int  // expr. subid for it
 }
@@ -107,7 +107,7 @@ type opRec  {
 /*
 	A compiled regexp
 */
-type ReProg  {
+type ReProg struct {
 	// for the compiler
 	code       []*inst // program
 	opstk      []opRec // operator stack
@@ -187,7 +187,7 @@ func (prg *ReProg) evalUntil(pri rune) {
 	if len(prg.opstk) == 0 {
 		panic("operator stack underflow")
 	}
-	for pri==tRPAREN || prg.opstk[len(prg.opstk)-1].op>=pri {
+	for pri == tRPAREN || prg.opstk[len(prg.opstk)-1].op >= pri {
 		switch op, subid := prg.popOp(); op {
 		case tLPAREN:
 			op1 := prg.popNd('(')
@@ -212,7 +212,7 @@ func (prg *ReProg) evalUntil(pri rune) {
 		case tCAT:
 			op2 := prg.popNd('.')
 			op1 := prg.popNd('.')
-			if prg.back && prg.code[op2.first].op!=tEND {
+			if prg.back && prg.code[op2.first].op != tEND {
 				op1, op2 = op2, op1
 			}
 			prg.code[op1.last].left = op2.first
@@ -266,7 +266,7 @@ func (prg *ReProg) operator(op rune, val []rune) {
 		prg.pushOp(op)
 	}
 	prg.lastwasand =
-		op==tSTAR || op==tQUEST || op==tPLUS || op==tRPAREN
+		op == tSTAR || op == tQUEST || op == tPLUS || op == tRPAREN
 }
 
 /*
@@ -277,7 +277,7 @@ func (prg *ReProg) operand(op rune, val []rune) {
 		prg.operator(tCAT, nil) // implicit cat
 	}
 	i, x := prg.emit(op)
-	if op==tCCLASS || op==tNCCLASS {
+	if op == tCCLASS || op == tNCCLASS {
 		x.class = val
 	}
 	prg.pushNd(i, i)
@@ -448,14 +448,14 @@ func (prg *ReProg) scanClass() (class []rune, neg bool) {
 		panic("malformed []")
 	}
 	for c1 := prg.scanEl(); c1 != ']'; c1 = prg.scanEl() {
-		if c1==tEND || c1=='-' {
+		if c1 == tEND || c1 == '-' {
 			panic("malformed []")
 		}
 		if prg.peek() == '-' {
 			/* a-b: remove '-' and use [maxrune,a,b] */
 			prg.getc()
 			c2 := prg.scanEl()
-			if c2==']' || c2==tEND {
+			if c2 == ']' || c2 == tEND {
 				panic("malformed range in '[]'")
 			}
 			class = append(class, cRange, c1, c2)

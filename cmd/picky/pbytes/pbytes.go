@@ -8,13 +8,13 @@ import (
 
 func m32(data []byte, ui uint32) {
 	for i := uint32(0); i < 4; i++ {
-		data[i] = byte((ui>>(8*i))&0xff)
+		data[i] = byte((ui >> (8 * i)) & 0xff)
 	}
 }
 
 func m64(data []byte, ui uint64) {
 	for i := uint64(0); i < 8; i++ {
-		data[i] = byte((ui>>(8*i))&0xff)
+		data[i] = byte((ui >> (8 * i)) & 0xff)
 	}
 }
 
@@ -45,7 +45,7 @@ func MarshalBinary(data []byte, ifc interface{}) error {
 	case uintptr:
 		uix = uint64(ifc.(uintptr))
 		for i := uint64(0); i < 8; i++ {
-			data[i] = byte((uix>>(8*i))&0xff)
+			data[i] = byte((uix >> (8 * i)) & 0xff)
 		}
 	case uint64:
 		uix = ifc.(uint64)
@@ -79,13 +79,13 @@ func MarshalBinary(data []byte, ifc interface{}) error {
 }
 
 func um32(data []byte) uint32 {
-	ui := uint32((uint32(data[3])<<24) | (uint32(data[2])<<16) | (uint32(data[1])<<8) | uint32(data[0]))
+	ui := uint32((uint32(data[3]) << 24) | (uint32(data[2]) << 16) | (uint32(data[1]) << 8) | uint32(data[0]))
 	return ui
 }
 
 func um64(data []byte) uint64 {
-	uix := uint64((uint64(data[3])<<24) | (uint64(data[2])<<16) | (uint64(data[1])<<8) | uint64(data[0]))
-	uix |= uint64((uint64(data[7])<<56) | (uint64(data[6])<<48) | (uint64(data[5])<<40) | (uint64(data[4])<<32))
+	uix := uint64((uint64(data[3]) << 24) | (uint64(data[2]) << 16) | (uint64(data[1]) << 8) | uint64(data[0]))
+	uix |= uint64((uint64(data[7]) << 56) | (uint64(data[6]) << 48) | (uint64(data[5]) << 40) | (uint64(data[4]) << 32))
 	return uix
 }
 

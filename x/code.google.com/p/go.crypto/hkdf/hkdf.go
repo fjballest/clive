@@ -19,7 +19,7 @@ import (
 	"io"
 )
 
-type hkdf  {
+type hkdf struct {
 	expander hash.Hash
 	size     int
 

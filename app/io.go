@@ -1,20 +1,20 @@
 package app
 
 import (
-	"sync"
-	"io"
-	"sync/atomic"
-	"os"
 	"clive/dbg"
-	"strconv"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"strconv"
+	"sync"
+	"sync/atomic"
 )
 
-type cRef {
-	c chan interface{}
-	fd io.Closer	// will go in the future
-	n int32		// <0 means it's never closed.
+type cRef struct {
+	c  chan interface{}
+	fd io.Closer // will go in the future
+	n  int32     // <0 means it's never closed.
 	nb int
 }
 
@@ -23,9 +23,9 @@ type cRef {
 // The conventions are those expected for a Plan 9 file descriptor group.
 // The difference is that here I/O channels are chan interface{} and
 // not file channels.
-type IOSet {
+type IOSet struct {
 	lk sync.Mutex
-	n int32
+	n  int32
 	io []*cRef
 }
 
@@ -36,14 +36,14 @@ type Byteser interface {
 }
 
 var (
-	Null, out, err chan interface{}	// DevNull, Stdout, Stderr
-	outdone = make(chan bool)	// closed when out is done
-	errdone = make(chan bool)	// closed when err is done
+	Null, out, err chan interface{}  // DevNull, Stdout, Stderr
+	outdone        = make(chan bool) // closed when out is done
+	errdone        = make(chan bool) // closed when err is done
 
 	errNotUsed = errors.New("closed by user")
 )
 
-func (io *IOSet) sprintf(w io.Writer)  {
+func (io *IOSet) sprintf(w io.Writer) {
 	io.lk.Lock()
 	defer io.lk.Unlock()
 	fmt.Fprintf(w, "io %p ref %d\n", io, io.n)
@@ -51,7 +51,7 @@ func (io *IOSet) sprintf(w io.Writer)  {
 		if r != nil {
 			closed := ""
 			if cclosed(r.c) {
-				closed= " closed"
+				closed = " closed"
 			}
 			fmt.Fprintf(w, "\t[%d] %p\tref %d %p%s\n", i, r, r.n, r.c, closed)
 		}
@@ -65,31 +65,31 @@ func wio(tag string, c chan interface{}, w io.Writer, done chan bool) {
 		switch x := x.(type) {
 		case []byte:
 			w.Write(x)
-	/*
-		case Byteser:
-			w.Write(x.Bytes())
-		case string:
-			fmt.Fprintf(w, "%s", x)
-		case error:
-			if x != nil {
-				fmt.Fprintf(w, "error: %s", x)
-			}
-		case zx.Dir:
-			p := x["upath"]
-			if p == "" {
-				p = x["path"]
-			}
-			fmt.Fprintln(w, p)
-		case fmt.Stringer:
-			fmt.Fprintf(w, "%s", x)
-	*/
+			/*
+				case Byteser:
+					w.Write(x.Bytes())
+				case string:
+					fmt.Fprintf(w, "%s", x)
+				case error:
+					if x != nil {
+						fmt.Fprintf(w, "error: %s", x)
+					}
+				case zx.Dir:
+					p := x["upath"]
+					if p == "" {
+						p = x["path"]
+					}
+					fmt.Fprintln(w, p)
+				case fmt.Stringer:
+					fmt.Fprintf(w, "%s", x)
+			*/
 		}
 	}
 	close(done)
 }
 
 func init() {
-	Null  = make(chan interface{})
+	Null = make(chan interface{})
 	close(Null)
 	out = make(chan interface{})
 	err = make(chan interface{})
@@ -135,7 +135,7 @@ func mkIO() *IOSet {
 // Start using a new IO set.
 // If the given one is nil, the IO set is re-initialized from that in the underlying os
 // (stdin is from /dev/null in that case).
-func NewIO(io *IOSet)  {
+func NewIO(io *IOSet) {
 	if io == nil {
 		io = mkIO()
 	}
@@ -168,7 +168,6 @@ func (c *Ctx) IO() *IOSet {
 	return c.io.dup()
 }
 
-
 // Start using a copy of the current IO set
 func DupIO() {
 	NewIO(IO())
@@ -196,7 +195,7 @@ func (io *IOSet) close(n int, sts error) error {
 	return nil
 }
 
-func (io *IOSet) closeAll(sts error)  {
+func (io *IOSet) closeAll(sts error) {
 	io.lk.Lock()
 	defer io.lk.Unlock()
 	if io.n < 0 {
@@ -231,7 +230,7 @@ func (io *IOSet) setioc(nc *cRef, n int) (int, error) {
 			}
 		}
 		io.io = append(io.io, nc)
-		nc.nb = len(io.io)-1
+		nc.nb = len(io.io) - 1
 		return nc.nb, nil
 	}
 	if n > len(io.io) {
@@ -331,6 +330,7 @@ func Err() chan interface{} {
 }
 
 const Any = -1
+
 // Set the n-th io chan (or the 1st available if n < 0)
 // Returns the pos of the chan in the io set.
 func SetIO(c chan interface{}, n int) (int, error) {

@@ -1,22 +1,22 @@
 package lf
 
 import (
-	"testing"
 	"clive/app"
 	"clive/dbg"
-	"os"
 	"clive/zx"
+	"os"
 	"strings"
+	"testing"
 )
 
 var (
-	debug bool
+	debug   bool
 	dprintf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 )
 
-type test  {
-	args []string
-	out []string
+type test struct {
+	args  []string
+	out   []string
 	fails bool
 }
 
@@ -24,30 +24,30 @@ var (
 	tests = []test{
 		test{
 			args: []string{"lf", "app/lf,"},
-			out: []string{"app/lf", "app/lf/lf.go", "app/lf/lf_test.go"},
+			out:  []string{"app/lf", "app/lf/lf.go", "app/lf/lf_test.go"},
 		},
 		test{
 			args: []string{"lf", "app/lf"},
-			out: []string{"app/lf"},
+			out:  []string{"app/lf"},
 		},
 		test{
 			args: []string{"lf", "app/lf,0", "app/lf/lf.go"},
-			out: []string{"app/lf", "app/lf/lf.go"},
+			out:  []string{"app/lf", "app/lf/lf.go"},
 		},
 		test{
 			args: []string{"lf", "app/lf,type=-"},
-			out: []string{"app/lf/lf.go", "app/lf/lf_test.go"},
+			out:  []string{"app/lf/lf.go", "app/lf/lf_test.go"},
 		},
 		test{
-			args: []string{"lf", "app/lf,0", "fds", "app/lf/lf.go"},
-			out: []string{"app/lf", "app/lf/lf.go"},
+			args:  []string{"lf", "app/lf,0", "fds", "app/lf/lf.go"},
+			out:   []string{"app/lf", "app/lf/lf.go"},
 			fails: true,
 		},
 	}
 )
 
 func TestLf(t *testing.T) {
-	app.New()	// prevent app.Fatal from calling dbg.Fatal
+	app.New() // prevent app.Fatal from calling dbg.Fatal
 	app.Debug = testing.Verbose()
 	for i := range tests {
 		lt := tests[i]
@@ -89,9 +89,9 @@ func TestLf(t *testing.T) {
 	}
 }
 
-type gtest  {
-	args []string
-	out []string
+type gtest struct {
+	args  []string
+	out   []string
 	fails bool
 }
 
@@ -99,21 +99,21 @@ var (
 	gets = []gtest{
 		gtest{
 			args: []string{"lf", "-g", "app/lf"},
-			out: []string{"app/lf"},
+			out:  []string{"app/lf"},
 		},
 		gtest{
 			args: []string{"lf", "-g", "app/lf,"},
-			out: []string{"app/lf", "app/lf/lf.go", "[]", "app/lf/lf_test.go", "[]"},
+			out:  []string{"app/lf", "app/lf/lf.go", "[]", "app/lf/lf_test.go", "[]"},
 		},
 		gtest{
-			args: []string{"lf", "-g", "app/lf,0", "fds", "app/lf/lf.go", "[]"},
+			args:  []string{"lf", "-g", "app/lf,0", "fds", "app/lf/lf.go", "[]"},
 			fails: true,
 		},
 	}
 )
 
 func TestLg(t *testing.T) {
-	app.New()	// prevent app.Fatal from calling dbg.Fatal
+	app.New() // prevent app.Fatal from calling dbg.Fatal
 	app.Debug = testing.Verbose()
 	for i := range gets {
 		lt := gets[i]
@@ -154,7 +154,7 @@ func TestLg(t *testing.T) {
 				t.Fatalf("unexpected type %T", x)
 			}
 		}
-		if nbytes >0 {
+		if nbytes > 0 {
 			outs = append(outs, "[]")
 		}
 		err := cerror(out)

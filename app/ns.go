@@ -2,20 +2,20 @@ package app
 
 import (
 	"clive/dbg"
-	"clive/zx"
 	"clive/nspace"
+	"clive/zx"
 	"clive/zx/lfs"
-	"strings"
-	"path"
 	"errors"
-	"sync"
 	"os"
+	"path"
 	"strconv"
+	"strings"
+	"sync"
 )
 
-type cwd {
-	path string	// "" means use the OS one.
-	lk sync.Mutex
+type cwd struct {
+	path string // "" means use the OS one.
+	lk   sync.Mutex
 }
 
 // Initialize a new dot from the os
@@ -177,14 +177,14 @@ func ResolveTree(path string) (string, []zx.RWTree, []string, error) {
 // The rpath attribute in the dir entries provide a path relative to the one
 // specified by the user.
 func Dirs(names ...string) chan interface{} {
-	ns :=NS()
+	ns := NS()
 	rc := make(chan interface{})
 	go func() {
 		var err error
 		for _, name := range names {
 			if len(name) > 0 && name[0] == '#' {
 				d := zx.Dir{"path": name, "name": name,
-					"upath": name, "type":"c"}
+					"upath": name, "type": "c"}
 				rc <- d
 				continue
 			}
@@ -204,7 +204,7 @@ func Dirs(names ...string) chan interface{} {
 					break
 				}
 				d["upath"] = d["path"]
-				if toks[0]!=name && zx.HasPrefix(d["path"], name) {
+				if toks[0] != name && zx.HasPrefix(d["path"], name) {
 					u := zx.Path(toks[0], zx.Suffix(d["path"], name))
 					d["upath"] = u
 				}
@@ -262,7 +262,7 @@ func sendioc(rc chan interface{}, n string) {
 		}
 	}
 	if err := cerror(ioc); err != nil {
-		rc <-err
+		rc <- err
 	}
 }
 
@@ -277,7 +277,8 @@ func Files(names ...string) chan interface{} {
 	rc := make(chan interface{})
 	go func() {
 		var err error
-	Loop:	for _, name := range names {
+	Loop:
+		for _, name := range names {
 			if len(name) > 0 && name[0] == '#' {
 				sendioc(rc, name)
 				continue
@@ -300,7 +301,7 @@ func Files(names ...string) chan interface{} {
 					break
 				}
 				d["upath"] = d["path"]
-				if toks[0]!=name && zx.HasPrefix(d["path"], name) {
+				if toks[0] != name && zx.HasPrefix(d["path"], name) {
 					u := zx.Path(toks[0], zx.Suffix(d["path"], name))
 					d["upath"] = u
 				}
@@ -347,4 +348,3 @@ func Files(names ...string) chan interface{} {
 	}()
 	return rc
 }
-

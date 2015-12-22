@@ -5,7 +5,7 @@ import (
 	"net"
 )
 
-type ch  {
+type ch struct {
 	ncc chan *nchan.Conn
 }
 
@@ -26,12 +26,12 @@ func (h ch) HandleCli(c net.Conn, endc chan bool) {
 	doselect {
 	case <-inc:
 		inc = nil
-		if inc==nil && outc==nil {
+		if inc == nil && outc == nil {
 			return
 		}
 	case <-outc:
 		outc = nil
-		if inc==nil && outc==nil {
+		if inc == nil && outc == nil {
 			return
 		}
 	case <-endc:

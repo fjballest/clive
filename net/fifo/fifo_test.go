@@ -162,7 +162,7 @@ func TestFifos(t *testing.T) {
 		if n == 2 {
 			break
 		}
-	case <-time.After(10*time.Second):
+	case <-time.After(10 * time.Second):
 		t.Fatalf("timed out: fifos do not work in this system using go.")
 	}
 }
@@ -216,7 +216,7 @@ func TestSrv(t *testing.T) {
 	close(cc.Out, "err1")
 	<-cc.In
 	printf("cli done %v\n", cerror(cc.In))
-	if cerror(cc.In)==nil || cerror(cc.In).Error()!="err1" {
+	if cerror(cc.In) == nil || cerror(cc.In).Error() != "err1" {
 		t.Fatal("bad sts")
 	}
 	s.Stop(true)
@@ -328,7 +328,7 @@ func benchFifo(b *testing.B) {
 	close(cc.Out, "err1")
 	<-cc.In
 	printf("cli done %v\n", cerror(cc.In))
-	if cerror(cc.In)==nil || cerror(cc.In).Error()!="err1" {
+	if cerror(cc.In) == nil || cerror(cc.In).Error() != "err1" {
 		b.Fatal("bad sts")
 	}
 	s.Stop(true)

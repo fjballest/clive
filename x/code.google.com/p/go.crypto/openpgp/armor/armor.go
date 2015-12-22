@@ -27,7 +27,7 @@ import (
 //
 // Since the armored data can be very large, this package presents a streaming
 // interface.
-type Block  {
+type Block struct {
 	Type    string            // The type, taken from the preamble (i.e. "PGP SIGNATURE").
 	Header  map[string]string // Optional headers.
 	Body    io.Reader         // A Reader from which the contents can be read
@@ -44,7 +44,7 @@ const crc24Mask = 0xffffff
 // crc24 calculates the OpenPGP checksum as specified in RFC 4880, section 6.1
 func crc24(crc uint32, d []byte) uint32 {
 	for _, b := range d {
-		crc ^= uint32(b)<<16
+		crc ^= uint32(b) << 16
 		for i := 0; i < 8; i++ {
 			crc <<= 1
 			if crc&0x1000000 != 0 {
@@ -61,7 +61,7 @@ var armorEndOfLine = []byte("-----")
 
 // lineReader wraps a line based reader. It watches for the end of an armor
 // block and records the expected CRC value.
-type lineReader  {
+type lineReader struct {
 	in  *bufio.Reader
 	buf []byte
 	eof bool
@@ -87,12 +87,12 @@ func (l *lineReader) Read(p []byte) (n int, err error) {
 		return 0, ArmorCorrupt
 	}
 
-	if len(line)==5 && line[0]=='=' {
+	if len(line) == 5 && line[0] == '=' {
 		// This is the checksum line
 		var expectedBytes [3]byte
 		var m int
 		m, err = base64.StdEncoding.Decode(expectedBytes[0:], line[1:])
-		if m!=3 || err!=nil {
+		if m != 3 || err != nil {
 			return
 		}
 		l.crc = uint32(expectedBytes[0])<<16 |
@@ -100,7 +100,7 @@ func (l *lineReader) Read(p []byte) (n int, err error) {
 			uint32(expectedBytes[2])
 
 		line, _, err = l.in.ReadLine()
-		if err!=nil && err!=io.EOF {
+		if err != nil && err != io.EOF {
 			return
 		}
 		if !bytes.HasPrefix(line, armorEnd) {
@@ -131,7 +131,7 @@ func (l *lineReader) Read(p []byte) (n int, err error) {
 // openpgpReader passes Read calls to the underlying base64 decoder, but keeps
 // a running CRC of the resulting data and checks the CRC against the value
 // found by the lineReader at EOF.
-type openpgpReader  {
+type openpgpReader struct {
 	lReader    *lineReader
 	b64Reader  io.Reader
 	currentCRC uint32
@@ -173,7 +173,7 @@ TryNextBlock:
 			continue
 		}
 		line = bytes.TrimSpace(line)
-		if len(line)>len(armorStart)+len(armorEndOfLine) && bytes.HasPrefix(line, armorStart) {
+		if len(line) > len(armorStart)+len(armorEndOfLine) && bytes.HasPrefix(line, armorStart) {
 			break
 		}
 	}

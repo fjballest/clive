@@ -4,49 +4,49 @@
 package ql
 
 import (
-	"clive/dbg"
-	"clive/app"
-	"clive/app/opt"
-	"clive/app/nsutil"
 	"bytes"
-	"strings"
-	"path"
-	"sync"
-	"io"
-	"errors"
+	"clive/app"
+	"clive/app/nsutil"
+	"clive/app/opt"
 	"clive/app/tty"
+	"clive/dbg"
+	"errors"
+	"io"
 	"os"
+	"path"
+	"strings"
+	"sync"
 )
 
-type xWaits {
-	waits map[string] map[chan bool]bool
+type xWaits struct {
+	waits map[string]map[chan bool]bool
 	sync.Mutex
 }
 
-type xEnv {
-	path []string
-	funcs  map[string]*Nd
-	ps [2]string
+type xEnv struct {
+	path  []string
+	funcs map[string]*Nd
+	ps    [2]string
 	pslvl int
 	*xWaits
-	debugX bool	// debug execs
-	debugL bool	// debug lex
-	iflag bool		// interactive
+	debugX bool // debug execs
+	debugL bool // debug lex
+	iflag  bool // interactive
 }
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
-	dry bool
-	cmdarg string	// -c cmd
+	dry    bool
+	cmdarg string // -c cmd
 
 	lvl, plvl int
 	*xEnv
 	*lex
 }
 
-type inRdr {
-	inc chan interface{}
+type inRdr struct {
+	inc  chan interface{}
 	left []rune
 }
 
@@ -87,7 +87,7 @@ func (x *xWaits) addWait(tag string, c chan bool) {
 		delete(x.waits[tag], c)
 		x.Unlock()
 	}()
-		
+
 }
 
 func (x *xWaits) wait(tag string) {
@@ -100,7 +100,7 @@ func (x *xWaits) wait(tag string) {
 	}
 }
 
-func (x *xCmd) promptLvl(lvl int)  {
+func (x *xCmd) promptLvl(lvl int) {
 	if lvl != 0 {
 		lvl = 1
 	}
@@ -159,7 +159,7 @@ func Run() {
 	x := &xCmd{
 		Ctx: app.AppCtx(),
 		xEnv: &xEnv{
-			funcs: map[string]*Nd{},
+			funcs:  map[string]*Nd{},
 			xWaits: &xWaits{waits: waits},
 		},
 	}
@@ -175,7 +175,7 @@ func Run() {
 	args, err := x.Parse(x.Args)
 
 	if x.cmdarg != "" {
-		x.cmdarg = "{"+x.cmdarg+"}"
+		x.cmdarg = "{" + x.cmdarg + "}"
 	} else {
 		x.cmdarg = xcmdarg
 	}
@@ -256,7 +256,7 @@ func (x *xCmd) run() (err error) {
 		x.lvl = 0
 		x.nerrors = 0
 		if xerr := recover(); xerr != nil {
-			if xe,ok := xerr.(error); ok && xe == dbg.ErrIntr {
+			if xe, ok := xerr.(error); ok && xe == dbg.ErrIntr {
 				err = xe
 				return
 			}

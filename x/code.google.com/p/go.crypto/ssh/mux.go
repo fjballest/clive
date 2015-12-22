@@ -18,7 +18,7 @@ import (
 const debugMux = false
 
 // chanList is a thread safe channel list.
-type chanList  {
+type chanList struct {
 	// protects concurrent access to chans
 	sync.Mutex
 
@@ -85,7 +85,7 @@ func (c *chanList) dropAll() []*channel {
 
 // mux represents the state for the SSH connection protocol, which
 // multiplexes many channels onto a single packet transport.
-type mux  {
+type mux struct {
 	conn     packetConn
 	chanList chanList
 
@@ -227,7 +227,7 @@ func (m *mux) onePacket() error {
 	}
 
 	if debugMux {
-		if packet[0]==msgChannelData || packet[0]==msgChannelExtendedData {
+		if packet[0] == msgChannelData || packet[0] == msgChannelExtendedData {
 			log.Printf("decoding(%d): data packet - %d bytes", m.chanList.offset, len(packet))
 		} else {
 			p, _ := decode(packet)
@@ -302,7 +302,7 @@ func (m *mux) handleChannelOpen(packet []byte) error {
 		return err
 	}
 
-	if msg.MaxPacketSize<minPacketLength || msg.MaxPacketSize>1<<31 {
+	if msg.MaxPacketSize < minPacketLength || msg.MaxPacketSize > 1<<31 {
 		failMsg := channelOpenFailureMsg{
 			PeersId:  msg.PeersId,
 			Reason:   ConnectionFailed,

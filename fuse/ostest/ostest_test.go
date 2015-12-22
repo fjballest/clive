@@ -1,14 +1,14 @@
 package ostest
 
 import (
-	"testing"
 	"strings"
+	"testing"
 )
 
 const tdir = "/tmp/ostest_test"
 const tdir2 = "/tmp/ostest_test2"
 
-var xdiffs = []string {
+var xdiffs = []string{
 	`/tmp/ostest_test2: chg /1 size 0 vs 50`,
 	`/tmp/ostest_test2: chg /2 mode '-rw-r--r--' vs 'drwxr-x---'`,
 	`/tmp/ostest_test2: add /2/n2`,

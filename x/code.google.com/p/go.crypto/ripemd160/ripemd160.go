@@ -33,7 +33,7 @@ const (
 )
 
 // digest represents the partial evaluation of a checksum.
-type digest  {
+type digest struct {
 	s  [5]uint32       // running context
 	x  [BlockSize]byte // temporary buffer
 	nx int             // index into x
@@ -100,7 +100,7 @@ func (d0 *digest) Sum(in []byte) []byte {
 	// Length in bits.
 	tc <<= 3
 	for i := uint(0); i < 8; i++ {
-		tmp[i] = byte(tc>>(8*i))
+		tmp[i] = byte(tc >> (8 * i))
 	}
 	d.Write(tmp[0:8])
 
@@ -111,9 +111,9 @@ func (d0 *digest) Sum(in []byte) []byte {
 	var digest [Size]byte
 	for i, s := range d.s {
 		digest[i*4] = byte(s)
-		digest[i*4+1] = byte(s>>8)
-		digest[i*4+2] = byte(s>>16)
-		digest[i*4+3] = byte(s>>24)
+		digest[i*4+1] = byte(s >> 8)
+		digest[i*4+2] = byte(s >> 16)
+		digest[i*4+3] = byte(s >> 24)
 	}
 
 	return append(in, digest[:]...)

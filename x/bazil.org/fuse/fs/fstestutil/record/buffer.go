@@ -8,7 +8,7 @@ import (
 
 // Buffer is like bytes.Buffer but safe to access from multiple
 // goroutines.
-type Buffer  {
+type Buffer struct {
 	mu  sync.Mutex
 	buf bytes.Buffer
 }

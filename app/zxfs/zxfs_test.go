@@ -1,18 +1,18 @@
 package main
 
 import (
-	"testing"
+	"clive/dbg"
 	xfs "clive/fuse"
+	"clive/fuse/ostest"
 	"clive/zx"
 	"clive/zx/cfs"
 	"clive/zx/fstest"
-	"clive/fuse/ostest"
-	"clive/zx/mfs"
 	"clive/zx/lfs"
+	"clive/zx/mfs"
 	"clive/zx/zxfs"
-	"clive/dbg"
-	"os/exec"
 	"os"
+	"os/exec"
+	"testing"
 	"time"
 )
 
@@ -21,17 +21,17 @@ const (
 	tmnt = "/tmp/zxfs_testfs"
 )
 
-type setup {
-	fs zx.RWTree
+type setup struct {
+	fs       zx.RWTree
 	deferred func()
-	debug func()
-	errc chan error
+	debug    func()
+	errc     chan error
 }
 
 var (
-	printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
+	printf   = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 	moreverb = false
-	mktfs  = mktlfs
+	mktfs    = mktlfs
 )
 
 func umount() error {
@@ -60,7 +60,7 @@ func mktlfs(t *testing.T) *setup {
 	s.fs = fs
 	s.errc = make(chan error, 1)
 	done := func() {
-		
+
 		printf("umounted %v\n", umount())
 		fs.Close(nil)
 		os.RemoveAll(tdir)
@@ -91,7 +91,7 @@ func mktlfs(t *testing.T) *setup {
 		s.errc <- err
 		close(s.errc)
 	}()
-	time.Sleep(300*time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	if _, err := os.Stat(tmnt + "/d"); err != nil {
 		done()
 		t.Fatalf("not mounted")
@@ -167,7 +167,7 @@ func mktmfs(t *testing.T) *setup {
 		t.Fatalf("lfs: %s", err)
 	}
 	fs.IOstats = &zx.IOstats{}
-	ostest.MkTree(t, tdir)	// needed to compare trees and file data
+	ostest.MkTree(t, tdir) // needed to compare trees and file data
 	fstest.MkZXTree(t, fs)
 	s.fs = fs
 	done := func() {
@@ -202,7 +202,7 @@ func mktmfs(t *testing.T) *setup {
 		s.errc <- err
 		close(s.errc)
 	}()
-	time.Sleep(300*time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	if _, err := os.Stat(tmnt + "/d"); err != nil {
 		t.Fatalf("not mounted")
 	}
@@ -279,7 +279,7 @@ func mktcfsmfslfs(t *testing.T) *setup {
 		s.errc <- err
 		close(s.errc)
 	}()
-	time.Sleep(300*time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	if _, err := os.Stat(tmnt + "/d"); err != nil {
 		t.Fatalf("not mounted")
 	}
@@ -298,7 +298,7 @@ func testcfsfn(t *testing.T, fn func(t ostest.Fataler, dirs ...string)) {
 func mktcfslfslfs(t *testing.T) *setup {
 	umount()
 	os.RemoveAll(tdir)
-	os.RemoveAll(tdir+"c")
+	os.RemoveAll(tdir + "c")
 	os.RemoveAll(tmnt)
 	if err := os.Mkdir(tdir, 0755); err != nil {
 		t.Fatalf("mkdir: %s", err)
@@ -335,7 +335,7 @@ func mktcfslfslfs(t *testing.T) *setup {
 		umount()
 		fs.Close(nil)
 		os.RemoveAll(tdir)
-		os.RemoveAll(tdir+"c")
+		os.RemoveAll(tdir + "c")
 	}
 	if testing.Verbose() {
 		s.deferred = func() {
@@ -371,7 +371,7 @@ func mktcfslfslfs(t *testing.T) *setup {
 		s.errc <- err
 		close(s.errc)
 	}()
-	time.Sleep(300*time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	if _, err := os.Stat(tmnt + "/d"); err != nil {
 		t.Fatalf("not mounted")
 	}
@@ -427,4 +427,3 @@ func xTestFuseCfsMfsLfs(t *testing.T) {
 	TestWstats(t)
 	TestAsAFile(t)
 }
-

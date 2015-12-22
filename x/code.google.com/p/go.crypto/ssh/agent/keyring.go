@@ -15,12 +15,12 @@ import (
 	"clive/x/code.google.com/p/go.crypto/ssh"
 )
 
-type privKey  {
+type privKey struct {
 	signer  ssh.Signer
 	comment string
 }
 
-type keyring  {
+type keyring struct {
 	mu   sync.Mutex
 	keys []privKey
 
@@ -95,7 +95,7 @@ func (r *keyring) Unlock(passphrase []byte) error {
 	if !r.locked {
 		return errors.New("agent: not locked")
 	}
-	if len(passphrase)!=len(r.passphrase) || 1!=subtle.ConstantTimeCompare(passphrase, r.passphrase) {
+	if len(passphrase) != len(r.passphrase) || 1 != subtle.ConstantTimeCompare(passphrase, r.passphrase) {
 		return fmt.Errorf("agent: incorrect passphrase")
 	}
 

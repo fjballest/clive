@@ -2,18 +2,18 @@ package frmt
 
 import (
 	"testing"
-//	"clive/app/lf"
+	//	"clive/app/lf"
 	"clive/app"
 	"clive/dbg"
-	"os"
 	"clive/zx"
+	"os"
 )
 
 var (
-	debug bool
+	debug   bool
 	dprintf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 
-	testpar =`
+	testpar = `
 // When true, Load() reads .bib files containing "bib2ref ok"
 // in the first line (with this line being discarded).
 
@@ -47,9 +47,8 @@ being                                  discarded).
 `
 )
 
-
 func TestFrmt(t *testing.T) {
-	app.New()	// prevent app.Fatal from calling dbg.Fatal
+	app.New() // prevent app.Fatal from calling dbg.Fatal
 	//app.Debug = testing.Verbose()
 	// gf
 	pipe := make(chan interface{}, 2)
@@ -58,17 +57,17 @@ func TestFrmt(t *testing.T) {
 	close(pipe)
 	out := make(chan interface{})
 	/*
-	go func() {
-		c := app.New()
-		defer app.Exiting()
-		c.Args = []string {"gf", "frmt,"}
-		app.DupIO()
-		app.SetIO(pipe, 1)
-		app.Cd("/zx/sys/src/clive/app")
-		lf.Run()
-	}()
+		go func() {
+			c := app.New()
+			defer app.Exiting()
+			c.Args = []string {"gf", "frmt,"}
+			app.DupIO()
+			app.SetIO(pipe, 1)
+			app.Cd("/zx/sys/src/clive/app")
+			lf.Run()
+		}()
 	*/
-	
+
 	// frmt
 	go func() {
 		c := app.New()
@@ -91,7 +90,7 @@ func TestFrmt(t *testing.T) {
 				x = x[:len(x)-1]
 			}
 			dprintf("[%s]\n", x)
-			outs += string(x)+"\n"
+			outs += string(x) + "\n"
 		case error:
 			dprintf("xgot %T %v\n", x, x)
 		default:

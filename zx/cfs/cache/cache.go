@@ -75,22 +75,21 @@ package cache
 */
 
 import (
+	"clive/dbg"
+	"clive/work"
+	"clive/zx"
+	"clive/zx/cfs/locks"
 	"fmt"
 	"os"
-	"clive/zx"
-	"clive/work"
-	"clive/zx/cfs/locks"
 	"sync"
-	"clive/dbg"
 )
-
 
 type State int
 
 const (
-	CNone State = iota
-	CUnread		// kept using Dir
-	CClean		// kept using Dir
+	CNone   State = iota
+	CUnread       // kept using Dir
+	CClean        // kept using Dir
 	CUnreadMeta
 	CMeta
 	CNew
@@ -98,38 +97,37 @@ const (
 	CDel
 )
 
-type FileInfo {
-	path string
-	state State
-	busy, wasdel bool	// don't sync by now; issue a remove before sync
-	child []*FileInfo
-	lfs zx.RWTree		// local fs to sync
-	rfs zx.RWTree	// rem fs to sync into
-	dprintf, vprintf func (fstr string, args ...interface{})
+type FileInfo struct {
+	path             string
+	state            State
+	busy, wasdel     bool // don't sync by now; issue a remove before sync
+	child            []*FileInfo
+	lfs              zx.RWTree // local fs to sync
+	rfs              zx.RWTree // rem fs to sync into
+	dprintf, vprintf func(fstr string, args ...interface{})
 }
 
-type Info {
-	lk sync.Mutex	// locks only the tree structure; entries are locked by Cfs.locks
-	root *FileInfo	// not used, but for child[]
-	Dbg *bool
-	Verb bool	// report syncs
-	Tag string
+type Info struct {
+	lk   sync.Mutex // locks only the tree structure; entries are locked by Cfs.locks
+	root *FileInfo  // not used, but for child[]
+	Dbg  *bool
+	Verb bool // report syncs
+	Tag  string
 	*locks.Set
 	dirtyc, closedc chan bool
 
-	pool *work.Pool	// see syncproc() and FileInfo.sync()
+	pool *work.Pool // see syncproc() and FileInfo.sync()
 }
-
 
 func New() *Info {
 	dflag := false
 	ci := &Info{
-		Set: &locks.Set{},
-		Tag: "cache",
-		Dbg: &dflag,
-		dirtyc: make(chan bool, 1),
+		Set:     &locks.Set{},
+		Tag:     "cache",
+		Dbg:     &dflag,
+		dirtyc:  make(chan bool, 1),
 		closedc: make(chan bool),
-		root: &FileInfo{path:"/", state: CUnread},
+		root:    &FileInfo{path: "/", state: CUnread},
 	}
 	ci.root.dprintf = ci.dprintf
 	ci.root.vprintf = ci.vprintf
@@ -139,7 +137,7 @@ func New() *Info {
 
 func (ci *Info) dprintf(fstr string, args ...interface{}) {
 	if ci != nil && *ci.Dbg {
-		fmt.Fprintf(os.Stderr, ci.Tag+":ci: " + fstr, args...)
+		fmt.Fprintf(os.Stderr, ci.Tag+":ci: "+fstr, args...)
 	}
 }
 
@@ -148,21 +146,29 @@ func (ci *Info) vprintf(fstr string, args ...interface{}) {
 		if ci.Verb {
 			dbg.Warn(fstr, args...)
 		} else if *ci.Dbg {
-			fmt.Fprintf(os.Stderr, ci.Tag+":ci: " + fstr, args...)
+			fmt.Fprintf(os.Stderr, ci.Tag+":ci: "+fstr, args...)
 		}
 	}
 }
 
 func (st State) String() string {
 	switch st {
-	case CNone: return "none"
-	case CUnread: return "unread"
-	case CClean: return "clean"
-	case CUnreadMeta: return "unreadmeta"
-	case CMeta: return "meta"
-	case CNew: return "new"
-	case CData: return "data"
-	case CDel: return "del"
+	case CNone:
+		return "none"
+	case CUnread:
+		return "unread"
+	case CClean:
+		return "clean"
+	case CUnreadMeta:
+		return "unreadmeta"
+	case CMeta:
+		return "meta"
+	case CNew:
+		return "new"
+	case CData:
+		return "data"
+	case CDel:
+		return "del"
 	default:
 		panic("unknown cache state")
 	}
@@ -273,7 +279,7 @@ func (ci *Info) InvalData(d zx.Dir) {
 
 // We know our data is clean.
 func (ci *Info) Clean(d zx.Dir) {
-	d["Cache"] = "read"		// anything other than "unread"
+	d["Cache"] = "read" // anything other than "unread"
 	ci.lk.Lock()
 	defer ci.lk.Unlock()
 	ci.dprintf("%s: clean\n", d["path"])
@@ -289,7 +295,7 @@ func (ci *Info) Clean(d zx.Dir) {
 }
 
 func (ci *Info) DirtyMeta(lfs, rfs zx.RWTree, d zx.Dir) {
-	d["Cache"] = "dirty"		// anything other than "unread"
+	d["Cache"] = "dirty" // anything other than "unread"
 	ci.lk.Lock()
 	defer ci.lk.Unlock()
 	ci.dprintf("%s: dirtymeta\n", d["path"])
@@ -305,7 +311,7 @@ func (ci *Info) DirtyMeta(lfs, rfs zx.RWTree, d zx.Dir) {
 }
 
 func (ci *Info) Created(lfs, rfs zx.RWTree, d zx.Dir) {
-	d["Cache"] = "dirty"		// anything other than "unread"
+	d["Cache"] = "dirty" // anything other than "unread"
 	ci.lk.Lock()
 	defer ci.lk.Unlock()
 	ci.dprintf("%s: created\n", d["path"])
@@ -317,7 +323,7 @@ func (ci *Info) Created(lfs, rfs zx.RWTree, d zx.Dir) {
 }
 
 func (ci *Info) CreatedBusy(lfs, rfs zx.RWTree, d zx.Dir) {
-	d["Cache"] = "dirty"		// anything other than "unread"
+	d["Cache"] = "dirty" // anything other than "unread"
 	ci.lk.Lock()
 	defer ci.lk.Unlock()
 	ci.dprintf("%s: created\n", d["path"])
@@ -329,7 +335,7 @@ func (ci *Info) CreatedBusy(lfs, rfs zx.RWTree, d zx.Dir) {
 }
 
 func (ci *Info) DirtyData(lfs, rfs zx.RWTree, d zx.Dir) {
-	d["Cache"] = "dirty"		// anything other than "unread"
+	d["Cache"] = "dirty" // anything other than "unread"
 	ci.lk.Lock()
 	defer ci.lk.Unlock()
 	ci.dprintf("%s: dirtydata\n", d["path"])
@@ -343,7 +349,7 @@ func (ci *Info) DirtyData(lfs, rfs zx.RWTree, d zx.Dir) {
 }
 
 func (ci *Info) DirtyDataBusy(lfs, rfs zx.RWTree, d zx.Dir) {
-	d["Cache"] = "dirty"		// anything other than "unread"
+	d["Cache"] = "dirty" // anything other than "unread"
 	ci.lk.Lock()
 	defer ci.lk.Unlock()
 	ci.dprintf("%s: dirtydata\n", d["path"])
@@ -368,7 +374,7 @@ func (ci *Info) NotBusy(d zx.Dir) {
 
 // File is gone from the server, discard it
 func (ci *Info) Gone(d zx.Dir) {
-	d["Cache"] = "gone"		// anything other than "unread"
+	d["Cache"] = "gone" // anything other than "unread"
 	d["rm"] = "y"
 	ci.lk.Lock()
 	defer ci.lk.Unlock()
@@ -378,7 +384,7 @@ func (ci *Info) Gone(d zx.Dir) {
 
 // File has been removed by the client
 func (ci *Info) Removed(lfs, rfs zx.RWTree, d zx.Dir) {
-	d["Cache"] = "gone"		// anything other than "unread"
+	d["Cache"] = "gone" // anything other than "unread"
 	d["rm"] = "y"
 	ci.lk.Lock()
 	defer ci.lk.Unlock()

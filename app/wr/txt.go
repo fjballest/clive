@@ -1,19 +1,18 @@
 package wr
 
 import (
-	"io"
+	"clive/sre"
 	"fmt"
+	"io"
 	"strings"
 	"unicode"
-	"clive/sre"
 )
 
-type txtFmt {
+type txtFmt struct {
 	lvl int
 	*par
-	hasSeeAlso bool	// hacks for clive man
+	hasSeeAlso bool // hacks for clive man
 }
-
 
 type fltFun func(string) string
 
@@ -34,7 +33,7 @@ func indentVerb(s, pref, tab string) string {
 	return strings.Replace(ns, "\t", tab, -1)
 }
 
-const  mrexp = `^([a-zA-Z.0-9]+)\(([0-9]+)\)$`
+const mrexp = `^([a-zA-Z.0-9]+)\(([0-9]+)\)$`
 
 func (f *txtFmt) wrText(e *Elem) {
 	if e == nil {
@@ -240,7 +239,7 @@ func (f *txtFmt) wrBib(refs []string) {
 func (f *txtFmt) run(t *Text) {
 	els := t.Elems
 	up := strings.ToUpper
-	for len(els)>0 && els[0].Kind==Ktitle {
+	for len(els) > 0 && els[0].Kind == Ktitle {
 		f.i0, f.in, f.fn = "", "", up
 		f.newPar()
 		f.wrText(els[0])

@@ -5,20 +5,19 @@ package gp
 
 import (
 	"clive/app"
-	"clive/dbg"
 	"clive/app/opt"
+	"clive/dbg"
 	"clive/zx"
 	"clive/zx/pred"
 	"errors"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
 	preds []*pred.Pred
 }
-
 
 func (x *xCmd) gp(in, out chan interface{}) error {
 	matched := true

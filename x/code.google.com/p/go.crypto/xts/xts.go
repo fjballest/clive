@@ -28,7 +28,7 @@ import (
 
 // Cipher contains an expanded key structure. It doesn't contain mutable state
 // and therefore can be used concurrently.
-type Cipher  {
+type Cipher struct {
 	k1, k2 cipher.Block
 }
 
@@ -122,8 +122,8 @@ func (c *Cipher) Decrypt(plaintext, ciphertext []byte, sectorNum uint64) {
 func mul2(tweak *[blockSize]byte) {
 	var carryIn byte
 	for j := range tweak {
-		carryOut := tweak[j]>>7
-		tweak[j] = (tweak[j]<<1) + carryIn
+		carryOut := tweak[j] >> 7
+		tweak[j] = (tweak[j] << 1) + carryIn
 		carryIn = carryOut
 	}
 	if carryIn != 0 {

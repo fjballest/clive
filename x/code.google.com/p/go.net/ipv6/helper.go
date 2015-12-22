@@ -21,11 +21,11 @@ func boolint(b bool) int {
 func netAddrToIP16(a net.Addr) net.IP {
 	switch v := a.(type) {
 	case *net.UDPAddr:
-		if ip := v.IP.To16(); ip!=nil && ip.To4()==nil {
+		if ip := v.IP.To16(); ip != nil && ip.To4() == nil {
 			return ip
 		}
 	case *net.IPAddr:
-		if ip := v.IP.To16(); ip!=nil && ip.To4()==nil {
+		if ip := v.IP.To16(); ip != nil && ip.To4() == nil {
 			return ip
 		}
 	}

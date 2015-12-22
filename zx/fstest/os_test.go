@@ -17,7 +17,7 @@ func BenchmarkOSStats(b *testing.B) {
 	MkTree(b, tdir)
 	b.StartTimer()
 	for bi := 0; bi < b.N; bi++ {
-		i := bi%len(StatTests)
+		i := bi % len(StatTests)
 		st := StatTests[i]
 		if st.Fails {
 			continue
@@ -41,7 +41,7 @@ func BenchmarkOSGets(b *testing.B) {
 	b.StartTimer()
 	for bi := 0; bi < b.N; bi++ {
 		dat, err := ioutil.ReadFile(tdir + "/2")
-		if len(dat)!=31658 || err!=nil {
+		if len(dat) != 31658 || err != nil {
 			b.Fatalf("bad read total")
 		}
 	}

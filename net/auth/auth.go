@@ -86,7 +86,7 @@ import (
 
 	- Otherwise permission checking is similar to that of unix (v6).
 */
-type Info  {
+type Info struct {
 	Uid       string          // authenticated user name
 	Gids      map[string]bool // local groups known for that user
 	SpeaksFor string          // user name as reported by the remote peer.
@@ -98,7 +98,7 @@ type Info  {
 	Per-user keys.
 	See Info for a description.
 */
-type Key  {
+type Key struct {
 	Uid  string
 	Gids []string
 	Key  []byte
@@ -121,7 +121,7 @@ var (
 	ErrFailed   = errors.New("auth failed")
 
 	// Timeout placed on the authentication protocol.
-	Tmout = 2*time.Second
+	Tmout = 2 * time.Second
 
 	// Enable debug diagnostics.
 	Debug   bool
@@ -140,7 +140,7 @@ var (
 	ai.Uid "elf" belongs to every group.
 */
 func (ai *Info) InGroup(name string) bool {
-	return ai == nil || name == ""  || ai.Uid == "elf" || name==ai.Uid || ai.Gids[name]
+	return ai == nil || name == "" || ai.Uid == "elf" || name == ai.Uid || ai.Gids[name]
 }
 
 /*
@@ -173,7 +173,7 @@ func TLScfg(pem, key string) (*tls.Config, error) {
 	}, nil
 }
 
-type msg  {
+type msg struct {
 	enabled         bool
 	user, speaksfor string
 	proto           map[string]bool
@@ -385,12 +385,12 @@ func ChallengeResponseOk(name, ch, resp string) (user string, ok bool) {
 	if !Enabled {
 		return u, true
 	}
-	if keys==nil || iv==nil {
+	if keys == nil || iv == nil {
 		return u, false
 	}
 	u = keys[0].Uid
 	key := keys[0].Key
-	if name!="" && name!="default" {
+	if name != "" && name != "default" {
 		var err error
 		ks, err := LoadKey(KeyDir(), name)
 		if err != nil {
@@ -400,7 +400,7 @@ func ChallengeResponseOk(name, ch, resp string) (user string, ok bool) {
 		u, key = ks[0].Uid, ks[0].Key
 	}
 	chresp, ok := encrypt(key, iv, []byte(ch))
-	if !ok || len(chresp)==0 {
+	if !ok || len(chresp) == 0 {
 		return u, false
 	}
 	return u, fmt.Sprintf("%x", chresp) == resp
@@ -472,10 +472,10 @@ func conn(c nchan.Conn, iscaller bool, name string, proto ...string) (*Info, err
 		k = keys[0].Key
 	}
 	if Enabled {
-		if TLSclient==nil || TLSserver==nil {
+		if TLSclient == nil || TLSserver == nil {
 			return nil, errors.New("no tls")
 		}
-		if name!="" && name!="default" {
+		if name != "" && name != "default" {
 			var err error
 			ks, err := LoadKey(KeyDir(), name)
 			if err != nil {
@@ -637,7 +637,7 @@ func conn(c nchan.Conn, iscaller bool, name string, proto ...string) (*Info, err
 
 // Pad applies the PKCS #7 padding scheme on the buffer.
 func pad(in []byte) []byte {
-	padding := 16 - (len(in)%16)
+	padding := 16 - (len(in) % 16)
 	if padding == 0 {
 		padding = 16
 	}
@@ -655,7 +655,7 @@ func unpad(in []byte) []byte {
 	}
 
 	padding := in[len(in)-1]
-	if int(padding)>len(in) || padding>aes.BlockSize {
+	if int(padding) > len(in) || padding > aes.BlockSize {
 		return nil
 	}
 
@@ -670,7 +670,7 @@ func unpad(in []byte) []byte {
 // Helper function.
 // Decrypts the message and removes any padding.
 func decrypt(k, in []byte) ([]byte, bool) {
-	if len(in)==0 || len(in)%aes.BlockSize!=0 {
+	if len(in) == 0 || len(in)%aes.BlockSize != 0 {
 		return nil, false
 	}
 

@@ -17,7 +17,7 @@ func LimitListener(l net.Listener, n int) net.Listener {
 	return &limitListener{l, make(chan struct{}, n)}
 }
 
-type limitListener  {
+type limitListener struct {
 	net.Listener
 	sem chan struct{}
 }
@@ -35,7 +35,7 @@ func (l *limitListener) Accept() (net.Conn, error) {
 	return &limitListenerConn{Conn: c, release: l.release}, nil
 }
 
-type limitListenerConn  {
+type limitListenerConn struct {
 	net.Conn
 	releaseOnce sync.Once
 	release     func()

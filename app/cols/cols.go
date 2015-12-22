@@ -5,15 +5,15 @@ package cols
 
 import (
 	"clive/app"
+	"clive/app/opt"
 	"clive/app/tty"
 	"clive/dbg"
-	"clive/app/opt"
-	"strings"
-	"fmt"
 	"clive/zx"
+	"fmt"
+	"strings"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 	wid, ncols int
@@ -30,7 +30,7 @@ func (x *xCmd) col() {
 	}
 	colwid := x.maxwid + 1
 	if x.ncols == 0 {
-		x.ncols = x.wid/colwid
+		x.ncols = x.wid / colwid
 	}
 	if x.ncols == 0 {
 		x.ncols = 1

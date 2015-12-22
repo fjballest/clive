@@ -2,7 +2,7 @@ package fuse
 
 import "time"
 
-type attr  {
+type attr struct {
 	Ino       uint64
 	Size      uint64
 	Blocks    uint64
@@ -33,7 +33,7 @@ func (a *attr) SetFlags(f uint32) {
 	// Ignored on Linux.
 }
 
-type setattrIn  {
+type setattrIn struct {
 	setattrInCommon
 }
 
@@ -61,10 +61,10 @@ func openFlags(flags uint32) OpenFlags {
 	return OpenFlags(flags)
 }
 
-type getxattrIn  {
+type getxattrIn struct {
 	getxattrInCommon
 }
 
-type setxattrIn  {
+type setxattrIn struct {
 	setxattrInCommon
 }

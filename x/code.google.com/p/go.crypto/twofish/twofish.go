@@ -21,7 +21,7 @@ const mdsPolynomial = 0x169 // x^8 + x^6 + x^5 + x^3 + 1, see [TWOFISH] 4.2
 const rsPolynomial = 0x14d  // x^8 + x^6 + x^3 + x^2 + 1, see [TWOFISH] 4.3
 
 // A Cipher is an instance of Twofish encryption using a particular key.
-type Cipher  {
+type Cipher struct {
 	s [4][256]uint32
 	k [40]uint32
 }
@@ -37,15 +37,15 @@ func (k KeySizeError) Error() string {
 func NewCipher(key []byte) (*Cipher, error) {
 	keylen := len(key)
 
-	if keylen!=16 && keylen!=24 && keylen!=32 {
+	if keylen != 16 && keylen != 24 && keylen != 32 {
 		return nil, KeySizeError(keylen)
 	}
 
 	// k is the number of 64 bit words in key
-	k := keylen/8
+	k := keylen / 8
 
 	// Create the S[..] words
-	var S [4*4]byte
+	var S [4 * 4]byte
 	for i := 0; i < k; i++ {
 		// Computes [y0 y1 y2 y3] = rs . [x0 x1 x2 x3 x4 x5 x6 x7]
 		for j, rsRow := range rs {
@@ -61,7 +61,7 @@ func NewCipher(key []byte) (*Cipher, error) {
 	for i := byte(0); i < 20; i++ {
 		// A = h(p * 2x, Me)
 		for j := range tmp {
-			tmp[j] = 2*i
+			tmp[j] = 2 * i
 		}
 		A := h(tmp[:], key, 0)
 
@@ -112,9 +112,9 @@ func (c *Cipher) BlockSize() int { return BlockSize }
 // store32l stores src in dst in little-endian form.
 func store32l(dst []byte, src uint32) {
 	dst[0] = byte(src)
-	dst[1] = byte(src>>8)
-	dst[2] = byte(src>>16)
-	dst[3] = byte(src>>24)
+	dst[1] = byte(src >> 8)
+	dst[2] = byte(src >> 16)
+	dst[3] = byte(src >> 24)
 	return
 }
 
@@ -125,12 +125,12 @@ func load32l(src []byte) uint32 {
 
 // rol returns x after a left circular rotation of y bits.
 func rol(x, y uint32) uint32 {
-	return (x<<(y&31)) | (x>>(32 - (y&31)))
+	return (x << (y & 31)) | (x >> (32 - (y & 31)))
 }
 
 // ror returns x after a right circular rotation of y bits.
 func ror(x, y uint32) uint32 {
-	return (x>>(y&31)) | (x<<(32 - (y&31)))
+	return (x >> (y & 31)) | (x << (32 - (y & 31)))
 }
 
 // The RS matrix. See [TWOFISH] 4.3
@@ -191,7 +191,7 @@ func gfMult(a, b byte, p uint32) byte {
 	for i := 0; i < 7; i++ {
 		result ^= B[a&1]
 		a >>= 1
-		B[1] = P[B[1]>>7] ^ (B[1]<<1)
+		B[1] = P[B[1]>>7] ^ (B[1] << 1)
 	}
 	result ^= B[a&1]
 	return byte(result)
@@ -223,7 +223,7 @@ func h(in, key []byte, offset int) uint32 {
 	for x := range y {
 		y[x] = in[x]
 	}
-	switch len(key)/8 {
+	switch len(key) / 8 {
 	case 4:
 		y[0] = sbox[1][y[0]] ^ key[4*(6+offset)+0]
 		y[1] = sbox[0][y[1]] ^ key[4*(6+offset)+1]

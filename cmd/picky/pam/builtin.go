@@ -22,11 +22,11 @@ import (
 const (
 	u32sz = 4
 
-	rMode = 1<<iota
+	rMode = 1 << iota
 	wMode
 )
 
-type Xfile  {
+type Xfile struct {
 	b     *bufio.ReadWriter
 	bfd   *os.File
 	eof   bool
@@ -38,12 +38,12 @@ type Xfile  {
 	graph *gx.Graphics
 }
 
-type Vmem  {
+type Vmem struct {
 	tid  int
 	elem []byte
 }
 
-type Ptr  {
+type Ptr struct {
 	tid  uint
 	pc   uint32
 	p    []byte
@@ -95,7 +95,7 @@ func (f *Xfile) isgraphic() bool {
 func flushall() {
 	for i := range files {
 		f := files[i]
-		if f!=nil && f.b!=nil && (f.mode&wMode)!=0 && !f.isgraphic() {
+		if f != nil && f.b != nil && (f.mode&wMode) != 0 && !f.isgraphic() {
 			f.b.Flush()
 		}
 	}
@@ -162,7 +162,7 @@ func fnsinit() {
 }
 
 func xbfile(i int) (f *Xfile, sc io.RuneScanner) {
-	if i>len(files) || (files[i].b==nil && !files[i].isgraphic()) {
+	if i > len(files) || (files[i].b == nil && !files[i].isgraphic()) {
 		panic("file not open")
 	}
 	f = files[i]
@@ -176,7 +176,7 @@ func xbfile(i int) (f *Xfile, sc io.RuneScanner) {
 
 func xacos() {
 	r := popr()
-	if r< -1-paminstr.Eps || r>1+paminstr.Eps {
+	if r < -1-paminstr.Eps || r > 1+paminstr.Eps {
 		panic("acos argument out of [-1.0, 1.0]")
 	}
 	pushr(math.Acos(r))
@@ -184,7 +184,7 @@ func xacos() {
 
 func xasin() {
 	r := popr()
-	if r< -1-paminstr.Eps || r>1+paminstr.Eps {
+	if r < -1-paminstr.Eps || r > 1+paminstr.Eps {
 		panic("asin argument out of [-1.0, 1.0]")
 	}
 	pushr(math.Asin(r))
@@ -192,7 +192,7 @@ func xasin() {
 
 func xatan() {
 	r := popr()
-	if r< -math.Pi/2+paminstr.Eps || r>math.Pi/2-paminstr.Eps {
+	if r < -math.Pi/2+paminstr.Eps || r > math.Pi/2-paminstr.Eps {
 		panic("atan argument out of [-Pi/2, Pi/2]")
 	}
 	pushr(math.Atan(r))
@@ -313,6 +313,9 @@ func xptr(pi interface{}) *byte {
 	if pt == nil {
 		panic("dereferencing a nil pointer")
 	}
+	if pt == Uninit {
+		panic("dereferencing a not initialized pointer")
+	}
 	if debug['M'] != 0 {
 		fmt.Fprintf(os.Stderr, "xptr: Ptr %v\n", pt)
 	}
@@ -360,7 +363,7 @@ var randsrc *rand.Rand
 
 func xrand() {
 	n := int(pop32())
-	if n<=0 || n>paminstr.Maxint {
+	if n <= 0 || n > paminstr.Maxint {
 		panic("rand: n should be in (0, Maxint] ")
 	}
 	i := randsrc.Intn(n)
@@ -373,7 +376,7 @@ func xrand() {
 
 /* some windows propagate C-z instead of sending EOF, agh */
 func iseof(c rune, err error) bool {
-	return (c==0x1a && runtime.GOOS=="windows") || err==io.EOF
+	return (c == 0x1a && runtime.GOOS == "windows") || err == io.EOF
 }
 
 func xfpeek() {
@@ -434,21 +437,21 @@ func readword(f *Xfile, isnum bool) string {
 	sp = 0
 	for {
 		c, _, err = sc.ReadRune()
-		if err!=nil || !unicode.IsSpace(c) {
+		if err != nil || !unicode.IsSpace(c) {
 			break
 		}
 	}
 	for {
-		if err!=nil && sp==0 {
+		if err != nil && sp == 0 {
 			panic("read: eof met")
 		}
 		buf = append(buf, c)
 		sp++
 		c, _, err = sc.ReadRune()
-		if err!=nil || (isnum && !strings.ContainsRune("0123456789+-eE.", c)) {
+		if err != nil || (isnum && !strings.ContainsRune("0123456789+-eE.", c)) {
 			break
 		}
-		if err!=nil || unicode.IsSpace(c) {
+		if err != nil || unicode.IsSpace(c) {
 			break
 		}
 	}
@@ -481,7 +484,7 @@ func _xfread(tid int, f *Xfile) {
 	if f.eof {
 		panic("read: eof met")
 	}
-	if (f.mode&rMode) == 0 {
+	if (f.mode & rMode) == 0 {
 		panic("read: file not open for reading")
 	}
 	switch mabs.tents[tid].fmt {
@@ -493,7 +496,7 @@ func _xfread(tid int, f *Xfile) {
 			panic("read: no int value found")
 		}
 
-		if int(n)<mabs.tents[tid].first || int(n)>mabs.tents[tid].last {
+		if int(n) < mabs.tents[tid].first || int(n) > mabs.tents[tid].last {
 			panic("read: value is out of range")
 		}
 		err = pbytes.MarshalBinary(d, int(n))
@@ -501,7 +504,7 @@ func _xfread(tid int, f *Xfile) {
 			panic("_xfread marshal")
 		}
 	case 'e':
-		d := popslice(mabs.tents[tid].nitems*p32sz)
+		d := popslice(mabs.tents[tid].nitems * p32sz)
 		s := readword(f, false)
 		for i := 0; i < mabs.tents[tid].nitems; i++ {
 			if strings.EqualFold(s, mabs.tents[tid].lits[i]) {
@@ -529,7 +532,7 @@ func _xfread(tid int, f *Xfile) {
 			}
 		} else {
 			f.eol = n == rune(paminstr.EOL[0])
-			if int(n)<mabs.tents[tid].first || int(n)>mabs.tents[tid].last {
+			if int(n) < mabs.tents[tid].first || int(n) > mabs.tents[tid].last {
 				panic("read: value is out of range")
 			}
 		}
@@ -558,7 +561,7 @@ func _xfread(tid int, f *Xfile) {
 		if err != nil {
 			panic("read: no float value found")
 		}
-		if df<float64(mabs.tents[tid].first) || df>float64(mabs.tents[tid].last) {
+		if df < float64(mabs.tents[tid].first) || df > float64(mabs.tents[tid].last) {
 			panic("read: value is out of range")
 		}
 		err = pbytes.MarshalBinary(d, float32(df))
@@ -577,7 +580,7 @@ func _xfread(tid int, f *Xfile) {
 			panic("_xfread marshal")
 		}
 	case 'a':
-		d := popslice(4*mabs.tents[tid].nitems)
+		d := popslice(4 * mabs.tents[tid].nitems)
 		str := make([]rune, 0)
 		spad := make([]rune, 3)
 		for i := 0; i < mabs.tents[tid].nitems; i += 1 {
@@ -606,7 +609,7 @@ func _xfread(tid int, f *Xfile) {
 
 func xfread() {
 	tid := int(pop32())
-	if tid<0 || tid>=len(mabs.tents) {
+	if tid < 0 || tid >= len(mabs.tents) {
 		panic("bad tid")
 	}
 	fid := int(pop32())
@@ -631,7 +634,7 @@ func xfreadeol() {
 	}
 	if len(paminstr.EOL) > 1 {
 		c, _, err := sc.ReadRune()
-		if err!=nil || c!=rune(paminstr.EOL[1]) {
+		if err != nil || c != rune(paminstr.EOL[1]) {
 			panic("read: broken end of line")
 		}
 	}
@@ -647,7 +650,7 @@ func xfreadln() {
 		err error
 	)
 	tid := int(pop32())
-	if tid<0 || tid>=len(mabs.tents) {
+	if tid < 0 || tid >= len(mabs.tents) {
 		panic("bad tid")
 	}
 	fid := int(pop32())
@@ -656,16 +659,16 @@ func xfreadln() {
 	if !f.eol {
 		for {
 			c, _, err = sc.ReadRune()
-			if err!=nil || c==rune(paminstr.EOL[0]) {
+			if err != nil || c == rune(paminstr.EOL[0]) {
 				break
 			}
 		}
 	}
 	// perhaps an empty line
-	if f.eol || c==rune(paminstr.EOL[0]) {
-		if len(paminstr.EOL)>1 && paminstr.EOL[1]!=0 {
+	if f.eol || c == rune(paminstr.EOL[0]) {
+		if len(paminstr.EOL) > 1 && paminstr.EOL[1] != 0 {
 			c, _, err = sc.ReadRune()
-			if err!=nil || c!=rune(paminstr.EOL[1]) {
+			if err != nil || c != rune(paminstr.EOL[1]) {
 				panic("freadln: broken end of line")
 			}
 		}
@@ -735,7 +738,7 @@ func tfmt(t *Tent, fname string) string {
 			errs := fmt.Sprintf("%s: can't write eof", fname)
 			panic(errs)
 		}
-		if (i&0x80) != 0 {
+		if (i & 0x80) != 0 {
 			errs := fmt.Sprintf("%s: can't write special char", fname)
 			panic(errs)
 		}
@@ -757,7 +760,7 @@ func tfmt(t *Tent, fname string) string {
 		s = fmt.Sprintf("%s", d)
 	case 'e':
 		i := int(pop32())
-		if i<t.first || i>t.last {
+		if i < t.first || i > t.last {
 			panic("can't print a value out of range")
 		}
 		s = fmt.Sprintf("%s", t.lits[i-t.first])
@@ -778,7 +781,7 @@ func _xfwrite(nl bool) {
 	var wr io.Writer
 	t := tfetch(int(pop32()))
 	f, _ := xbfile(int(pop32()))
-	if (f.mode&wMode) == 0 {
+	if (f.mode & wMode) == 0 {
 		panic("write: file not open for writing")
 	}
 	s := tfmt(t, "write")
@@ -815,7 +818,7 @@ func xopen() {
 func xfwriteeol() {
 	var wr io.Writer
 	f, _ := xbfile(int(pop32()))
-	if (f.mode&wMode) == 0 {
+	if (f.mode & wMode) == 0 {
 		panic("write: file not open for writing")
 	}
 	if f.isgraphic() {
@@ -847,7 +850,7 @@ func xfwriteln() {
 }
 
 func xbclose(i int) {
-	if i>=len(files) || files[i]==nil {
+	if i >= len(files) || files[i] == nil {
 		panic("file not open")
 	}
 	files[i] = nil
@@ -933,9 +936,9 @@ func dumpc(r rune) string {
 	case '\t':
 		return "\\t"
 	default:
-		if r>=0 && r<0x20 {
+		if r >= 0 && r < 0x20 {
 			return fmt.Sprintf("'\\%03o'", r)
-		} else if r>=0x20 && r<0xFFFF {
+		} else if r >= 0x20 && r < 0xFFFF {
 			return fmt.Sprintf("'%c'", r)
 		} else {
 			return "'\\???'"
@@ -982,7 +985,7 @@ func (v *Vmem) String() string {
 		}
 		e = ifc.(uint32)
 		ee := int(int32(e))
-		if ee<t.first || ee>t.last {
+		if ee < t.first || ee > t.last {
 			s += fmt.Sprintf("out of range")
 		} else {
 			s += fmt.Sprintf("%d", ee)
@@ -995,7 +998,7 @@ func (v *Vmem) String() string {
 			panic("vmem umarshal")
 		}
 		e = ifc.(int)
-		if e<t.first || e>t.last {
+		if e < t.first || e > t.last {
 			s += fmt.Sprintf("out of range")
 		} else {
 			s += fmt.Sprintf("%s", t.lits[e-t.first])
@@ -1070,7 +1073,7 @@ func (v *Vmem) String() string {
 			panic("vmem umarshal")
 		}
 		e = ifc.(int)
-		if e<0 || e>=len(files) {
+		if e < 0 || e >= len(files) {
 			s += fmt.Sprintf("invalid file")
 			return s
 		}
@@ -1122,7 +1125,7 @@ func dumplocals(tag string, n int, vents []Vent, lp int) {
 		for j := 0; j < vlvl; j++ {
 			fmt.Fprintf(os.Stderr, "\t")
 		}
-		if debug['S']!=0 || debug['D']!=0 || debug['M']!=0 {
+		if debug['S'] != 0 || debug['D'] != 0 || debug['M'] != 0 {
 			fmt.Fprintf(os.Stderr, "%v  ", v.elem)
 		}
 		fmt.Fprintf(os.Stderr, "%s = %v\n", vents[i].name, &v)
@@ -1157,7 +1160,7 @@ func dumpheap() {
 	}
 }
 
-type SFrame  {
+type SFrame struct {
 	pc  uint32
 	pid uint32
 	fp  int
@@ -1191,14 +1194,14 @@ func proctrace(fr SFrame) {
 func nextproc(fr *SFrame) error {
 	sp := mst.sp
 	mst.sp = fr.fp
-	fr.pc = ptrU32(&mst.stack[mst.fp-p32sz]) // saved pc
+	fr.pc = ptrU32(&mst.stack[mst.sp-p32sz]) // saved pc
 	if fr.pc == ^uint32(0) {
 		return errors.New("bad pc")
 	}
-	fr.pid = ptrU32(&mst.stack[mst.fp-2*p32sz])
-	fr.fp = int(ptrU64(&mst.stack[mst.fp-4*p32sz]))
-	fr.vp = int(ptrU64(&mst.stack[mst.fp-6*p32sz]))
-	fr.ap = int(ptrU64(&mst.stack[mst.fp-8*p32sz]))
+	fr.pid = ptrU32(&mst.stack[mst.sp-2*p32sz])
+	fr.fp = int(ptrU32(&mst.stack[mst.sp-3*p32sz]))
+	fr.vp = int(ptrU32(&mst.stack[mst.sp-4*p32sz]))
+	fr.ap = int(ptrU32(&mst.stack[mst.sp-5*p32sz]))
 	mst.sp = sp
 	return nil
 }
@@ -1343,7 +1346,7 @@ func xgkeypress() {
 		}
 	case 'a':
 		nc := t1.nitems
-		cp := popslice(4*nc)
+		cp := popslice(4 * nc)
 		cpp := make([]byte, nc)
 		g.ReadKeyPresses(cpp)
 		if cpp[0] == 0xff {
@@ -1454,7 +1457,7 @@ func xgtextheight() {
 
 func xsleep() {
 	t := pop32()
-	time.Sleep(time.Duration(t)*time.Millisecond)
+	time.Sleep(time.Duration(t) * time.Millisecond)
 }
 
 type Bfn func()

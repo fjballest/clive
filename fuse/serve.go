@@ -27,7 +27,7 @@ import (
 // interrupted.
 type Intr chan bool
 
-type Server  {
+type Server struct {
 	FS FS
 
 	// Function to send debug log messages to. If nil, use fuse.Debug.
@@ -36,7 +36,7 @@ type Server  {
 	dprintf dbg.PrintFunc
 }
 
-type serveConn  {
+type serveConn struct {
 	meta       sync.Mutex
 	fs         FS
 	req        map[fuse.RequestID]*serveRequest
@@ -47,18 +47,18 @@ type serveConn  {
 	nodeGen    uint64
 }
 
-type serveRequest  {
+type serveRequest struct {
 	Request fuse.Request
 	Intr    Intr
 }
 
-type serveNode  {
+type serveNode struct {
 	inode uint64
 	node  Node
 	refs  uint64
 }
 
-type serveHandle  {
+type serveHandle struct {
 	handle   Handle
 	readData []byte // used to cached packed dir entries
 	nodeID   fuse.NodeID
@@ -69,8 +69,8 @@ type nodeRef interface {
 }
 
 var (
-	attrValidTime  = 5*time.Second
-	entryValidTime = 5*time.Second
+	attrValidTime  = 5 * time.Second
+	entryValidTime = 5 * time.Second
 	startTime      = time.Now()
 	Debug          bool
 	dprintf        = dbg.FlagPrintf(os.Stderr, &Debug)
@@ -139,7 +139,7 @@ func (s *Server) Serve(c *fuse.Conn) error {
 	}
 	// make sure we get inodes
 	attr, err := root.Attr()
-	if err!=nil || attr.Inode==0 {
+	if err != nil || attr.Inode == 0 {
 		return errors.New("root does not have a valid inode number")
 	}
 	sc.node = append(sc.node, nil, &serveNode{inode: 1, node: root, refs: 1})
@@ -239,7 +239,7 @@ func (c *serveConn) saveHandle(handle Handle, nodeID fuse.NodeID) (id fuse.Handl
 	return
 }
 
-type nodeRefcountDropBug  {
+type nodeRefcountDropBug struct {
 	N    uint64
 	Refs uint64
 	Node fuse.NodeID
@@ -290,7 +290,7 @@ func (c *serveConn) dropHandle(id fuse.HandleID) {
 	c.meta.Unlock()
 }
 
-type missingHandle  {
+type missingHandle struct {
 	Handle    fuse.HandleID
 	MaxHandle fuse.HandleID
 }
@@ -315,7 +315,7 @@ func (c *serveConn) getHandle(id fuse.HandleID) (shandle *serveHandle) {
 	return
 }
 
-type request  {
+type request struct {
 	Op      string
 	Request *fuse.Header
 	In      interface{} `json:",omitempty"`
@@ -325,7 +325,7 @@ func (r request) String() string {
 	return fmt.Sprintf("<- %s", r.In)
 }
 
-type logResponseHeader  {
+type logResponseHeader struct {
 	ID fuse.RequestID
 }
 
@@ -333,7 +333,7 @@ func (m logResponseHeader) String() string {
 	return fmt.Sprintf("ID=%#x", m.ID)
 }
 
-type response  {
+type response struct {
 	Op      string
 	Request logResponseHeader
 	Out     interface{} `json:",omitempty"`
@@ -354,7 +354,7 @@ func (r response) errstr() string {
 
 func (r response) String() string {
 	switch {
-	case r.Errno!="" && r.Out!=nil:
+	case r.Errno != "" && r.Out != nil:
 		return fmt.Sprintf("-> %s error=%s %s", r.Request, r.errstr(), r.Out)
 	case r.Errno != "":
 		return fmt.Sprintf("-> %s error=%s", r.Request, r.errstr())
@@ -373,7 +373,7 @@ func (r response) String() string {
 	}
 }
 
-type logMissingNode  {
+type logMissingNode struct {
 	MaxNode fuse.NodeID
 }
 
@@ -384,7 +384,7 @@ func opName(req fuse.Request) string {
 	return s
 }
 
-type logLinkRequestOldNodeNotFound  {
+type logLinkRequestOldNodeNotFound struct {
 	Request *fuse.Header
 	In      *fuse.LinkRequest
 }
@@ -393,7 +393,7 @@ func (m *logLinkRequestOldNodeNotFound) String() string {
 	return fmt.Sprintf("In LinkRequest (request %#x), node %d not found", m.Request.Hdr().ID, m.In.OldNode)
 }
 
-type renameNewDirNodeNotFound  {
+type renameNewDirNodeNotFound struct {
 	Request *fuse.Header
 	In      *fuse.RenameRequest
 }
@@ -494,7 +494,7 @@ Req:
 		uid = r.Header.Uid
 		gid = r.Header.Gid
 		s := &fuse.InitResponse{
-			MaxWrite: 16*1024,
+			MaxWrite: 16 * 1024,
 		}
 		done(s)
 		r.Respond(s)
@@ -548,7 +548,7 @@ Req:
 	case *fuse.GetxattrRequest:
 		s := &fuse.GetxattrResponse{}
 		n, ok := node.(NodeXAttrer)
-		if !ok || r.Position>0 {
+		if !ok || r.Position > 0 {
 			done(fuse.ENODATA)
 			r.RespondError(fuse.ENODATA)
 			break
@@ -565,7 +565,7 @@ Req:
 
 	case *fuse.ListxattrRequest:
 		s := &fuse.ListxattrResponse{}
-		if n, ok := node.(NodeXAttrer); ok && r.Position==0 {
+		if n, ok := node.(NodeXAttrer); ok && r.Position == 0 {
 			v := n.Xattrs()
 			if len(v) > 0 {
 				s.Append(v...)
@@ -576,7 +576,7 @@ Req:
 
 	case *fuse.SetxattrRequest:
 		n, ok := node.(NodeXAttrer)
-		if !ok || r.Position>0 {
+		if !ok || r.Position > 0 {
 			done(fuse.EPERM)
 			r.RespondError(fuse.EPERM)
 			break
@@ -695,8 +695,8 @@ Req:
 		if xh, ok := hh.(HandleIsCtler); ok && xh.IsCtl() {
 			flags = fuse.OpenDirectIO
 		}
-		if r.Flags&3==fuse.OpenFlags(os.O_WRONLY) &&
-			runtime.GOOS=="darwin" {
+		if r.Flags&3 == fuse.OpenFlags(os.O_WRONLY) &&
+			runtime.GOOS == "darwin" {
 			/*
 				This is required for append on osx
 			*/
@@ -905,7 +905,7 @@ Req:
 	case *fuse.InterruptRequest:
 		c.meta.Lock()
 		ireq := c.req[r.IntrID]
-		if ireq!=nil && ireq.Intr!=nil {
+		if ireq != nil && ireq.Intr != nil {
 			close(ireq.Intr)
 			ireq.Intr = nil
 		}
@@ -957,7 +957,7 @@ func DataHandle(data []byte) Handle {
 	return &dataHandle{data}
 }
 
-type dataHandle  {
+type dataHandle struct {
 	data []byte
 }
 

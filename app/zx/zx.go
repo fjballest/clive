@@ -17,16 +17,16 @@ import (
 	"clive/zx/lfs"
 	"clive/zx/mfs"
 	"clive/zx/rfs"
+	"errors"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-	"errors"
 )
 
 var (
-	Verbose , Debug, Zdebug bool
+	Verbose, Debug, Zdebug bool
 
 	Dprintf = dbg.FlagPrintf(os.Stdout, &Debug)
 	Vprintf = dbg.FlagPrintf(os.Stdout, &Verbose)
@@ -100,7 +100,7 @@ func main() {
 	cfs.Debug = Debug
 	rfs.Verb = Verbose
 	var trs []zx.Tree
-	var ros = map[bool] string {false: "rw", true: "ro"}
+	var ros = map[bool]string{false: "rw", true: "ro"}
 
 	for i := 0; i < len(args); i++ {
 		al := strings.Split(args[i], "!")
@@ -143,7 +143,7 @@ func main() {
 			x.IOstats = &zx.IOstats{}
 			zxw[al[0]] = fp
 			trs = append(trs, x)
-		
+
 		} else {
 			dbg.Warn("%s lfs %s uncached", al[0], ros[ronly])
 			zxw[al[0]] = fp
@@ -166,7 +166,7 @@ func main() {
 	for c := range cc {
 		go func(c nchan.Conn) {
 			ai, err := auth.AtServer(c, "", "zx", "finder")
-			if err!=nil && err!=auth.ErrDisabled {
+			if err != nil && err != auth.ErrDisabled {
 				Vprintf("%s: auth %s: %s\n", os.Args[0], c.Tag, err)
 				close(c.In, err)
 				close(c.Out, err)

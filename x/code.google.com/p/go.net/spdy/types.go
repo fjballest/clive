@@ -60,7 +60,7 @@ type Frame interface {
 
 // ControlFrameHeader contains all the fields in a control frame header,
 // in its unpacked in-memory representation.
-type ControlFrameHeader  {
+type ControlFrameHeader struct {
 	// Note, high bit is the "Control" bit.
 	version   uint16 // spdy version number
 	frameType ControlFrameType
@@ -78,7 +78,7 @@ type StreamId uint32
 
 // SynStreamFrame is the unpacked, in-memory representation of a SYN_STREAM
 // frame.
-type SynStreamFrame  {
+type SynStreamFrame struct {
 	CFHeader             ControlFrameHeader
 	StreamId             StreamId
 	AssociatedToStreamId StreamId // stream id for a stream which this stream is associated to
@@ -88,7 +88,7 @@ type SynStreamFrame  {
 }
 
 // SynReplyFrame is the unpacked, in-memory representation of a SYN_REPLY frame.
-type SynReplyFrame  {
+type SynReplyFrame struct {
 	CFHeader ControlFrameHeader
 	StreamId StreamId
 	Headers  http.Header
@@ -113,7 +113,7 @@ const (
 
 // RstStreamFrame is the unpacked, in-memory representation of a RST_STREAM
 // frame.
-type RstStreamFrame  {
+type RstStreamFrame struct {
 	CFHeader ControlFrameHeader
 	StreamId StreamId
 	Status   RstStreamStatus
@@ -143,7 +143,7 @@ const (
 
 // SettingsFlagIdValue is the unpacked, in-memory representation of the
 // combined flag/id/value for a setting in a SETTINGS frame.
-type SettingsFlagIdValue  {
+type SettingsFlagIdValue struct {
 	Flag  SettingsFlag
 	Id    SettingsId
 	Value uint32
@@ -151,13 +151,13 @@ type SettingsFlagIdValue  {
 
 // SettingsFrame is the unpacked, in-memory representation of a SPDY
 // SETTINGS frame.
-type SettingsFrame  {
+type SettingsFrame struct {
 	CFHeader     ControlFrameHeader
 	FlagIdValues []SettingsFlagIdValue
 }
 
 // PingFrame is the unpacked, in-memory representation of a PING frame.
-type PingFrame  {
+type PingFrame struct {
 	CFHeader ControlFrameHeader
 	Id       uint32 // unique id for this ping, from server is even, from client is odd.
 }
@@ -172,14 +172,14 @@ const (
 )
 
 // GoAwayFrame is the unpacked, in-memory representation of a GOAWAY frame.
-type GoAwayFrame  {
+type GoAwayFrame struct {
 	CFHeader         ControlFrameHeader
 	LastGoodStreamId StreamId // last stream id which was accepted by sender
 	Status           GoAwayStatus
 }
 
 // HeadersFrame is the unpacked, in-memory representation of a HEADERS frame.
-type HeadersFrame  {
+type HeadersFrame struct {
 	CFHeader ControlFrameHeader
 	StreamId StreamId
 	Headers  http.Header
@@ -187,7 +187,7 @@ type HeadersFrame  {
 
 // WindowUpdateFrame is the unpacked, in-memory representation of a
 // WINDOW_UPDATE frame.
-type WindowUpdateFrame  {
+type WindowUpdateFrame struct {
 	CFHeader        ControlFrameHeader
 	StreamId        StreamId
 	DeltaWindowSize uint32 // additional number of bytes to existing window size
@@ -196,7 +196,7 @@ type WindowUpdateFrame  {
 // TODO: Implement credential frame and related methods.
 
 // DataFrame is the unpacked, in-memory representation of a DATA frame.
-type DataFrame  {
+type DataFrame struct {
 	// Note, high bit is the "Control" bit. Should be 0 for data frames.
 	StreamId StreamId
 	Flags    DataFlags
@@ -219,7 +219,7 @@ const (
 
 // Error contains both the type of error and additional values. StreamId is 0
 // if Error is not associated with a stream.
-type Error  {
+type Error struct {
 	Err      ErrorCode
 	StreamId StreamId
 }
@@ -245,7 +245,7 @@ var invalidRespHeaders = map[string]bool{
 
 // Framer handles serializing/deserializing SPDY frames, including compressing/
 // decompressing payloads.
-type Framer  {
+type Framer struct {
 	headerCompressionDisabled bool
 	w                         io.Writer
 	headerBuf                 *bytes.Buffer

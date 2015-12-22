@@ -35,7 +35,7 @@ const (
 	smpState4
 )
 
-type smpState  {
+type smpState struct {
 	state                  int
 	a2, a3, b2, b3, pb, qb *big.Int
 	g2a, g3a               *big.Int
@@ -84,7 +84,7 @@ func (c *Conversation) processSMP(in tlv) (out tlv, complete bool, err error) {
 	}
 
 	numMPIs, data, ok := getU32(data)
-	if !ok || numMPIs>20 {
+	if !ok || numMPIs > 20 {
 		err = errors.New("otr: corrupt SMP message")
 		return
 	}

@@ -58,13 +58,13 @@
 package pred
 
 import (
+	"clive/sre"
 	"clive/zx"
 	"errors"
 	"fmt"
 	"os"
-	"clive/sre"
-	"strconv"
 	"path/filepath"
+	"strconv"
 )
 
 // REFERENCE(x): clive/nspace, name spaces and Finder interface.
@@ -89,7 +89,7 @@ const (
 	oMin   op = 'm'
 	oMax   op = 'M'
 	oMatch op = '~'
-	oRexp op = '≈'
+	oRexp  op = '≈'
 	oNot   op = '!'
 	oOr    op = ':'
 	oAnd   op = ','
@@ -105,12 +105,12 @@ var (
 /*
 	A compiled predicate.
 */
-type Pred  {
+type Pred struct {
 	op    op // operation
 	name  string
 	value string
 	args  []*Pred // for Or and And
-	re *sre.ReProg
+	re    *sre.ReProg
 }
 
 // Compile a predicate from a string representation.
@@ -251,13 +251,13 @@ func (p *Pred) EvalAt(e zx.Dir, lvl int) (value, pruned bool, err error) {
 		switch p.op {
 		case oLt:
 			v = n1 < n2
-			toodeep = isdepth && n1>=n2-1
+			toodeep = isdepth && n1 >= n2-1
 		case oLe:
 			v = n1 <= n2
-			toodeep = isdepth && n1>=n2
+			toodeep = isdepth && n1 >= n2
 		case oEq:
 			v = n1 == n2
-			toodeep = isdepth && n1>=n2
+			toodeep = isdepth && n1 >= n2
 		case oGe:
 			v = n1 >= n2
 		default:
@@ -291,7 +291,7 @@ func (p *Pred) EvalAt(e zx.Dir, lvl int) (value, pruned bool, err error) {
 			p.re = x
 		}
 		x := p.re.ExecStr(n, 0, len(n))
-		return len(x) > 0 , false, err
+		return len(x) > 0, false, err
 	case oEqs:
 		nm := p.name
 		if nm == "path" && len(p.value) > 0 && p.value[0] != '/' {
@@ -318,7 +318,7 @@ func (p *Pred) EvalAt(e zx.Dir, lvl int) (value, pruned bool, err error) {
 		if p.name == "name" || p.name == "path" {
 			prune = v == p.value
 		}
-		return v != p.value,  prune, nil
+		return v != p.value, prune, nil
 	}
 	return false, false, nil
 }

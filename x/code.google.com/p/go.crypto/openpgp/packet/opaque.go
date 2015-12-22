@@ -15,7 +15,7 @@ import (
 // useful for splitting and storing the original packet contents separately,
 // handling unsupported packet types or accessing parts of the packet not yet
 // implemented by this package.
-type OpaquePacket  {
+type OpaquePacket struct {
 	// Packet type
 	Tag uint8
 	// Reason why the packet was parsed opaquely
@@ -58,7 +58,7 @@ func (op *OpaquePacket) Parse() (p Packet, err error) {
 }
 
 // OpaqueReader reads OpaquePackets from an io.Reader.
-type OpaqueReader  {
+type OpaqueReader struct {
 	r io.Reader
 }
 
@@ -82,7 +82,7 @@ func (or *OpaqueReader) Next() (op *OpaquePacket, err error) {
 
 // OpaqueSubpacket represents an unparsed OpenPGP subpacket,
 // as found in signature and user attribute packets.
-type OpaqueSubpacket  {
+type OpaqueSubpacket struct {
 	SubType  uint8
 	Contents []byte
 }

@@ -29,7 +29,7 @@ type packetConn interface {
 
 // transport is the keyingTransport that implements the SSH packet
 // protocol.
-type transport  {
+type transport struct {
 	reader connectionState
 	writer connectionState
 
@@ -69,7 +69,7 @@ type packetCipher interface {
 // connectionState represents one side (read or write) of the
 // connection. This is necessary because each direction has its own
 // keys, and can even have its own algorithms
-type connectionState  {
+type connectionState struct {
 	packetCipher
 	seqNum           uint32
 	dir              direction
@@ -109,11 +109,11 @@ func (t *transport) readPacket() ([]byte, error) {
 func (s *connectionState) readPacket(r *bufio.Reader) ([]byte, error) {
 	packet, err := s.packetCipher.readPacket(s.seqNum, r)
 	s.seqNum++
-	if err==nil && len(packet)==0 {
+	if err == nil && len(packet) == 0 {
 		err = errors.New("ssh: zero length packet")
 	}
 
-	if len(packet)>0 && packet[0]==msgNewKeys {
+	if len(packet) > 0 && packet[0] == msgNewKeys {
 		select {
 		case cipher := <-s.pendingKeyChange:
 			s.packetCipher = cipher
@@ -135,7 +135,7 @@ func (t *transport) writePacket(packet []byte) error {
 }
 
 func (s *connectionState) writePacket(w *bufio.Writer, rand io.Reader, packet []byte) error {
-	changeKeys := len(packet)>0 && packet[0]==msgNewKeys
+	changeKeys := len(packet) > 0 && packet[0] == msgNewKeys
 
 	err := s.packetCipher.writePacket(s.seqNum, w, rand, packet)
 	if err != nil {
@@ -182,7 +182,7 @@ func newTransport(rwc io.ReadWriteCloser, rand io.Reader, isClient bool) *transp
 	return t
 }
 
-type direction  {
+type direction struct {
 	ivTag     []byte
 	keyTag    []byte
 	macKeyTag []byte
@@ -320,7 +320,7 @@ func readVersion(r io.Reader) ([]byte, error) {
 	}
 
 	// There might be a '\r' on the end which we should remove.
-	if len(versionString)>0 && versionString[len(versionString)-1]=='\r' {
+	if len(versionString) > 0 && versionString[len(versionString)-1] == '\r' {
 		versionString = versionString[:len(versionString)-1]
 	}
 	return versionString, nil

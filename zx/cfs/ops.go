@@ -1,11 +1,11 @@
 package cfs
 
 import (
+	"clive/dbg"
 	"clive/zx"
 	"clive/zx/pred"
-	"clive/dbg"
-	"fmt"
 	"errors"
+	"fmt"
 	"path"
 	"time"
 )
@@ -104,9 +104,9 @@ func (fs *Cfs) stat(rid string) (zx.Dir, error) {
 	nocattrs(f.d)
 
 	/* do not add /Chg to the count, it's hidden now
-		if id == "/" {	// adjust size for /Chg
-			nd["size"] = strconv.Itoa(f.d.Int("size") + 1)
-		}
+	if id == "/" {	// adjust size for /Chg
+		nd["size"] = strconv.Itoa(f.d.Int("size") + 1)
+	}
 	*/
 	return f.d, nil
 }
@@ -145,7 +145,7 @@ func addctl(ds []zx.Dir) []zx.Dir {
 	return ds
 }
 
-func (fs *Cfs) get(rid string, off, count int64, pred string, datc chan<- []byte, cs *zx.CallStat) (int, error){
+func (fs *Cfs) get(rid string, off, count int64, pred string, datc chan<- []byte, cs *zx.CallStat) (int, error) {
 	rid, err := zx.AbsPath(rid)
 	if err != nil {
 		return 0, err
@@ -178,7 +178,7 @@ func (fs *Cfs) get(rid string, off, count int64, pred string, datc chan<- []byte
 		}
 		tot := 0
 		nm := 0
-		if f.d["path"] == "/" {	// adjust for /Ctl (/Chg is not added)
+		if f.d["path"] == "/" { // adjust for /Ctl (/Chg is not added)
 			ds = addctl(ds)
 		}
 		for _, d := range ds {
@@ -191,7 +191,7 @@ func (fs *Cfs) get(rid string, off, count int64, pred string, datc chan<- []byte
 			d["spath"] = d["path"]
 			delete(d, "addr")
 			n, err := d.Send(datc)
-			if err != nil  {
+			if err != nil {
 				cs.Sends(int64(nm), int64(n))
 				return tot, err
 			}
@@ -216,7 +216,7 @@ func (fs *Cfs) get(rid string, off, count int64, pred string, datc chan<- []byte
 	cs.Sends(int64(nm), int64(tot))
 	err = cerror(ldatc)
 	cs.End(err != nil)
-	return tot, err	
+	return tot, err
 }
 
 func (fs *Cfs) Get(rid string, off, count int64, pred string) <-chan []byte {
@@ -291,7 +291,7 @@ func (fs *Cfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred strin
 	// and file existence and, if the file exists, we are going to change its status in the cache.
 	f, left, err := fs.walk(rid, RW)
 	if len(left) > 1 || (err != nil && !dbg.IsNotExist(err)) {
-		return nil, 0, err	// parent does not exist or another error.
+		return nil, 0, err // parent does not exist or another error.
 	}
 	wf := f
 	var pmode uint64
@@ -321,7 +321,7 @@ func (fs *Cfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred strin
 		} else if !dbg.IsNotExist(err) {
 			// just created, but failed.
 			fs.unlockc(rid, RW)
-			return nil, 0,err
+			return nil, 0, err
 		} else {
 			// brand new
 			u := dbg.Usr
@@ -329,16 +329,16 @@ func (fs *Cfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred strin
 				u = fs.ai.Uid
 			}
 			od = zx.Dir{
-				"name": left[0],
-				"type": "-",
-				"mode": d["mode"],
-				"path": rid,
+				"name":  left[0],
+				"type":  "-",
+				"mode":  d["mode"],
+				"path":  rid,
 				"spath": rid,
 				"tpath": fs.tpath,
 				"proto": "proc",
-				"Uid": u,
-				"Gid": pgid,
-				"Wuid": u,
+				"Uid":   u,
+				"Gid":   pgid,
+				"Wuid":  u,
 			}
 			if err := fs.matchDir(rid, od, pred); err != nil {
 				fs.unlockc(rid, RW)
@@ -402,8 +402,8 @@ func (fs *Cfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred strin
 	if d == nil {
 		d = zx.Dir{}
 	}
-	d["Rtime"] = f.d["Rtime"] 
-	if c, ok := f.d["Cache"] ; ok {
+	d["Rtime"] = f.d["Rtime"]
+	if c, ok := f.d["Cache"]; ok {
 		d["Cache"] = c
 	}
 	fs.unlockc(rid, RW)
@@ -411,7 +411,7 @@ func (fs *Cfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred strin
 	// Don't put the entire f.d: d["mode"] != "" means creation and
 	// d["size"] means truncation, but this put might be a plain pwrite().
 	if d["mode"] != "" && noinherit {
-		d["Mode"] = d["mode"]	// no inherit in lfs
+		d["Mode"] = d["mode"] // no inherit in lfs
 	}
 	n := 0
 	datc := dc
@@ -435,7 +435,7 @@ func (fs *Cfs) put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred strin
 		}()
 	}
 	rc := fs.lfs.Put(rid, d, off, datc, pred)
-	rd := <- rc
+	rd := <-rc
 	f.lockc(RW)
 	// because we released the lock, we must stat the file again.
 	fs.cache.NotBusy(f.d)
@@ -468,7 +468,7 @@ func (fs *Cfs) Put(rid string, d zx.Dir, off int64, dc <-chan []byte, pred strin
 			fs.dprintf("put %s: %s\n", rid, err)
 		} else {
 			fs.dprintf("put %s: %d at %d dir %s\n", rid, n, off, d)
-			c <-d
+			c <- d
 		}
 		close(c, err)
 	}()
@@ -519,8 +519,8 @@ func (fs *Cfs) mkdir(rid string, d zx.Dir) error {
 		"path": rid,
 		"mode": d["mode"],
 		"type": "d",
-		"Uid": u,
-		"Gid": wf.d["Gid"],
+		"Uid":  u,
+		"Gid":  wf.d["Gid"],
 	}
 	if !fs.NoPermCheck && !wf.d.CanWrite(fs.ai) && (!fs.WstatAll || fs.ai != nil) {
 		if err := nd.CanWstat(fs.ai, d); err != nil {
@@ -532,20 +532,20 @@ func (fs *Cfs) mkdir(rid string, d zx.Dir) error {
 	if err != nil {
 		return err
 	}
-	f, err := fs.cfile(rid)	// must stat to notify clients in changed
+	f, err := fs.cfile(rid) // must stat to notify clients in changed
 	if err != nil {
 		return err
 	}
 	fs.cache.Created(fs.cfs, fs.rfs, f.d)
 	f.changed()
 	return nil
-	
+
 }
 
 func (fs *Cfs) Mkdir(rid string, d zx.Dir) chan error {
 	fs.dprintf("mkdir %s %s \n", rid, d)
 	cs := fs.IOstats.NewCall(zx.Smkdir)
-	c := make(chan  error, 1)
+	c := make(chan error, 1)
 	go func() {
 		defer fs.lktrz.NoLocks()
 		err := fs.mkdir(rid, d)
@@ -566,7 +566,7 @@ func (fs *Cfs) wstat(rid string, d zx.Dir) error {
 		return fmt.Errorf("%s: %s", fs.Tag, dbg.ErrRO)
 	}
 	rid, err := zx.AbsPath(rid)
-	if err != nil || rid == "/Ctl" {	// make wstat(/ctl) a nop
+	if err != nil || rid == "/Ctl" { // make wstat(/ctl) a nop
 		return err
 	}
 	if rid == "/Chg" {
@@ -617,7 +617,7 @@ func (fs *Cfs) wstat(rid string, d zx.Dir) error {
 
 func (fs *Cfs) Wstat(rid string, d zx.Dir) chan error {
 	fs.dprintf("wstat %s %v\n", rid, d)
-	c := make(chan  error, 1)
+	c := make(chan error, 1)
 	cs := fs.IOstats.NewCall(zx.Swstat)
 	go func() {
 		defer fs.lktrz.NoLocks()
@@ -713,7 +713,7 @@ func (fs *Cfs) move(from, to string) error {
 	}
 
 	fs.cache.Sync(func() {
-		err = <- fs.lfs.Move(from, to)
+		err = <-fs.lfs.Move(from, to)
 		if err != nil {
 			// couldnt move
 			return
@@ -742,12 +742,12 @@ func (fs *Cfs) move(from, to string) error {
 			}
 		}
 	})
-	
+
 	return err
 }
 
 func (fs *Cfs) Move(from, to string) chan error {
-	c := make(chan  error, 1)
+	c := make(chan error, 1)
 	fs.dprintf("move %s %s \n", from, to)
 	cs := fs.IOstats.NewCall(zx.Smove)
 	go func() {
@@ -770,7 +770,7 @@ func (fs *Cfs) remove(rid string, all bool) error {
 		return fmt.Errorf("%s: %s", fs.Tag, dbg.ErrRO)
 	}
 	rid, err := zx.AbsPath(rid)
-	if rid == "/" || rid == "/Ctl" || rid == "/Chg"  {
+	if rid == "/" || rid == "/Ctl" || rid == "/Chg" {
 		return fmt.Errorf("%s: %s", rid, dbg.ErrPerm)
 	}
 	f, _, err := fs.walk(rid, RW)
@@ -791,11 +791,11 @@ func (fs *Cfs) remove(rid string, all bool) error {
 	f.t.cache.Removed(fs.cfs, fs.rfs, f.d)
 	f.changed()
 	return err
-	
+
 }
 
 func (fs *Cfs) Remove(rid string) chan error {
-	c := make(chan  error, 1)
+	c := make(chan error, 1)
 	fs.dprintf("remove %s\n", rid)
 	cs := fs.IOstats.NewCall(zx.Sremove)
 	go func() {
@@ -815,7 +815,7 @@ func (fs *Cfs) Remove(rid string) chan error {
 
 func (fs *Cfs) RemoveAll(rid string) chan error {
 	fs.dprintf("removeall %s\n", rid)
-	c := make(chan  error, 1)
+	c := make(chan error, 1)
 	cs := fs.IOstats.NewCall(zx.Sremoveall)
 	go func() {
 		defer fs.lktrz.NoLocks()
@@ -879,7 +879,7 @@ func (f cFile) find(p *pred.Pred, spref, dpref string, lvl int, c chan<- zx.Dir)
 		f.d["err"] = err.Error()
 		fixpath(f.d, spref, dpref)
 		nocattrs(f.d)
-		c <-f.d
+		c <- f.d
 		return
 	}
 	if match {
@@ -903,7 +903,7 @@ func (f cFile) find(p *pred.Pred, spref, dpref string, lvl int, c chan<- zx.Dir)
 		cf, err := f.t.cwalk(cd["path"], RO)
 		if dbg.IsNotExist(err) {
 			continue
-		}else if err != nil {
+		} else if err != nil {
 			cd["err"] = err.Error()
 			fixpath(cd, spref, dpref)
 			nocattrs(cd)
@@ -916,7 +916,7 @@ func (f cFile) find(p *pred.Pred, spref, dpref string, lvl int, c chan<- zx.Dir)
 }
 
 // NB: We never find /Chg; feature, not bug
-func (fs *Cfs) find(rid, fpred, spref, dpref string, depth int, c chan<-zx.Dir, cs *zx.CallStat) error {
+func (fs *Cfs) find(rid, fpred, spref, dpref string, depth int, c chan<- zx.Dir, cs *zx.CallStat) error {
 	rid, err := zx.AbsPath(rid)
 	if err != nil {
 		return err
@@ -936,7 +936,7 @@ func (fs *Cfs) find(rid, fpred, spref, dpref string, depth int, c chan<-zx.Dir, 
 
 func (fs *Cfs) Find(rid, fpred, spref, dpref string, depth int) <-chan zx.Dir {
 	fs.dprintf("find %s '%s' '%s' '%s' %d\n", rid, fpred, spref, dpref, depth)
-	c := make(chan  zx.Dir, 1)
+	c := make(chan zx.Dir, 1)
 	cs := fs.IOstats.NewCall(zx.Sfind)
 	go func() {
 		defer fs.lktrz.NoLocks()
@@ -962,7 +962,7 @@ func (fs *Cfs) FindGet(rid, fpred, spref, dpref string, depth int) <-chan zx.Dir
 		for d := range dc {
 			g := zx.DirData{Dir: d}
 			var datac chan []byte
-			if d["err"]=="" && d["type"]!="d" {
+			if d["err"] == "" && d["type"] != "d" {
 				datac = make(chan []byte)
 				g.Datac = datac
 			}

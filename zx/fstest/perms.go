@@ -1,13 +1,12 @@
 package fstest
 
 import (
-	"clive/zx"
+	"clive/dbg"
 	"clive/net/auth"
+	"clive/zx"
 	"fmt"
 	"strings"
-	"clive/dbg"
 )
-
 
 func authfs(t Fataler, xfs zx.Tree) zx.RWTree {
 	d, err := zx.Stat(xfs, "/d")
@@ -67,7 +66,7 @@ func stat(t Fataler, fs zx.Tree, p, res string) bool {
 		toks := strings.Fields(res)
 		res = strings.Join(toks[:len(toks)-1], " ")
 		s = fmt.Sprintf("%s %s %s", d["mode"], d["Uid"], d["Gid"])
-		us= strings.Replace(s, dbg.Usr, "nemo", -1)
+		us = strings.Replace(s, dbg.Usr, "nemo", -1)
 	}
 	if res != "" && us != res {
 		t.Logf("wrong stat for %s <%s>", p, us)
@@ -87,7 +86,7 @@ func nostat(t Fataler, fs zx.Tree, p string) bool {
 
 type usr struct {
 	who string
-	ai *auth.Info
+	ai  *auth.Info
 }
 
 // see if fn has errors (permissions) or not for the given path and 1,2,4 perm. bit.
@@ -105,11 +104,11 @@ func ugo(t Fataler, fs zx.RWTree, p string, bit uint, fn func(zx.RWTree) error) 
 	}()
 	// /chkd is nemo gid1
 	usrs := []usr{
-		usr{who: "uid",  ai: &auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true,
+		usr{who: "uid", ai: &auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true,
 			Gids: map[string]bool{}}},
-		usr{who: "gid",  ai: &auth.Info{Uid: "gid1", SpeaksFor: dbg.Usr, Ok: true,
+		usr{who: "gid", ai: &auth.Info{Uid: "gid1", SpeaksFor: dbg.Usr, Ok: true,
 			Gids: map[string]bool{}}},
-		usr{who: "oid",  ai: &auth.Info{Uid: "other", SpeaksFor: dbg.Usr, Ok: true,
+		usr{who: "oid", ai: &auth.Info{Uid: "other", SpeaksFor: dbg.Usr, Ok: true,
 			Gids: map[string]bool{}}},
 	}
 	shift := uint(0)
@@ -130,7 +129,7 @@ func ugo(t Fataler, fs zx.RWTree, p string, bit uint, fn func(zx.RWTree) error) 
 				printf("%s can for %o\n", u.who, m)
 			}
 		}
-		m &^= (bit<<shift)
+		m &^= (bit << shift)
 		shift += 3
 	}
 	return out
@@ -200,7 +199,7 @@ func RWXPerms(t Fataler, fss ...zx.Tree) {
 	if out != "yyyyynynnnnn" {
 		t.Fatalf("file read perms are %s", out)
 	}
-	
+
 	wfn = func(fs zx.RWTree) error {
 		return zx.PutAll(fs, "/chkf", nil, []byte("there"))
 	}
@@ -224,9 +223,7 @@ func RWXPerms(t Fataler, fss ...zx.Tree) {
 		t.Fatalf("file wstat perms are %s", out)
 	}
 
-
 }
-
 
 // Check perms, uids, and gids for new files and dirs
 // including inheriting bits and uids and that we can't change uids that we can't change.
@@ -254,91 +251,123 @@ func NewPerms(t Fataler, fss ...zx.Tree) {
 	if err := <-fs.Wstat("/d", zx.Dir{"Wuid": "katsumoto"}); err == nil {
 		t.Fatalf("could wstat wuid")
 	}
-	if !stat(t, fs, "/d", "0755 nemo gid1 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d", "0755 nemo gid1 nemo") {
+		t.Fatalf("stat")
+	}
 
 	if err := <-fs.Wstat("/d", zx.Dir{"Uid": "gid2"}); err != nil {
 		t.Fatalf("wstat: %s", err)
 	}
-	if !stat(t, fs, "/d", "0755 gid2 gid1 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d", "0755 gid2 gid1 nemo") {
+		t.Fatalf("stat")
+	}
 	if err := <-fs.Wstat("/d", zx.Dir{"Uid": dbg.Usr}); err != nil {
 		t.Fatalf("couldn't wstat uid")
 	}
 	if err := <-fs.Wstat("/d", zx.Dir{"mode": "0750"}); err != nil {
 		t.Fatalf("couldn't wstat mode")
 	}
-	if !stat(t, fs, "/d", "0750 nemo gid1 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d", "0750 nemo gid1 nemo") {
+		t.Fatalf("stat")
+	}
 
 	dat := []byte("hi")
 	if zx.PutAll(fs, "/d/newauth", zx.Dir{"mode": "0604", "Uid": "katsumoto"}, dat) == nil {
 		t.Fatalf("could put uid on create")
 	}
-	if !nostat(t, fs, "/d/newauth") { t.Fatalf("stat") }
+	if !nostat(t, fs, "/d/newauth") {
+		t.Fatalf("stat")
+	}
 
-	if zx.PutAll(fs, "/d/newauth2", zx.Dir{"mode": "0604", "Gid": "katsumoto"}, dat)== nil {
+	if zx.PutAll(fs, "/d/newauth2", zx.Dir{"mode": "0604", "Gid": "katsumoto"}, dat) == nil {
 		t.Fatalf("could put gid on create")
 	}
-	if !nostat(t, fs, "/d/newauth2") { t.Fatalf("stat") }
+	if !nostat(t, fs, "/d/newauth2") {
+		t.Fatalf("stat")
+	}
 
 	if zx.PutAll(fs, "/d/newauth3", zx.Dir{"mode": "0604", "Wuid": "katsumoto"}, dat) != nil {
 		t.Fatalf("put wuid not ignored on create")
 	}
-	if !stat(t, fs, "/d/newauth3", "0640 nemo gid1 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d/newauth3", "0640 nemo gid1 nemo") {
+		t.Fatalf("stat")
+	}
 
 	if zx.PutAll(fs, "/d/newauth3", zx.Dir{"mode": "0604", "Uid": "katsumoto"}, dat) == nil {
 		t.Fatalf("could put uid on existing")
 	}
-	if !stat(t, fs, "/d/newauth3", "0640 nemo gid1 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d/newauth3", "0640 nemo gid1 nemo") {
+		t.Fatalf("stat")
+	}
 
 	if zx.PutAll(fs, "/d/newauth3", zx.Dir{"mode": "0604", "Gid": "katsumoto"}, dat) == nil {
 		t.Fatalf("could put gid on existing")
 	}
-	if !stat(t, fs, "/d/newauth3", "0640 nemo gid1 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d/newauth3", "0640 nemo gid1 nemo") {
+		t.Fatalf("stat")
+	}
 
 	if zx.PutAll(fs, "/d/newauth3", zx.Dir{"mode": "0604", "Wuid": "katsumoto"}, dat) != nil {
 		t.Fatalf("put wuid not ignored on existing")
 	}
-	if !stat(t, fs, "/d/newauth3", "0640 nemo gid1 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d/newauth3", "0640 nemo gid1 nemo") {
+		t.Fatalf("stat")
+	}
 
 	if zx.PutAll(fs, "/d/newauth4", zx.Dir{"mode": "0604", "Uid": "gid1"}, dat) != nil {
 		t.Fatalf("couldn't put uid for gid on create")
 	}
-	if !stat(t, fs, "/d/newauth4", "0640 gid1 gid1 nemo") { t.Fatalf("stat") }
-
+	if !stat(t, fs, "/d/newauth4", "0640 gid1 gid1 nemo") {
+		t.Fatalf("stat")
+	}
 
 	if zx.PutAll(fs, "/d/newauth3", zx.Dir{"mode": "0604", "Uid": "gid1", "Gid": "gid2"}, dat) != nil {
 		t.Fatalf("couldn't put uid/gid on existing")
 	}
-	if !stat(t, fs, "/d/newauth3", "0640 gid1 gid2 nemo") { t.Fatalf("stat") }
-
+	if !stat(t, fs, "/d/newauth3", "0640 gid1 gid2 nemo") {
+		t.Fatalf("stat")
+	}
 
 	if <-fs.Mkdir("/d/newd", zx.Dir{"mode": "0755", "Uid": "katsumoto"}) == nil {
 		t.Fatalf("could mkdir uid")
 	}
-	if !nostat(t, fs, "/d/newd") { t.Fatalf("stat") }
+	if !nostat(t, fs, "/d/newd") {
+		t.Fatalf("stat")
+	}
 
 	if <-fs.Mkdir("/d/newd", zx.Dir{"mode": "0705", "Uid": "gid2"}) != nil {
 		t.Fatalf("couldn't mkdir uid")
 	}
-	if !stat(t, fs, "/d/newd", "0750 gid2 gid1 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d/newd", "0750 gid2 gid1 nemo") {
+		t.Fatalf("stat")
+	}
 
 	if <-fs.Mkdir("/d/newd2", zx.Dir{"mode": "0705", "Gid": "katsumoto"}) == nil {
 		t.Fatalf("could mkdir gid")
 	}
-	if !nostat(t, fs, "/d/newd2") { t.Fatalf("stat") }
+	if !nostat(t, fs, "/d/newd2") {
+		t.Fatalf("stat")
+	}
 
 	if <-fs.Mkdir("/d/newd2", zx.Dir{"mode": "0705", "Gid": "gid2"}) != nil {
 		t.Fatalf("couldn't mkdir gid")
 	}
-	if !stat(t, fs, "/d/newd2", "0750 nemo gid2 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d/newd2", "0750 nemo gid2 nemo") {
+		t.Fatalf("stat")
+	}
 
 	if <-fs.Mkdir("/d/newd3", zx.Dir{"mode": "0705", "Wuid": "katsumoto"}) != nil {
 		t.Fatalf("mkdir wuid not ignored")
 	}
-	if !stat(t, fs, "/d/newd3", "0750 nemo gid1 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d/newd3", "0750 nemo gid1 nemo") {
+		t.Fatalf("stat")
+	}
 
 	if <-fs.Wstat("/d/newd3", zx.Dir{"mode": "0705"}) != nil {
 		t.Fatalf("wstat 755")
 	}
-	if !stat(t, fs, "/d/newd3", "0705 nemo gid1 nemo") { t.Fatalf("stat") }
+	if !stat(t, fs, "/d/newd3", "0705 nemo gid1 nemo") {
+		t.Fatalf("stat")
+	}
 
 }

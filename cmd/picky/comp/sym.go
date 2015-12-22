@@ -169,7 +169,7 @@ func delitem(s *List, n interface{}) {
 }
 
 func appsyms(l1 *List, l2 *List) {
-	if l1==nil || l2==nil {
+	if l1 == nil || l2 == nil {
 		return
 	}
 	for _, v := range l2.item {
@@ -276,7 +276,7 @@ func lookup(n string, kind int) *Sym {
 	for e := env; e != nil; e = e.prev {
 		s, ok := e.tab[n]
 		if ok {
-			if kind!=Snone && kind!=s.stype {
+			if kind != Snone && kind != s.stype {
 				return nil
 			}
 			return s
@@ -325,7 +325,7 @@ func defssym(s *Sym, kind int) (n *Sym) {
 func (s *Sym) checkdup() int {
 	for e := env; e != nil; e = e.prev {
 		ns, ok := e.tab[s.name]
-		if ok && ns.stype!=Sstr {
+		if ok && ns.stype != Sstr {
 			diag("'%s' already defined as a %s", s.name, stname[s.stype])
 			return -1
 		}
@@ -346,7 +346,7 @@ func islval(n *Sym) bool {
 			return islval(n.left)
 		}
 	case Sbinary:
-		if n.op=='[' || n.op=='.' {
+		if n.op == '[' || n.op == '.' {
 			return islval(n.left)
 		}
 	}
@@ -380,7 +380,7 @@ func _newexpr(k int, op int, s1 *Sym, s2 *Sym) *Sym {
 	nd.op = op
 	nd.left = s1
 	nd.right = s2
-	if s1!=nil && s1.stype!=Snone {
+	if s1 != nil && s1.stype != Snone {
 		nd.fname = s1.fname
 		nd.lineno = s1.lineno
 	} else {
@@ -391,12 +391,12 @@ func _newexpr(k int, op int, s1 *Sym, s2 *Sym) *Sym {
 	case Snone:
 		goto Fail
 	case Sunary:
-		if s1==nil || tchkunary(nd)<0 {
+		if s1 == nil || tchkunary(nd) < 0 {
 			goto Fail
 		}
 		evalexpr(nd)
 	case Sbinary:
-		if s1==nil || s2==nil || tchkbinary(nd)<0 {
+		if s1 == nil || s2 == nil || tchkbinary(nd) < 0 {
 			goto Fail
 		}
 		evalexpr(nd)
@@ -438,7 +438,7 @@ Fail:
 
 func debugexpr(s *Sym) {
 	if _, ok := debug['E']; ok {
-		if s.ttype!=nil || s.ttype!=tundef {
+		if s.ttype != nil || s.ttype != tundef {
 			fmt.Fprintf(os.Stderr, " -> %v %v\n", s, s.ttype)
 		} else {
 			fmt.Fprintf(os.Stderr, " -> %v\n", s)
@@ -456,7 +456,7 @@ func newexpr(k int, op int, s1 *Sym, s2 *Sym) *Sym {
 }
 
 func checkcond(s *Stmt, c *Sym) {
-	if Nerrors>0 || c==nil {
+	if Nerrors > 0 || c == nil {
 		return
 	}
 	if !c.ttype.Tis(Tbool) {
@@ -488,7 +488,7 @@ func newstrtype(len int) *Type {
 	t = newtype(Tstr)
 	t.idx = tcint
 	t.elem = tchar
-	t.sz = uint(len)*tchar.sz
+	t.sz = uint(len) * tchar.sz
 	t.first = 0
 	t.last = len - 1
 	t.op = Tstr
@@ -547,7 +547,7 @@ func newvarnode(s *Sym) *Sym {
 	if s == nil {
 		return badnode
 	}
-	if s.stype!=Svar && s.stype!=Sconst {
+	if s.stype != Svar && s.stype != Sconst {
 		diag("no variable or constant with name '%s'", s.name)
 		return badnode
 	}
@@ -570,13 +570,13 @@ func newfcall(f *Sym, args *List, op int) *Sym {
 		t    *Type
 		prog *Prog
 	)
-	if f==nil || args==nil {
+	if f == nil || args == nil {
 		return badnode
 	}
 	if _, ok := debug['E']; ok {
 		fmt.Fprintf(os.Stderr, "newfcall %s()", f.name)
 	}
-	if (f.stype!=Sproc && f.stype!=Sfunc) || f.prog==nil {
+	if (f.stype != Sproc && f.stype != Sfunc) || f.prog == nil {
 		diag("'%s': is not a subprogram", f.name)
 		goto Fail
 	}
@@ -646,7 +646,7 @@ func findfield(t *Type, n string, why string) *Sym {
 }
 
 func setswfield(l *List, sw *Sym) {
-	if l==nil || sw==nil || env.rec==nil {
+	if l == nil || sw == nil || env.rec == nil {
 		return
 	}
 	if sw == nil {
@@ -741,7 +741,7 @@ func newprog(n *Sym) *Sym {
 		if n.stype != Sproc {
 			diag("'%s' is already defined as a %s",
 				n.name, stname[n.stype])
-		} else if n.prog!=nil && n.prog.stmt!=nil {
+		} else if n.prog != nil && n.prog.stmt != nil {
 			diag("%s '%s' already defined", stname[n.stype], n.name)
 			// else XXX: check that header matches and return it
 		}
@@ -874,7 +874,7 @@ func decltype(n *Sym, t *Type) *Sym {
 	if env.prog == nil {
 		panic("missing program declaration")
 	}
-	if n.stype!=Sstr && n.stype!=Stype {
+	if n.stype != Sstr && n.stype != Stype {
 		diag("'%s' is already defined as a %s", n.name, stname[n.stype])
 		return nil
 	} else if n.stype == Stype {
@@ -1020,14 +1020,14 @@ func declconst(n *Sym, expr *Sym) *Sym {
 		diag("value for %s is not constant", n.name)
 		return badnode
 	}
-	if expr.stype==Sconst && expr.op==Ostr && expr.name[0]=='$' {
+	if expr.stype == Sconst && expr.op == Ostr && expr.name[0] == '$' {
 		// temporary string has now a name
 		for e = env; e.prev != nil; e = e.prev {
 		}
 
 		delitem(e.prog.prog.consts, expr)
 	}
-	if expr.stype==Sconst && expr.op==Oaggr && expr.name[0]=='$' {
+	if expr.stype == Sconst && expr.op == Oaggr && expr.name[0] == '$' {
 		// temporary aggr has now a name
 		for e = env; e.prev != nil; e = e.prev {
 		}
@@ -1083,14 +1083,14 @@ func newassign(lval *Sym, rval *Sym) *Stmt {
 	s.rval = rval
 	if !tcompat(lval.ttype, rval.ttype, &dummy) {
 		diag("incompatible argument types (%v and %v) for assignment", lval.ttype, rval.ttype)
-	} else if lval!=badnode && !islval(lval) {
+	} else if lval != badnode && !islval(lval) {
 		diag("left part of assignment must be an l-value")
 	}
 	return s
 }
 
 func dupvals(v1 *Sym, v2 *Sym) bool {
-	if v1==nil || v2==nil {
+	if v1 == nil || v2 == nil {
 		return false
 	}
 	switch v2.stype {
@@ -1113,8 +1113,8 @@ func dupvals(v1 *Sym, v2 *Sym) bool {
 		case ',':
 			return dupvals(v1.left, v2) || dupvals(v1.right, v2)
 		case Odotdot:
-			return v1.left.ival>=v2.ival &&
-				v1.right.ival<=v2.ival
+			return v1.left.ival >= v2.ival &&
+				v1.right.ival <= v2.ival
 		}
 		return false
 	case Sconst:
@@ -1206,7 +1206,7 @@ func newfor(lval *Sym, from *Sym, to *Sym, body *Stmt) *Stmt {
 	addstmt(s.list, ws)
 	arg := newlist(Lsym)
 	addsym(arg, lval)
-	if to.op=='>' || to.op==Oge {
+	if to.op == '>' || to.op == Oge {
 		ns = newassign(lval, newfcall(bpred, arg, Tfunc))
 	} else {
 		ns = newassign(lval, newfcall(bsucc, arg, Tfunc))
@@ -1257,7 +1257,7 @@ func ueval(n *Sym) {
 			mkreal(n, -ln.rval)
 		}
 	case Onot:
-		mkbool(n, ln.ival==0)
+		mkbool(n, ln.ival == 0)
 	case Ocast:
 		panic("ueval: Ocast should do this")
 	case '^':
@@ -1324,7 +1324,7 @@ func beval(n *Sym) {
 	case Opow:
 		if ln.ttype.Tis(Tint) {
 			if ln.ival == 2 {
-				n.ival = 1<<uint(rn.ival)
+				n.ival = 1 << uint(rn.ival)
 			} else {
 				n.ival = int(math.Pow(float64(ln.ival), float64(rn.ival)))
 			}
@@ -1333,54 +1333,54 @@ func beval(n *Sym) {
 			mkreal(n, math.Pow(ln.rval, rn.rval))
 		}
 	case Oand:
-		mkbool(n, ln.ival!=0 && rn.ival!=0)
+		mkbool(n, ln.ival != 0 && rn.ival != 0)
 	case Oor:
-		mkbool(n, ln.ival!=0 || rn.ival!=0)
+		mkbool(n, ln.ival != 0 || rn.ival != 0)
 	case '<':
 		cancmp(ln, rn)
 		if ln.ttype.Tis(Treal) {
-			mkbool(n, ln.rval<rn.rval)
+			mkbool(n, ln.rval < rn.rval)
 		} else {
-			mkbool(n, ln.ival<rn.ival)
+			mkbool(n, ln.ival < rn.ival)
 		}
 	case '>':
 		cancmp(ln, rn)
 		if ln.ttype.Tis(Treal) {
-			mkbool(n, ln.rval>rn.rval)
+			mkbool(n, ln.rval > rn.rval)
 		} else {
-			mkbool(n, ln.ival>rn.ival)
+			mkbool(n, ln.ival > rn.ival)
 		}
 	case Ole:
 		cancmp(ln, rn)
 		if ln.ttype.Tis(Treal) {
-			mkbool(n, ln.rval<=rn.rval)
+			mkbool(n, ln.rval <= rn.rval)
 		} else {
-			mkbool(n, ln.ival<=rn.ival)
+			mkbool(n, ln.ival <= rn.ival)
 		}
 	case Oge:
 		cancmp(ln, rn)
 		if ln.ttype.Tis(Treal) {
-			mkbool(n, ln.rval>=rn.rval)
+			mkbool(n, ln.rval >= rn.rval)
 		} else {
-			mkbool(n, ln.ival>=rn.ival)
+			mkbool(n, ln.ival >= rn.ival)
 		}
 	case Oeq:
 		if ln.ttype.Tis(Trec) || ln.ttype.Tis(Tarry) || ln.ttype.Tis(Tstr) {
 			break
 		}
 		if ln.ttype.Tis(Treal) {
-			mkbool(n, ln.rval==rn.rval)
+			mkbool(n, ln.rval == rn.rval)
 		} else {
-			mkbool(n, ln.ival==rn.ival)
+			mkbool(n, ln.ival == rn.ival)
 		}
 	case One:
 		if ln.ttype.Tis(Trec) || ln.ttype.Tis(Tarry) || ln.ttype.Tis(Tstr) {
 			break
 		}
 		if ln.ttype.Tis(Treal) {
-			mkbool(n, ln.rval!=rn.rval)
+			mkbool(n, ln.rval != rn.rval)
 		} else {
-			mkbool(n, ln.ival!=rn.ival)
+			mkbool(n, ln.ival != rn.ival)
 		}
 	case Odotdot, ',':
 		fallthrough
@@ -1623,7 +1623,7 @@ func (x *Stmt) block(lvl int) (s string) {
 
 func (x *Stmt) fstring(ishash bool) string {
 	s := ""
-	if false && x!=nil {
+	if false && x != nil {
 		s = fmt.Sprintf("%s:%d", CEscape(x.sfname), x.lineno)
 		s = CEscape(s)
 	}
@@ -1743,7 +1743,7 @@ func fmtparm(s *Sym, l *List, sect int) string {
 
 func fmtw(l *List, sect int) string {
 	s := ""
-	if l!=nil && len(l.item)>0 {
+	if l != nil && len(l.item) > 0 {
 		s += fmttabs(plvl)
 		s += fmt.Sprint("parms:\n")
 		for i := 0; i < len(l.item); i++ {
@@ -1815,7 +1815,7 @@ func dumpenv(w io.Writer, e *Env, recur int) {
 	}
 	fmt.Fprintf(w, "\n")
 
-	if recur!=0 && e.prev!=nil {
+	if recur != 0 && e.prev != nil {
 		fmt.Fprintf(w, "prev ")
 		dumpenv(w, e.prev, recur)
 	}
@@ -1841,7 +1841,7 @@ func quoteWith(s string, quote byte) string {
 		if r >= utf8.RuneSelf {
 			r, width = utf8.DecodeRuneInString(s)
 		}
-		if width==1 && r==utf8.RuneError {
+		if width == 1 && r == utf8.RuneError {
 			buf = append(buf, `\x`...)
 			buf = append(buf, lowerhex[s[0]>>4])
 			buf = append(buf, lowerhex[s[0]&0xF])

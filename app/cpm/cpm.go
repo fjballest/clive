@@ -7,20 +7,20 @@ package cpm
 import (
 	"clive/app"
 	"clive/app/nsutil"
-	"clive/dbg"
 	"clive/app/opt"
+	"clive/dbg"
 	"clive/zx"
 	"errors"
 	"fmt"
 	"strings"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
 	verb, aflag, cflag, nflag, mflag, nodst bool
-	vprintf app.PrintFunc
+	vprintf                                 app.PrintFunc
 }
 
 func (x *xCmd) setdst(dst string) zx.Dir {
@@ -48,7 +48,7 @@ func (x *xCmd) setdst(dst string) zx.Dir {
 			app.Fatal("%s", m.Error())
 		case zx.Dir:
 			app.Dprintf("got %T %s\n", m, m["upath"])
-			if m["err"]!="" {
+			if m["err"] != "" {
 				if m["err"] != "pruned" {
 					app.Fatal(m["err"])
 				}
@@ -193,7 +193,7 @@ func Run() {
 			putrc = nsutil.Put(dp, dd, 0, putc, "")
 		case []byte:
 			if putc == nil {
-				continue	// errors in output, perhaps
+				continue // errors in output, perhaps
 			}
 			if ok := putc <- m; !ok {
 				sts = cerror(putc)

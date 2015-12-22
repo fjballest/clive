@@ -27,7 +27,7 @@ func SOCKS5(network, addr string, auth *Auth, forward Dialer) (Dialer, error) {
 	return s, nil
 }
 
-type socks5  {
+type socks5 struct {
 	user, password string
 	network, addr  string
 	forward        Dialer
@@ -88,7 +88,7 @@ func (s *socks5) Dial(network, addr string) (net.Conn, error) {
 	if err != nil {
 		return nil, errors.New("proxy: failed to parse port number: " + portStr)
 	}
-	if port<1 || port>0xffff {
+	if port < 1 || port > 0xffff {
 		return nil, errors.New("proxy: port number out of range: " + portStr)
 	}
 
@@ -96,7 +96,7 @@ func (s *socks5) Dial(network, addr string) (net.Conn, error) {
 	buf := make([]byte, 0, 6+len(host))
 
 	buf = append(buf, socks5Version)
-	if len(s.user)>0 && len(s.user)<256 && len(s.password)<256 {
+	if len(s.user) > 0 && len(s.user) < 256 && len(s.password) < 256 {
 		buf = append(buf, 2 /* num auth methods */, socks5AuthNone, socks5AuthPassword)
 	} else {
 		buf = append(buf, 1 /* num auth methods */, socks5AuthNone)

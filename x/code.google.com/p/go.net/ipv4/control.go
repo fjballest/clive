@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-type rawOpt  {
+type rawOpt struct {
 	sync.Mutex
 	cflags ControlFlags
 }
@@ -22,14 +22,14 @@ func (c *rawOpt) isset(f ControlFlags) bool { return c.cflags&f != 0 }
 type ControlFlags uint
 
 const (
-	FlagTTL       ControlFlags = 1<<iota // pass the TTL on the received packet
-	FlagSrc                              // pass the source address on the received packet
-	FlagDst                              // pass the destination address on the received packet
-	FlagInterface                        // pass the interface index on the received packet
+	FlagTTL       ControlFlags = 1 << iota // pass the TTL on the received packet
+	FlagSrc                                // pass the source address on the received packet
+	FlagDst                                // pass the destination address on the received packet
+	FlagInterface                          // pass the interface index on the received packet
 )
 
 // A ControlMessage represents per packet basis IP-level socket options.
-type ControlMessage  {
+type ControlMessage struct {
 	// Receiving socket options: SetControlMessage allows to
 	// receive the options from the protocol stack using ReadFrom
 	// method of PacketConn or RawConn.

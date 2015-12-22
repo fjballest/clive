@@ -3,8 +3,8 @@ package zx
 import (
 	"clive/dbg"
 	"clive/net/auth"
-	"fmt"
 	"errors"
+	"fmt"
 )
 
 // To check with 0111 | 0222 | 0444.
@@ -105,7 +105,7 @@ func (d Dir) CanWstat(ai *auth.Info, nd Dir) error {
 			if v == "" {
 				return fmt.Errorf("%s: %s", k, errCantRemove)
 			}
-			if !isowner || (!ai.InGroup(v) && !ai.InGroup("elf"))  {
+			if !isowner || (!ai.InGroup(v) && !ai.InGroup("elf")) {
 				return fmt.Errorf("%s: %s", k, dbg.ErrPerm)
 			}
 		case "mtime":
@@ -120,7 +120,7 @@ func (d Dir) CanWstat(ai *auth.Info, nd Dir) error {
 		}
 	}
 	if !some && somecant != "" {
-		return  fmt.Errorf("%s: %s", somecant, dbg.ErrPerm)
+		return fmt.Errorf("%s: %s", somecant, dbg.ErrPerm)
 	}
 	return nil
 }

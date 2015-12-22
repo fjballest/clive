@@ -12,12 +12,12 @@ const (
 	sysSizeofICMPFilter   = 0x20
 )
 
-type sysPacketInfo  {
+type sysPacketInfo struct {
 	IP      [16]byte
 	IfIndex uint32
 }
 
-type sysMulticastReq  {
+type sysMulticastReq struct {
 	IP      [16]byte
 	IfIndex uint32
 }

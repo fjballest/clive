@@ -52,23 +52,23 @@ func xrealfn(b *Builtin, al *List, fn func(float64) float64) *Sym {
 
 	if evaluated(al.getsym(0)) {
 		rval = al.getsym(0).rval
-		if (b.name=="log" || b.name=="log10") && rval<=0 {
+		if (b.name == "log" || b.name == "log10") && rval <= 0 {
 			diag("%s requires argument > 0", b.name)
 			return nil
 		}
-		if b.name=="sqrt" && rval<0 {
+		if b.name == "sqrt" && rval < 0 {
 			diag("%s requires argument >= 0", b.name)
 			return nil
 		}
-		if (b.name=="asin" || b.name=="acos") && (rval< -1+paminstr.Eps || rval>1-paminstr.Eps) {
+		if (b.name == "asin" || b.name == "acos") && (rval < -1+paminstr.Eps || rval > 1-paminstr.Eps) {
 			diag("%s requires argument in [-1.0,1.0]", b.name)
 			return nil
 		}
-		if b.name=="tan" && math.Cos(rval)<paminstr.Eps {
+		if b.name == "tan" && math.Cos(rval) < paminstr.Eps {
 			diag("value out of domain of %s", b.name)
 			return nil
 		}
-		if b.name=="atan" && (rval< -math.Pi/2+paminstr.Eps || rval>math.Pi/2-paminstr.Eps) {
+		if b.name == "atan" && (rval < -math.Pi/2+paminstr.Eps || rval > math.Pi/2-paminstr.Eps) {
 			diag("%s requires argument in [-Pi/2, Pi/2]", b.name)
 			return nil
 		}
@@ -141,7 +141,7 @@ func xpredsucc(b *Builtin, al *List, inc int) *Sym {
 	arg := al.getsym(0)
 	if evaluated(arg) {
 		n := newint(arg.ival+inc, Oint, arg.ttype)
-		if n.ival<tfirst(n.ttype) || n.ival>tlast(n.ttype) {
+		if n.ival < tfirst(n.ttype) || n.ival > tlast(n.ttype) {
 			diag("value out of range in call to pred/succ")
 		}
 		return n
@@ -169,7 +169,7 @@ func checkfargs(al *List) {
 			return
 		}
 		fallthrough
-	case Tptr, Tfile:
+	case Tptr, Tfile, Trec:
 		diag("%ss cannot be used in read or write", topname[t.op])
 		break
 	}
@@ -261,7 +261,7 @@ func mkbtype(b *Builtin) *Type {
 	//
 	t.parms = newlist(Lsym)
 	for _, r := range b.args {
-		if r>='A' && r<='Z' {
+		if r >= 'A' && r <= 'Z' {
 			addsym(t.parms, bargref)
 		} else {
 			addsym(t.parms, bargval)
@@ -280,7 +280,7 @@ func bargcheck(b *Builtin, al *List, as string) int {
 		asv rune
 	)
 
-	if len(as)>0 && (as[0]=='<' || as[0]=='>') {
+	if len(as) > 0 && (as[0] == '<' || as[0] == '>') {
 		if len(as) > 1 {
 			as = as[1:]
 		} else {
@@ -301,7 +301,7 @@ func bargcheck(b *Builtin, al *List, as string) int {
 		switch asv {
 		case 's', 'S':
 			t := tderef(n.ttype)
-			if (t.op!=Tstr && t.op!=Tarry) || !t.idx.Tis(Tint) || !t.elem.Tis(Tchar) {
+			if (t.op != Tstr && t.op != Tarry) || !t.idx.Tis(Tint) || !t.elem.Tis(Tchar) {
 				diag("argument to '%s' is not a string", b.name)
 				return -1
 			}
@@ -311,27 +311,27 @@ func bargcheck(b *Builtin, al *List, as string) int {
 				return -1
 			}
 		case 'w':
-			if !tisord(n.ttype) || n.ttype!=tsound {
+			if !tisord(n.ttype) || n.ttype != tsound {
 				diag("argument to '%s' is not a sound", b.name)
 				return -1
 			}
 		case 'z':
-			if !tisord(n.ttype) || n.ttype!=tcolor {
+			if !tisord(n.ttype) || n.ttype != tcolor {
 				diag("argument to '%s' is not a color", b.name)
 				return -1
 			}
 		case 'l':
-			if n.ttype!=topacity && n.ttype!=tcreal {
+			if n.ttype != topacity && n.ttype != tcreal {
 				diag("argument to '%s' is not an opacity", b.name)
 				return -1
 			}
 		case 'h', 'H':
-			if n.ttype!=tstrength && n.ttype!=tcint {
+			if n.ttype != tstrength && n.ttype != tcint {
 				diag("argument to '%s' is not an strength", b.name)
 				return -1
 			}
 		case 'u', 'U':
-			if n.ttype!=tbutton && n.ttype!=tcint {
+			if n.ttype != tbutton && n.ttype != tcint {
 				diag("argument to '%s' is not an button", b.name)
 				return -1
 			}
@@ -339,7 +339,7 @@ func bargcheck(b *Builtin, al *List, as string) int {
 			/* ignore */
 		case 'b', 'r', 'R', 'f', 'F', 'p', 'P', 'c', 'C', 'i', 'I':
 			op := barg[asv]
-			if barg[asv]!=0 && !n.ttype.Tis(op) {
+			if barg[asv] != 0 && !n.ttype.Tis(op) {
 				diagtypes(b.name, n.ttype, op)
 				return -1
 			}
@@ -348,7 +348,7 @@ func bargcheck(b *Builtin, al *List, as string) int {
 			s := fmt.Sprintf("xargcheck: bad type code '%c'", asv)
 			panic(s)
 		}
-		if asv=='v' || (asv>='A' && asv<='Z') {
+		if asv == 'v' || (asv >= 'A' && asv <= 'Z') {
 			if !islval(n) {
 				diag("argument to '%s' not an l-lvalue", b.name)
 				return -1
@@ -470,7 +470,7 @@ func Builtininit() {
 	}
 	bpred = lookup("pred", Sfunc)
 	bsucc = lookup("succ", Sfunc)
-	if bpred==nil || bsucc==nil {
+	if bpred == nil || bsucc == nil {
 		panic("bpred == nil || bsucc == nil")
 	}
 }

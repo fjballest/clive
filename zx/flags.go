@@ -1,22 +1,22 @@
 package zx
 
 import (
+	"bytes"
 	"clive/dbg"
 	"errors"
 	"fmt"
-	"bytes"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 // Useful to embed into a Fs
-type Flags {
-	Dbg   bool // set to true to print zx requests to stderr
-	NoPermCheck bool // set to avoid perm checks in trees that support this
-	WstatAll bool	// enable wstat of everything if ai is nil.
-	IOstats *IOstats // set to &IOstats{} to account
-	usr map[string] interface{} // user defined flags
-	ro map[string] bool // read only flags
+type Flags struct {
+	Dbg         bool                   // set to true to print zx requests to stderr
+	NoPermCheck bool                   // set to avoid perm checks in trees that support this
+	WstatAll    bool                   // enable wstat of everything if ai is nil.
+	IOstats     *IOstats               // set to &IOstats{} to account
+	usr         map[string]interface{} // user defined flags
+	ro          map[string]bool        // read only flags
 }
 
 // Return a pointer to the debug flag
@@ -50,7 +50,7 @@ func (t *Flags) add(name string, vp interface{}, ro bool) {
 	case *bool:
 	case *int:
 	case *string:
-	case func(...string)error:
+	case func(...string) error:
 	default:
 		dbg.Fatal("unknown flag type %T", t)
 	}
@@ -175,11 +175,10 @@ func (t *Flags) Ctl(cmd string) error {
 		} else {
 			*t = strings.Join(toks[1:], " ")
 		}
-	case func(...string)error:
+	case func(...string) error:
 		return t(toks...)
 	default:
 		return fmt.Errorf("unknown flag type %T", t)
 	}
 	return nil
 }
-

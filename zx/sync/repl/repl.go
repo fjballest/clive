@@ -4,17 +4,17 @@
 package repl
 
 import (
-	"clive/zx/sync"
-	"clive/zx/rfs"
 	"clive/dbg"
-	"fmt"
 	"clive/zx"
-	"os"
+	"clive/zx/rfs"
+	"clive/zx/sync"
+	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
-	"errors"
-	"io"
 )
 
 // A replicated tree.
@@ -22,15 +22,15 @@ import (
 //	1. new or load
 //	2. sync or pull or push
 //	3. save
-type Repl {
-	Name string
+type Repl struct {
+	Name         string
 	Laddr, Raddr string
-	Ldb *sync.DB
-	Rdb *sync.DB
-	lfs, rfs zx.RWTree
-	DryRun bool	// Set to prevent applies and saves
-	Verb bool		// Set to cause prints for each pull/push
-	pred string	// predicate used to prune files in DBs
+	Ldb          *sync.DB
+	Rdb          *sync.DB
+	lfs, rfs     zx.RWTree
+	DryRun       bool   // Set to prevent applies and saves
+	Verb         bool   // Set to cause prints for each pull/push
+	pred         string // predicate used to prune files in DBs
 
 	vprintf dbg.PrintFunc
 }
@@ -38,11 +38,11 @@ type Repl {
 func (r *Repl) dial() error {
 	lt, err := rfs.Import(r.Laddr)
 	if err != nil {
-		return  fmt.Errorf("%s: %s", r.Laddr, err)
+		return fmt.Errorf("%s: %s", r.Laddr, err)
 	}
 	rt, err := rfs.Import(r.Raddr)
 	if err != nil {
-		return  fmt.Errorf("%s: %s", r.Raddr, err)
+		return fmt.Errorf("%s: %s", r.Raddr, err)
 	}
 	r.lfs = lt
 	r.rfs = rt
@@ -56,21 +56,21 @@ const NoDots = sync.NoDots
 // Pred defaults to exclude all dot files and dirs: 'name~^\.&prune|true'
 func New(name, pred, laddr, raddr string) (*Repl, error) {
 	r := &Repl{
-		Name: name,
+		Name:  name,
 		Laddr: laddr,
 		Raddr: raddr,
-		pred: pred,
+		pred:  pred,
 	}
 	r.vprintf = dbg.FlagPrintf(os.Stdout, &r.Verb)
 	if err := r.dial(); err != nil {
 		return nil, err
 	}
 	var err, rerr error
-	r.Ldb, err = sync.NewDB(name + "[" + laddr + "]", pred, r.lfs)
+	r.Ldb, err = sync.NewDB(name+"["+laddr+"]", pred, r.lfs)
 	if err != nil {
 		dbg.Warn("%s: %s", laddr, err)
 	}
-	r.Rdb, rerr = sync.NewDB(name + "[" + raddr + "]", pred, r.rfs)
+	r.Rdb, rerr = sync.NewDB(name+"["+raddr+"]", pred, r.rfs)
 	if rerr != nil {
 		err = rerr
 		dbg.Warn("%s: %s", raddr, rerr)
@@ -100,10 +100,10 @@ func (r *Repl) Save(fname string) error {
 	if r.DryRun {
 		return errors.New("dry run")
 	}
-	if err := r.Ldb.Save(fname+"l.db"); err != nil {
+	if err := r.Ldb.Save(fname + "l.db"); err != nil {
 		return err
 	}
-	if err := r.Rdb.Save(fname+"r.db"); err != nil {
+	if err := r.Rdb.Save(fname + "r.db"); err != nil {
 		return err
 	}
 	return r.saveCfg(fname)
@@ -121,8 +121,8 @@ func Load(fname string) (*Repl, error) {
 		return nil, errors.New("too few lines in cfg")
 	}
 	r := &Repl{
-		Name: lns[0],
-		pred: lns[1],
+		Name:  lns[0],
+		pred:  lns[1],
 		Laddr: lns[2],
 		Raddr: lns[3],
 	}
@@ -130,10 +130,10 @@ func Load(fname string) (*Repl, error) {
 	if err := r.dial(); err != nil {
 		return nil, err
 	}
-	if r.Ldb, err = sync.LoadDB(fname+"l.db"); err != nil {
+	if r.Ldb, err = sync.LoadDB(fname + "l.db"); err != nil {
 		return nil, err
 	}
-	if r.Rdb, err = sync.LoadDB(fname+"r.db"); err != nil {
+	if r.Rdb, err = sync.LoadDB(fname + "r.db"); err != nil {
 		return nil, err
 	}
 	r.Ldb.Pred = r.pred
@@ -224,7 +224,7 @@ func (r *Repl) sync(pulling, pushing bool) error {
 		close(pullc, "not pulling")
 		nc <- 0
 	}
-	n := <- nc
+	n := <-nc
 	n += <-nc
 	var err error
 	if !r.DryRun {

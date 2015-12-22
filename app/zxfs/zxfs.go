@@ -9,11 +9,11 @@ import (
 	"clive/dbg"
 	"clive/zx"
 	"clive/zx/cfs"
-	"clive/zx/mfs"
-	"clive/zx/mdfs"
 	"clive/zx/lfs"
-	"clive/zx/zxfs"
+	"clive/zx/mdfs"
+	"clive/zx/mfs"
 	"clive/zx/rfs"
+	"clive/zx/zxfs"
 	"fmt"
 	"os"
 	"time"
@@ -26,15 +26,15 @@ var (
 	addr         string
 	mntdir       = "/n/zx"
 	rflag, sflag bool
-	nopings bool
+	nopings      bool
 
-	zxdebug, lfsdebug, rfsdebug, verb       bool
+	zxdebug, lfsdebug, rfsdebug, verb bool
 
-	nocache    bool
-	lfscache, mlfscache	string
-	xaddr        string
-	opts         = opt.New("addr|dir [mntdir] &")
-	dprintf      = dbg.FlagPrintf(os.Stderr, &zxfs.Debug)
+	nocache             bool
+	lfscache, mlfscache string
+	xaddr               string
+	opts                = opt.New("addr|dir [mntdir] &")
+	dprintf             = dbg.FlagPrintf(os.Stderr, &zxfs.Debug)
 )
 
 func mklfs(path string) (zx.RWTree, *zx.Flags, *zx.IOstats, error) {
@@ -57,7 +57,7 @@ func mkrfs(addr string) (zx.RWTree, *zx.Flags, *zx.IOstats, error) {
 		return nil, nil, nil, err
 	}
 	if r, ok := fs.(*rfs.Rfs); ok && !nopings {
-		r.Pings(30*time.Second)
+		r.Pings(30 * time.Second)
 	}
 	var st *zx.IOstats
 	if sflag {
@@ -89,7 +89,7 @@ func mcache() (zx.RWTree, *zx.Flags, error) {
 	}
 	m.IOstats = &zx.IOstats{}
 	m.Dbg = lfsdebug
-	m.WstatAll = true		// cfs must be able to write it all
+	m.WstatAll = true // cfs must be able to write it all
 	return m, m.Flags, nil
 }
 
@@ -102,7 +102,7 @@ func dcache() (zx.RWTree, *zx.Flags, error) {
 	m.SaveAttrs(true)
 	m.IOstats = &zx.IOstats{}
 	m.Dbg = lfsdebug
-	m.WstatAll = true		// cfs must be able to write it all
+	m.WstatAll = true // cfs must be able to write it all
 	return m, m.Flags, nil
 }
 
@@ -113,7 +113,7 @@ func mdcache() (zx.RWTree, *zx.Flags, error) {
 		return nil, nil, fmt.Errorf("lfs", err)
 	}
 	d.SaveAttrs(true)
-	d.WstatAll = true	// cfs must be able to write it all
+	d.WstatAll = true // cfs must be able to write it all
 	m, err := mdfs.New("mdfs", d)
 	if err != nil {
 		return nil, nil, fmt.Errorf("mdfs: %s", err)
@@ -121,7 +121,7 @@ func mdcache() (zx.RWTree, *zx.Flags, error) {
 	m.IOstats = &zx.IOstats{}
 	d.Dbg = lfsdebug && false
 	m.Dbg = lfsdebug
-	m.WstatAll = true		// cfs must be able to write it all
+	m.WstatAll = true // cfs must be able to write it all
 	return m, m.Flags, nil
 }
 

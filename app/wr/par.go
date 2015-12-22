@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	cmdEsc = frmt.Esc
+	cmdEsc   = frmt.Esc
 	cmdNoEsc = frmt.NoEsc
 )
 
@@ -62,7 +62,7 @@ func (f *par) printParCmd(ss ...string) {
 		f.newPar()
 	}
 	for _, s := range ss {
-		f.sc <- cmdEsc + s + cmdNoEsc
+		f.sc <- cmdEsc+s+cmdNoEsc
 	}
 }
 
@@ -70,4 +70,3 @@ func (f *par) printCmd(fmts string, arg ...interface{}) {
 	f.closePar()
 	fmt.Fprintf(f.out, fmts, arg...)
 }
-

@@ -15,10 +15,10 @@ import (
 	"clive/zx/lfs"
 	"errors"
 	"fmt"
-	"strings"
-	"sync"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -29,10 +29,10 @@ import (
 	Beware that calling methods in a given order does not mean that
 	requests go out in that order.
 */
-type Rfs  {
-	c       *nchan.Mux
-	Tag     string // usually the address of the server.
-	addr    string
+type Rfs struct {
+	c    *nchan.Mux
+	Tag  string // usually the address of the server.
+	addr string
 
 	*zx.Flags
 }
@@ -83,7 +83,7 @@ func dial(d zx.Dir) (zx.Tree, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := auth.AtClient(c, "", "zx"); err!=nil && err!=auth.ErrDisabled {
+	if _, err := auth.AtClient(c, "", "zx"); err != nil && err != auth.ErrDisabled {
 		close(c.In, err)
 		close(c.Out, err)
 		return nil, err
@@ -118,7 +118,7 @@ func (t *Rfs) Name() string {
 
 func (t *Rfs) dprintf(st string, args ...interface{}) {
 	if t != nil && t.Dbg {
-		fmt.Fprintf(os.Stderr, t.Tag + ": " + st, args...)
+		fmt.Fprintf(os.Stderr, t.Tag+": "+st, args...)
 	}
 }
 
@@ -138,7 +138,7 @@ func (t *Rfs) dprintf(st string, args ...interface{}) {
 	An address referring to a existing dir path is also used to build a local fs.
 */
 func Import(addr string) (zx.RWTree, error) {
-	if fi, err := os.Stat(addr); err == nil && fi.IsDir(){
+	if fi, err := os.Stat(addr); err == nil && fi.IsDir() {
 		dir, err := filepath.Abs(addr)
 		if err != nil {
 			return nil, err
@@ -176,7 +176,7 @@ func Import(addr string) (zx.RWTree, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := auth.AtClient(c, "", "zx"); err!=nil && err!=auth.ErrDisabled {
+	if _, err := auth.AtClient(c, "", "zx"); err != nil && err != auth.ErrDisabled {
 		err = fmt.Errorf("auth: %s", err)
 		close(c.In, err)
 		close(c.Out, err)
@@ -192,15 +192,15 @@ func Import(addr string) (zx.RWTree, error) {
 */
 func New(c *nchan.Mux, name string) (*Rfs, error) {
 	t := &Rfs{
-		c:   c,
-		Tag: c.Tag,
+		c:     c,
+		Tag:   c.Tag,
 		Flags: &zx.Flags{},
 	}
 	t.addr = c.Tag
 	if c.Tag == "" {
 		c.Tag = "rfs"
 	}
-	if name!="" && name!="main" {
+	if name != "" && name != "main" {
 		err := <-t.Fsys(name)
 		if err != nil {
 			return nil, fmt.Errorf("fsys %s: %s", name, err)
@@ -356,7 +356,7 @@ func (t *Rfs) putrpc(rid string, msg *Msg, dc <-chan []byte) chan zx.Dir {
 			err = cerror(repc)
 		} else {
 			d, _, err = zx.UnpackDir(rep)
-			if err==nil && d==nil {
+			if err == nil && d == nil {
 				err = errors.New("null dir in put reply")
 			}
 		}
@@ -511,7 +511,7 @@ func (t *Rfs) FindGet(rid, pred, spref, dpref string, depth int) <-chan zx.DirDa
 			}
 			res := zx.DirData{Dir: d}
 			var datc chan []byte
-			if d["err"]=="" && d["type"]=="-" {
+			if d["err"] == "" && d["type"] == "-" {
 				datc = make(chan []byte)
 				res.Datac = datc
 			}

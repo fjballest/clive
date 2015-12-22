@@ -13,7 +13,7 @@ func main() {
 	g := gx.OpenGraphics("key")
 	b := make([]byte, 2)
 	for {
-		time.Sleep(50*time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 		n, err := g.Read(b)
 		fmt.Println(n, err, b)
 	}

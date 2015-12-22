@@ -25,14 +25,14 @@ func blockToUint32(src []byte) (uint32, uint32) {
 // uint32ToBlock writes two uint32s into an 8 byte data block.
 // Values are written as big endian.
 func uint32ToBlock(v0, v1 uint32, dst []byte) {
-	dst[0] = byte(v0>>24)
-	dst[1] = byte(v0>>16)
-	dst[2] = byte(v0>>8)
+	dst[0] = byte(v0 >> 24)
+	dst[1] = byte(v0 >> 16)
+	dst[2] = byte(v0 >> 8)
 	dst[3] = byte(v0)
-	dst[4] = byte(v1>>24)
-	dst[5] = byte(v1>>16)
-	dst[6] = byte(v1>>8)
-	dst[7] = byte(v1>>0)
+	dst[4] = byte(v1 >> 24)
+	dst[5] = byte(v1 >> 16)
+	dst[6] = byte(v1 >> 8)
+	dst[7] = byte(v1 >> 0)
 }
 
 // encryptBlock encrypts a single 8 byte block using XTEA.

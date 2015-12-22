@@ -14,7 +14,7 @@ import (
 	"strconv"
 )
 
-type Text  {
+type Text struct {
 	*wax.Conn
 	uevc     chan *wax.Ev
 	tag      string
@@ -208,7 +208,7 @@ func (t *Text) p0p1(ev []string) (int, int, error) {
 }
 
 func (t *Text) handle(wev *wax.Ev) {
-	if wev==nil || len(wev.Args)<1 {
+	if wev == nil || len(wev.Args) < 1 {
 		return
 	}
 
@@ -256,7 +256,7 @@ func (t *Text) handle(wev *wax.Ev) {
 		}
 	case "edel", "ecut":
 		p0, p1, err := t.p0p1(ev)
-		if err!=nil || t.wrongVers(ev[0], wev) {
+		if err != nil || t.wrongVers(ev[0], wev) {
 			return
 		}
 		if p1 <= p0 {
@@ -276,7 +276,7 @@ func (t *Text) handle(wev *wax.Ev) {
 		}
 	case "ecopy":
 		p0, p1, err := t.p0p1(ev)
-		if err!=nil || t.wrongVers(ev[0], wev) {
+		if err != nil || t.wrongVers(ev[0], wev) {
 			return
 		}
 		s := ""
@@ -288,7 +288,7 @@ func (t *Text) handle(wev *wax.Ev) {
 		}
 	case "epaste":
 		p0, _, err := t.p0p1(ev)
-		if err!=nil || t.wrongVers(ev[0], wev) {
+		if err != nil || t.wrongVers(ev[0], wev) {
 			return
 		}
 		s, err := snarf.Get()

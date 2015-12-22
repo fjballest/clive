@@ -13,7 +13,7 @@ import (
 )
 
 // A Client represents a client connection to a dictionary server.
-type Client  {
+type Client struct {
 	text *textproto.Conn
 }
 
@@ -38,7 +38,7 @@ func (c *Client) Close() error {
 }
 
 // A Dict represents a dictionary available on the server.
-type Dict  {
+type Dict struct {
 	Name string // short name of dictionary
 	Desc string // long description
 }
@@ -77,7 +77,7 @@ func (c *Client) Dicts() ([]Dict, error) {
 }
 
 // A Defn represents a definition.
-type Defn  {
+type Defn struct {
 	Dict Dict   // Dict where definition was found
 	Word string // Word being defined
 	Text []byte // Definition text, typically multiple lines
@@ -145,13 +145,13 @@ func fields(s string) ([]string, error) {
 	var v []string
 	i := 0
 	for {
-		for i<len(s) && (s[i]==' ' || s[i]=='\t') {
+		for i < len(s) && (s[i] == ' ' || s[i] == '\t') {
 			i++
 		}
 		if i >= len(s) {
 			break
 		}
-		if s[i]=='"' || s[i]=='\'' {
+		if s[i] == '"' || s[i] == '\'' {
 			q := s[i]
 			// quoted string
 			var j int
@@ -174,7 +174,7 @@ func fields(s string) ([]string, error) {
 			// atom
 			var j int
 			for j = i; j < len(s); j++ {
-				if s[j]==' ' || s[j]=='\t' || s[j]=='\\' || s[j]=='"' || s[j]=='\'' {
+				if s[j] == ' ' || s[j] == '\t' || s[j] == '\\' || s[j] == '"' || s[j] == '\'' {
 					break
 				}
 			}
@@ -183,7 +183,7 @@ func fields(s string) ([]string, error) {
 		}
 		if i < len(s) {
 			c := s[i]
-			if c!=' ' && c!='\t' {
+			if c != ' ' && c != '\t' {
 				return nil, textproto.ProtocolError("quotes not on word boundaries")
 			}
 		}

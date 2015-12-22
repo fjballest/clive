@@ -20,7 +20,7 @@ type Dialer interface {
 }
 
 // Auth contains authentication parameters that specific Dialers may require.
-type Auth  {
+type Auth struct {
 	User, Password string
 }
 

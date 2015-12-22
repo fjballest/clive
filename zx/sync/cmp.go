@@ -1,41 +1,47 @@
 package sync
 
 import (
+	"bytes"
 	"clive/dbg"
 	"clive/zx"
-	"sort"
 	"fmt"
+	"sort"
 	"time"
-	"bytes"
 )
 
 // A change between two trees
 type ChgType int
 
 const (
-	None ChgType = iota
-	Add	// file was added
-	Data	// file data was changed
-	Meta	// file metadata was changed
-	Del	// file was deleted
-	DirFile	// dir replaced with file or file replaced with dir
-		// implies a del of the old tree at file
+	None    ChgType = iota
+	Add             // file was added
+	Data            // file data was changed
+	Meta            // file metadata was changed
+	Del             // file was deleted
+	DirFile         // dir replaced with file or file replaced with dir
+	// implies a del of the old tree at file
 )
 
-type Chg {
+type Chg struct {
 	Type ChgType
 	Time time.Time
-	D zx.Dir
+	D    zx.Dir
 }
 
 func (ct ChgType) String() string {
 	switch ct {
-	case None: return "none"
-	case Add: return "add"
-	case Data: return "data"
-	case Meta: return "meta"
-	case Del: return "del"
-	case DirFile: return "dirfile"
+	case None:
+		return "none"
+	case Add:
+		return "add"
+	case Data:
+		return "data"
+	case Meta:
+		return "meta"
+	case Del:
+		return "del"
+	case DirFile:
+		return "dirfile"
 	default:
 		panic("bad chg type")
 	}
@@ -119,7 +125,7 @@ func (db *DB) Update(fs Finder) error {
 	if err != nil {
 		return err
 	}
-	cc := db.ChangesTo(ndb) 
+	cc := db.ChangesTo(ndb)
 	for range cc {
 	}
 	db.Root = ndb.Root
@@ -163,13 +169,13 @@ func Changes(db0, db1 *DB) (pullsc, pushesc <-chan Chg) {
 	return pullc, pushc
 }
 
-var ignoredAttrs  = [...]string{"mtime", "Wuid", "Sum", "size"}
-var ignoredPutAttrs  = [...]string{"Wuid", "size"}
+var ignoredAttrs = [...]string{"mtime", "Wuid", "Sum", "size"}
+var ignoredPutAttrs = [...]string{"Wuid", "size"}
 
 func dataChanged(d0, d1 zx.Dir) bool {
 	return d0["type"] != d1["type"] ||
 		d0.Int64("size") != d1.Int64("size") ||
-	  	d0.Int64("mtime") != d1.Int64("mtime") ||
+		d0.Int64("mtime") != d1.Int64("mtime") ||
 		d0["Sum"] != "" && d1["Sum"] != "" && d0["Sum"] != d1["Sum"]
 }
 

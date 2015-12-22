@@ -112,7 +112,7 @@ const (
 )
 
 // A Session represents a connection to a remote command or shell.
-type Session  {
+type Session struct {
 	// Stdin specifies the remote process's standard input.
 	// If Stdin is nil, the remote process reads from an empty
 	// bytes.Buffer.
@@ -156,7 +156,7 @@ func (s *Session) Close() error {
 }
 
 // RFC 4254 Section 6.4.
-type setenvRequest  {
+type setenvRequest struct {
 	Name  string
 	Value string
 }
@@ -169,14 +169,14 @@ func (s *Session) Setenv(name, value string) error {
 		Value: value,
 	}
 	ok, err := s.ch.SendRequest("env", true, Marshal(&msg))
-	if err==nil && !ok {
+	if err == nil && !ok {
 		err = errors.New("ssh: setenv failed")
 	}
 	return err
 }
 
 // RFC 4254 Section 6.2.
-type ptyRequestMsg  {
+type ptyRequestMsg struct {
 	Term     string
 	Columns  uint32
 	Rows     uint32
@@ -201,19 +201,19 @@ func (s *Session) RequestPty(term string, h, w int, termmodes TerminalModes) err
 		Term:     term,
 		Columns:  uint32(w),
 		Rows:     uint32(h),
-		Width:    uint32(w*8),
-		Height:   uint32(h*8),
+		Width:    uint32(w * 8),
+		Height:   uint32(h * 8),
 		Modelist: string(tm),
 	}
 	ok, err := s.ch.SendRequest("pty-req", true, Marshal(&req))
-	if err==nil && !ok {
+	if err == nil && !ok {
 		err = errors.New("ssh: pty-req failed")
 	}
 	return err
 }
 
 // RFC 4254 Section 6.5.
-type subsystemRequestMsg  {
+type subsystemRequestMsg struct {
 	Subsystem string
 }
 
@@ -224,14 +224,14 @@ func (s *Session) RequestSubsystem(subsystem string) error {
 		Subsystem: subsystem,
 	}
 	ok, err := s.ch.SendRequest("subsystem", true, Marshal(&msg))
-	if err==nil && !ok {
+	if err == nil && !ok {
 		err = errors.New("ssh: subsystem request failed")
 	}
 	return err
 }
 
 // RFC 4254 Section 6.9.
-type signalMsg  {
+type signalMsg struct {
 	Signal string
 }
 
@@ -247,7 +247,7 @@ func (s *Session) Signal(sig Signal) error {
 }
 
 // RFC 4254 Section 6.5.
-type execMsg  {
+type execMsg struct {
 	Command string
 }
 
@@ -263,7 +263,7 @@ func (s *Session) Start(cmd string) error {
 	}
 
 	ok, err := s.ch.SendRequest("exec", true, Marshal(&req))
-	if err==nil && !ok {
+	if err == nil && !ok {
 		err = fmt.Errorf("ssh: command %v failed", cmd)
 	}
 	if err != nil {
@@ -303,7 +303,7 @@ func (s *Session) Output(cmd string) ([]byte, error) {
 	return b.Bytes(), err
 }
 
-type singleWriter  {
+type singleWriter struct {
 	b  bytes.Buffer
 	mu sync.Mutex
 }
@@ -338,7 +338,7 @@ func (s *Session) Shell() error {
 	}
 
 	ok, err := s.ch.SendRequest("shell", true, nil)
-	if err==nil && !ok {
+	if err == nil && !ok {
 		return fmt.Errorf("ssh: cound not start shell")
 	}
 	if err != nil {
@@ -384,7 +384,7 @@ func (s *Session) Wait() error {
 	}
 	var copyError error
 	for range s.copyFuncs {
-		if err := <-s.errors; err!=nil && copyError==nil {
+		if err := <-s.errors; err != nil && copyError == nil {
 			copyError = err
 		}
 	}
@@ -458,7 +458,7 @@ func (s *Session) stdin() {
 	}
 	s.copyFuncs = append(s.copyFuncs, func() error {
 		_, err := io.Copy(s.ch, stdin)
-		if err1 := s.ch.CloseWrite(); err==nil && err1!=io.EOF {
+		if err1 := s.ch.CloseWrite(); err == nil && err1 != io.EOF {
 			err = err1
 		}
 		return err
@@ -492,7 +492,7 @@ func (s *Session) stderr() {
 }
 
 // sessionStdin reroutes Close to CloseWrite.
-type sessionStdin  {
+type sessionStdin struct {
 	io.Writer
 	ch Channel
 }
@@ -562,7 +562,7 @@ func newSession(ch Channel, reqs <-chan *Request) (*Session, error) {
 }
 
 // An ExitError reports unsuccessful completion of a remote command.
-type ExitError  {
+type ExitError struct {
 	Waitmsg
 }
 
@@ -572,7 +572,7 @@ func (e *ExitError) Error() string {
 
 // Waitmsg stores the information about an exited remote command
 // as reported by Wait.
-type Waitmsg  {
+type Waitmsg struct {
 	status int
 	signal string
 	msg    string

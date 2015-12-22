@@ -10,11 +10,11 @@ import (
 	"time"
 )
 
-type Times  {
+type Times struct {
 	Min, Max, Tot, Avg time.Duration
 }
 
-type Sizes  {
+type Sizes struct {
 	Min, Max, Tot, N, Avg int64
 }
 
@@ -42,7 +42,7 @@ var name = [...]string{
 /*
 	IOstat kept for a single zx call.
 */
-type IOstat  {
+type IOstat struct {
 	Tstart        Times // Times between call and the first reply
 	Tend          Times // Times between call and the last reply
 	Tsizes        Sizes // message requests sizes
@@ -54,7 +54,7 @@ type IOstat  {
 	Set of IO statistics for a ZX client/server.
 	It's ok to call its methods with nil, which is a nop.
 */
-type IOstats  {
+type IOstats struct {
 	Tag string
 	sync.Mutex
 	For [Nstats]IOstat
@@ -63,16 +63,16 @@ type IOstats  {
 // Count t as a new time in times.
 func (t *Times) count(delta time.Duration) {
 	t.Tot += delta
-	if t.Min==0 || t.Min>delta {
+	if t.Min == 0 || t.Min > delta {
 		t.Min = delta
 	}
-	if t.Max==0 || t.Max<delta {
+	if t.Max == 0 || t.Max < delta {
 		t.Max = delta
 	}
 }
 
 func (t *Times) averages(n int64) {
-	t.Avg = time.Duration(int64(t.Tot)/n)
+	t.Avg = time.Duration(int64(t.Tot) / n)
 }
 
 func (t Times) String() string {
@@ -83,17 +83,17 @@ func (t Times) String() string {
 func (s *Sizes) count(n, sz int64) {
 	s.N += n
 	s.Tot += sz
-	if s.Min==0 || s.Min>sz && sz>0 {
+	if s.Min == 0 || s.Min > sz && sz > 0 {
 		s.Min = sz
 	}
-	if s.Max==0 || s.Max<sz {
+	if s.Max == 0 || s.Max < sz {
 		s.Max = sz
 	}
 }
 
 func (s *Sizes) averages() {
 	if s.N > 0 {
-		s.Avg = s.Tot/s.N
+		s.Avg = s.Tot / s.N
 	}
 }
 
@@ -147,7 +147,7 @@ var zt time.Time
 
 // Ongoing call stat (see IOstats).
 // It's ok to call its method with a nil stat (nop).
-type CallStat  {
+type CallStat struct {
 	io      *IOstats
 	what    int
 	replied bool

@@ -19,7 +19,7 @@ var (
 )
 
 //line parse.y:24
-type yySymType  {
+type yySymType struct {
 	yys  int
 	ival uint64
 	fval float64
@@ -212,7 +212,7 @@ const yyFlag = -1000
 
 func yyTokname(c int) string {
 	// 4 is TOKSTART above
-	if c>=4 && c-4<len(yyToknames) {
+	if c >= 4 && c-4 < len(yyToknames) {
 		if yyToknames[c-4] != "" {
 			return yyToknames[c-4]
 		}
@@ -221,7 +221,7 @@ func yyTokname(c int) string {
 }
 
 func yyStatname(s int) string {
-	if s>=0 && s<len(yyStatenames) {
+	if s >= 0 && s < len(yyStatenames) {
 		if yyStatenames[s] != "" {
 			return yyStatenames[s]
 		}
@@ -307,7 +307,7 @@ yynewstate:
 		yychar = yylex1(yylex, &yylval)
 	}
 	yyn += yychar
-	if yyn<0 || yyn>=yyLast {
+	if yyn < 0 || yyn >= yyLast {
 		goto yydefault
 	}
 	yyn = yyAct[yyn]
@@ -332,14 +332,14 @@ yydefault:
 		/* look through exception table */
 		xi := 0
 		for {
-			if yyExca[xi+0]==-1 && yyExca[xi+1]==yystate {
+			if yyExca[xi+0] == -1 && yyExca[xi+1] == yystate {
 				break
 			}
 			xi += 2
 		}
 		for xi += 2; ; xi += 2 {
 			yyn = yyExca[xi+0]
-			if yyn<0 || yyn==yychar {
+			if yyn < 0 || yyn == yychar {
 				break
 			}
 		}
@@ -366,7 +366,7 @@ yydefault:
 			/* find a state where "error" is a legal shift action */
 			for yyp >= 0 {
 				yyn = yyPact[yyS[yyp].yys] + yyErrCode
-				if yyn>=0 && yyn<yyLast {
+				if yyn >= 0 && yyn < yyLast {
 					yystate = yyAct[yyn] /* simulate a shift of "error" */
 					if yyChk[yystate] == yyErrCode {
 						goto yystack
@@ -542,7 +542,7 @@ yydefault:
 	case 23:
 		//line parse.y:143
 		{
-			yyVAL.vval = value(Ival(yyS[yypt-2].vval)&Ival(yyS[yypt-0].vval))
+			yyVAL.vval = value(Ival(yyS[yypt-2].vval) & Ival(yyS[yypt-0].vval))
 		}
 	case 24:
 		//line parse.y:147

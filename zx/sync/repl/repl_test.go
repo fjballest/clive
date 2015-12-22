@@ -1,18 +1,18 @@
 package repl
 
 import (
+	"bytes"
 	"clive/dbg"
 	"clive/zx/fstest"
 	"os"
-	"testing"
-	"bytes"
 	"strings"
+	"testing"
 )
 
 const (
-	rdir = "/tmp/repl"
-	rcfg = rdir + "/r"
-	tdir = "/tmp/db_test"
+	rdir  = "/tmp/repl"
+	rcfg  = rdir + "/r"
+	tdir  = "/tmp/db_test"
 	tdir2 = "/tmp/db_test2"
 )
 
@@ -74,7 +74,6 @@ testrepl[/tmp/db_test2]
 	}
 }
 
-
 func TestSyncNew(t *testing.T) {
 	fstest.ResetTime()
 	fstest.RmTree(t, rdir)
@@ -82,7 +81,7 @@ func TestSyncNew(t *testing.T) {
 	fstest.RmTree(t, tdir2)
 	defer fstest.RmTree(t, tdir2)
 	defer fstest.RmTree(t, rdir)
-	defer fstest.RmTree(t, tdir) 
+	defer fstest.RmTree(t, tdir)
 	if err := os.Mkdir(rdir, 0755); err != nil && !dbg.IsExists(err) {
 		t.Fatalf("%s: %s", tdir2, err)
 	}
@@ -155,7 +154,7 @@ func TestSyncChgs(t *testing.T) {
 	fstest.RmTree(t, tdir2)
 	defer fstest.RmTree(t, tdir2)
 	defer fstest.RmTree(t, rdir)
-	defer fstest.RmTree(t, tdir) 
+	defer fstest.RmTree(t, tdir)
 	if err := os.Mkdir(rdir, 0755); err != nil && !dbg.IsExists(err) {
 		t.Fatalf("%s: %s", tdir2, err)
 	}
@@ -242,4 +241,3 @@ testrepl[/tmp/db_test2]
 		t.Fatal("bad repl")
 	}
 }
-

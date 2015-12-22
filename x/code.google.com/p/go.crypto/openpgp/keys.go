@@ -22,7 +22,7 @@ var PrivateKeyType = "PGP PRIVATE KEY BLOCK"
 // An Entity represents the components of an OpenPGP key: a primary public key
 // (which must be a signing key), one or more identities claimed by that key,
 // and zero or more subkeys, which may be encryption keys.
-type Entity  {
+type Entity struct {
 	PrimaryKey  *packet.PublicKey
 	PrivateKey  *packet.PrivateKey
 	Identities  map[string]*Identity // indexed by Identity.Name
@@ -32,7 +32,7 @@ type Entity  {
 
 // An Identity represents an identity claimed by an Entity and zero or more
 // assertions by other entities about that claim.
-type Identity  {
+type Identity struct {
 	Name          string // by convention, has the form "Full Name (comment) <email@example.com>"
 	UserId        *packet.UserId
 	SelfSignature *packet.Signature
@@ -41,7 +41,7 @@ type Identity  {
 
 // A Subkey is an additional public key in an Entity. Subkeys can be used for
 // encryption.
-type Subkey  {
+type Subkey struct {
 	PublicKey  *packet.PublicKey
 	PrivateKey *packet.PrivateKey
 	Sig        *packet.Signature
@@ -49,7 +49,7 @@ type Subkey  {
 
 // A Key identifies a specific public key in an Entity. This is either the
 // Entity's primary key or a subkey.
-type Key  {
+type Key struct {
 	Entity        *Entity
 	PublicKey     *packet.PublicKey
 	PrivateKey    *packet.PrivateKey
@@ -78,7 +78,7 @@ func (e *Entity) primaryIdentity() *Identity {
 		if firstIdentity == nil {
 			firstIdentity = ident
 		}
-		if ident.SelfSignature.IsPrimaryId!=nil && *ident.SelfSignature.IsPrimaryId {
+		if ident.SelfSignature.IsPrimaryId != nil && *ident.SelfSignature.IsPrimaryId {
 			return ident
 		}
 	}
@@ -162,7 +162,7 @@ func (el EntityList) KeysById(id uint64) (keys []Key) {
 			for _, ident := range e.Identities {
 				if selfSig == nil {
 					selfSig = ident.SelfSignature
-				} else if ident.SelfSignature.IsPrimaryId!=nil && *ident.SelfSignature.IsPrimaryId {
+				} else if ident.SelfSignature.IsPrimaryId != nil && *ident.SelfSignature.IsPrimaryId {
 					selfSig = ident.SelfSignature
 					break
 				}
@@ -192,7 +192,7 @@ func (el EntityList) KeysByIdUsage(id uint64, requiredUsage byte) (keys []Key) {
 			continue
 		}
 
-		if key.SelfSignature.FlagsValid && requiredUsage!=0 {
+		if key.SelfSignature.FlagsValid && requiredUsage != 0 {
 			var usage byte
 			if key.SelfSignature.FlagCertify {
 				usage |= packet.KeyFlagCertify
@@ -220,7 +220,7 @@ func (el EntityList) KeysByIdUsage(id uint64, requiredUsage byte) (keys []Key) {
 func (el EntityList) DecryptionKeys() (keys []Key) {
 	for _, e := range el {
 		for _, subKey := range e.Subkeys {
-			if subKey.PrivateKey!=nil && (!subKey.Sig.FlagsValid || subKey.Sig.FlagEncryptStorage || subKey.Sig.FlagEncryptCommunications) {
+			if subKey.PrivateKey != nil && (!subKey.Sig.FlagsValid || subKey.Sig.FlagEncryptStorage || subKey.Sig.FlagEncryptCommunications) {
 				keys = append(keys, Key{e, subKey.PublicKey, subKey.PrivateKey, subKey.Sig})
 			}
 		}
@@ -237,7 +237,7 @@ func ReadArmoredKeyRing(r io.Reader) (EntityList, error) {
 	if err != nil {
 		return nil, err
 	}
-	if block.Type!=PublicKeyType && block.Type!=PrivateKeyType {
+	if block.Type != PublicKeyType && block.Type != PrivateKeyType {
 		return nil, errors.InvalidArgumentError("expected public or private key block, got: " + block.Type)
 	}
 
@@ -276,7 +276,7 @@ func ReadKeyRing(r io.Reader) (el EntityList, err error) {
 		}
 	}
 
-	if len(el)==0 && err==nil {
+	if len(el) == 0 && err == nil {
 		err = lastUnsupportedError
 	}
 	return
@@ -363,7 +363,7 @@ EachPacket:
 					return nil, errors.StructuralError("user ID packet not followed by self-signature")
 				}
 
-				if (sig.SigType==packet.SigTypePositiveCert || sig.SigType==packet.SigTypeGenericCert) && sig.IssuerKeyId!=nil && *sig.IssuerKeyId==e.PrimaryKey.KeyId {
+				if (sig.SigType == packet.SigTypePositiveCert || sig.SigType == packet.SigTypeGenericCert) && sig.IssuerKeyId != nil && *sig.IssuerKeyId == e.PrimaryKey.KeyId {
 					if err = e.PrimaryKey.VerifyUserIdSignature(pkt.Id, e.PrimaryKey, sig); err != nil {
 						return nil, errors.StructuralError("user ID self-signature invalid: " + err.Error())
 					}
@@ -440,7 +440,7 @@ func addSubkey(e *Entity, packets *packet.Reader, pub *packet.PublicKey, priv *p
 	if !ok {
 		return errors.StructuralError("subkey packet not followed by signature")
 	}
-	if subKey.Sig.SigType!=packet.SigTypeSubkeyBinding && subKey.Sig.SigType!=packet.SigTypeSubkeyRevocation {
+	if subKey.Sig.SigType != packet.SigTypeSubkeyBinding && subKey.Sig.SigType != packet.SigTypeSubkeyRevocation {
 		return errors.StructuralError("subkey signature with wrong type")
 	}
 	err = e.PrimaryKey.VerifyKeySignature(subKey.PublicKey, subKey.Sig)

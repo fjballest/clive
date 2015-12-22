@@ -51,7 +51,7 @@ const (
 	rootID             = 1
 )
 
-type kstatfs  {
+type kstatfs struct {
 	Blocks  uint64
 	Bfree   uint64
 	Bavail  uint64
@@ -64,7 +64,7 @@ type kstatfs  {
 	Spare   [6]uint32
 }
 
-type fileLock  {
+type fileLock struct {
 	Start uint64
 	End   uint64
 	Type  uint32
@@ -76,24 +76,24 @@ type fileLock  {
 type SetattrValid uint32
 
 const (
-	SetattrMode   SetattrValid = 1<<0
-	SetattrUid    SetattrValid = 1<<1
-	SetattrGid    SetattrValid = 1<<2
-	SetattrSize   SetattrValid = 1<<3
-	SetattrAtime  SetattrValid = 1<<4
-	SetattrMtime  SetattrValid = 1<<5
-	SetattrHandle SetattrValid = 1<<6
+	SetattrMode   SetattrValid = 1 << 0
+	SetattrUid    SetattrValid = 1 << 1
+	SetattrGid    SetattrValid = 1 << 2
+	SetattrSize   SetattrValid = 1 << 3
+	SetattrAtime  SetattrValid = 1 << 4
+	SetattrMtime  SetattrValid = 1 << 5
+	SetattrHandle SetattrValid = 1 << 6
 
 	// Linux only(?)
-	SetattrAtimeNow  SetattrValid = 1<<7
-	SetattrMtimeNow  SetattrValid = 1<<8
-	SetattrLockOwner SetattrValid = 1<<9 // http://www.mail-archive.com/git-commits-head@vger.kernel.org/msg27852.html
+	SetattrAtimeNow  SetattrValid = 1 << 7
+	SetattrMtimeNow  SetattrValid = 1 << 8
+	SetattrLockOwner SetattrValid = 1 << 9 // http://www.mail-archive.com/git-commits-head@vger.kernel.org/msg27852.html
 
 	// OS X only
-	SetattrCrtime   SetattrValid = 1<<28
-	SetattrChgtime  SetattrValid = 1<<29
-	SetattrBkuptime SetattrValid = 1<<30
-	SetattrFlags    SetattrValid = 1<<31
+	SetattrCrtime   SetattrValid = 1 << 28
+	SetattrChgtime  SetattrValid = 1 << 29
+	SetattrBkuptime SetattrValid = 1 << 30
+	SetattrFlags    SetattrValid = 1 << 31
 )
 
 func (fl SetattrValid) Mode() bool      { return fl&SetattrMode != 0 }
@@ -138,8 +138,8 @@ type OpenFlags uint32
 
 func (fl OpenFlags) String() string {
 	// O_RDONLY, O_RWONLY, O_RDWR are not flags
-	s := accModeName(uint32(fl)&syscall.O_ACCMODE)
-	flags := uint32(fl)&^syscall.O_ACCMODE
+	s := accModeName(uint32(fl) & syscall.O_ACCMODE)
+	flags := uint32(fl) &^ syscall.O_ACCMODE
 	if flags != 0 {
 		s = s + "+" + flagString(flags, openFlagNames)
 	}
@@ -171,12 +171,12 @@ var openFlagNames = []flagName{
 type OpenResponseFlags uint32
 
 const (
-	OpenDirectIO    OpenResponseFlags = 1<<0 // bypass page cache for this open file
-	OpenKeepCache   OpenResponseFlags = 1<<1 // don't invalidate the data cache on open
-	OpenNonSeekable OpenResponseFlags = 1<<2 // (Linux?)
+	OpenDirectIO    OpenResponseFlags = 1 << 0 // bypass page cache for this open file
+	OpenKeepCache   OpenResponseFlags = 1 << 1 // don't invalidate the data cache on open
+	OpenNonSeekable OpenResponseFlags = 1 << 2 // (Linux?)
 
-	OpenPurgeAttr OpenResponseFlags = 1<<30 // OS X
-	OpenPurgeUBC  OpenResponseFlags = 1<<31 // OS X
+	OpenPurgeAttr OpenResponseFlags = 1 << 30 // OS X
+	OpenPurgeUBC  OpenResponseFlags = 1 << 31 // OS X
 )
 
 func (fl OpenResponseFlags) String() string {
@@ -194,15 +194,15 @@ var openResponseFlagNames = []flagName{
 type InitFlags uint32
 
 const (
-	InitAsyncRead  InitFlags = 1<<0
-	InitPosixLocks InitFlags = 1<<1
+	InitAsyncRead  InitFlags = 1 << 0
+	InitPosixLocks InitFlags = 1 << 1
 
-	InitCaseSensitive InitFlags = 1<<29 // OS X only
-	InitVolRename     InitFlags = 1<<30 // OS X only
-	InitXtimes        InitFlags = 1<<31 // OS X only
+	InitCaseSensitive InitFlags = 1 << 29 // OS X only
+	InitVolRename     InitFlags = 1 << 30 // OS X only
+	InitXtimes        InitFlags = 1 << 31 // OS X only
 )
 
-type flagName  {
+type flagName struct {
 	bit  uint32
 	name string
 }
@@ -242,7 +242,7 @@ func flagString(f uint32, names []flagName) string {
 type ReleaseFlags uint32
 
 const (
-	ReleaseFlush ReleaseFlags = 1<<0
+	ReleaseFlush ReleaseFlags = 1 << 0
 )
 
 func (fl ReleaseFlags) String() string {
@@ -303,7 +303,7 @@ const (
 // The read buffer is required to be at least 8k but may be much larger
 const minReadBuffer = 8192
 
-type entryOut  {
+type entryOut struct {
 	outHeader
 	Nodeid         uint64 // Inode ID
 	Generation     uint64 // Inode generation
@@ -314,11 +314,11 @@ type entryOut  {
 	Attr           attr
 }
 
-type forgetIn  {
+type forgetIn struct {
 	Nlookup uint64
 }
 
-type attrOut  {
+type attrOut struct {
 	outHeader
 	AttrValid     uint64 // Cache timeout for the attributes
 	AttrValidNsec uint32
@@ -327,7 +327,7 @@ type attrOut  {
 }
 
 // OS X
-type getxtimesOut  {
+type getxtimesOut struct {
 	outHeader
 	Bkuptime     uint64
 	Crtime       uint64
@@ -335,35 +335,35 @@ type getxtimesOut  {
 	CrtimeNsec   uint32
 }
 
-type mknodIn  {
+type mknodIn struct {
 	Mode uint32
 	Rdev uint32
 	// "filename\x00" follows.
 }
 
-type mkdirIn  {
+type mkdirIn struct {
 	Mode    uint32
 	Padding uint32
 	// filename follows
 }
 
-type renameIn  {
+type renameIn struct {
 	Newdir uint64
 	// "oldname\x00newname\x00" follows
 }
 
 // OS X
-type exchangeIn  {
+type exchangeIn struct {
 	Olddir  uint64
 	Newdir  uint64
 	Options uint64
 }
 
-type linkIn  {
+type linkIn struct {
 	Oldnodeid uint64
 }
 
-type setattrInCommon  {
+type setattrInCommon struct {
 	Valid     uint32
 	Padding   uint32
 	Fh        uint64
@@ -382,24 +382,24 @@ type setattrInCommon  {
 	Unused5   uint32
 }
 
-type openIn  {
+type openIn struct {
 	Flags  uint32
 	Unused uint32
 }
 
-type openOut  {
+type openOut struct {
 	outHeader
 	Fh        uint64
 	OpenFlags uint32
 	Padding   uint32
 }
 
-type createIn  {
+type createIn struct {
 	Flags uint32
 	Mode  uint32
 }
 
-type createOut  {
+type createOut struct {
 	outHeader
 
 	Nodeid         uint64 // Inode ID
@@ -415,35 +415,35 @@ type createOut  {
 	Padding   uint32
 }
 
-type releaseIn  {
+type releaseIn struct {
 	Fh           uint64
 	Flags        uint32
 	ReleaseFlags uint32
 	LockOwner    uint32
 }
 
-type flushIn  {
+type flushIn struct {
 	Fh         uint64
 	FlushFlags uint32
 	Padding    uint32
 	LockOwner  uint64
 }
 
-type readIn  {
+type readIn struct {
 	Fh      uint64
 	Offset  uint64
 	Size    uint32
 	Padding uint32
 }
 
-type writeIn  {
+type writeIn struct {
 	Fh         uint64
 	Offset     uint64
 	Size       uint32
 	WriteFlags uint32
 }
 
-type writeOut  {
+type writeOut struct {
 	outHeader
 	Size    uint32
 	Padding uint32
@@ -460,18 +460,18 @@ var writeFlagNames = []flagName{}
 
 const compatStatfsSize = 48
 
-type statfsOut  {
+type statfsOut struct {
 	outHeader
 	St kstatfs
 }
 
-type fsyncIn  {
+type fsyncIn struct {
 	Fh         uint64
 	FsyncFlags uint32
 	Padding    uint32
 }
 
-type setxattrInCommon  {
+type setxattrInCommon struct {
 	Size  uint32
 	Flags uint32
 }
@@ -480,7 +480,7 @@ func (setxattrInCommon) position() uint32 {
 	return 0
 }
 
-type getxattrInCommon  {
+type getxattrInCommon struct {
 	Size    uint32
 	Padding uint32
 }
@@ -489,29 +489,29 @@ func (getxattrInCommon) position() uint32 {
 	return 0
 }
 
-type getxattrOut  {
+type getxattrOut struct {
 	outHeader
 	Size    uint32
 	Padding uint32
 }
 
-type lkIn  {
+type lkIn struct {
 	Fh    uint64
 	Owner uint64
 	Lk    fileLock
 }
 
-type lkOut  {
+type lkOut struct {
 	outHeader
 	Lk fileLock
 }
 
-type accessIn  {
+type accessIn struct {
 	Mask    uint32
 	Padding uint32
 }
 
-type initIn  {
+type initIn struct {
 	Major        uint32
 	Minor        uint32
 	MaxReadahead uint32
@@ -520,7 +520,7 @@ type initIn  {
 
 const initInSize = int(unsafe.Sizeof(initIn{}))
 
-type initOut  {
+type initOut struct {
 	outHeader
 	Major        uint32
 	Minor        uint32
@@ -530,22 +530,22 @@ type initOut  {
 	MaxWrite     uint32
 }
 
-type interruptIn  {
+type interruptIn struct {
 	Unique uint64
 }
 
-type bmapIn  {
+type bmapIn struct {
 	Block     uint64
 	BlockSize uint32
 	Padding   uint32
 }
 
-type bmapOut  {
+type bmapOut struct {
 	outHeader
 	Block uint64
 }
 
-type inHeader  {
+type inHeader struct {
 	Len     uint32
 	Opcode  uint32
 	Unique  uint64
@@ -558,13 +558,13 @@ type inHeader  {
 
 const inHeaderSize = int(unsafe.Sizeof(inHeader{}))
 
-type outHeader  {
+type outHeader struct {
 	Len    uint32
 	Error  int32
 	Unique uint64
 }
 
-type dirent  {
+type dirent struct {
 	Ino     uint64
 	Off     uint64
 	Namelen uint32

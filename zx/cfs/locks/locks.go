@@ -8,18 +8,18 @@ import (
 )
 
 // rwlock on a path for meta and/or data
-type pLock {
-	n int			// of procs using this
-	mlk, dlk sync.RWMutex	// RW lock on this file meta/data
+type pLock struct {
+	n        int          // of procs using this
+	mlk, dlk sync.RWMutex // RW lock on this file meta/data
 }
 
 // A set of RW locks for file paths.
 // Implementation assumes there will be not too many locks in the tree.
-type Set {
-	lk sync.Mutex		// for the set of locks
-	paths map[string] *pLock	// locks in use
-	n int			// total sum of n in all locks
-	nolocks sync.Cond		// waiting for no locks held
+type Set struct {
+	lk      sync.Mutex        // for the set of locks
+	paths   map[string]*pLock // locks in use
+	n       int               // total sum of n in all locks
+	nolocks sync.Cond         // waiting for no locks held
 }
 
 func (s *Set) init() {
@@ -123,7 +123,7 @@ func (s *Set) runlock(path string, meta, data bool) {
 	}
 	s.n -= n
 	if s.n == 0 {
-		s.nolocks.Signal();
+		s.nolocks.Signal()
 	}
 }
 
@@ -212,7 +212,7 @@ func (s *Set) unlock(path string, meta, data bool) {
 	}
 	s.n -= n
 	if s.n == 0 {
-		s.nolocks.Signal();
+		s.nolocks.Signal()
 	}
 	s.lk.Unlock()
 }
@@ -225,7 +225,7 @@ func (s *Set) QuiescentRun(fn func()) {
 		s.init()
 	}
 	for s.n > 0 {
-		s.nolocks.Wait();
+		s.nolocks.Wait()
 	}
-	fn();
+	fn()
 }

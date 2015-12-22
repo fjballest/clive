@@ -12,7 +12,7 @@ import (
 
 // EscapeCodes contains escape sequences that can be written to the terminal in
 // order to achieve different styles of text.
-type EscapeCodes  {
+type EscapeCodes struct {
 	// Foreground colors
 	Black, Red, Green, Yellow, Blue, Magenta, Cyan, White []byte
 
@@ -35,7 +35,7 @@ var vt100EscapeCodes = EscapeCodes{
 
 // Terminal contains the state for running a VT100 terminal that is capable of
 // reading lines of input.
-type Terminal  {
+type Terminal struct {
 	// AutoCompleteCallback, if non-null, is called for each keypress with
 	// the full input line and the current position of the cursor (in
 	// bytes, as an index into |line|). If it returns ok=false, the key
@@ -152,7 +152,7 @@ func bytesToKey(b []byte) (rune, []byte) {
 		return r, b[l:]
 	}
 
-	if len(b)>=3 && b[0]==keyEscape && b[1]=='[' {
+	if len(b) >= 3 && b[0] == keyEscape && b[1] == '[' {
 		switch b[2] {
 		case 'A':
 			return keyUp, b[3:]
@@ -165,7 +165,7 @@ func bytesToKey(b []byte) (rune, []byte) {
 		}
 	}
 
-	if len(b)>=3 && b[0]==keyEscape && b[1]=='O' {
+	if len(b) >= 3 && b[0] == keyEscape && b[1] == 'O' {
 		switch b[2] {
 		case 'H':
 			return keyHome, b[3:]
@@ -174,7 +174,7 @@ func bytesToKey(b []byte) (rune, []byte) {
 		}
 	}
 
-	if len(b)>=6 && b[0]==keyEscape && b[1]=='[' && b[2]=='1' && b[3]==';' && b[4]=='3' {
+	if len(b) >= 6 && b[0] == keyEscape && b[1] == '[' && b[2] == '1' && b[3] == ';' && b[4] == '3' {
 		switch b[5] {
 		case 'C':
 			return keyAltRight, b[6:]
@@ -188,7 +188,7 @@ func bytesToKey(b []byte) (rune, []byte) {
 	// sequence without knowing them all, but it seems that [a-zA-Z] only
 	// appears at the end of a sequence.
 	for i, c := range b[0:] {
-		if c>='a' && c<='z' || c>='A' && c<='Z' {
+		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' {
 			return keyUnknown, b[i+1:]
 		}
 	}
@@ -205,8 +205,8 @@ var eraseUnderCursor = []rune{' ', keyEscape, '[', 'D'}
 var space = []rune{' '}
 
 func isPrintable(key rune) bool {
-	isInSurrogateArea := key>=0xd800 && key<=0xdbff
-	return key>=32 && !isInSurrogateArea
+	isInSurrogateArea := key >= 0xd800 && key <= 0xdbff
+	return key >= 32 && !isInSurrogateArea
 }
 
 // moveCursorToPos appends data to t.outBuf which will move the cursor to the
@@ -217,8 +217,8 @@ func (t *Terminal) moveCursorToPos(pos int) {
 	}
 
 	x := len(t.prompt) + pos
-	y := x/t.termWidth
-	x = x%t.termWidth
+	y := x / t.termWidth
+	x = x % t.termWidth
 
 	up := 0
 	if y < t.cursorY {
@@ -515,7 +515,7 @@ func (t *Terminal) Write(buf []byte) (n int, err error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	if t.cursorX==0 && t.cursorY==0 {
+	if t.cursorX == 0 && t.cursorY == 0 {
 		// This is the easy case: there's nothing on the screen that we
 		// have to move out of the way.
 		return t.c.Write(buf)
@@ -548,8 +548,8 @@ func (t *Terminal) Write(buf []byte) (n int, err error) {
 		t.queue(t.line)
 		chars += len(t.line)
 	}
-	t.cursorX = chars%t.termWidth
-	t.cursorY = chars/t.termWidth
+	t.cursorX = chars % t.termWidth
+	t.cursorY = chars / t.termWidth
 	t.moveCursorToPos(t.pos)
 
 	if _, err = t.c.Write(t.outBuf); err != nil {
@@ -588,7 +588,7 @@ func (t *Terminal) ReadLine() (line string, err error) {
 func (t *Terminal) readLine() (line string, err error) {
 	// t.lock must be held at this point
 
-	if t.cursorX==0 && t.cursorY==0 {
+	if t.cursorX == 0 && t.cursorY == 0 {
 		t.writeLine([]rune(t.prompt))
 		t.c.Write(t.outBuf)
 		t.outBuf = t.outBuf[:0]
@@ -659,7 +659,7 @@ func (t *Terminal) SetSize(width, height int) {
 }
 
 // stRingBuffer is a ring buffer of strings.
-type stRingBuffer  {
+type stRingBuffer struct {
 	// entries contains max elements.
 	entries []string
 	max     int
@@ -676,7 +676,7 @@ func (s *stRingBuffer) Add(a string) {
 		s.max = defaultNumEntries
 	}
 
-	s.head = (s.head + 1)%s.max
+	s.head = (s.head + 1) % s.max
 	s.entries[s.head] = a
 	if s.size < s.max {
 		s.size++

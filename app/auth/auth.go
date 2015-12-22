@@ -47,7 +47,7 @@ func main() {
 	groups := args[3:]
 	file := auth.KeyFile(dir, name)
 	fi, _ := os.Stat(file)
-	if fi!=nil && !force {
+	if fi != nil && !force {
 		app.Fatal("key file already exists")
 	}
 	err = auth.SaveKey(dir, name, user, secret, groups...)

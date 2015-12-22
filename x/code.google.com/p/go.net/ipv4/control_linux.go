@@ -27,9 +27,9 @@ func setControlMessage(fd int, opt *rawOpt, cf ControlFlags, on bool) error {
 			return err
 		}
 		if on {
-			opt.set(cf&(FlagSrc | FlagDst | FlagInterface))
+			opt.set(cf & (FlagSrc | FlagDst | FlagInterface))
 		} else {
-			opt.clear(cf&(FlagSrc | FlagDst | FlagInterface))
+			opt.clear(cf & (FlagSrc | FlagDst | FlagInterface))
 		}
 	}
 	return nil
@@ -66,7 +66,7 @@ func (opt *rawOpt) marshalControlMessage() (oob []byte) {
 }
 
 func (cm *ControlMessage) oobLen() (l int) {
-	if cm.Src.To4()!=nil || cm.IfIndex!=0 {
+	if cm.Src.To4() != nil || cm.IfIndex != 0 {
 		l += syscall.CmsgSpace(sysSizeofPacketInfo)
 	}
 	return

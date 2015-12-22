@@ -14,7 +14,7 @@ import (
 
 // gfP2 implements a field of size p² as a quadratic extension of the base
 // field where i²=-1.
-type gfP2  {
+type gfP2 struct {
 	x, y *big.Int // value is xi+y.
 }
 
@@ -52,16 +52,16 @@ func (e *gfP2) SetOne() *gfP2 {
 }
 
 func (e *gfP2) Minimal() {
-	if e.x.Sign()<0 || e.x.Cmp(p)>=0 {
+	if e.x.Sign() < 0 || e.x.Cmp(p) >= 0 {
 		e.x.Mod(e.x, p)
 	}
-	if e.y.Sign()<0 || e.y.Cmp(p)>=0 {
+	if e.y.Sign() < 0 || e.y.Cmp(p) >= 0 {
 		e.y.Mod(e.y, p)
 	}
 }
 
 func (e *gfP2) IsZero() bool {
-	return e.x.Sign()==0 && e.y.Sign()==0
+	return e.x.Sign() == 0 && e.y.Sign() == 0
 }
 
 func (e *gfP2) IsOne() bool {
@@ -69,7 +69,7 @@ func (e *gfP2) IsOne() bool {
 		return false
 	}
 	words := e.y.Bits()
-	return len(words)==1 && words[0]==1
+	return len(words) == 1 && words[0] == 1
 }
 
 func (e *gfP2) Conjugate(a *gfP2) *gfP2 {

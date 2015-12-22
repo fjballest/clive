@@ -4,8 +4,8 @@ import (
 	"clive/dbg"
 	"clive/zx"
 	"os"
-	"testing"
 	"path"
+	"testing"
 )
 
 /*
@@ -19,7 +19,7 @@ import (
 
 var printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 
-type top  {
+type top struct {
 	s   string
 	err bool
 	out string
@@ -90,7 +90,7 @@ func TestPrune(t *testing.T) {
 	t.Logf("eval %s\n", p)
 	m, prune, err := p.EvalAt(d, 0)
 	t.Logf("match %v %v %v", m, prune, err)
-	if m!=false || prune!=true || err!=nil {
+	if m != false || prune != true || err != nil {
 		t.Fatalf("bad eval")
 	}
 }
@@ -128,8 +128,8 @@ func TestName(t *testing.T) {
 	}
 }
 
-type mTest {
-	pred, path string
+type mTest struct {
+	pred, path      string
 	matches, prunes bool
 }
 
@@ -174,7 +174,7 @@ func TestMatch(t *testing.T) {
 
 func BenchmarkNew(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		id := i%len(preds)
+		id := i % len(preds)
 		New(preds[id].s)
 	}
 }
@@ -190,7 +190,7 @@ func BenchmarkPredString(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		id := i%len(p)
+		id := i % len(p)
 		p[id].String()
 	}
 

@@ -15,7 +15,7 @@ import (
 
 // Compressed represents a compressed OpenPGP packet. The decompressed contents
 // will contain more OpenPGP packets. See RFC 4880, section 5.6.
-type Compressed  {
+type Compressed struct {
 	Body io.Reader
 }
 
@@ -27,7 +27,7 @@ const (
 )
 
 // CompressionConfig contains compressor configuration settings.
-type CompressionConfig  {
+type CompressionConfig struct {
 	// Level is the compression level to use. It must be set to
 	// between -1 and 9, with -1 causing the compressor to use the
 	// default compression level, 0 causing the compressor to use
@@ -64,7 +64,7 @@ func (c *Compressed) parse(r io.Reader) error {
 // header and the compressor. Its Close() method ensures that both the
 // compressor and serialized stream header are closed. Its Write()
 // method writes to the compressor.
-type compressedWriteCloser  {
+type compressedWriteCloser struct {
 	sh io.Closer      // Stream Header
 	c  io.WriteCloser // Compressor
 }

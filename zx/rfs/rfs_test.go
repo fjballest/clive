@@ -80,7 +80,7 @@ func testfs(t fstest.Fataler) (*lfs.Lfs, *Rfs) {
 	}
 	rfs.Tag = "cli"
 	rfs.Dbg = testing.Verbose()
-	VerbDebug= moreverb
+	VerbDebug = moreverb
 	return fs, rfs
 }
 

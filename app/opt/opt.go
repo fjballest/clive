@@ -24,14 +24,14 @@ import (
 	"unicode/utf8"
 )
 
-type def  {
+type def struct {
 	name, help string
 	valp       interface{}
 	argname    string
 }
 
 // A set of command line options
-type Flags  {
+type Flags struct {
 	Argv0       string // program name from the last call to Parse
 	usage       string // usage string w/o program name
 	defs        map[string]*def
@@ -51,7 +51,7 @@ type Hexa int
 // A range: items are counted starting from 1
 // and neg. values are used to count backwards from the end:
 // 1,1 means everything.
-type Range {
+type Range struct {
 	P0, P1 int
 }
 
@@ -289,7 +289,7 @@ func (f *Flags) NewFlag(name, help string, vp interface{}) {
 	default:
 		app.Fatal("flag %s: unknown flag type", name)
 	}
-	if name[0]=='+' || name[0]=='-' {
+	if name[0] == '+' || name[0] == '-' {
 		app.Fatal("name '±...' is only for *int")
 	}
 	f.defs[name] = &def{name: name, help: help, valp: vp, argname: aname}
@@ -309,19 +309,19 @@ func (f *Flags) Parse(argv []string) ([]string, error) {
 	args := make([]string, len(argv))
 	copy(args, argv)
 Loop:
-	for len(args)>0 && len(args[0])>0 && (args[0][0]=='-' || args[0][0]=='+') {
+	for len(args) > 0 && len(args[0]) > 0 && (args[0][0] == '-' || args[0][0] == '+') {
 		if args[0] == "-?" {
 			return nil, errors.New("usage")
 		}
-		if f.plus!=nil && args[0][0]=='+' {
+		if f.plus != nil && args[0][0] == '+' {
 			args, err = f.plus.parsePlus(args)
 			if err != nil {
 				return nil, err
 			}
 			continue Loop
 		}
-		isdigit := len(args[0])>1 && args[0][1]>='0' && args[0][1]<='9'
-		if f.minus!=nil && isdigit {
+		isdigit := len(args[0]) > 1 && args[0][1] >= '0' && args[0][1] <= '9'
+		if f.minus != nil && isdigit {
 			args, err = f.minus.parseMinus(args)
 			if err != nil {
 				return nil, err
@@ -347,7 +347,7 @@ Loop:
 			}
 		}
 		// try combined flags now
-		for len(args)>0 && len(args[0])>0 {
+		for len(args) > 0 && len(args[0]) > 0 {
 			r, nr := utf8.DecodeRuneInString(args[0])
 			name = args[0][:nr]
 			for n, def := range f.defs {
@@ -367,7 +367,7 @@ Loop:
 }
 
 func optArg(argv []string) ([]string, string, error) {
-	if len(argv)>0 && len(argv[0])==0 {
+	if len(argv) > 0 && len(argv[0]) == 0 {
 		argv = argv[1:]
 	}
 	if len(argv) == 0 {
@@ -583,7 +583,7 @@ func ParseRange(arg string) (Range, error) {
 	return Range{p0, p1}, nil
 }
 
-func(r Range) String() string {
+func (r Range) String() string {
 	if r.P0 == r.P1 {
 		return strconv.Itoa(r.P0)
 	}
@@ -602,20 +602,20 @@ func(r Range) String() string {
 // (n may be 0 if we don't know the number of items).
 // Provided here so the range semantics are preserved in commands.
 func (a Range) Matches(i, n int) bool {
-	if n==0 && (a.P0<0 || a.P1<0) { // need to wait for nlines
+	if n == 0 && (a.P0 < 0 || a.P1 < 0) { // need to wait for nlines
 		return false
 	}
-	if a.P0>0 && i<a.P0 {
+	if a.P0 > 0 && i < a.P0 {
 		return false
 	}
-	if a.P1>0 && i>a.P1 {
+	if a.P1 > 0 && i > a.P1 {
 		return false
 	}
 	negi := n - i + 1
-	if a.P0<0 && negi>-a.P0 {
+	if a.P0 < 0 && negi > -a.P0 {
 		return false
 	}
-	if a.P1<0 && negi< -a.P1 {
+	if a.P1 < 0 && negi < -a.P1 {
 		return false
 	}
 	return true

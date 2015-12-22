@@ -2,9 +2,9 @@ package ql
 
 import (
 	"clive/app"
-	"strings"
-	"strconv"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 func mapNames(m map[string]string) []string {
@@ -38,7 +38,7 @@ func SetEnvMap(n string, m map[string]string) {
 	app.SetEnv(n, s)
 }
 
-func GetEnvMap(n string) map[string] string {
+func GetEnvMap(n string) map[string]string {
 	return envMap(app.GetEnv(n))
 }
 
@@ -48,7 +48,7 @@ func idx(toks []string, idxs string) ([]string, error) {
 	}
 	n, err := strconv.ParseInt(idxs, 10, 32)
 	i := int(n)
-	if err!=nil || i<0 || i>=len(toks) {
+	if err != nil || i < 0 || i >= len(toks) {
 		return nil, fmt.Errorf("bad index '%s'", idxs)
 	}
 	return toks[i : i+1], nil
@@ -80,11 +80,11 @@ func SetEnvAt(name, idx string, val string) error {
 	ismap := strings.Contains(s, "\a")
 	n, err := strconv.ParseInt(idx, 10, 32)
 	i := int(n)
-	if err==nil && !ismap {
+	if err == nil && !ismap {
 		toks := strings.SplitN(s, "\b", -1)
 		if i == len(toks) {
 			toks = append(toks, val)
-		} else if i<0 || i>len(toks) {
+		} else if i < 0 || i > len(toks) {
 			return fmt.Errorf("bad index '%s' for '%s'", idx, name)
 		} else {
 			toks[i] = val

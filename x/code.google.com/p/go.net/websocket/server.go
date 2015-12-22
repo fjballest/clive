@@ -52,7 +52,7 @@ func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Requ
 }
 
 // Server represents a server of a WebSocket.
-type Server  {
+type Server struct {
 	// Config is a WebSocket configuration for new WebSocket connection.
 	Config
 
@@ -101,7 +101,7 @@ type Handler func(*Conn)
 
 func checkOrigin(config *Config, req *http.Request) (err error) {
 	config.Origin, err = Origin(config, req)
-	if err==nil && config.Origin==nil {
+	if err == nil && config.Origin == nil {
 		return fmt.Errorf("null origin")
 	}
 	return err

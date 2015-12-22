@@ -4,11 +4,11 @@ import (
 	"clive/dbg"
 	"clive/net/auth"
 	"errors"
-	"io"
 	"fmt"
+	"io"
 )
 
-type treeFor  {
+type treeFor struct {
 	i  interface{}
 	rw bool
 }

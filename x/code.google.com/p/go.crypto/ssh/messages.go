@@ -40,7 +40,7 @@ const msgDisconnect = 1
 
 // disconnectMsg is the message that signals a disconnect. It is also
 // the error type returned from mux.Wait()
-type disconnectMsg  {
+type disconnectMsg struct {
 	Reason   uint32 `sshtype:"1"`
 	Message  string
 	Language string
@@ -53,7 +53,7 @@ func (d *disconnectMsg) Error() string {
 // See RFC 4253, section 7.1.
 const msgKexInit = 20
 
-type kexInitMsg  {
+type kexInitMsg struct {
 	Cookie                  [16]byte `sshtype:"20"`
 	KexAlgos                []string
 	ServerHostKeyAlgos      []string
@@ -74,19 +74,19 @@ type kexInitMsg  {
 // Diffie-Helman
 const msgKexDHInit = 30
 
-type kexDHInitMsg  {
+type kexDHInitMsg struct {
 	X *big.Int `sshtype:"30"`
 }
 
 const msgKexECDHInit = 30
 
-type kexECDHInitMsg  {
+type kexECDHInitMsg struct {
 	ClientPubKey []byte `sshtype:"30"`
 }
 
 const msgKexECDHReply = 31
 
-type kexECDHReplyMsg  {
+type kexECDHReplyMsg struct {
 	HostKey         []byte `sshtype:"31"`
 	EphemeralPubKey []byte
 	Signature       []byte
@@ -94,7 +94,7 @@ type kexECDHReplyMsg  {
 
 const msgKexDHReply = 31
 
-type kexDHReplyMsg  {
+type kexDHReplyMsg struct {
 	HostKey   []byte `sshtype:"31"`
 	Y         *big.Int
 	Signature []byte
@@ -103,21 +103,21 @@ type kexDHReplyMsg  {
 // See RFC 4253, section 10.
 const msgServiceRequest = 5
 
-type serviceRequestMsg  {
+type serviceRequestMsg struct {
 	Service string `sshtype:"5"`
 }
 
 // See RFC 4253, section 10.
 const msgServiceAccept = 6
 
-type serviceAcceptMsg  {
+type serviceAcceptMsg struct {
 	Service string `sshtype:"6"`
 }
 
 // See RFC 4252, section 5.
 const msgUserAuthRequest = 50
 
-type userAuthRequestMsg  {
+type userAuthRequestMsg struct {
 	User    string `sshtype:"50"`
 	Service string
 	Method  string
@@ -127,7 +127,7 @@ type userAuthRequestMsg  {
 // See RFC 4252, section 5.1
 const msgUserAuthFailure = 51
 
-type userAuthFailureMsg  {
+type userAuthFailureMsg struct {
 	Methods        []string `sshtype:"51"`
 	PartialSuccess bool
 }
@@ -136,7 +136,7 @@ type userAuthFailureMsg  {
 const msgUserAuthInfoRequest = 60
 const msgUserAuthInfoResponse = 61
 
-type userAuthInfoRequestMsg  {
+type userAuthInfoRequestMsg struct {
 	User               string `sshtype:"60"`
 	Instruction        string
 	DeprecatedLanguage string
@@ -147,7 +147,7 @@ type userAuthInfoRequestMsg  {
 // See RFC 4254, section 5.1.
 const msgChannelOpen = 90
 
-type channelOpenMsg  {
+type channelOpenMsg struct {
 	ChanType         string `sshtype:"90"`
 	PeersId          uint32
 	PeersWindow      uint32
@@ -161,7 +161,7 @@ const msgChannelData = 94
 // See RFC 4254, section 5.1.
 const msgChannelOpenConfirm = 91
 
-type channelOpenConfirmMsg  {
+type channelOpenConfirmMsg struct {
 	PeersId          uint32 `sshtype:"91"`
 	MyId             uint32
 	MyWindow         uint32
@@ -172,7 +172,7 @@ type channelOpenConfirmMsg  {
 // See RFC 4254, section 5.1.
 const msgChannelOpenFailure = 92
 
-type channelOpenFailureMsg  {
+type channelOpenFailureMsg struct {
 	PeersId  uint32 `sshtype:"92"`
 	Reason   RejectionReason
 	Message  string
@@ -181,7 +181,7 @@ type channelOpenFailureMsg  {
 
 const msgChannelRequest = 98
 
-type channelRequestMsg  {
+type channelRequestMsg struct {
 	PeersId             uint32 `sshtype:"98"`
 	Request             string
 	WantReply           bool
@@ -191,35 +191,35 @@ type channelRequestMsg  {
 // See RFC 4254, section 5.4.
 const msgChannelSuccess = 99
 
-type channelRequestSuccessMsg  {
+type channelRequestSuccessMsg struct {
 	PeersId uint32 `sshtype:"99"`
 }
 
 // See RFC 4254, section 5.4.
 const msgChannelFailure = 100
 
-type channelRequestFailureMsg  {
+type channelRequestFailureMsg struct {
 	PeersId uint32 `sshtype:"100"`
 }
 
 // See RFC 4254, section 5.3
 const msgChannelClose = 97
 
-type channelCloseMsg  {
+type channelCloseMsg struct {
 	PeersId uint32 `sshtype:"97"`
 }
 
 // See RFC 4254, section 5.3
 const msgChannelEOF = 96
 
-type channelEOFMsg  {
+type channelEOFMsg struct {
 	PeersId uint32 `sshtype:"96"`
 }
 
 // See RFC 4254, section 4
 const msgGlobalRequest = 80
 
-type globalRequestMsg  {
+type globalRequestMsg struct {
 	Type      string `sshtype:"80"`
 	WantReply bool
 	Data      []byte `ssh:"rest"`
@@ -228,21 +228,21 @@ type globalRequestMsg  {
 // See RFC 4254, section 4
 const msgRequestSuccess = 81
 
-type globalRequestSuccessMsg  {
+type globalRequestSuccessMsg struct {
 	Data []byte `ssh:"rest" sshtype:"81"`
 }
 
 // See RFC 4254, section 4
 const msgRequestFailure = 82
 
-type globalRequestFailureMsg  {
+type globalRequestFailureMsg struct {
 	Data []byte `ssh:"rest" sshtype:"82"`
 }
 
 // See RFC 4254, section 5.2
 const msgChannelWindowAdjust = 93
 
-type windowAdjustMsg  {
+type windowAdjustMsg struct {
 	PeersId         uint32 `sshtype:"93"`
 	AdditionalBytes uint32
 }
@@ -250,7 +250,7 @@ type windowAdjustMsg  {
 // See RFC 4252, section 7
 const msgUserAuthPubKeyOk = 60
 
-type userAuthPubKeyOkMsg  {
+type userAuthPubKeyOkMsg struct {
 	Algo   string `sshtype:"60"`
 	PubKey []byte
 }
@@ -522,7 +522,7 @@ func parseInt(in []byte) (out *big.Int, rest []byte, ok bool) {
 	}
 	out = new(big.Int)
 
-	if len(contents)>0 && contents[0]&0x80==0x80 {
+	if len(contents) > 0 && contents[0]&0x80 == 0x80 {
 		// This is a negative number
 		notBytes := make([]byte, len(contents))
 		for i := range notBytes {
@@ -563,7 +563,7 @@ func intLength(n *big.Int) int {
 			// The number will need 0xff padding
 			length++
 		}
-		length += (bitLen + 7)/8
+		length += (bitLen + 7) / 8
 	} else if n.Sign() == 0 {
 		// A zero is the zero length string
 	} else {
@@ -572,7 +572,7 @@ func intLength(n *big.Int) int {
 			// The number will need 0x00 padding
 			length++
 		}
-		length += (bitLen + 7)/8
+		length += (bitLen + 7) / 8
 	}
 
 	return length
@@ -604,7 +604,7 @@ func marshalInt(to []byte, n *big.Int) []byte {
 		for i := range bytes {
 			bytes[i] ^= 0xff
 		}
-		if len(bytes)==0 || bytes[0]&0x80==0 {
+		if len(bytes) == 0 || bytes[0]&0x80 == 0 {
 			to[0] = 0xff
 			to = to[1:]
 			length++
@@ -616,7 +616,7 @@ func marshalInt(to []byte, n *big.Int) []byte {
 		// A zero is the zero length string
 	} else {
 		bytes := n.Bytes()
-		if len(bytes)>0 && bytes[0]&0x80!=0 {
+		if len(bytes) > 0 && bytes[0]&0x80 != 0 {
 			// We'll have to pad this with a 0x00 in order to
 			// stop it looking like a negative number.
 			to[0] = 0
@@ -628,9 +628,9 @@ func marshalInt(to []byte, n *big.Int) []byte {
 		length += nBytes
 	}
 
-	lengthBytes[0] = byte(length>>24)
-	lengthBytes[1] = byte(length>>16)
-	lengthBytes[2] = byte(length>>8)
+	lengthBytes[0] = byte(length >> 24)
+	lengthBytes[1] = byte(length >> 16)
+	lengthBytes[2] = byte(length >> 8)
 	lengthBytes[3] = byte(length)
 	return to
 }
@@ -644,9 +644,9 @@ func writeInt(w io.Writer, n *big.Int) {
 
 func writeString(w io.Writer, s []byte) {
 	var lengthBytes [4]byte
-	lengthBytes[0] = byte(len(s)>>24)
-	lengthBytes[1] = byte(len(s)>>16)
-	lengthBytes[2] = byte(len(s)>>8)
+	lengthBytes[0] = byte(len(s) >> 24)
+	lengthBytes[1] = byte(len(s) >> 16)
+	lengthBytes[2] = byte(len(s) >> 8)
 	lengthBytes[3] = byte(len(s))
 	w.Write(lengthBytes[:])
 	w.Write(s)
@@ -657,9 +657,9 @@ func stringLength(n int) int {
 }
 
 func marshalString(to []byte, s []byte) []byte {
-	to[0] = byte(len(s)>>24)
-	to[1] = byte(len(s)>>16)
-	to[2] = byte(len(s)>>8)
+	to[0] = byte(len(s) >> 24)
+	to[1] = byte(len(s) >> 16)
+	to[2] = byte(len(s) >> 8)
 	to[3] = byte(len(s))
 	to = to[4:]
 	copy(to, s)

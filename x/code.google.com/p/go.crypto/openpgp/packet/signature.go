@@ -19,14 +19,14 @@ import (
 
 const (
 	// See RFC 4880, section 5.2.3.21 for details.
-	KeyFlagCertify = 1<<iota
+	KeyFlagCertify = 1 << iota
 	KeyFlagSign
 	KeyFlagEncryptCommunications
 	KeyFlagEncryptStorage
 )
 
 // Signature represents a signature. See RFC 4880, section 5.2.
-type Signature  {
+type Signature struct {
 	SigType    SignatureType
 	PubKeyAlgo PublicKeyAlgorithm
 	Hash       crypto.Hash
@@ -111,9 +111,9 @@ func (sig *Signature) parse(r io.Reader) (err error) {
 	trailer := sig.HashSuffix[l:]
 	trailer[0] = 4
 	trailer[1] = 0xff
-	trailer[2] = uint8(l>>24)
-	trailer[3] = uint8(l>>16)
-	trailer[4] = uint8(l>>8)
+	trailer[2] = uint8(l >> 24)
+	trailer[3] = uint8(l >> 16)
+	trailer[4] = uint8(l >> 8)
 	trailer[5] = uint8(l)
 
 	err = parseSignatureSubpackets(sig, hashedSubpackets, true)
@@ -229,7 +229,7 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		err = errors.StructuralError("zero length signature subpacket")
 		return
 	}
-	packetType = signatureSubpacketType(subpacket[0]&0x7f)
+	packetType = signatureSubpacketType(subpacket[0] & 0x7f)
 	isCritical = subpacket[0]&0x80 == 0x80
 	subpacket = subpacket[1:]
 	sig.rawSubpackets = append(sig.rawSubpackets, outputSubpacket{isHashed, packetType, isCritical, subpacket})
@@ -377,14 +377,14 @@ func serializeSubpacketLength(to []byte, length int) int {
 	}
 	if length < 16320 {
 		length -= 192
-		to[0] = byte((length>>8) + 192)
+		to[0] = byte((length >> 8) + 192)
 		to[1] = byte(length)
 		return 2
 	}
 	to[0] = 255
-	to[1] = byte(length>>24)
-	to[2] = byte(length>>16)
-	to[3] = byte(length>>8)
+	to[1] = byte(length >> 24)
+	to[2] = byte(length >> 16)
+	to[3] = byte(length >> 8)
 	to[4] = byte(length)
 	return 5
 }
@@ -422,7 +422,7 @@ func (sig *Signature) KeyExpired(currentTime time.Time) bool {
 	if sig.KeyLifetimeSecs == nil {
 		return false
 	}
-	expiry := sig.CreationTime.Add(time.Duration(*sig.KeyLifetimeSecs)*time.Second)
+	expiry := sig.CreationTime.Add(time.Duration(*sig.KeyLifetimeSecs) * time.Second)
 	return currentTime.After(expiry)
 }
 
@@ -441,15 +441,15 @@ func (sig *Signature) buildHashSuffix() (err error) {
 		sig.HashSuffix = nil
 		return errors.InvalidArgumentError("hash cannot be represented in OpenPGP: " + strconv.Itoa(int(sig.Hash)))
 	}
-	sig.HashSuffix[4] = byte(hashedSubpacketsLen>>8)
+	sig.HashSuffix[4] = byte(hashedSubpacketsLen >> 8)
 	sig.HashSuffix[5] = byte(hashedSubpacketsLen)
 	serializeSubpackets(sig.HashSuffix[6:l], sig.outSubpackets, true)
 	trailer := sig.HashSuffix[l:]
 	trailer[0] = 4
 	trailer[1] = 0xff
-	trailer[2] = byte(l>>24)
-	trailer[3] = byte(l>>16)
-	trailer[4] = byte(l>>8)
+	trailer[2] = byte(l >> 24)
+	trailer[3] = byte(l >> 16)
+	trailer[4] = byte(l >> 8)
 	trailer[5] = byte(l)
 	return
 }
@@ -480,21 +480,21 @@ func (sig *Signature) Sign(h hash.Hash, priv *PrivateKey, config *Config) (err e
 	switch priv.PubKeyAlgo {
 	case PubKeyAlgoRSA, PubKeyAlgoRSASignOnly:
 		sig.RSASignature.bytes, err = rsa.SignPKCS1v15(config.Random(), priv.PrivateKey.(*rsa.PrivateKey), sig.Hash, digest)
-		sig.RSASignature.bitLength = uint16(8*len(sig.RSASignature.bytes))
+		sig.RSASignature.bitLength = uint16(8 * len(sig.RSASignature.bytes))
 	case PubKeyAlgoDSA:
 		dsaPriv := priv.PrivateKey.(*dsa.PrivateKey)
 
 		// Need to truncate hashBytes to match FIPS 186-3 section 4.6.
-		subgroupSize := (dsaPriv.Q.BitLen() + 7)/8
+		subgroupSize := (dsaPriv.Q.BitLen() + 7) / 8
 		if len(digest) > subgroupSize {
 			digest = digest[:subgroupSize]
 		}
 		r, s, err := dsa.Sign(config.Random(), dsaPriv, digest)
 		if err == nil {
 			sig.DSASigR.bytes = r.Bytes()
-			sig.DSASigR.bitLength = uint16(8*len(sig.DSASigR.bytes))
+			sig.DSASigR.bitLength = uint16(8 * len(sig.DSASigR.bytes))
 			sig.DSASigS.bytes = s.Bytes()
-			sig.DSASigS.bitLength = uint16(8*len(sig.DSASigS.bytes))
+			sig.DSASigS.bitLength = uint16(8 * len(sig.DSASigS.bytes))
 		}
 	default:
 		err = errors.UnsupportedError("public key algorithm: " + strconv.Itoa(int(sig.PubKeyAlgo)))
@@ -532,7 +532,7 @@ func (sig *Signature) Serialize(w io.Writer) (err error) {
 	if len(sig.outSubpackets) == 0 {
 		sig.outSubpackets = sig.rawSubpackets
 	}
-	if sig.RSASignature.bytes==nil && sig.DSASigR.bytes==nil && sig.ECDSASigR.bytes==nil {
+	if sig.RSASignature.bytes == nil && sig.DSASigR.bytes == nil && sig.ECDSASigR.bytes == nil {
 		return errors.InvalidArgumentError("Signature: need to call Sign, SignUserId or SignKey before Serialize")
 	}
 
@@ -565,7 +565,7 @@ func (sig *Signature) Serialize(w io.Writer) (err error) {
 	}
 
 	unhashedSubpackets := make([]byte, 2+unhashedSubpacketsLen)
-	unhashedSubpackets[0] = byte(unhashedSubpacketsLen>>8)
+	unhashedSubpackets[0] = byte(unhashedSubpacketsLen >> 8)
 	unhashedSubpackets[1] = byte(unhashedSubpacketsLen)
 	serializeSubpackets(unhashedSubpackets[2:], sig.outSubpackets, false)
 
@@ -592,7 +592,7 @@ func (sig *Signature) Serialize(w io.Writer) (err error) {
 }
 
 // outputSubpacket represents a subpacket to be marshaled.
-type outputSubpacket  {
+type outputSubpacket struct {
 	hashed        bool // true if this subpacket is in the hashed area.
 	subpacketType signatureSubpacketType
 	isCritical    bool
@@ -610,7 +610,7 @@ func (sig *Signature) buildSubpackets() (subpackets []outputSubpacket) {
 		subpackets = append(subpackets, outputSubpacket{true, issuerSubpacket, false, keyId})
 	}
 
-	if sig.SigLifetimeSecs!=nil && *sig.SigLifetimeSecs!=0 {
+	if sig.SigLifetimeSecs != nil && *sig.SigLifetimeSecs != 0 {
 		sigLifetime := make([]byte, 4)
 		binary.BigEndian.PutUint32(sigLifetime, *sig.SigLifetimeSecs)
 		subpackets = append(subpackets, outputSubpacket{true, signatureExpirationSubpacket, true, sigLifetime})
@@ -637,13 +637,13 @@ func (sig *Signature) buildSubpackets() (subpackets []outputSubpacket) {
 
 	// The following subpackets may only appear in self-signatures
 
-	if sig.KeyLifetimeSecs!=nil && *sig.KeyLifetimeSecs!=0 {
+	if sig.KeyLifetimeSecs != nil && *sig.KeyLifetimeSecs != 0 {
 		keyLifetime := make([]byte, 4)
 		binary.BigEndian.PutUint32(keyLifetime, *sig.KeyLifetimeSecs)
 		subpackets = append(subpackets, outputSubpacket{true, keyExpirationSubpacket, true, keyLifetime})
 	}
 
-	if sig.IsPrimaryId!=nil && *sig.IsPrimaryId {
+	if sig.IsPrimaryId != nil && *sig.IsPrimaryId {
 		subpackets = append(subpackets, outputSubpacket{true, primaryUserIdSubpacket, false, []byte{1}})
 	}
 

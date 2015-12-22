@@ -32,7 +32,7 @@ var (
 
 // Context to execute a command. Useful to write commands
 // that can be both built-ins in ql and stand-alone commands.
-type Ctx  {
+type Ctx struct {
 	Stdin          io.Reader
 	Stdout, Stderr io.Writer
 	Intrc          <-chan bool
@@ -137,7 +137,7 @@ func Files(names ...string) <-chan zx.Dir {
 				if d == nil {
 					break
 				}
-				if toks[0]!=name && zx.HasPrefix(d["path"], name) {
+				if toks[0] != name && zx.HasPrefix(d["path"], name) {
 					u := zx.Path(toks[0], zx.Suffix(d["path"], name))
 					d["path"] = u
 				}
@@ -194,7 +194,7 @@ func GetFiles(names ...string) <-chan zx.DirData {
 				if d == nil {
 					break
 				}
-				if toks[0]!=name && zx.HasPrefix(d["path"], name) {
+				if toks[0] != name && zx.HasPrefix(d["path"], name) {
 					u := zx.Path(toks[0], zx.Suffix(d["path"], name))
 					d["path"] = u
 				}
@@ -204,7 +204,7 @@ func GetFiles(names ...string) <-chan zx.DirData {
 					}
 					continue
 				}
-				if g.Datac==nil && d["type"]!="d" {
+				if g.Datac == nil && d["type"] != "d" {
 					g.Datac = nchan.Null
 				}
 				if ok := rc <- g; !ok {

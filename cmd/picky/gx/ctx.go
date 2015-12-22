@@ -9,13 +9,13 @@ import (
 	"strings"
 )
 
-type call  {
+type call struct {
 	name   string
 	args   []interface{}
 	setval interface{}
 }
 
-type Context  {
+type Context struct {
 	cursor string
 	v      []call
 }
@@ -152,14 +152,14 @@ const (
 )
 
 func (c *Context) TextHeight(size int) int {
-	return int(TextHt*float32(size)/6.0)
+	return int(TextHt * float32(size) / 6.0)
 }
 
 func (c *Context) TextWidth(size int) int {
 	return int(float32(size))
 }
 
-type TextPos  {
+type TextPos struct {
 	start, end int //index in array in ctx structure
 	x, y       int //text position
 	angle      float32
@@ -178,7 +178,7 @@ func (c *Context) Text(size int, text string, angle float32) *TextPos {
 			c.call("fillText", v, 0, yrel)
 		}
 		yrel += ht
-		tp.x = int(float32(len(v)*c.TextWidth(size))*PixelX)
+		tp.x = int(float32(len(v)*c.TextWidth(size)) * PixelX)
 	}
 	tp.end = len(c.v) - 1
 	nextl := strings.HasSuffix(text, paminstr.EOL)
@@ -192,7 +192,7 @@ func (c *Context) Text(size int, text string, angle float32) *TextPos {
 }
 
 func (c *Context) AddText(tp *TextPos, size int, text string) *TextPos {
-	if c.v[tp.end].name!="fillText" && c.v[tp.end].name!="font" {
+	if c.v[tp.end].name != "fillText" && c.v[tp.end].name != "font" {
 		panic("cannot add text at " + c.v[tp.end].name)
 	}
 	s := tp.start
@@ -212,7 +212,7 @@ func (c *Context) AddText(tp *TextPos, size int, text string) *TextPos {
 		}
 		yrel += ht
 		xrel = 0
-		lstsz = int(float32(len(v)*c.TextWidth(size))*PixelX)
+		lstsz = int(float32(len(v)*c.TextWidth(size)) * PixelX)
 	}
 	c.v = append(c.v, nn...)
 	nextl := strings.HasSuffix(text, paminstr.EOL)

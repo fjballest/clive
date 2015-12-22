@@ -5,12 +5,11 @@
 */
 package main
 
-
 import (
 	"clive/dbg"
-	"time"
 	"os"
 	"strconv"
+	"time"
 )
 
 func main() {

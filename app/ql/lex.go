@@ -1,14 +1,14 @@
 package ql
 
 import (
-	"fmt"
+	"bytes"
 	"clive/app"
 	"clive/app/nsutil"
-	"bytes"
-	"io"
 	"clive/dbg"
-	"unicode"
+	"fmt"
+	"io"
 	"strings"
+	"unicode"
 )
 
 type inText interface {
@@ -16,12 +16,12 @@ type inText interface {
 }
 
 // address in file
-type Addr  {
+type Addr struct {
 	File string
 	Line int
 }
 
-type lex  {
+type lex struct {
 	in            []inText
 	saddr         []Addr
 	eofmet, wasnl bool
@@ -29,9 +29,9 @@ type lex  {
 	val           []rune
 	Addr
 	interactive, interrupted bool
-	prompt string
-	nerrors int
-	debug bool
+	prompt                   string
+	nerrors                  int
+	debug                    bool
 }
 
 var (
@@ -112,7 +112,7 @@ func (l *lex) get() rune {
 			r = '\n'
 		}
 		l.eofmet = err == io.EOF
-		if r==0 && len(l.in)>1 {
+		if r == 0 && len(l.in) > 1 {
 			l.eofmet = false
 			l.in = l.in[1:]
 			l.Addr = l.saddr[0]
@@ -152,7 +152,7 @@ func (l *lex) Lex(lval *yySymType) int {
 func (l *lex) skipComment() rune {
 	for {
 		c := l.get()
-		if c==0 || c=='\n' {
+		if c == 0 || c == '\n' {
 			return c
 		}
 	}
@@ -165,7 +165,7 @@ func (l *lex) lex(lval *yySymType) int {
 	var c rune
 	prompted := false
 	for {
-		if l.interactive && l.wasnl && l.prompt != "" && !prompted{
+		if l.interactive && l.wasnl && l.prompt != "" && !prompted {
 			app.Printf("%s", l.prompt)
 			prompted = true
 		}
@@ -186,7 +186,7 @@ func (l *lex) lex(lval *yySymType) int {
 			return NL
 		}
 		if !unicode.IsSpace(c) {
-			if l.wasnl && c=='%' {
+			if l.wasnl && c == '%' {
 				l.val = l.val[:0]
 				continue
 			}
@@ -257,7 +257,7 @@ func (l *lex) lex(lval *yySymType) int {
 		return '>'
 	case '-':
 		if c = l.get(); c == '|' {
-			return INPIPE;
+			return INPIPE
 		}
 		l.unget()
 		// and fall to scanName
@@ -289,7 +289,7 @@ func (l *lex) scanQuote(q rune, lval *yySymType) int {
 func isPunct(c rune) bool {
 	// runes =$ found within a word do not break the word.
 	// they are tokens on their own only if they are found outside a word
-	return  unicode.IsSpace(c) || strings.ContainsRune("'←`<>{}&;[]|#^", c)
+	return unicode.IsSpace(c) || strings.ContainsRune("'←`<>{}&;[]|#^", c)
 }
 
 func (l *lex) scanName(lval *yySymType) int {

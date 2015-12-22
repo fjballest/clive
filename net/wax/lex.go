@@ -31,7 +31,7 @@ const (
 
 type tfn func() (tok, tfn)
 
-type lex  {
+type lex struct {
 	txt          []rune
 	p0, p1       int
 	err          error
@@ -159,11 +159,11 @@ func (l *lex) inside() (tok, tfn) {
 		l.err = fmt.Errorf("no closing '%c'", Chr)
 		return tErr, l.failed
 	}
-	for l.p1<len(l.txt) && unicode.IsSpace(l.txt[l.p1]) {
+	for l.p1 < len(l.txt) && unicode.IsSpace(l.txt[l.p1]) {
 		l.p1++
 	}
 	l.p0 = l.p1
-	for l.p1<len(l.txt) && l.txt[l.p1]!=Chr {
+	for l.p1 < len(l.txt) && l.txt[l.p1] != Chr {
 		r := l.txt[l.p1]
 		if l.p1 == l.p0 {
 			switch r {
@@ -178,7 +178,7 @@ func (l *lex) inside() (tok, tfn) {
 				return tRbra, l.inside
 			}
 		}
-		if r=='.' || r=='[' || r==']' || unicode.IsSpace(r) {
+		if r == '.' || r == '[' || r == ']' || unicode.IsSpace(r) {
 			if t, ok := kwords[l.val()]; ok {
 				return t, l.inside
 			}

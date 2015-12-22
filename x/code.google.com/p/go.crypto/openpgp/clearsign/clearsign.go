@@ -25,7 +25,7 @@ import (
 
 // A Block represents a clearsigned message. A signature on a Block can
 // be checked by passing Bytes into openpgp.CheckDetachedSignature.
-type Block  {
+type Block struct {
 	Headers          textproto.MIMEHeader // Optional message headers
 	Plaintext        []byte               // The original message text
 	Bytes            []byte               // The signed message
@@ -61,7 +61,7 @@ func getLine(data []byte) (line, rest []byte) {
 		j = i
 	} else {
 		j = i + 1
-		if i>0 && data[i-1]=='\r' {
+		if i > 0 && data[i-1] == '\r' {
 			i--
 		}
 	}
@@ -146,7 +146,7 @@ func Decode(data []byte) (b *Block, rest []byte) {
 		return nil, data
 	}
 	i += len(end)
-	for i<len(rest) && (rest[i]=='\r' || rest[i]=='\n') {
+	for i < len(rest) && (rest[i] == '\r' || rest[i] == '\n') {
 		i++
 	}
 	armored := rest[:i]
@@ -167,7 +167,7 @@ func Decode(data []byte) (b *Block, rest []byte) {
 //
 // When closed, an armored signature is created and written to complete the
 // message.
-type dashEscaper  {
+type dashEscaper struct {
 	buffered *bufio.Writer
 	h        hash.Hash
 	hashType crypto.Hash
@@ -215,7 +215,7 @@ func (d *dashEscaper) Write(data []byte) (n int, err error) {
 		} else {
 			// Any whitespace at the end of the line has to be removed so we
 			// buffer it until we find out whether there's more on this line.
-			if b==' ' || b=='\t' || b=='\r' {
+			if b == ' ' || b == '\t' || b == '\r' {
 				d.whitespace = append(d.whitespace, b)
 			} else if b == '\n' {
 				// We got a raw \n. Drop any trailing whitespace and write a

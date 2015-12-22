@@ -4,22 +4,22 @@
 package main
 
 import (
-	"clive/dbg"
+	"bytes"
 	"clive/app"
 	"clive/app/opt"
-	"os"
+	"clive/dbg"
+	"fmt"
 	"io"
 	"io/ioutil"
-	"fmt"
-	"bytes"
-	"strings"
+	"os"
 	"path"
+	"strings"
 )
 
 var (
 	opts  = opt.New("{cmd}")
 	dummy bool
-	ql = "/n/ql"
+	ql    = "/n/ql"
 )
 
 func main() {

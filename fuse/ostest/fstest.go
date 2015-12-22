@@ -1,11 +1,11 @@
 package ostest
 
 import (
-	"io/ioutil"
-	"os"
-	"math/rand"
 	"bytes"
 	"clive/zx"
+	"io/ioutil"
+	"math/rand"
+	"os"
 )
 
 type fsOp int
@@ -16,20 +16,20 @@ const (
 	oRemove
 	oWrite
 	oWstat
-	oRead	// Keep as the first read-only op
+	oRead // Keep as the first read-only op
 	oStat
 	oMax
 	oFirst = oCreate
 )
 
 const (
-	nOps = 200
-	maxSeek = 15*1024
+	nOps     = 200
+	maxSeek  = 15 * 1024
 	maxWrite = 1024
-	osdir = "/tmp/fstest_dir"
+	osdir    = "/tmp/fstest_dir"
 )
 
-var paths = []string {
+var paths = []string{
 	"/1",
 	"/a",
 	"/a/b",
@@ -38,11 +38,11 @@ var paths = []string {
 var calls = map[fsOp]func(Fataler, string, string) bool{
 	oCreate: fcreate,
 	oRemove: fremove,
-	oWrite: fwrite,
-	oMkdir: fmkdir,
-	oWstat: fwstat,
-	oRead: fread,
-	oStat: fstat,
+	oWrite:  fwrite,
+	oMkdir:  fmkdir,
+	oWstat:  fwstat,
+	oRead:   fread,
+	oStat:   fstat,
 }
 
 var counts = map[fsOp]int{}
@@ -57,14 +57,22 @@ func init() {
 
 func (o fsOp) String() string {
 	switch o {
-	case oCreate: return "create"
-	case oMkdir: return "mkdir"
-	case oRemove: return "remove"
-	case oWrite: return "write"
-	case oWstat: return "wstat"
-	case oRead: return "read"
-	case oStat: return "stat"
-	default: return "unknown"
+	case oCreate:
+		return "create"
+	case oMkdir:
+		return "mkdir"
+	case oRemove:
+		return "remove"
+	case oWrite:
+		return "write"
+	case oWstat:
+		return "wstat"
+	case oRead:
+		return "read"
+	case oStat:
+		return "stat"
+	default:
+		return "unknown"
 	}
 }
 
@@ -82,7 +90,7 @@ func fcreate(t Fataler, p1, p2 string) bool {
 	return true
 }
 
-func fremove(t Fataler, p1, p2  string) bool {
+func fremove(t Fataler, p1, p2 string) bool {
 	err1 := os.Remove(p1)
 	err2 := os.Remove(p2)
 	if err1 != nil && err2 != nil {
@@ -96,7 +104,7 @@ func fremove(t Fataler, p1, p2  string) bool {
 	return true
 }
 
-func fwrite(t Fataler, p1, p2  string) bool {
+func fwrite(t Fataler, p1, p2 string) bool {
 	fd1, err1 := os.OpenFile(p1, os.O_WRONLY, 0)
 	if fd1 != nil {
 		defer fd1.Close()
@@ -130,7 +138,7 @@ func fwrite(t Fataler, p1, p2  string) bool {
 	return true
 }
 
-func fmkdir(t Fataler, p1, p2  string) bool {
+func fmkdir(t Fataler, p1, p2 string) bool {
 	err1 := os.MkdirAll(p1, 0750)
 	err2 := os.MkdirAll(p2, 0750)
 	if err1 != nil && err2 != nil {
@@ -144,7 +152,7 @@ func fmkdir(t Fataler, p1, p2  string) bool {
 	return true
 }
 
-func fwstat(t Fataler, p1, p2  string) bool {
+func fwstat(t Fataler, p1, p2 string) bool {
 	err1 := os.Chmod(p1, 0760)
 	err2 := os.Chmod(p2, 0760)
 	if err1 != nil && err2 != nil {
@@ -158,7 +166,7 @@ func fwstat(t Fataler, p1, p2  string) bool {
 	return true
 }
 
-func fread(t Fataler, p1, p2  string) bool {
+func fread(t Fataler, p1, p2 string) bool {
 	fd1, err1 := os.Open(p1)
 	if fd1 != nil {
 		defer fd1.Close()
@@ -196,7 +204,7 @@ func fread(t Fataler, p1, p2  string) bool {
 	return true
 }
 
-func fstat(t Fataler, p1, p2  string) bool {
+func fstat(t Fataler, p1, p2 string) bool {
 	st1, err1 := os.Stat(p1)
 	st2, err2 := os.Stat(p2)
 	if err1 != nil && err2 != nil {
@@ -267,8 +275,8 @@ func AsAFs(t Fataler, dirs ...string) {
 	counts = map[fsOp]int{}
 	for i := 0; i < nops; i++ {
 		// Make an update operation
-		op := <- opc
-		if op == oRemove && i %2 == 0 {
+		op := <-opc
+		if op == oRemove && i%2 == 0 {
 			continue
 		}
 		fp := paths[i%len(paths)]
@@ -284,4 +292,3 @@ func AsAFs(t Fataler, dirs ...string) {
 	}
 	close(opc)
 }
-

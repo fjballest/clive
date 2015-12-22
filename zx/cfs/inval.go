@@ -1,14 +1,14 @@
 package cfs
 
 import (
-	"clive/zx"
-	"sync"
-	"errors"
-	"time"
 	"clive/dbg"
+	"clive/zx"
+	"errors"
 	"fmt"
-	"os"
 	"io"
+	"os"
+	"sync"
+	"time"
 )
 
 // invalidation protocol.
@@ -28,44 +28,44 @@ import (
 // just invalidate everything when /Chg is lost.
 
 // change from a client
-type cChg {
-	d zx.Dir
+type cChg struct {
+	d  zx.Dir
 	ci *zx.ClientInfo
 }
 
 // client reading /Chg
-type cli {
-	ci *zx.ClientInfo
-	c chan<- []byte
+type cli struct {
+	ci    *zx.ClientInfo
+	c     chan<- []byte
 	donec chan error
 }
 
-type invalQ {
+type invalQ struct {
 	Tag string
 	Dbg *bool
 
 	epoch string
 
-	rfs zx.Tree
+	rfs      zx.Tree
 	invalslk sync.Mutex
-	invals []zx.Dir	// invalidations from rfs
-	invalsc chan bool	// notify that we got invals
+	invals   []zx.Dir  // invalidations from rfs
+	invalsc  chan bool // notify that we got invals
 
 	clslk sync.Mutex
-	cls []cli		// list of clients
+	cls   []cli // list of clients
 
-	cchgs []cChg	// changes (we) made by our clients
+	cchgs   []cChg // changes (we) made by our clients
 	cchgslk sync.Mutex
-	cchgc chan bool	// to notify we made changes
+	cchgc   chan bool // to notify we made changes
 }
 
 // returns true if the caller must poll itself rfs for changes
 func newInvalQ(tag string, dbgf *bool, rfs zx.Tree) (*invalQ, bool) {
 	iq := &invalQ{
-		Tag: tag,
-		Dbg: dbgf,
-		cchgc: make(chan bool, 1),
-		rfs: rfs,
+		Tag:     tag,
+		Dbg:     dbgf,
+		cchgc:   make(chan bool, 1),
+		rfs:     rfs,
 		invalsc: make(chan bool, 1),
 	}
 	go iq.postinvalproc()
@@ -85,7 +85,7 @@ func newInvalQ(tag string, dbgf *bool, rfs zx.Tree) (*invalQ, bool) {
 
 func (q *invalQ) dprintf(fstr string, args ...interface{}) {
 	if q != nil && *q.Dbg {
-		fmt.Fprintf(os.Stderr, q.Tag+": " + fstr, args...)
+		fmt.Fprintf(os.Stderr, q.Tag+": "+fstr, args...)
 	}
 }
 
@@ -95,14 +95,14 @@ func (q *invalQ) dprintf(fstr string, args ...interface{}) {
 
 // tell the inval protocol that we changed a file due to a client operation
 // This will post invalidations to all clients reading /Chg other than the one making the call.
-func(f *cFile) changed() {
+func (f *cFile) changed() {
 	if f.t.ci == nil {
 		f.dprintf("changed\n")
 	} else {
 		f.dprintf("changed by %s\n", f.t.ci.Tag)
 	}
 	f.t.cchgslk.Lock()
-	f.t.cchgs = append(f.t.cchgs, cChg{ci: f.t.ci, d:f.d.Dup()})
+	f.t.cchgs = append(f.t.cchgs, cChg{ci: f.t.ci, d: f.d.Dup()})
 	f.t.cchgslk.Unlock()
 	select {
 	case f.t.cchgc <- true:
@@ -128,7 +128,7 @@ func (q *invalQ) postinvalproc() {
 	}
 }
 
-func (fs *Cfs) getChg(off, count int64, pred string, c chan<- []byte, cs *zx.CallStat) (int, error){
+func (fs *Cfs) getChg(off, count int64, pred string, c chan<- []byte, cs *zx.CallStat) (int, error) {
 	if fs.noinvalproto {
 		return 0, errors.New("inval proto disabled")
 	}
@@ -231,7 +231,7 @@ func (q *invalQ) getInvals() []zx.Dir {
 
 func (q *invalQ) newEpoch() {
 	ed := zx.Dir{}
-	ed.SetTime("x", time.Now())	// use the std zx.Dir fmt.
+	ed.SetTime("x", time.Now()) // use the std zx.Dir fmt.
 	q.epoch = ed["x"]
 	dbg.Warn("epoch %s\n", q.epoch)
 }
@@ -252,8 +252,8 @@ func (q *invalQ) getinvalproc(dc <-chan []byte) {
 	q.dprintf("getinvalproc started\n")
 	defer q.dprintf("getinvalproc done\n")
 	q.newEpoch()
-	for  {
-		inv, ok := <- dc
+	for {
+		inv, ok := <-dc
 		if !ok {
 			q.newEpoch()
 			err := cerror(dc)

@@ -16,7 +16,7 @@ type tok int
 const (
 	tNone    tok = 0
 	tNum     tok = NUM
-	tUint     tok = UINT
+	tUint    tok = UINT
 	tInt     tok = INT
 	tFunc    tok = FUNC
 	tLpar    tok = '('
@@ -41,16 +41,16 @@ const (
 	tAnd     tok = AND
 	tOr      tok = OR
 	tTime    tok = TIME
-	tSleft tok = SLEFT
-	tSright tok = SRIGHT
+	tSleft   tok = SLEFT
+	tSright  tok = SRIGHT
 )
 
-type lex  {
+type lex struct {
 	in     []rune
 	p0, p1 int
 
 	wasfunc, wasattr bool
-	result interface{}
+	result           interface{}
 }
 
 var (
@@ -256,7 +256,7 @@ func (l *lex) digits() {
 func (l *lex) brackets(end rune) {
 	for {
 		c := l.get()
-		if c==0 || c==end {
+		if c == 0 || c == end {
 			break
 		}
 	}
@@ -284,7 +284,7 @@ const seps = `<>=!()+-/*%^&|[]"`
 // ±[digits][.]digits[eE]±digits -> float
 func (l *lex) number() (tok, int64, uint64, float64) {
 	if c := l.get(); c == '0' {
-		if c = l.get(); c=='x' || c=='X' {
+		if c = l.get(); c == 'x' || c == 'X' {
 			l.hexdigits()
 		} else if c == 0 || unicode.IsSpace(c) || strings.ContainsRune(seps, c) {
 			return tUint, 0, 0, 0.0
@@ -297,12 +297,12 @@ func (l *lex) number() (tok, int64, uint64, float64) {
 		}
 		return tUint, 0, n, 0.0
 	}
-	if c := l.get(); c!=0 && c!='+' && c!='-' {
+	if c := l.get(); c != 0 && c != '+' && c != '-' {
 		l.unget()
 	}
 	l.digits()
 	c := l.get()
-	if x := unicode.ToLower(c); x=='k' || x=='m' || x=='g' || x == 'U' || x == 'u'{
+	if x := unicode.ToLower(c); x == 'k' || x == 'm' || x == 'g' || x == 'U' || x == 'u' {
 		l.unget()
 		n, err := strconv.ParseUint(l.val(), 0, 64)
 		l.get()
@@ -314,9 +314,9 @@ func (l *lex) number() (tok, int64, uint64, float64) {
 		case 'k':
 			n *= 1024
 		case 'm':
-			n *= 1024*1024
+			n *= 1024 * 1024
 		case 'g':
-			n *= 1024*1024*1024
+			n *= 1024 * 1024 * 1024
 		}
 		return tUint, 0, n, 0.0
 	}
@@ -331,12 +331,12 @@ func (l *lex) number() (tok, int64, uint64, float64) {
 		return tInt, n, 0, 0.0
 	}
 	l.digits()
-	if c := l.get(); c!='e' && c!='E' {
+	if c := l.get(); c != 'e' && c != 'E' {
 		if c != 0 {
 			l.unget()
 		}
 	} else {
-		if c := l.get(); c!='+' && c!='-' {
+		if c := l.get(); c != '+' && c != '-' {
 			if c != 0 {
 				l.unget()
 			}

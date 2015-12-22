@@ -15,8 +15,14 @@ import (
 //probably some kind of LRU scheme could be used,
 //then something has to be done to keep them alive while they are in the stack.
 
+var Uninit = &Ptr{}
+
 func popptr() *Ptr {
-	p := (*Ptr)(unsafe.Pointer(uintptr(pop64())))
+	pa := pop64()
+	if (pa & 1) != 0 {
+		return Uninit
+	}
+	p := (*Ptr)(unsafe.Pointer(uintptr(pa)))
 	return p
 }
 
@@ -77,11 +83,12 @@ func Ptrptr(pt *Ptr, p uintptr) {
 
 func ptrU64(p *byte) (u uint64) {
 	ps := sliceptr(uintptr(unsafe.Pointer(p)), p64sz)
-	ifc, err := pbytes.UnmarshalBinary(ps, uintptr(unsafe.Pointer(p)))
+	ifc, err := pbytes.UnmarshalBinary(ps, u)
 	if err != nil {
-		panic("ptrPtr marshal")
+		panic("ptrU64 marshal")
 	}
-	return ifc.(uint64)
+	u = ifc.(uint64)
+	return u
 }
 
 func ptrU32(p *byte) (u uint32) {

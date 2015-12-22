@@ -6,23 +6,22 @@
 package main
 
 import (
-	"time"
 	"clive/app"
 	"clive/app/opt"
-	"strings"
-	"strconv"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const (
 	Nerrs = 10
 )
 
-
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 }
@@ -38,32 +37,32 @@ type xCmd {
 //
 // This is append only and the last entry for name wins regarding the name
 
-type Frame {
-	Id int
-	N int
+type Frame struct {
+	Id    int
+	N     int
 	Start time.Time
-	Ival time.Duration
+	Ival  time.Duration
 	Title string
 
 	Tot int
 }
 
-type File {
-	Name string
+type File struct {
+	Name   string
 	Frames []*Frame
-	Ents []*Ent
+	Ents   []*Ent
 }
 
 const (
 	Before = '<'
-	After = '>'
-	Not = '!'
+	After  = '>'
+	Not    = '!'
 )
 
-type Ent {
+type Ent struct {
 	Order byte
-	Frid int
-	Who string
+	Frid  int
+	Who   string
 }
 
 func parseFrame(ln string) (*Frame, error) {
@@ -101,13 +100,13 @@ func parseEntry(ln string) (*Ent, error) {
 	if len(words) < 3 || words[0] == "" {
 		return nil, fmt.Errorf("bad entry '%s", ln)
 	}
-	
+
 	e := &Ent{}
 	switch words[0][0] {
 	case Before, After, Not:
 		e.Order = ln[0]
 	default:
-		return nil , fmt.Errorf("bad entry '%s'", ln)
+		return nil, fmt.Errorf("bad entry '%s'", ln)
 	}
 	if n, err := strconv.Atoi(words[1]); err != nil {
 		return nil, fmt.Errorf("bad entry '%s'", ln)
@@ -224,7 +223,7 @@ func (f *File) Dprint() {
 	app.Dprintf("file %s\n", f.Name)
 	for _, fr := range f.Frames {
 		app.Dprintf("%s\n%d ents\n", fr, fr.Tot)
-		
+
 	}
 	for _, e := range f.Ents {
 		app.Dprintf("%s\n", e)

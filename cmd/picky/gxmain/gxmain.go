@@ -20,7 +20,7 @@ func rainbow(g *gx.Graphics) {
 	last := 4
 	step := 1
 	height := 200
-	ht := 4*height
+	ht := 4 * height
 
 	g.SetPenWidth(200)
 	for r := byte(0); r < 128; r += byte(step) {
@@ -45,7 +45,7 @@ func rainbow(g *gx.Graphics) {
 
 }
 
-type Point  {
+type Point struct {
 	x, y int
 }
 
@@ -58,7 +58,7 @@ func (p Point) length() float32 {
 	return float32(math.Sqrt(float64(p.x*p.x + p.y*p.y)))
 }
 
-type Fpoint  {
+type Fpoint struct {
 	x, y float32
 }
 
@@ -147,7 +147,7 @@ func head(pts []Point) (h []Point, tail []Point) {
 }
 
 func avg(p1, p2 Point) Point {
-	return Point{(p1.x + p2.x)/2, (p1.y + p2.y)/2}
+	return Point{(p1.x + p2.x) / 2, (p1.y + p2.y) / 2}
 }
 
 const Nsmooth = 6
@@ -169,7 +169,7 @@ func trace(g *gx.Graphics, pts []Point) {
 		if len(hd) == 0 {
 			continue
 		}
-		if i>last && len(hd)>Nsmooth {
+		if i > last && len(hd) > Nsmooth {
 			hd = simplify(hd)
 			frozen := hd[:len(hd)-Nsmooth]
 			sm := hd[len(hd)-Nsmooth:]
@@ -213,7 +213,7 @@ func main() {
 	redraw(g, pts)
 	g.Flush()
 	for {
-		time.Sleep(50*time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 		k := g.ReadKeyPress()
 		if k != Nul {
 			fmt.Printf("Read Key %c\t||\t", k)
@@ -228,7 +228,7 @@ func main() {
 			paint = true
 		} else if m == 3 {
 			break
-		} else if m==0 && paint {
+		} else if m == 0 && paint {
 			paint = false
 			pts = append(pts, Point{-1, -1}) //insert stop
 		}

@@ -73,7 +73,7 @@ var magicCipherData = []byte{
 	0x6f, 0x75, 0x62, 0x74,
 }
 
-type hashed  {
+type hashed struct {
 	hash  []byte
 	salt  []byte
 	cost  int // allowed range is MinCost to MaxCost
@@ -221,7 +221,7 @@ func expensiveBlowfishSetup(key []byte, cost uint32, salt []byte) (*blowfish.Cip
 	}
 
 	var i, rounds uint64
-	rounds = 1<<cost
+	rounds = 1 << cost
 	for i = 0; i < rounds; i++ {
 		blowfish.ExpandKey(ckey, c)
 		blowfish.ExpandKey(csalt, c)
@@ -287,7 +287,7 @@ func (p *hashed) String() string {
 }
 
 func checkCost(cost int) error {
-	if cost<MinCost || cost>MaxCost {
+	if cost < MinCost || cost > MaxCost {
 		return InvalidCostError(cost)
 	}
 	return nil

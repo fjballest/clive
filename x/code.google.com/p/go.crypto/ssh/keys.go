@@ -95,7 +95,7 @@ func ParseAuthorizedKey(in []byte) (out PublicKey, comment string, options []str
 		}
 
 		in = bytes.TrimSpace(in)
-		if len(in)==0 || in[0]=='#' {
+		if len(in) == 0 || in[0] == '#' {
 			in = rest
 			continue
 		}
@@ -117,8 +117,8 @@ func ParseAuthorizedKey(in []byte) (out PublicKey, comment string, options []str
 		var candidateOptions []string
 		optionStart := 0
 		for i, b = range in {
-			isEnd := !inQuote && (b==' ' || b=='\t')
-			if (b==',' && !inQuote) || isEnd {
+			isEnd := !inQuote && (b == ' ' || b == '\t')
+			if (b == ',' && !inQuote) || isEnd {
 				if i-optionStart > 0 {
 					candidateOptions = append(candidateOptions, string(in[optionStart:i]))
 				}
@@ -127,11 +127,11 @@ func ParseAuthorizedKey(in []byte) (out PublicKey, comment string, options []str
 			if isEnd {
 				break
 			}
-			if b=='"' && (i==0 || (i>0 && in[i-1]!='\\')) {
+			if b == '"' && (i == 0 || (i > 0 && in[i-1] != '\\')) {
 				inQuote = !inQuote
 			}
 		}
-		for i<len(in) && (in[i]==' ' || in[i]=='\t') {
+		for i < len(in) && (in[i] == ' ' || in[i] == '\t') {
 			i++
 		}
 		if i == len(in) {
@@ -233,7 +233,7 @@ func parseRSA(in []byte) (out PublicKey, rest []byte, err error) {
 		return nil, nil, errors.New("ssh: exponent too large")
 	}
 	e := w.E.Int64()
-	if e<3 || e&1==0 {
+	if e < 3 || e&1 == 0 {
 		return nil, nil, errors.New("ssh: incorrect exponent")
 	}
 
@@ -267,7 +267,7 @@ func (r *rsaPublicKey) Verify(data []byte, sig *Signature) error {
 	return rsa.VerifyPKCS1v15((*rsa.PublicKey)(r), crypto.SHA1, digest, sig.Blob)
 }
 
-type rsaPrivateKey  {
+type rsaPrivateKey struct {
 	*rsa.PrivateKey
 }
 
@@ -355,7 +355,7 @@ func (k *dsaPublicKey) Verify(data []byte, sig *Signature) error {
 	return errors.New("ssh: signature did not verify")
 }
 
-type dsaPrivateKey  {
+type dsaPrivateKey struct {
 	*dsa.PrivateKey
 }
 
@@ -404,7 +404,7 @@ func (key *ecdsaPublicKey) nistID() string {
 }
 
 func supportedEllipticCurve(curve elliptic.Curve) bool {
-	return curve==elliptic.P256() || curve==elliptic.P384() || curve==elliptic.P521()
+	return curve == elliptic.P256() || curve == elliptic.P384() || curve == elliptic.P521()
 }
 
 // ecHash returns the hash to match the given elliptic curve, see RFC
@@ -446,7 +446,7 @@ func parseECDSA(in []byte) (out PublicKey, rest []byte, err error) {
 	}
 
 	key.X, key.Y = elliptic.Unmarshal(key.Curve, keyBytes)
-	if key.X==nil || key.Y==nil {
+	if key.X == nil || key.Y == nil {
 		return nil, nil, errors.New("ssh: invalid curve point")
 	}
 	return (*ecdsaPublicKey)(key), in, nil
@@ -496,7 +496,7 @@ func (key *ecdsaPublicKey) Verify(data []byte, sig *Signature) error {
 	return errors.New("ssh: signature did not verify")
 }
 
-type ecdsaPrivateKey  {
+type ecdsaPrivateKey struct {
 	*ecdsa.PrivateKey
 }
 

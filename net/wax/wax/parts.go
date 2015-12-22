@@ -19,14 +19,14 @@ func (k Kind) String() string {
 	return kname[int(k)]
 }
 
-type tree  {
+type tree struct {
 	Name, Path string
 	unexported int
 	Sync       Kind "Synchronization kind"
 	Peers      []string
 }
 
-type repl  {
+type repl struct {
 	Debug bool
 	Trees []*tree "Known trees"
 }

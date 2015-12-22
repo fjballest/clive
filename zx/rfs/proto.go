@@ -31,7 +31,7 @@ const (
 /*
 	Messages used in the zx protocol used to talk to a remote ns.Finder/zx.RWTree.
 */
-type Msg  {
+type Msg struct {
 	Op         MsgId
 	Rid        string // All requests (but for Move)
 	Off, Count int64  // Get
@@ -76,12 +76,12 @@ func (m *Msg) Pack() []byte {
 	buf := make([]byte, 0, 100)
 	var n [8]byte
 
-	if m.Op<Tmin || m.Op>=Tend {
+	if m.Op < Tmin || m.Op >= Tend {
 		dbg.Fatal("unknown msg type %d", m.Op)
 	}
 	buf = append(buf, byte(m.Op))
 	buf = nchan.PutString(buf, m.Rid)
-	if m.Op==Tget || m.Op==Tput {
+	if m.Op == Tget || m.Op == Tput {
 		binary.LittleEndian.PutUint64(n[0:], uint64(m.Off))
 		buf = append(buf, n[:8]...)
 	}
@@ -89,16 +89,16 @@ func (m *Msg) Pack() []byte {
 		binary.LittleEndian.PutUint64(n[0:], uint64(m.Count))
 		buf = append(buf, n[:8]...)
 	}
-	if m.Op==Tput || m.Op==Tmkdir || m.Op==Twstat {
+	if m.Op == Tput || m.Op == Tmkdir || m.Op == Twstat {
 		buf = append(buf, m.D.Pack()...)
 	}
 	if m.Op == Tmove {
 		buf = nchan.PutString(buf, m.To)
 	}
-	if m.Op==Tfind || m.Op==Tget || m.Op==Tput || m.Op==Tfindget {
+	if m.Op == Tfind || m.Op == Tget || m.Op == Tput || m.Op == Tfindget {
 		buf = nchan.PutString(buf, m.Pred)
 	}
-	if m.Op==Tfind || m.Op==Tfindget {
+	if m.Op == Tfind || m.Op == Tfindget {
 		buf = nchan.PutString(buf, m.Spref)
 		buf = nchan.PutString(buf, m.Dpref)
 		binary.LittleEndian.PutUint64(n[0:], uint64(m.Depth))
@@ -113,22 +113,22 @@ func (m *Msg) String() string {
 		return "<nil msg>"
 	}
 	fmt.Fprintf(&buf, "%s rid '%s'", m.Op, m.Rid)
-	if m.Op==Tget || m.Op==Tput {
+	if m.Op == Tget || m.Op == Tput {
 		fmt.Fprintf(&buf, " off %d", m.Off)
 	}
 	if m.Op == Tget {
 		fmt.Fprintf(&buf, " count %d", m.Count)
 	}
-	if m.Op==Tput || m.Op==Tmkdir || m.Op==Twstat {
+	if m.Op == Tput || m.Op == Tmkdir || m.Op == Twstat {
 		fmt.Fprintf(&buf, " stat <%s> ", m.D)
 	}
 	if m.Op == Tmove {
 		fmt.Fprintf(&buf, " to '%s'", m.To)
 	}
-	if m.Op==Tfind || m.Op==Tget || m.Op==Tput || m.Op==Tfindget {
+	if m.Op == Tfind || m.Op == Tget || m.Op == Tput || m.Op == Tfindget {
 		fmt.Fprintf(&buf, " pred '%s'", m.Pred)
 	}
-	if m.Op==Tfind || m.Op==Tfindget {
+	if m.Op == Tfind || m.Op == Tfindget {
 		fmt.Fprintf(&buf, " spref '%s' dpref '%s' depth %d", m.Spref, m.Dpref, m.Depth)
 	}
 	return buf.String()
@@ -142,7 +142,7 @@ func UnpackMsg(buf []byte) (*Msg, error) {
 		return nil, errors.New("short msg")
 	}
 	m.Op = MsgId(buf[0])
-	if m.Op<Tmin || m.Op>=Tend {
+	if m.Op < Tmin || m.Op >= Tend {
 		return nil, fmt.Errorf("unknown msg type %d", buf[0])
 	}
 	buf = buf[1:]
@@ -151,7 +151,7 @@ func UnpackMsg(buf []byte) (*Msg, error) {
 	if err != nil {
 		return nil, err
 	}
-	if m.Op==Tget || m.Op==Tput {
+	if m.Op == Tget || m.Op == Tput {
 		if len(buf) < 8 {
 			return nil, errors.New("short msg")
 		}
@@ -165,7 +165,7 @@ func UnpackMsg(buf []byte) (*Msg, error) {
 		m.Count = int64(binary.LittleEndian.Uint64(buf[0:]))
 		buf = buf[8:]
 	}
-	if m.Op==Tput || m.Op==Tmkdir || m.Op==Twstat {
+	if m.Op == Tput || m.Op == Tmkdir || m.Op == Twstat {
 		m.D, buf, err = zx.UnpackDir(buf)
 		if err != nil {
 			return nil, err
@@ -177,13 +177,13 @@ func UnpackMsg(buf []byte) (*Msg, error) {
 			return nil, err
 		}
 	}
-	if m.Op==Tfind || m.Op==Tget || m.Op==Tput || m.Op==Tfindget {
+	if m.Op == Tfind || m.Op == Tget || m.Op == Tput || m.Op == Tfindget {
 		m.Pred, buf, err = nchan.GetString(buf)
 		if err != nil {
 			return nil, err
 		}
 	}
-	if m.Op==Tfind || m.Op==Tfindget {
+	if m.Op == Tfind || m.Op == Tfindget {
 		m.Spref, buf, err = nchan.GetString(buf)
 		if err != nil {
 			return nil, err

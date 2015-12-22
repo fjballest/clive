@@ -51,11 +51,11 @@ import (
 	"clive/net/ds"
 	"clive/zx"
 	ncfs "clive/zx/cfs"
-	cfs "clive/zx/ocfs"
-	"clive/zx/mfs"
 	"clive/zx/lfs"
-	"clive/zx/zxfs"
+	"clive/zx/mfs"
+	cfs "clive/zx/ocfs"
 	"clive/zx/rfs"
+	"clive/zx/zxfs"
 	"fmt"
 	"io"
 	"os"
@@ -71,8 +71,8 @@ var (
 	zdebug       bool
 	delayed      bool
 	nocaching    bool
-	mfscfs	bool
-	lfsdir	string
+	mfscfs       bool
+	lfsdir       string
 	xaddr        string
 	opts         = opt.New("addr|dir [mntdir] & ***DEPRECATED***")
 	dprintf      = dbg.FlagPrintf(os.Stderr, &zxfs.Debug)
@@ -80,7 +80,7 @@ var (
 
 func serveFor(t zx.Tree, c nchan.Conn) {
 	ai, err := auth.AtServer(c, "", "zx", "finder")
-	if err!=nil && err!=auth.ErrDisabled {
+	if err != nil && err != auth.ErrDisabled {
 		dbg.Warn("auth %s: %s\n", c.Tag, err)
 		close(c.In, err)
 		close(c.Out, err)
@@ -195,7 +195,6 @@ func lfscache(t zx.Tree, fn func()) (zx.Tree, func(), error) {
 	}
 	return xfs, fn, nil
 }
-
 
 func mklfs(path string) (zx.Tree, *zx.IOstats, error) {
 	ronly := rflag && (nocaching || delayed)

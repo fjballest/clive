@@ -9,7 +9,7 @@ import (
 )
 
 // Writes gathers data from FUSE Write calls.
-type Writes  {
+type Writes struct {
 	buf Buffer
 }
 
@@ -30,7 +30,7 @@ func (w *Writes) RecordedWriteData() []byte {
 }
 
 // Counter records number of times a thing has occurred.
-type Counter  {
+type Counter struct {
 	count uint32
 }
 
@@ -43,7 +43,7 @@ func (r *Counter) Count() uint32 {
 }
 
 // MarkRecorder records whether a thing has occurred.
-type MarkRecorder  {
+type MarkRecorder struct {
 	count Counter
 }
 
@@ -56,7 +56,7 @@ func (r *MarkRecorder) Recorded() bool {
 }
 
 // Flushes notes whether a FUSE Flush call has been seen.
-type Flushes  {
+type Flushes struct {
 	rec MarkRecorder
 }
 
@@ -71,7 +71,7 @@ func (r *Flushes) RecordedFlush() bool {
 	return r.rec.Recorded()
 }
 
-type Recorder  {
+type Recorder struct {
 	mu  sync.Mutex
 	val interface{}
 }
@@ -91,7 +91,7 @@ func (r *Recorder) Recorded() interface{} {
 	return val
 }
 
-type RequestRecorder  {
+type RequestRecorder struct {
 	rec Recorder
 }
 
@@ -114,7 +114,7 @@ func (r *RequestRecorder) Recorded() fuse.Request {
 }
 
 // Setattrs records a Setattr request and its fields.
-type Setattrs  {
+type Setattrs struct {
 	rec RequestRecorder
 }
 
@@ -135,7 +135,7 @@ func (r *Setattrs) RecordedSetattr() fuse.SetattrRequest {
 }
 
 // Fsyncs records an Fsync request and its fields.
-type Fsyncs  {
+type Fsyncs struct {
 	rec RequestRecorder
 }
 
@@ -156,7 +156,7 @@ func (r *Fsyncs) RecordedFsync() fuse.FsyncRequest {
 }
 
 // Mkdirs records a Mkdir request and its fields.
-type Mkdirs  {
+type Mkdirs struct {
 	rec RequestRecorder
 }
 
@@ -181,7 +181,7 @@ func (r *Mkdirs) RecordedMkdir() fuse.MkdirRequest {
 }
 
 // Symlinks records a Symlink request and its fields.
-type Symlinks  {
+type Symlinks struct {
 	rec RequestRecorder
 }
 
@@ -206,7 +206,7 @@ func (r *Symlinks) RecordedSymlink() fuse.SymlinkRequest {
 }
 
 // Links records a Link request and its fields.
-type Links  {
+type Links struct {
 	rec RequestRecorder
 }
 
@@ -231,7 +231,7 @@ func (r *Links) RecordedLink() fuse.LinkRequest {
 }
 
 // Mknods records a Mknod request and its fields.
-type Mknods  {
+type Mknods struct {
 	rec RequestRecorder
 }
 
@@ -256,7 +256,7 @@ func (r *Mknods) RecordedMknod() fuse.MknodRequest {
 }
 
 // Opens records a Open request and its fields.
-type Opens  {
+type Opens struct {
 	rec RequestRecorder
 }
 
@@ -281,7 +281,7 @@ func (r *Opens) RecordedOpen() fuse.OpenRequest {
 }
 
 // Getxattrs records a Getxattr request and its fields.
-type Getxattrs  {
+type Getxattrs struct {
 	rec RequestRecorder
 }
 
@@ -306,7 +306,7 @@ func (r *Getxattrs) RecordedGetxattr() fuse.GetxattrRequest {
 }
 
 // Listxattrs records a Listxattr request and its fields.
-type Listxattrs  {
+type Listxattrs struct {
 	rec RequestRecorder
 }
 
@@ -331,7 +331,7 @@ func (r *Listxattrs) RecordedListxattr() fuse.ListxattrRequest {
 }
 
 // Setxattrs records a Setxattr request and its fields.
-type Setxattrs  {
+type Setxattrs struct {
 	rec RequestRecorder
 }
 
@@ -356,7 +356,7 @@ func (r *Setxattrs) RecordedSetxattr() fuse.SetxattrRequest {
 }
 
 // Removexattrs records a Removexattr request and its fields.
-type Removexattrs  {
+type Removexattrs struct {
 	rec RequestRecorder
 }
 

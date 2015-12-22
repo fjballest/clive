@@ -113,7 +113,7 @@ func (z *Cfs) getctl(off, count int64, c chan []byte, cs *zx.CallStat) (int, int
 	sts := buf.String()
 	n := int(count)
 	resp := []byte(sts)
-	if n>len(resp) || n<0 {
+	if n > len(resp) || n < 0 {
 		n = len(resp)
 	}
 	c <- resp[:n]
@@ -322,7 +322,7 @@ Loop:
 		zd.Lock()
 		zd.cprintf("oldmode", zd.d["mode"])
 		mchg, dchg, err := zd.stated("update", d, nil)
-		if mchg || dchg || err!=nil {
+		if mchg || dchg || err != nil {
 			z.changed(zd)
 		}
 		zd.Unlock()
@@ -337,7 +337,7 @@ func (z *Cfs) invalProc(getc <-chan []byte) {
 	for {
 		for msg := range getc {
 			d, left, err := zx.UnpackDir(msg)
-			if err==nil && len(left)>0 {
+			if err == nil && len(left) > 0 {
 				err = errors.New("bytes left in dir msg")
 			}
 			if err != nil {

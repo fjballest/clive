@@ -4,26 +4,26 @@
 package cnt
 
 import (
-	"clive/dbg"
 	"clive/app"
 	"clive/app/opt"
+	"clive/dbg"
+	"clive/zx"
 	"unicode"
 	"unicode/utf8"
-	"clive/zx"
 )
 
-type cnt  {
+type cnt struct {
 	name string
 
 	msgs, lines, words, runes, bytes int64
 }
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
 	lflag, wflag, rflag, bflag, nflag, mflag bool
-	tots    []*cnt
+	tots                                     []*cnt
 }
 
 func isword(r rune) bool {
@@ -167,7 +167,7 @@ func Run() {
 		tot.runes += x.tots[i].runes
 		tot.bytes += x.tots[i].bytes
 	}
-	if len(x.tots)>1 || x.nflag {
+	if len(x.tots) > 1 || x.nflag {
 		x.report(tot)
 	}
 	app.Exits(cerror(in))

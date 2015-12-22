@@ -23,7 +23,7 @@ import (
 )
 
 // State contains the state of a terminal.
-type State  {
+type State struct {
 	termios syscall.Termios
 }
 

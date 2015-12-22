@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-type xCmd  {
+type xCmd struct {
 	quiet bool
 	*cmd.Ctx
 	*opt.Flags
@@ -87,7 +87,7 @@ func Run(c cmd.Ctx) (err error) {
 		x.Warn("%s", err)
 		sts = errors.New("errors")
 	}
-	if x, ok := result.(bool); sts==nil && ok {
+	if x, ok := result.(bool); sts == nil && ok {
 		if x {
 			return nil
 		}

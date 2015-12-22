@@ -31,31 +31,31 @@ const (
 	ocspUnauthorized  = 5
 )
 
-type certID  {
+type certID struct {
 	HashAlgorithm pkix.AlgorithmIdentifier
 	NameHash      []byte
 	IssuerKeyHash []byte
 	SerialNumber  *big.Int
 }
 
-type responseASN1  {
+type responseASN1 struct {
 	Status   asn1.Enumerated
 	Response responseBytes `asn1:"explicit,tag:0"`
 }
 
-type responseBytes  {
+type responseBytes struct {
 	ResponseType asn1.ObjectIdentifier
 	Response     []byte
 }
 
-type basicResponse  {
+type basicResponse struct {
 	TBSResponseData    responseData
 	SignatureAlgorithm pkix.AlgorithmIdentifier
 	Signature          asn1.BitString
 	Certificates       []asn1.RawValue `asn1:"explicit,tag:0,optional"`
 }
 
-type responseData  {
+type responseData struct {
 	Raw           asn1.RawContent
 	Version       int              `asn1:"optional,default:1,explicit,tag:0"`
 	RequestorName pkix.RDNSequence `asn1:"optional,explicit,tag:1"`
@@ -64,7 +64,7 @@ type responseData  {
 	Responses     []singleResponse
 }
 
-type singleResponse  {
+type singleResponse struct {
 	CertID     certID
 	Good       asn1.Flag   `asn1:"explicit,tag:0,optional"`
 	Revoked    revokedInfo `asn1:"explicit,tag:1,optional"`
@@ -73,7 +73,7 @@ type singleResponse  {
 	NextUpdate time.Time `asn1:"explicit,tag:0,optional"`
 }
 
-type revokedInfo  {
+type revokedInfo struct {
 	RevocationTime time.Time
 	Reason         int `asn1:"explicit,tag:0,optional"`
 }
@@ -139,7 +139,7 @@ const (
 )
 
 // Response represents an OCSP response. See RFC 2560.
-type Response  {
+type Response struct {
 	// Status is one of {Good, Revoked, Unknown, ServerFailed}
 	Status                                        int
 	SerialNumber                                  *big.Int
@@ -256,28 +256,28 @@ func ParseResponse(bytes []byte, issuer *x509.Certificate) (*Response, error) {
 }
 
 // https://tools.ietf.org/html/rfc2560#section-4.1.1
-type ocspRequest  {
+type ocspRequest struct {
 	TBSRequest tbsRequest
 }
 
-type tbsRequest  {
+type tbsRequest struct {
 	Version     int `asn1:"explicit,tag:0,default:0"`
 	RequestList []request
 }
 
-type request  {
+type request struct {
 	Cert certID
 }
 
 // RequestOptions contains options for constructing OCSP requests.
-type RequestOptions  {
+type RequestOptions struct {
 	// Hash contains the hash function that should be used when
 	// constructing the OCSP request. If zero, SHA-1 will be used.
 	Hash crypto.Hash
 }
 
 func (opts *RequestOptions) hash() crypto.Hash {
-	if opts==nil || opts.Hash==0 {
+	if opts == nil || opts.Hash == 0 {
 		// SHA-1 is nearly universally used in OCSP.
 		return crypto.SHA1
 	}

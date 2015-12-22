@@ -4,29 +4,29 @@
 package bufs
 
 import (
-	"io"
-	"sync"
-	"sort"
-	"errors"
 	"clive/dbg"
-	"os"
 	"crypto/sha1"
+	"errors"
 	"fmt"
+	"io"
+	"os"
+	"sort"
+	"sync"
 )
 
 // Popular sizes.
 const (
 	KiB = 1024
-	MiB = KiB*1024
-	GiB = MiB*1024
-	TiB = GiB*1024
+	MiB = KiB * 1024
+	GiB = MiB * 1024
+	TiB = GiB * 1024
 )
 
 // for holes, data is nil.
-type block  {
+type block struct {
 	off  int
 	data []byte
-	n int	// len(data) or size for holes.
+	n    int // len(data) or size for holes.
 }
 
 /*
@@ -36,18 +36,18 @@ type block  {
 	a string or the array of bytes might run out of memory quickly.
 	if Mutex is allocated, it can be used by multiple procs safely.
 */
-type Blocks  {
-	blks  []*block
+type Blocks struct {
+	blks []*block
 	*sync.Mutex
 }
 
 // Like an open fd for a block, with its own offset.
-type BlockFd {
+type BlockFd struct {
 	*Blocks
-	seqrw bool // set if sequential read/write is going on
-	rwoff int	// next read off (if seqrd)
-	rwi int	// next blk idx (if seqrd)
-	rwboff int	// next blk off (if seqrd)
+	seqrw  bool // set if sequential read/write is going on
+	rwoff  int  // next read off (if seqrd)
+	rwi    int  // next blk idx (if seqrd)
+	rwboff int  // next blk off (if seqrd)
 }
 
 const nBlockBufs = 1024
@@ -55,13 +55,13 @@ const nBlockBufs = 1024
 var (
 	// Default block size for Blocks in bytes
 	// Kept as a var for testing.
-	Size = 16*KiB
+	Size = 16 * KiB
 
 	// Max number of cached buffers.
 	// Change only at init time.
 	Count = 128
 
-	debug bool
+	debug   bool
 	dprintf = dbg.FlagPrintf(os.Stdout, &debug)
 
 	blkbufc = make(chan []byte, nBlockBufs)
@@ -127,7 +127,7 @@ func (b *Blocks) Len() int {
 }
 
 func (b *Blocks) len() int {
-	if b==nil || len(b.blks)==0 {
+	if b == nil || len(b.blks) == 0 {
 		return 0
 	}
 	last := b.blks[len(b.blks)-1]
@@ -176,7 +176,7 @@ func (b *Blocks) Truncate(n int64) error {
 func (b *Blocks) grow(nz int) error {
 	if len(b.blks) > 0 {
 		last := b.blks[len(b.blks)-1]
-		if last.data == nil  {
+		if last.data == nil {
 			if last.n < Size {
 				lz := Size - last.n
 				if lz > nz {
@@ -187,11 +187,11 @@ func (b *Blocks) grow(nz int) error {
 			}
 		} else {
 			lz := nz
-			if lz > cap(last.data) - last.n {
+			if lz > cap(last.data)-last.n {
 				lz = cap(last.data) - last.n
 			}
 			if lz > 0 {
-				last.data=last.data[:len(last.data)+lz]
+				last.data = last.data[:len(last.data)+lz]
 				last.n += lz
 				nz -= lz
 			}
@@ -200,7 +200,7 @@ func (b *Blocks) grow(nz int) error {
 	// grow: now add holes for the extra nz bytes (not a single huge hole)
 	off := b.len()
 	for cnt := 0; cnt < nz; {
-		hsz := nz-cnt
+		hsz := nz - cnt
 		if hsz > Size {
 			hsz = Size
 		}
@@ -211,7 +211,7 @@ func (b *Blocks) grow(nz int) error {
 	return nil
 }
 
-func recycle (blks []*block) {
+func recycle(blks []*block) {
 	for _, b := range blks {
 		if !Recycle(b.data) {
 			break
@@ -234,13 +234,12 @@ func Clear(b []byte) {
 	}
 }
 
-
 /*
 	Return a new buffer.
 */
 func New() []byte {
 	select {
-	case b := <- blkbufc:
+	case b := <-blkbufc:
 		b = b[:cap(b)]
 		Clear(b)
 		if len(b) < Size {
@@ -274,11 +273,11 @@ func (b *Blocks) truncate(n int) error {
 	if n == sz {
 		return nil
 	}
-	if b==nil {
+	if b == nil {
 		return errors.New("offset out of range in truncate")
 	}
-	if n >=sz {
-		return b.grow(n-sz)
+	if n >= sz {
+		return b.grow(n - sz)
 	}
 	nb, boff := b.seek(n)
 	if boff == 0 {
@@ -294,10 +293,12 @@ func (b *Blocks) truncate(n int) error {
 	if blk.data != nil {
 		// we always assume that new data is zeroed, so we must
 		// clear when we shrink.
-		for i := blk.n; i < old; i++ { blk.data[i] = 0 }
+		for i := blk.n; i < old; i++ {
+			blk.data[i] = 0
+		}
 		blk.data = blk.data[:blk.n]
 	}
-	return nil	
+	return nil
 }
 
 func bufsz(sz int) int {
@@ -341,7 +342,7 @@ func (b *Blocks) write(p []byte) (n int, err error) {
 			if left > nw {
 				left = nw
 			}
-			if left  > 0 {
+			if left > 0 {
 				last.data = last.data[:sz+left]
 				nc := copy(last.data[sz:], p)
 				last.n += nc
@@ -398,7 +399,7 @@ func (b *Blocks) WriteAt(p []byte, at int64) (n int, err error) {
 		for nwr > 0 {
 			blk := b.blks[nb]
 			nbwr := nwr
-			if nbwr > blk.n - boff {
+			if nbwr > blk.n-boff {
 				nbwr = blk.n - boff
 			}
 			if blk.data == nil {
@@ -445,7 +446,7 @@ func (b *BlockFd) Read(p []byte) (int, error) {
 		b.Lock()
 		defer b.Unlock()
 	}
-	n , err := b.read(p)
+	n, err := b.read(p)
 	if debug && n > 0 {
 		dprintf("read [%d] -> [%d]{%s}\n", len(p), n, dbg.HexStr(p[:n], 20))
 	} else if debug {
@@ -504,7 +505,7 @@ func (b *BlockFd) read(p []byte) (int, error) {
 	for tot < len(p) && b.rwi < len(b.blks) {
 		blk := b.blks[b.rwi]
 		nr := len(p) - tot
-		if nr > blk.n - b.rwboff {
+		if nr > blk.n-b.rwboff {
 			nr = blk.n - b.rwboff
 		}
 		if blk.data == nil {
@@ -666,7 +667,7 @@ func (b *Blocks) SendTo(soff, scount int64, c chan<- []byte) (int64, int, error)
 	for tot < count && nb < len(b.blks) {
 		blk := b.blks[nb]
 		n := count - tot
-		if n > blk.n - boff {
+		if n > blk.n-boff {
 			n = blk.n - boff
 		}
 		if blk.data == nil {
@@ -691,7 +692,7 @@ func (b *Blocks) SendTo(soff, scount int64, c chan<- []byte) (int64, int, error)
 
 /*
  * Return a SHA1 sum for the blocks
-*/
+ */
 func (b *Blocks) Sum() string {
 	h := sha1.New()
 	for _, blk := range b.blks {

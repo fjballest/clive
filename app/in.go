@@ -1,12 +1,12 @@
 package app
 
 import (
-	"os"
-	"io"
-	"clive/app/tty"
 	"bytes"
-	"unicode/utf8"
+	"clive/app/tty"
 	"clive/dbg"
+	"io"
+	"os"
+	"unicode/utf8"
 )
 
 type Prompter interface {
@@ -41,11 +41,11 @@ func rdlines(p Prompter) chan interface{} {
 		inw.Close()
 	}()
 	/*
-	stop := func(sig string) bool {
-		close(c, "interrupted")
-		inw.Close()
-		return false
-	}
+		stop := func(sig string) bool {
+			close(c, "interrupted")
+			inw.Close()
+			return false
+		}
 	*/
 	stop := func(sig string) bool {
 		go func() {
@@ -147,7 +147,7 @@ func Lines(c chan interface{}) chan interface{} {
 				d = nb
 				saved = nil
 			}
-			for len(d)>0 && utf8.FullRune(d) {
+			for len(d) > 0 && utf8.FullRune(d) {
 				r, n := utf8.DecodeRune(d)
 				d = d[n:]
 				buf.WriteRune(r)
@@ -173,8 +173,8 @@ func Lines(c chan interface{}) chan interface{} {
 	return rc
 }
 
-type uxrd {
-	inc chan interface{}
+type uxrd struct {
+	inc  chan interface{}
 	left []byte
 }
 
@@ -191,7 +191,7 @@ func (u *uxrd) Read(buf []byte) (int, error) {
 			if err == nil {
 				err = io.EOF
 			}
-			return 0,err
+			return 0, err
 		}
 		if e, ok := x.(error); ok {
 			return 0, e

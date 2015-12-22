@@ -84,7 +84,6 @@ const yyErrCode = 2
 const yyMaxDepth = 200
 
 //line parse.y:173
-
 var funcs = map[string]func(float64) float64{
 	"abs":   math.Abs,
 	"acos":  math.Acos,

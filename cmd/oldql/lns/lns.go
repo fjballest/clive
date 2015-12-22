@@ -16,11 +16,11 @@ import (
 	"strings"
 )
 
-type addr  {
+type addr struct {
 	from, to int
 }
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	debug           bool
@@ -54,25 +54,25 @@ func (x *xCmd) parseRanges() error {
 		}
 		a := addr{from, to}
 		x.addrs = append(x.addrs, a)
-		if from>0 && x.nhd<from {
+		if from > 0 && x.nhd < from {
 			x.nhd = from
 		}
-		if to>0 && x.nhd<to {
+		if to > 0 && x.nhd < to {
 			x.nhd = to
 		}
-		if from<0 && x.ntl< -from {
+		if from < 0 && x.ntl < -from {
 			x.ntl = -from
 		}
-		if to<0 && x.ntl< -to {
+		if to < 0 && x.ntl < -to {
 			x.ntl = -to
 		}
-		if from>0 && to<0 {
+		if from > 0 && to < 0 {
 			x.nfrom = from
 		}
-		if from<0 && to>0 {
+		if from < 0 && to > 0 {
 			x.nfrom = to
 		}
-		if from==1 && to==-1 {
+		if from == 1 && to == -1 {
 			x.all = true
 		}
 	}
@@ -80,20 +80,20 @@ func (x *xCmd) parseRanges() error {
 }
 
 func (a addr) match(lno, nln int) bool {
-	if nln==0 && (a.from<0 || a.to<0) { // need to wait for nlines
+	if nln == 0 && (a.from < 0 || a.to < 0) { // need to wait for nlines
 		return false
 	}
-	if a.from>0 && lno<a.from {
+	if a.from > 0 && lno < a.from {
 		return false
 	}
-	if a.to>0 && lno>a.to {
+	if a.to > 0 && lno > a.to {
 		return false
 	}
 	neglno := nln - lno + 1
-	if a.from<0 && neglno>-a.from {
+	if a.from < 0 && neglno > -a.from {
 		return false
 	}
-	if a.to<0 && neglno< -a.to {
+	if a.to < 0 && neglno < -a.to {
 		return false
 	}
 	return true
@@ -130,7 +130,7 @@ func (x *xCmd) RunFile(d zx.Dir, dc <-chan []byte) error {
 			}
 			continue
 		}
-		if x.ntl==0 && x.nfrom==0 && x.nhd>0 && nln>x.nhd {
+		if x.ntl == 0 && x.nfrom == 0 && x.nhd > 0 && nln > x.nhd {
 			close(rc, "done")
 			return nil
 		}
@@ -146,11 +146,11 @@ func (x *xCmd) RunFile(d zx.Dir, dc <-chan []byte) error {
 				break
 			}
 		}
-		if nln>=x.nfrom || x.ntl>0 {
+		if nln >= x.nfrom || x.ntl > 0 {
 			if lout {
 				s = "" /*already there */
 			}
-			if nln>=x.nfrom || x.ntl>0 && len(last)<x.ntl {
+			if nln >= x.nfrom || x.ntl > 0 && len(last) < x.ntl {
 				last = append(last, s)
 			} else {
 				copy(last, last[1:])
@@ -159,19 +159,19 @@ func (x *xCmd) RunFile(d zx.Dir, dc <-chan []byte) error {
 		}
 
 	}
-	if !x.all && (x.ntl>0 || x.nfrom>0) {
+	if !x.all && (x.ntl > 0 || x.nfrom > 0) {
 		// if len(last) == 3 and nln is 10
 		// last[0] is -3 or 10-2
 		// last[1] is -2 or 10-1
 		// last[2] is -1 or 10
 		for i := 0; i < len(last); i++ {
 			for _, a := range x.addrs {
-				if a.from>0 && a.to>0 { // done already
+				if a.from > 0 && a.to > 0 { // done already
 					continue
 				}
 				x.dprintf("tl match %d of %d in %d,%d\n",
 					nln-len(last)+1+i, nln, a.from, a.to)
-				if a.match(nln-len(last)+1+i, nln) && last[i]!="" {
+				if a.match(nln-len(last)+1+i, nln) && last[i] != "" {
 					if x.nflag {
 						x.Printf("%-5d %s", nln-len(last)+1+i, last[i])
 					} else {

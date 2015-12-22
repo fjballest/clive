@@ -14,12 +14,12 @@ import (
 	"strings"
 )
 
-type hash  {
+type hash struct {
 	lines  map[string]int
 	hlines []string
 }
 
-type file  {
+type file struct {
 	name  string
 	lines []int
 }
@@ -30,11 +30,11 @@ const (
 	oDel
 )
 
-type rep  {
+type rep struct {
 	what, i, j int
 }
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	debug, lflag bool
@@ -84,7 +84,7 @@ func prefix(ln1, ln2 []int) ([]int, []int, []int) {
 	ni := len(ln1)
 	nj := len(ln2)
 	i := 0
-	for i<ni && i<nj {
+	for i < ni && i < nj {
 		if ln1[i] != ln2[i] {
 			break
 		}
@@ -97,7 +97,7 @@ func suffix(ln1, ln2 []int) ([]int, []int, []int) {
 	ni := len(ln1)
 	nj := len(ln2)
 	i := 0
-	for i<ni && i<nj {
+	for i < ni && i < nj {
 		if ln1[ni-i-1] != ln2[nj-i-1] {
 			break
 		}
@@ -109,13 +109,13 @@ func suffix(ln1, ln2 []int) ([]int, []int, []int) {
 func (x *xCmd) report(i, j int) {
 	ln1 := x.f1.lines
 	ln2 := x.f2.lines
-	if i>0 && j>0 && ln1[i-1]==ln2[j-1] {
+	if i > 0 && j > 0 && ln1[i-1] == ln2[j-1] {
 		x.report(i-1, j-1)
 		x.repc <- rep{oEq, i - 1, j - 1}
-	} else if j>0 && (i==0 || x.lcs[i][j-1]>=x.lcs[i-1][j]) {
+	} else if j > 0 && (i == 0 || x.lcs[i][j-1] >= x.lcs[i-1][j]) {
 		x.report(i, j-1)
 		x.repc <- rep{oAdd, i, j - 1}
-	} else if i>0 && (j==0 || x.lcs[i][j-1]<x.lcs[i-1][j]) {
+	} else if i > 0 && (j == 0 || x.lcs[i][j-1] < x.lcs[i-1][j]) {
 		x.report(i-1, j)
 		x.repc <- rep{oDel, i - 1, j}
 	}
@@ -206,7 +206,7 @@ func (x *xCmd) comp() error {
 	x.f1, x.f2 = x.files[0], x.files[1]
 	x.prefix, x.f1.lines, x.f2.lines = prefix(x.f1.lines, x.f2.lines)
 	x.suffix, x.f1.lines, x.f2.lines = suffix(x.f1.lines, x.f2.lines)
-	if len(x.f1.lines)!=0 || len(x.f2.lines)!=0 {
+	if len(x.f1.lines) != 0 || len(x.f2.lines) != 0 {
 		x.ndiffs++
 		x.diff()
 	}
@@ -258,7 +258,7 @@ func (x *xCmd) compTreeFile(d1, d2 zx.Dir) error {
 // suffixes that can be compared right away.
 // (i.e., report suffixes without the leading "/" and  "." as ".")
 func relSuffix(name, pref string) string {
-	if pref=="" || pref=="." {
+	if pref == "" || pref == "." {
 		if name == "." {
 			return ""
 		}
@@ -300,7 +300,7 @@ func (x *xCmd) compTree(args ...string) error {
 	}
 	i, j := 0, 0
 	var sts error
-	for i<len(d1s) || j<len(d2s) {
+	for i < len(d1s) || j < len(d2s) {
 		if i == len(d1s) {
 			x.Printf("#created: %s\n", d2s[j]["path"])
 			j++

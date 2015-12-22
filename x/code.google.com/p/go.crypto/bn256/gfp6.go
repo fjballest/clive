@@ -14,7 +14,7 @@ import (
 
 // gfP6 implements the field of size p⁶ as a cubic extension of gfP2 where τ³=ξ
 // and ξ=i+3.
-type gfP6  {
+type gfP6 struct {
 	x, y, z *gfP2 // value is xτ² + yτ + z
 }
 

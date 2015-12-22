@@ -4,20 +4,20 @@
 package trex
 
 import (
-	"clive/sre"
 	"clive/app"
-	"clive/dbg"
 	"clive/app/opt"
+	"clive/dbg"
+	"clive/sre"
 	"strings"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
-	res []*sre.ReProg
+	res        []*sre.ReProg
 	froms, tos []string
-	all bool
+	all        bool
 
 	sflag, fflag, gflag, tflag, lflag, uflag, rflag, xflag bool
 }
@@ -54,7 +54,7 @@ func replre(s string, re *sre.ReProg, to string, glob bool) string {
 			ns = append(ns, rto...)
 		} else {
 			for _, r := range rto {
-				if r  > 10 {
+				if r > 10 {
 					ns = append(ns, r)
 					continue
 				}
@@ -81,7 +81,8 @@ func replset(s string, from, to string) string {
 		app.Fatal("incompatible replacement '%s' to '%s'", from, to)
 	}
 	rs := []rune(s)
-Loop:	for i := 0; i < len(rs); {
+Loop:
+	for i := 0; i < len(rs); {
 		for n := 0; n < len(rfrom); n++ {
 			if n < len(rfrom)-2 && rfrom[n+1] == '-' {
 				if rs[i] >= rfrom[n] && rs[i] <= rfrom[n+2] {
@@ -134,7 +135,7 @@ func (x *xCmd) trex(in chan interface{}) error {
 				continue
 			}
 			if x.uflag {
-				s= strings.ToUpper(s)
+				s = strings.ToUpper(s)
 			} else if x.lflag {
 				s = strings.ToLower(s)
 			} else if x.tflag {
@@ -153,7 +154,7 @@ func (x *xCmd) trex(in chan interface{}) error {
 		default:
 			if x.all && doall {
 				doall = false
-				 out <- []byte(x.tos[0])
+				out <- []byte(x.tos[0])
 			}
 			// ignored
 			app.Dprintf("got %T\n", m)
@@ -165,7 +166,7 @@ func (x *xCmd) trex(in chan interface{}) error {
 	}
 	if x.all && doall {
 		m := []byte(x.tos[0])
-		if ok := out <- m ; !ok {
+		if ok := out <- m; !ok {
 			app.Exits(cerror(out))
 		}
 	}
@@ -208,7 +209,7 @@ func Run() {
 	for i := 0; i < len(args); i += 2 {
 		x.froms = append(x.froms, args[0])
 		x.tos = append(x.tos, args[1])
-		if !x.sflag && ! x.rflag {
+		if !x.sflag && !x.rflag {
 			re, err := sre.CompileStr(args[0], sre.Fwd)
 			if err != nil {
 				app.Fatal("rexp: %s", err)

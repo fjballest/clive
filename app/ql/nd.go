@@ -1,11 +1,11 @@
 package ql
 
 import (
+	"bytes"
+	"clive/app"
 	"fmt"
 	"io"
-	"bytes"
 	"strings"
-	"clive/app"
 )
 
 type NdKind int
@@ -42,21 +42,21 @@ const (
 	tab = "    "
 )
 
-type Redir  {
+type Redir struct {
 	From int    // for this fd
 	Name string // to pipe ("|") or dup To ("=") or to this file
-	To   int	// target fd for "="
-	App  bool // create or append.
+	To   int    // target fd for "="
+	App  bool   // create or append.
 }
 
 type Redirs []*Redir
 
-type Nd  {
+type Nd struct {
 	Kind  NdKind
 	Args  []string
 	Child []*Nd
 	Redirs
-	IsGet bool	// for gf pipes and to get names from input in for
+	IsGet bool // for gf pipes and to get names from input in for
 	Addr
 }
 
@@ -123,7 +123,7 @@ func (x *xCmd) newNd(k NdKind, args ...string) *Nd {
 
 func (x *xCmd) newList(k NdKind, nds ...*Nd) *Nd {
 	n := &Nd{Kind: k, Child: nds, Addr: x.Addr}
-	if len(nds)>0 && nds[0]!=nil {
+	if len(nds) > 0 && nds[0] != nil {
 		n.Addr = nds[0].Addr
 	}
 	return n
@@ -150,7 +150,7 @@ func (r Redir) String() string {
 func (x *xCmd) noDups(rs Redirs) {
 	m := map[int]bool{}
 	for _, r := range rs {
-		if r.From>=0 && m[r.From] {
+		if r.From >= 0 && m[r.From] {
 			x.Errs("dup redir %d", r.From)
 			r.From = -1
 		}
@@ -190,7 +190,7 @@ func (x *xCmd) newRedir(from, name string, app bool) Redirs {
 	}
 
 	if len(from) > 1 {
-		rdr := x. newRedir(from[:1], name, app)
+		rdr := x.newRedir(from[:1], name, app)
 		for i := 1; i < len(from); i++ {
 			rdr = append(rdr, x.newDup(from[i:i+1], from[:1])...)
 		}
@@ -252,9 +252,9 @@ func (x *xCmd) pipeRewrite(nd *Nd) *Nd {
 		lf = "gf"
 	}
 	c.Child[0] = &Nd{Kind: Nname, Args: []string{lf}}
-	if len(nd.Child) > 1{
+	if len(nd.Child) > 1 {
 		f := nd.Child[1]
-		if nd.IsGet || f.Kind != Nfor  || len(f.Child) == 0 || len(f.Child[0].Child) != 1 {
+		if nd.IsGet || f.Kind != Nfor || len(f.Child) == 0 || len(f.Child[0].Child) != 1 {
 			return nd
 		}
 		// insert pf between lf and for
@@ -293,7 +293,7 @@ func (n *Nd) Add(nd ...*Nd) *Nd {
 }
 
 func (n *Nd) Last() *Nd {
-	if n==nil || len(n.Child)==0 {
+	if n == nil || len(n.Child) == 0 {
 		return nil
 	}
 	return n.Child[len(n.Child)-1]
@@ -334,7 +334,7 @@ func (n *Nd) fprint(w io.Writer, lvl int) {
 	for _, a := range n.Args {
 		fmt.Fprintf(w, "(%s)", a)
 	}
-	if len(n.Child)>0 || len(n.Redirs)>0 {
+	if len(n.Child) > 0 || len(n.Redirs) > 0 {
 		fmt.Fprintf(w, " {\n")
 	}
 	for _, c := range n.Child {
@@ -343,7 +343,7 @@ func (n *Nd) fprint(w io.Writer, lvl int) {
 	for _, v := range n.Redirs {
 		fmt.Fprintf(w, "%s%s%s\n", pref, tab, v)
 	}
-	if len(n.Child)>0 || len(n.Redirs)>0 {
+	if len(n.Child) > 0 || len(n.Redirs) > 0 {
 		fmt.Fprintf(w, "%s}", pref)
 	}
 	fmt.Fprintf(w, "\n")

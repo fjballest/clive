@@ -3,9 +3,9 @@ package wr
 import (
 	"clive/app"
 	"clive/app/wr/refs"
-	"strings"
-	"fmt"
 	"clive/dbg"
+	"fmt"
+	"strings"
 )
 
 type Kind int
@@ -40,15 +40,15 @@ const (
 	Kenumeration // indented list of enums
 	Kdescription // description list
 	Kcite        // hand made cite,
-	Ksref	// ref to a section
-	Kfref	// to a fig
-	Ktref	// to a tbl
-	Keref	// to a eqn
-	Kcref	// to a listing
+	Ksref        // ref to a section
+	Kfref        // to a fig
+	Ktref        // to a tbl
+	Keref        // to a eqn
+	Kcref        // to a listing
 	Kurl         // link
-	Kbib	// wr/refs citation(s)
+	Kbib         // wr/refs citation(s)
 	Kpar         // forced end of paragraph
-	Kbr	// forced line break
+	Kbr          // forced line break
 )
 
 const (
@@ -72,16 +72,16 @@ const (
 	CodeMark = "[code"
 )
 
-type eKeys {
-	el *Elem
+type eKeys struct {
+	el   *Elem
 	keys map[string]bool
 }
 
-type Text {
+type Text struct {
 	*scan
-	Elems	[]*Elem
-	bib *refs.Bib
-	biberr error
+	Elems   []*Elem
+	bib     *refs.Bib
+	biberr  error
 	bibrefs []string
 	refsdir string
 
@@ -94,30 +94,30 @@ type Text {
 	pprintf, iprintf, sprintf app.PrintFunc
 }
 
-type Elem  {
-	Kind     Kind
-	Data     string // in figs the file name, in pics the pic text
-	Textchild	[]*Elem	// child text for inlined formats
-	Caption  *Elem // in figs and pics and tables
-	Tag      string // in code, word after [code to use as the tag
-	Child    []*Elem
-	Tbl      [][]string // rows for tables; 1st rwo is just the fmt strings
-	indent   int
-	NameKind Kind // for Knames, the Kit, Kbf, or Ktt used in the label, if any.
-	Inline   bool // for Kit, Kbf, Ktt, if the font change is inline with the text.
-	Nb string	// number of table, fig, ... A string so we can have 3.1 and so on.
+type Elem struct {
+	Kind      Kind
+	Data      string  // in figs the file name, in pics the pic text
+	Textchild []*Elem // child text for inlined formats
+	Caption   *Elem   // in figs and pics and tables
+	Tag       string  // in code, word after [code to use as the tag
+	Child     []*Elem
+	Tbl       [][]string // rows for tables; 1st rwo is just the fmt strings
+	indent    int
+	NameKind  Kind   // for Knames, the Kit, Kbf, or Ktt used in the label, if any.
+	Inline    bool   // for Kit, Kbf, Ktt, if the font change is inline with the text.
+	Nb        string // number of table, fig, ... A string so we can have 3.1 and so on.
 
 	fname string
-	lno int
+	lno   int
 }
 
-type scan  {
+type scan struct {
 	lnc   chan string
 	last  string
 	saved bool
 	eof   bool
 	fname string
-	nb int
+	nb    int
 }
 
 var marks = map[string]Kind{
@@ -247,16 +247,16 @@ func (e *Elem) sprint(lvl int) string {
 	}
 	s := fmt.Sprintf("%s%s.%d", pref, e.Kind, e.indent)
 	if e.Tag != "" {
-		s += "[#"+e.Tag+"]"
+		s += "[#" + e.Tag + "]"
 	}
 	if e.Kind.HasData() {
 		s += dbg.Text(e.Data, 20)
-	} else if e.Data!="" || e.Caption!=nil {
+	} else if e.Data != "" || e.Caption != nil {
 		s += "HASDATA"
 	}
 	if e.Caption != nil {
 		s += "cap[\n"
-		s += e.Caption.sprint(lvl+1)
+		s += e.Caption.sprint(lvl + 1)
 		s += pref + "]"
 	}
 	if len(e.Textchild) > 0 {

@@ -4,27 +4,27 @@
 package vfs
 
 import (
+	"bytes"
 	"clive/app"
+	"clive/dbg"
+	"clive/nchan"
 	"clive/net/auth"
 	"clive/zx"
-	"fmt"
-	"clive/dbg"
-	"path"
-	"errors"
 	"clive/zx/pred"
+	"errors"
+	"fmt"
+	"path"
 	"sort"
-	"bytes"
-	"clive/nchan"
 	"time"
 )
 
 // A virtual ZX tree implemented by the user of this package.
 // Depending on the interfaces implemented by the user structures
 // for the files, each file accepts more or less operations.
-type Fs {
+type Fs struct {
 	name string
-	path string	// fake tpath
-	ai *auth.Info
+	path string // fake tpath
+	ai   *auth.Info
 	*zx.Flags
 
 	root File
@@ -32,16 +32,16 @@ type Fs {
 
 var (
 	ctldir = zx.Dir{
-		"path": "/Ctl",
+		"path":  "/Ctl",
 		"spath": "/Ctl",
-		"name": "Ctl",
+		"name":  "Ctl",
 		"proto": "proc",
-		"size": "0",
-		"type": "c",
-		"Uid": dbg.Usr,
-		"Gid": dbg.Usr,
-		"Wuid": dbg.Usr,
-		"mode": "0644",
+		"size":  "0",
+		"type":  "c",
+		"Uid":   dbg.Usr,
+		"Gid":   dbg.Usr,
+		"Wuid":  dbg.Usr,
+		"mode":  "0644",
 	}
 
 	// make sure we implement the right interfaces
@@ -96,7 +96,7 @@ func (t *Fs) Name() string {
 
 func (t *Fs) dprintf(fs string, args ...interface{}) {
 	if t != nil && t.Dbg {
-		dbg.Printf(t.name + ":" + fs, args...)
+		dbg.Printf(t.name+":"+fs, args...)
 	}
 }
 
@@ -105,8 +105,8 @@ func (t *Fs) dprintf(fs string, args ...interface{}) {
 // which means that FUSE considers it all-virtual.
 func New(name string, root File) (*Fs, error) {
 	t := &Fs{
-		name: name,
-		root: root,
+		name:  name,
+		root:  root,
 		Flags: &zx.Flags{},
 	}
 	p := fmt.Sprintf("qlfs%p", t)
@@ -274,7 +274,7 @@ func (t *Fs) getCtl(off, count int64, c chan<- []byte) error {
 	}
 	resp = resp[o:]
 	n := int(count)
-	if n>len(resp) || n<0 {
+	if n > len(resp) || n < 0 {
 		n = len(resp)
 	}
 	resp = resp[:n]
@@ -295,7 +295,8 @@ func (t *Fs) getdir(f File, d zx.Dir, off, count int64, c chan<- []byte) error {
 	if d["name"] == "/" {
 		ns = append([]string{"Ctl"}, ns...)
 	}
-Dloop:	for _, n := range ns {
+Dloop:
+	for _, n := range ns {
 		if n == "" {
 			err = fmt.Errorf("%s: empty name in getdir", d["path"], n)
 			app.Warn("fs bug: %s", err)
@@ -313,7 +314,7 @@ Dloop:	for _, n := range ns {
 		default:
 			count--
 		}
-		if d["name"]=="/" && n == "Ctl" {
+		if d["name"] == "/" && n == "Ctl" {
 			cd := ctldir.Dup()
 			cd["tpath"] = t.path
 			cd.Send(c)
@@ -343,7 +344,7 @@ func (t *Fs) Get(rid string, off, count int64, pred string) <-chan []byte {
 	go func() {
 		var d zx.Dir
 		f, err := t.walk(rid)
-		if f == nil && err == nil {	// Ctl
+		if f == nil && err == nil { // Ctl
 			d = ctldir.Dup()
 		} else if err == nil {
 			d, err = t.statf(f, rid)
@@ -509,7 +510,7 @@ func (t *Fs) Mkdir(rid string, d zx.Dir) chan error {
 	t.dprintf("mkdir %s %v\n", rid, d)
 	cs := t.IOstats.NewCall(zx.Smkdir)
 	rid, err := zx.AbsPath(rid)
-	if rid=="/Ctl" || rid == "/" {
+	if rid == "/Ctl" || rid == "/" {
 		err = dbg.ErrExists
 	} else {
 		err = t.mkdir(rid, d)
@@ -730,7 +731,7 @@ func (t *Fs) RemoveAll(rid string) chan error {
 func (t *Fs) Fsys(name string) <-chan error {
 	t.dprintf("fsys %s\n", name)
 	c := make(chan error, 1)
-	if name!="" && name!="main" {
+	if name != "" && name != "main" {
 		err := errors.New("fsys not supported for local trees")
 		t.dprintf(name, "fsys", err)
 		c <- err
@@ -761,7 +762,7 @@ func (t *Fs) find(f File, d zx.Dir, p *pred.Pred, spref, dpref string, lvl int,
 	}
 	if err != nil {
 		d["err"] = err.Error()
-		c <-d
+		c <- d
 		return
 	}
 	if d["rm"] != "" {
@@ -884,9 +885,9 @@ func (t *Fs) FindGet(rid, fpred, spref, dpref string, depth int) <-chan zx.DirDa
 			if d["err"] == "" && !t.NoPermCheck &&
 				d["type"] != "d" && !d.CanRead(t.ai) {
 				d["err"] = dbg.ErrPerm.Error()
-				
+
 			}
-			if d["err"]=="" && d["type"]!="d" {
+			if d["err"] == "" && d["type"] != "d" {
 				datac = make(chan []byte)
 				g.Datac = datac
 			}
@@ -910,4 +911,3 @@ func (t *Fs) FindGet(rid, fpred, spref, dpref string, depth int) <-chan zx.DirDa
 	}()
 	return gc
 }
-

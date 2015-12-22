@@ -9,7 +9,6 @@
 */
 package nchan
 
-
 import (
 	"bufio"
 	"bytes"
@@ -224,7 +223,7 @@ func WriteMsgsTo(w io.Writer, c <-chan []byte) (int64, int64, error) {
 		if err != nil {
 			return n, tot, err
 		}
-		if Buffering && flusher!=nil && !dont {
+		if Buffering && flusher != nil && !dont {
 			err = flusher.Flush()
 			if err != nil {
 				return n, tot, err
@@ -232,7 +231,7 @@ func WriteMsgsTo(w io.Writer, c <-chan []byte) (int64, int64, error) {
 		}
 	}
 	err := cerror(c)
-	if err!=nil && err.Error()!="" {
+	if err != nil && err.Error() != "" {
 		writeErr(w, err)
 		if flusher != nil {
 			flusher.Flush()
@@ -330,7 +329,7 @@ func ReadBytesFrom(r io.Reader, c chan<- []byte) (nmsgs int64, nbytes int64, err
 		}
 		n++
 		nr, err := r.Read(buf)
-		if nr==0 && err==nil {
+		if nr == 0 && err == nil {
 			err = io.EOF
 		}
 		if nr > 0 {
@@ -360,7 +359,7 @@ func ReadBytesFrom(r io.Reader, c chan<- []byte) (nmsgs int64, nbytes int64, err
 	}
 }
 
-type wr  {
+type wr struct {
 	c chan<- []byte
 }
 
@@ -385,7 +384,7 @@ func (w wr) Close() error {
 	return nil
 }
 
-type rd  {
+type rd struct {
 	c   <-chan []byte
 	m   sync.Mutex
 	buf []byte
@@ -486,7 +485,7 @@ func Lines(dc <-chan []byte, sep rune) <-chan string {
 				saved = append(saved, d...)
 				d = saved
 			}
-			for len(d)>0 && utf8.FullRune(d) {
+			for len(d) > 0 && utf8.FullRune(d) {
 				r, n := utf8.DecodeRune(d)
 				d = d[n:]
 				buf.WriteRune(r)

@@ -3,24 +3,23 @@
 */
 package mvm
 
-
 import (
 	"clive/app"
-	"clive/dbg"
 	"clive/app/opt"
+	"clive/dbg"
 	"clive/zx"
 	"fmt"
 	"strings"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
 	dirs []zx.Dir
 
 	verb, aflag, cflag, nflag, mflag, nodst bool
-	vprintf app.PrintFunc
+	vprintf                                 app.PrintFunc
 }
 
 func (x *xCmd) setdst(dst string) zx.Dir {
@@ -48,7 +47,7 @@ func (x *xCmd) setdst(dst string) zx.Dir {
 			app.Fatal("%s", m.Error())
 		case zx.Dir:
 			app.Dprintf("got %T %s\n", m, m["upath"])
-			if m["err"]!="" {
+			if m["err"] != "" {
 				if m["err"] != "pruned" {
 					app.Fatal(m["err"])
 				}

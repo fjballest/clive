@@ -3,17 +3,17 @@ package lfs
 import (
 	"clive/dbg"
 	"clive/zx"
+	"crypto/sha1"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
+	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf8"
-	"sync"
-	"crypto/sha1"
-	"io"
-	"fmt"
-	"strings"
 )
 
 // name for attributes file;	// known to zxdump(1)
@@ -27,7 +27,7 @@ func readAttrFile(path string) ([]byte, error) {
 }
 
 func writeAttrFile(path string, dat []byte) error {
-	return  ioutil.WriteFile(path, dat, 0600)
+	return ioutil.WriteFile(path, dat, 0600)
 }
 
 // CAUTION: If the attributes file or its format is ever changed, update zxdump to
@@ -107,7 +107,7 @@ func (t *Lfs) writeDirAttrs(dpath string, ds map[string]zx.Dir) error {
 		}
 		for k := range d {
 			r, _ := utf8.DecodeRuneInString(k)
-			if k!="name" && !(unicode.IsUpper(r)) {
+			if k != "name" && !(unicode.IsUpper(r)) {
 				delete(wd, k)
 			}
 		}
@@ -129,8 +129,8 @@ func (t *Lfs) fileAttrs(fpath string, d zx.Dir) {
 				}
 			}
 			if d["type"] == "-" && t.saveattrs &&
-			  ((d["Sum"] == "" && DoSum) || d["type"] != ty || 
-			   d["mtime"] != m || d["size"] != s) {
+				((d["Sum"] == "" && DoSum) || d["type"] != ty ||
+					d["mtime"] != m || d["size"] != s) {
 				fi, err := os.Stat(fpath)
 				if err == nil {
 					xd["type"] = "-"
@@ -236,17 +236,17 @@ func (t *Lfs) canWalkTo(rid string, forwhat int) (string, uint64, error) {
 			return "", 0, err
 		}
 		mode := st.Mode()
-		m := int64(mode&0777)
+		m := int64(mode & 0777)
 		pd["mode"] = "0" + strconv.FormatInt(m, 8)
 		t.fileAttrs(fpath, pd)
-		if !noperm && len(elems)>0 && !pd.CanWalk(t.ai) {
+		if !noperm && len(elems) > 0 && !pd.CanWalk(t.ai) {
 			return "", 0, dbg.ErrPerm
 		}
 		if len(elems) == 0 {
 			pgid = pd["Gid"]
 			pmode = uint64(pd.Int("mode"))
 		}
-		if !noperm && len(elems)==0 && forwhat!=0 {
+		if !noperm && len(elems) == 0 && forwhat != 0 {
 			if !pd.Can(t.ai, forwhat) {
 				return "", 0, dbg.ErrPerm
 			}

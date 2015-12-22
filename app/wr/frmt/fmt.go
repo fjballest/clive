@@ -5,36 +5,36 @@
 package frmt
 
 import (
-	"unicode"
 	"strings"
+	"unicode"
 )
 
 // 1st arg to Fmt
 const (
-	Left = false	// left-justify only
-	Both = true	// justify both margins
+	Left = false // left-justify only
+	Both = true  // justify both margins
 )
 
 // 2nd arg to Fmt
 type ParFmt int
 
 const (
-	NoBlankLines ParFmt = iota		// format everything as a single par
-	OneBlankLine			// output one empty line between pars
-	AllBlankLines			// keep all empty lines between pars
+	NoBlankLines  ParFmt = iota // format everything as a single par
+	OneBlankLine                // output one empty line between pars
+	AllBlankLines               // keep all empty lines between pars
 )
 
 // Escapes can be used to handle a portion of text as a single word.
 // They are also written to the output and, if used, requires the
 // caller to remove them before presenting data to the user.
 const (
-	Esc = "\001"		// start of raw word escape
-	NoEsc = "\002"	// end of raw word escape
+	Esc   = "\001" // start of raw word escape
+	NoEsc = "\002" // end of raw word escape
 )
 
 // Given a chan where we send strings, return a chan to
 // get separate words and white-space runs.
-func Words() (chan<-string, <-chan []rune) {
+func Words() (chan<- string, <-chan []rune) {
 
 	sc := make(chan string)
 	rc := make(chan []rune)
@@ -68,7 +68,7 @@ func Words() (chan<-string, <-chan []rune) {
 			}
 		}
 		if len(w) > 0 {
-			rc<-w
+			rc <- w
 		}
 		close(rc, cerror(sc))
 	}()
@@ -80,10 +80,10 @@ func rightJust(ln [][]rune, wid int) {
 	if n >= wid || len(ln) < 3 {
 		return
 	}
-	gaps := len(ln)/2
+	gaps := len(ln) / 2
 	add := wid - n
-	fix := add/gaps
-	rem := add%gaps
+	fix := add / gaps
+	rem := add % gaps
 	for i := 1; i < len(ln); i += 2 {
 		ns := fix
 		if rem > 0 {

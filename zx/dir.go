@@ -3,6 +3,7 @@ package zx
 import (
 	"bytes"
 	"clive/nchan"
+	"crypto/sha1"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -14,7 +15,6 @@ import (
 	"time"
 	"unicode"
 	"unicode/utf8"
-	"crypto/sha1"
 )
 
 // Someone that knows go to get to the tree for d given its protocol name.
@@ -123,9 +123,10 @@ func EqDir(d1, d2 Dir) bool {
 }
 
 type byName []Dir
-func (ds byName) Len() int { return len(ds) }
+
+func (ds byName) Len() int           { return len(ds) }
 func (ds byName) Less(i, j int) bool { return ds[i]["name"] < ds[j]["name"] }
-func (ds byName) Swap(i, j int) { ds[i], ds[j] = ds[j], ds[i] }
+func (ds byName) Swap(i, j int)      { ds[i], ds[j] = ds[j], ds[i] }
 
 // sort entries by name
 func SortDirs(ds []Dir) {
@@ -166,7 +167,7 @@ func (d Dir) UsrAttrs() Dir {
 	return nd
 }
 
-var uids = []string {"Uid", "Gid", "Wuid", "Sum"}
+var uids = []string{"Uid", "Gid", "Wuid", "Sum"}
 
 // Print d in a format suitable for testing: i.e: no mtime and just important attrs,
 // excluding user attributes
@@ -199,7 +200,7 @@ func (d Dir) LongTestFmt() string {
 		if k == "Uid" || k == "Gid" || k == "Wuid" || k == "Sum" || k == "Mode" {
 			continue
 		}
-		if len(k)>0 && k[0]>='A' && k[0]<='Z' && k != "Sum" {
+		if len(k) > 0 && k[0] >= 'A' && k[0] <= 'Z' && k != "Sum" {
 			ks = append(ks, k)
 		}
 	}
@@ -219,9 +220,9 @@ func nouid(s string) string {
 
 const (
 	KiB = 1024
-	MiB = 1024*KiB
-	GiB = 1024*MiB
-	TiB = 1024*GiB
+	MiB = 1024 * KiB
+	GiB = 1024 * MiB
+	TiB = 1024 * GiB
 )
 
 func szstr(d Dir) string {
@@ -295,7 +296,7 @@ func (d Dir) LongLong() string {
 	return b.String()
 }
 
-var longattrs = []string {
+var longattrs = []string{
 	"path", "name", "type", "mode", "size", "Uid", "Gid", "Wuid", "mtime",
 }
 
@@ -392,7 +393,7 @@ func ParseDirString(s string) (Dir, int) {
 	d := make(Dir, 10)
 	tot := 0
 	for {
-		for len(s)>0 && (s[0]==' ' || s[0]=='\t' || s[0]=='\n') {
+		for len(s) > 0 && (s[0] == ' ' || s[0] == '\t' || s[0] == '\n') {
 			s = s[1:]
 			tot++
 		}
@@ -402,7 +403,7 @@ func ParseDirString(s string) (Dir, int) {
 		}
 		n := nv[0]
 		s = nv[1]
-		for len(s)>0 && (s[0]==' ' || s[0]=='\t' || s[0]=='\n') {
+		for len(s) > 0 && (s[0] == ' ' || s[0] == '\t' || s[0] == '\n') {
 			tot++
 			s = s[1:]
 		}
@@ -415,7 +416,7 @@ func ParseDirString(s string) (Dir, int) {
 		for i < len(s) {
 			r, n := utf8.DecodeRuneInString(s[i:])
 			if !quoted {
-				if r==' ' || r=='\t' || r=='\n' {
+				if r == ' ' || r == '\t' || r == '\n' {
 					i++
 					break
 				}
@@ -423,7 +424,7 @@ func ParseDirString(s string) (Dir, int) {
 				continue
 			}
 			if r == '\\' {
-				if i+1<len(s) && s[i+1]=='"' {
+				if i+1 < len(s) && s[i+1] == '"' {
 					i += 2
 					continue
 				}
@@ -484,12 +485,12 @@ func (e Dir) Matches(d Dir) bool {
 	}
 	for k, v := range d {
 		dv, ok := e[k]
-		if !ok || dv=="" {
+		if !ok || dv == "" {
 			if v != "" {
 				return false
 			}
 		}
-		if dv!=v && v!="*" {
+		if dv != v && v != "*" {
 			return false
 		}
 	}
@@ -574,11 +575,11 @@ func (d Dir) SetMode(mode uint64) {
 
 // Return mode bits (only 0777)
 func (d Dir) Mode() uint64 {
-	return d.Uint64("mode")&0777
+	return d.Uint64("mode") & 0777
 }
 
 // Adjust mode bits to inherit group bits cleared/set from the parent
-func (d Dir) Inherit(parent uint64)  {
+func (d Dir) Inherit(parent uint64) {
 	mode := d.Mode()
 	mode &= parent
 	if mode&0440 == 0400 && parent&040 == 040 {

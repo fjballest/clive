@@ -1,33 +1,32 @@
 package cfs
 
 import (
+	"bytes"
 	"clive/dbg"
-	"clive/zx/mfs"
-	"clive/zx/mdfs"
-	"clive/zx/cfs/cache"
+	"clive/net/auth"
 	"clive/zx"
+	"clive/zx/cfs/cache"
 	"clive/zx/fstest"
 	"clive/zx/lfs"
+	"clive/zx/mdfs"
+	"clive/zx/mfs"
 	"clive/zx/trfs"
-	"clive/net/auth"
-	"os"
-	"testing"
-	"strings"
-	"bytes"
-	"time"
 	"io"
+	"os"
+	"strings"
+	"testing"
+	"time"
 )
-
 
 const tdir = "/tmp/ncfs_test"
 const tdir2 = "/tmp/ncfs2_test"
 
-type setup {
+type setup struct {
 	fs1, fs2 zx.RWTree
-	cfs zx.RWTree
-	syncer *Cfs
+	cfs      zx.RWTree
+	syncer   *Cfs
 	deferred func()
-	debug func()
+	debug    func()
 
 	trz *Tracer
 }
@@ -45,11 +44,11 @@ type setup {
 	Go test -run TestMkdirs
 	Go test -run TestRemoves
 	Go test -run TestWstats
-	Go test -v -run TestUsrWstats 
+	Go test -v -run TestUsrWstats
 	Go test -run TestCtl
 	Go test -run TestAsAFile
 	Go test -run TestRaces
-	Go test -v -run TestNewPerms	
+	Go test -v -run TestNewPerms
 	Go test -v -run TestRWXPerms
 
 	Go test -run TestLfsChanges
@@ -63,9 +62,9 @@ type setup {
 */
 
 var (
-	printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
+	printf   = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 	moreverb = true
-	mkfs  = mkmfslfs	// MFS + LFS
+	mkfs     = mkmfslfs // MFS + LFS
 	// mkfs = mklfslfs	// LFS + LFS
 	// mkfs = mkmdfslfs	// MDFS(LFS) + LFS
 
@@ -116,12 +115,12 @@ cfs ->close
 }
 
 func ExampleNew() {
-	// create an in-memory tree 
+	// create an in-memory tree
 	cachefs, err := mfs.New("example mfs")
 	if err != nil {
 		dbg.Fatal("mfs: %s", err)
 	}
-	cachefs.WstatAll = true	// cfs must be able to wstat all in the cache
+	cachefs.WstatAll = true // cfs must be able to wstat all in the cache
 	// perhaps set debug for it
 	cachefs.Dbg = true
 
@@ -147,7 +146,7 @@ func ExampleNew() {
 }
 
 func mkmdfslfs(t *testing.T) *setup {
-Debug = true
+	Debug = true
 	os.Args[0] = "cfs_test"
 	os.RemoveAll(tdir)
 	os.RemoveAll(tdir2)
@@ -163,7 +162,7 @@ Debug = true
 	s.trz = Trace(c)
 
 	/* MDFS + LFS
-	*/
+	 */
 	lfs1, err := lfs.New("lfs1", tdir2, lfs.RW)
 	if err != nil {
 		os.RemoveAll(tdir)
@@ -182,7 +181,7 @@ Debug = true
 	}
 	fs1.WstatAll = true
 	tr1 := trfs.New(fs1)
-	tr1.Tag ="fs1"
+	tr1.Tag = "fs1"
 	tr1.C = c
 	fs2, err := lfs.New("fs2", tdir, lfs.RW)
 	if err != nil {
@@ -193,7 +192,7 @@ Debug = true
 	fs2.SaveAttrs(true)
 	fs2.IOstats = &zx.IOstats{}
 	tr2 := trfs.New(fs2)
-	tr2.Tag ="fs2"
+	tr2.Tag = "fs2"
 	tr2.C = c
 	if testing.Verbose() {
 		defer fs2.Dump(os.Stdout)
@@ -208,10 +207,10 @@ Debug = true
 	}
 	fs.IOstats = &zx.IOstats{}
 	trcfs := trfs.New(fs)
-	trcfs.Tag ="cfs"
+	trcfs.Tag = "cfs"
 	trcfs.C = c
 	ai := &auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true}
-	afs, _:= trcfs.AuthFor(ai)
+	afs, _ := trcfs.AuthFor(ai)
 	if testing.Verbose() {
 		s.deferred = func() {
 			fs1.Dump(os.Stdout)
@@ -221,10 +220,10 @@ Debug = true
 			s.trz.Wait()
 			if moreverb {
 				printf("calls:\n")
-			//	s.trz.All().WriteTo(os.Stdout)
-			//	s.trz.Calls().WriteTo(os.Stdout)
+				//	s.trz.All().WriteTo(os.Stdout)
+				//	s.trz.Calls().WriteTo(os.Stdout)
 				s.trz.Calls().Deps().WriteTo(os.Stdout)
-			//	s.trz.Calls().Deps().WriteRfsTo(os.Stdout)
+				//	s.trz.Calls().Deps().WriteRfsTo(os.Stdout)
 			}
 			os.RemoveAll(tdir)
 			os.RemoveAll(tdir2)
@@ -275,7 +274,7 @@ func mklfslfs(t *testing.T) *setup {
 	s.trz = Trace(c)
 
 	/* LFS + LFS
-	*/
+	 */
 	fs1, err := lfs.New("fs1", tdir2, lfs.RW)
 	if err != nil {
 		os.RemoveAll(tdir)
@@ -285,10 +284,9 @@ func mklfslfs(t *testing.T) *setup {
 	fs1.SaveAttrs(true)
 	fs1.WstatAll = true
 
-
 	fs1.IOstats = &zx.IOstats{}
 	tr1 := trfs.New(fs1)
-	tr1.Tag ="fs1"
+	tr1.Tag = "fs1"
 	tr1.C = c
 	fs2, err := lfs.New("fs2", tdir, lfs.RW)
 	if err != nil {
@@ -299,7 +297,7 @@ func mklfslfs(t *testing.T) *setup {
 	fs2.SaveAttrs(true)
 	fs2.IOstats = &zx.IOstats{}
 	tr2 := trfs.New(fs2)
-	tr2.Tag ="fs2"
+	tr2.Tag = "fs2"
 	tr2.C = c
 	if testing.Verbose() {
 		defer fs2.Dump(os.Stdout)
@@ -314,10 +312,10 @@ func mklfslfs(t *testing.T) *setup {
 	}
 	fs.IOstats = &zx.IOstats{}
 	trcfs := trfs.New(fs)
-	trcfs.Tag ="cfs"
+	trcfs.Tag = "cfs"
 	trcfs.C = c
 	ai := &auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true}
-	afs, _:= trcfs.AuthFor(ai)
+	afs, _ := trcfs.AuthFor(ai)
 	if testing.Verbose() {
 		s.deferred = func() {
 			fs1.Dump(os.Stdout)
@@ -327,10 +325,10 @@ func mklfslfs(t *testing.T) *setup {
 			s.trz.Wait()
 			if moreverb {
 				printf("calls:\n")
-			//	s.trz.All().WriteTo(os.Stdout)
-			//	s.trz.Calls().WriteTo(os.Stdout)
+				//	s.trz.All().WriteTo(os.Stdout)
+				//	s.trz.Calls().WriteTo(os.Stdout)
 				s.trz.Calls().Deps().WriteTo(os.Stdout)
-			//	s.trz.Calls().Deps().WriteRfsTo(os.Stdout)
+				//	s.trz.Calls().Deps().WriteRfsTo(os.Stdout)
 			}
 			os.RemoveAll(tdir)
 			os.RemoveAll(tdir2)
@@ -381,7 +379,7 @@ func mkmfslfs(t *testing.T) *setup {
 	s.trz = Trace(c)
 
 	/* MFS  + LFS
-	*/
+	 */
 	fs1, err := mfs.New("fs1")
 	if err != nil {
 		os.RemoveAll(tdir)
@@ -392,7 +390,7 @@ func mkmfslfs(t *testing.T) *setup {
 	fs1.WstatAll = true
 	fs1.IOstats = &zx.IOstats{}
 	tr1 := trfs.New(fs1)
-	tr1.Tag ="fs1"
+	tr1.Tag = "fs1"
 	tr1.C = c
 	fs2, err := lfs.New("fs2", tdir, lfs.RW)
 	if err != nil {
@@ -403,7 +401,7 @@ func mkmfslfs(t *testing.T) *setup {
 	fs2.SaveAttrs(true)
 	fs2.IOstats = &zx.IOstats{}
 	tr2 := trfs.New(fs2)
-	tr2.Tag ="fs2"
+	tr2.Tag = "fs2"
 	tr2.C = c
 	if testing.Verbose() {
 		defer fs2.Dump(os.Stdout)
@@ -418,10 +416,10 @@ func mkmfslfs(t *testing.T) *setup {
 	}
 	fs.IOstats = &zx.IOstats{}
 	trcfs := trfs.New(fs)
-	trcfs.Tag ="cfs"
+	trcfs.Tag = "cfs"
 	trcfs.C = c
 	ai := &auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true}
-	afs, _:= trcfs.AuthFor(ai)
+	afs, _ := trcfs.AuthFor(ai)
 	if testing.Verbose() {
 		s.deferred = func() {
 			fs1.Dump(os.Stdout)
@@ -431,10 +429,10 @@ func mkmfslfs(t *testing.T) *setup {
 			s.trz.Wait()
 			if moreverb {
 				printf("calls:\n")
-			//	s.trz.All().WriteTo(os.Stdout)
-			//	s.trz.Calls().WriteTo(os.Stdout)
+				//	s.trz.All().WriteTo(os.Stdout)
+				//	s.trz.Calls().WriteTo(os.Stdout)
 				s.trz.Calls().Deps().WriteTo(os.Stdout)
-			//	s.trz.Calls().Deps().WriteRfsTo(os.Stdout)
+				//	s.trz.Calls().Deps().WriteRfsTo(os.Stdout)
 			}
 			os.RemoveAll(tdir)
 			os.RemoveAll(tdir2)
@@ -506,7 +504,7 @@ func TestInitDirs(t *testing.T) {
 
 	s.debug()
 	for _, dn := range fstest.Dirs {
-		if err := zx.MkdirAll(s.cfs, dn, zx.Dir{"mode":"0755"}); err != nil {
+		if err := zx.MkdirAll(s.cfs, dn, zx.Dir{"mode": "0755"}); err != nil {
 			t.Fatalf("mkdir: %s", err)
 		}
 	}
@@ -683,7 +681,7 @@ func TestLfsToutChanges(t *testing.T) {
 }
 
 func TestRfsChanges(t *testing.T) {
-	PollIval = 2*CacheTout
+	PollIval = 2 * CacheTout
 	t.Skip("only by hand")
 	x := fstest.Repeats
 	defer func() {
@@ -702,7 +700,7 @@ func TestRfsChanges(t *testing.T) {
 		// push changes
 		s.syncer.Sync()
 		// await until it's all invalid
-		time.Sleep(3*CacheTout)
+		time.Sleep(3 * CacheTout)
 	}
 
 	s.debug()
@@ -711,7 +709,7 @@ func TestRfsChanges(t *testing.T) {
 }
 
 func TestLfsRfsChanges(t *testing.T) {
-	PollIval = 2*CacheTout
+	PollIval = 2 * CacheTout
 	t.Skip("only by hand")
 	x := fstest.Repeats
 	defer func() {
@@ -730,7 +728,7 @@ func TestLfsRfsChanges(t *testing.T) {
 		// push changes
 		s.syncer.Sync()
 		// await until it's all invalid
-		time.Sleep(3*CacheTout)
+		time.Sleep(3 * CacheTout)
 	}
 
 	s.debug()
@@ -739,7 +737,7 @@ func TestLfsRfsChanges(t *testing.T) {
 }
 
 func TestSameChanges(t *testing.T) {
-	PollIval = 2*CacheTout
+	PollIval = 2 * CacheTout
 	t.Skip("only by hand")
 	x := fstest.Repeats
 	defer func() {
@@ -758,7 +756,7 @@ func TestSameChanges(t *testing.T) {
 		// push changes
 		s.syncer.Sync()
 		// await until it's all invalid
-		time.Sleep(3*CacheTout)
+		time.Sleep(3 * CacheTout)
 	}
 
 	s.debug()
@@ -767,7 +765,7 @@ func TestSameChanges(t *testing.T) {
 }
 
 func TestFs2Changes(t *testing.T) {
-	PollIval = 2*CacheTout
+	PollIval = 2 * CacheTout
 	t.Skip("only by hand")
 	x := fstest.Repeats
 	defer func() {
@@ -803,7 +801,7 @@ func TestFs2Changes(t *testing.T) {
 	}
 
 	// wait until all metadata gets stale
-	time.Sleep(3*CacheTout)
+	time.Sleep(3 * CacheTout)
 	fstest.ReadAll(t, s.cfs)
 
 	s.fs1.(zx.Dumper).Dump(os.Stdout)
@@ -812,7 +810,6 @@ func TestFs2Changes(t *testing.T) {
 	// check that now they are the same
 	fstest.SameDump(t, s.cfs, s.fs1, s.fs2)
 
-
 	// make more changes
 	printf("changing2 fs2\n")
 	fstest.MkChgs2(t, tdir)
@@ -820,7 +817,7 @@ func TestFs2Changes(t *testing.T) {
 
 	// wait until all metadata gets stale
 	s.debug()
-	time.Sleep(3*CacheTout)
+	time.Sleep(3 * CacheTout)
 	fstest.ReadAll(t, s.cfs)
 
 	// check that now they are the same
@@ -840,10 +837,10 @@ func TestFs2Changes(t *testing.T) {
 	- make external changes to the lfs and see what happens
 */
 
-type invalsetup {
+type invalsetup struct {
 	cache1, cache2, cache *mfs.Fs
-	cfs1, cfs2, cfs *Cfs
-	lfs *lfs.Lfs
+	cfs1, cfs2, cfs       *Cfs
+	lfs                   *lfs.Lfs
 }
 
 func (s *invalsetup) Dump(w io.Writer) {
@@ -872,16 +869,16 @@ func mkinval(t *testing.T) *invalsetup {
 	}
 	sfs.SaveAttrs(true)
 
-	cfs, err:= New("cfs", cache, sfs, RW)
+	cfs, err := New("cfs", cache, sfs, RW)
 	if err != nil {
 		t.Fatalf("cfs: %s", err)
 	}
 	cfs.Flags.Dbg = testing.Verbose()
 
 	ci1 := &zx.ClientInfo{
-		Ai: &auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true},
+		Ai:  &auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true},
 		Tag: "cli1",
-		Id: 1,
+		Id:  1,
 	}
 	clicfs1, err := cfs.ServerFor(ci1)
 	if err != nil {
@@ -891,18 +888,18 @@ func mkinval(t *testing.T) *invalsetup {
 	if err != nil {
 		dbg.Fatal("mfs1: %s", err)
 	}
-	cache1.WstatAll = true	// cfs does this
+	cache1.WstatAll = true // cfs does this
 	cfs1, err := New("cfs1", cache1, clicfs1, RW)
 	if err != nil {
 		dbg.Fatal("cfs1: %s", err)
 	}
 	cfs1.Flags.Dbg = testing.Verbose()
-	acfs1, _:= cfs1.AuthFor(ci1.Ai)
+	acfs1, _ := cfs1.AuthFor(ci1.Ai)
 
 	ci2 := &zx.ClientInfo{
-		Ai: &auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true},
+		Ai:  &auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true},
 		Tag: "cli2",
-		Id: 2,
+		Id:  2,
 	}
 	clicfs2, err := cfs.ServerFor(ci2)
 	if err != nil {
@@ -912,26 +909,26 @@ func mkinval(t *testing.T) *invalsetup {
 	if err != nil {
 		dbg.Fatal("mfs2: %s", err)
 	}
-	cache2.WstatAll = true	// cfs does this
+	cache2.WstatAll = true // cfs does this
 	cfs2, err := New("cfs2", cache2, clicfs2, RW)
 	if err != nil {
 		dbg.Fatal("cfs2: %s", err)
 	}
 	cfs2.Flags.Dbg = testing.Verbose()
-	acfs2, _:= cfs2.AuthFor(ci2.Ai)
+	acfs2, _ := cfs2.AuthFor(ci2.Ai)
 
-	return &invalsetup {
+	return &invalsetup{
 		cache1: cache1,
 		cache2: cache2,
-		cache: cache,
-		cfs1: acfs1.(*Cfs),
-		cfs2: acfs2.(*Cfs),
-		cfs: cfs,
-		lfs: sfs,
+		cache:  cache,
+		cfs1:   acfs1.(*Cfs),
+		cfs2:   acfs2.(*Cfs),
+		cfs:    cfs,
+		lfs:    sfs,
 	}
 }
 
-var emptydump =`tree [mfs1] path 1
+var emptydump = `tree [mfs1] path 1
 path / name / type d mode 0755 size 0
 
 tree [mfs2] path 2
@@ -960,9 +957,10 @@ path / name / type d mode 0755 size 0
         path /e/f name f type d mode 0755 size 0
 
 `
+
 func TestInvalInit(t *testing.T) {
 	t.Skip("only by hand")
-	PollIval = 2*CacheTout
+	PollIval = 2 * CacheTout
 	s := mkinval(t)
 	defer os.RemoveAll(tdir)
 	if testing.Verbose() {
@@ -978,10 +976,10 @@ func TestInvalInit(t *testing.T) {
 	}
 	for i := 0; i < len(out); i++ {
 		if strings.HasPrefix(out[i], "tree ") {
-			out[i]= ""
+			out[i] = ""
 		}
 		if strings.HasPrefix(ex[i], "tree ") {
-			ex[i]= ""
+			ex[i] = ""
 		}
 	}
 	if strings.Join(out, "\n") != strings.Join(ex, "\n") {
@@ -991,7 +989,7 @@ func TestInvalInit(t *testing.T) {
 
 func TestInvalChanges(t *testing.T) {
 	t.Skip("only by hand")
-	PollIval = 2*CacheTout
+	PollIval = 2 * CacheTout
 	s := mkinval(t)
 	defer os.RemoveAll(tdir)
 	printf("\ngetdir /a/b\n")
@@ -1016,12 +1014,12 @@ func TestInvalChanges(t *testing.T) {
 		}
 	}
 	printf("\nput /a/n2\n")
-	err = zx.PutAll(s.cfs1, "/a/n2", zx.Dir{"mode":"0644"}, fstest.FileData["/a/a1"])
+	err = zx.PutAll(s.cfs1, "/a/n2", zx.Dir{"mode": "0644"}, fstest.FileData["/a/a1"])
 	if err != nil {
 		t.Fatalf("put: %s", err)
 	}
 	s.cfs1.Sync()
-	time.Sleep(3*CacheTout)
+	time.Sleep(3 * CacheTout)
 
 	for i := 0; i < 2; i++ {
 		printf("\nget2 /a/n2\n")
@@ -1041,7 +1039,7 @@ func TestInvalChanges(t *testing.T) {
 		t.Fatalf("put: %s", err)
 	}
 	s.cfs2.Sync()
-	time.Sleep(3*CacheTout)
+	time.Sleep(3 * CacheTout)
 	printf("\nstat /a/n2\n")
 	d1, err1 := zx.Stat(s.cfs1, "/a/n2")
 	if err1 != nil {
@@ -1065,7 +1063,7 @@ func TestInvalChanges(t *testing.T) {
 	if err != nil {
 		t.Fatalf("rm: %s", err)
 	}
-	time.Sleep(3*CacheTout)
+	time.Sleep(3 * CacheTout)
 	_, err = zx.Stat(s.cfs2, "/e")
 	if err == nil {
 		t.Fatalf("didn't remove")
@@ -1078,4 +1076,3 @@ func TestInvalChanges(t *testing.T) {
 		s.Dump(os.Stdout)
 	}
 }
-

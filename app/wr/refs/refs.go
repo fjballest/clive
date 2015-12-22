@@ -20,7 +20,7 @@
 		V	Volume number
 		W	Where the item can be found locally
 		X	Annotations (not in all macro styles)
-		
+
 		Books
 		%A	R. E. Griswold
 		%A	J. F. Poage
@@ -28,7 +28,7 @@
 		%T	The SNOBOL4 Programming Language
 		%I	PRHALL
 		%D	second edition 1971
-		
+
 		Journal article
 		%A	M. A. Harrison
 		%A	W. L. Ruzzo
@@ -40,7 +40,7 @@
 		%P	461-471
 		%D	AUG 1976
 		%K	hru
-		
+
 		Article in conference proceedings
 		%A	M. Bishop
 		%A	L. Snyder
@@ -49,7 +49,7 @@
 		%J	Proceedings of the 7th SOSP
 		%P	45-54
 		%D	1979
-		
+
 		Article in book
 		%A	John B. Goodenough
 		%T	A Survey of Program Testing Issues
@@ -58,21 +58,21 @@
 		%I	MIT Press
 		%P	316-340
 		%D	1979
-		
+
 		Technical Reports
 		%A	T. A. Budd
 		%T	An APL Complier
 		%R	University of Arizona Techical Report 81-17
 		%C	Tucson, Arizona
 		%D	1981
-		
+
 		PhD Thesis
 		%A	Martin Brooks
 		%T	Automatic Generation of Test Data for
 		Recursive	Programs Having Simple Errors
 		%I	PhD Thesis, Stanford University
 		%D	1980
-		
+
 		Miscellaneous
 		%F	BHS--
 		%A	Timothy A. Budd
@@ -84,39 +84,38 @@
 package refs
 
 import (
-	"io"
-	"fmt"
 	"bytes"
-	"strings"
-	"unicode"
 	"clive/app"
 	"clive/app/nsutil"
+	"fmt"
+	"io"
+	"strings"
+	"unicode"
 )
 
 const (
-	Dir = "/zx/lib/bib"	// default bib dir
+	Dir  = "/zx/lib/bib" // default bib dir
 	Keys = "ATBSJPRVNEFGICDOWX"
-
 )
 
 // When true, Load() reads .bib files containing "bib2ref ok"
 // in the first line (with this line being discarded).
 // Parsing of the bibtex entries is naive and assumes that each
-// field is described in a single line. 
+// field is described in a single line.
 var BibTexOk = true
 
 // A reference maps from the key (eg. 'A') to values (eg. authors)
-type Ref {
+type Ref struct {
 	Keys map[rune][]string
 }
 
 // A bib maps from words found in references to references
-type Bib {
-	refs map[string] map[*Ref]bool
-	All []*Ref	// once loaded, can be used to iterate over the references.
+type Bib struct {
+	refs map[string]map[*Ref]bool
+	All  []*Ref // once loaded, can be used to iterate over the references.
 }
 
-// Load the files at the given dir into a Bib set. 
+// Load the files at the given dir into a Bib set.
 func Load(dir string) (*Bib, error) {
 	ds, err := nsutil.GetDir(dir)
 	if err != nil {
@@ -132,7 +131,7 @@ func Load(dir string) (*Bib, error) {
 				err = xerr
 			}
 		} else if BibTexOk && strings.HasSuffix(nm, ".bib") {
-			b.loadBib(d["path"])	// errors ignored here.
+			b.loadBib(d["path"]) // errors ignored here.
 		}
 	}
 	return b, err

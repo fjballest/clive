@@ -6,11 +6,11 @@ package sleep
 import (
 	"clive/app"
 	"clive/app/opt"
-	"time"
 	"clive/dbg"
+	"time"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 	nflag bool

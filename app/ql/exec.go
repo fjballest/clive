@@ -1,26 +1,26 @@
 package ql
 
 import (
-	"os/exec"
-	"clive/dbg"
+	"bytes"
 	"clive/app"
 	"clive/app/nsutil"
-	"runtime/debug"
+	"clive/dbg"
+	"clive/zx"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"os/exec"
+	"runtime/debug"
 	"strconv"
 	"strings"
-	"bytes"
-	"fmt"
-	"clive/zx"
-	"os"
 )
 
-type xNd {
+type xNd struct {
 	*xEnv
-	pi, po	chan interface{}	// temps to setup pipes
-	bg bool
+	pi, po chan interface{} // temps to setup pipes
+	bg     bool
 }
 
 func (x *xNd) xprintf(fmts string, arg ...interface{}) {
@@ -55,7 +55,7 @@ func (x *xNd) runCmd(nd *Nd) error {
 	x.xprintf("runCmd %s\n", nd)
 	switch nd.Kind {
 	case Nnop:
-	case Nset:	
+	case Nset:
 		return x.setVar(nd)
 	case Npipe:
 		return x.runPipe(nd, nil)
@@ -218,7 +218,7 @@ func (x *xNd) expandChildren(nd *Nd) ([]string, error) {
 	}
 	return names, nil
 }
-	
+
 func (x *xNd) setVar(nd *Nd) error {
 	x.xprintf("setVar %s\n", nd)
 	if nd.Kind != Nset || len(nd.Args) == 0 || len(nd.Args[0]) == 0 {
@@ -254,7 +254,7 @@ func (x *xNd) setVar(nd *Nd) error {
 	case vname == "path" && len(vals) == 0:
 		app.Warn("won't reset path")
 		return errors.New("won't reset path")
-	case vname == "prompt"&& len(vals) != 2:
+	case vname == "prompt" && len(vals) != 2:
 		app.Warn("prompt must have two values")
 		return errors.New("prompt must have two values")
 	case vname == "status":
@@ -333,7 +333,7 @@ func (x *xNd) runPipe(nd *Nd, outc chan interface{}) error {
 					app.DupDot()
 				}
 				if x.bg {
-					app.Bg()	// make it ignore intrs.
+					app.Bg() // make it ignore intrs.
 				}
 				x.xprintf("run %s\n%s\n", c, nc.Sprint())
 				xc <- nc.Wait
@@ -408,7 +408,7 @@ func (x *xNd) redirs(nd *Nd) error {
 				if r.App {
 					nsutil.Put(r.Name, nil, -1, out, "")
 				} else {
-					nsutil.Put(r.Name, zx.Dir{"mode":"0664"}, 0, out, "")
+					nsutil.Put(r.Name, zx.Dir{"mode": "0664"}, 0, out, "")
 				}
 				outs = append(outs, out)
 				// defer error checking until we actually write
@@ -429,9 +429,9 @@ func (x *xNd) redirs(nd *Nd) error {
 		case "":
 			app.Warn("redir with null name")
 		case "=":
-			nfrom, nto := 1, 2		// dup 2 into 1
-			if r.From == 2 {		// dup 1 into 2
-				nfrom, nto = 2,1
+			nfrom, nto := 1, 2 // dup 2 into 1
+			if r.From == 2 {   // dup 1 into 2
+				nfrom, nto = 2, 1
 			} else if r.From != 1 {
 				app.Fatal("ql redirs dup bug")
 			}
@@ -483,8 +483,8 @@ func (nd *Nd) isHereCmd() bool {
 
 // called for pipe children to see if they can run within the pipe app context
 func (nd *Nd) runsHere() bool {
-	if len(nd.Redirs) > 0 {	// thus no pipe with multiple cmds runs here
-		return  false
+	if len(nd.Redirs) > 0 { // thus no pipe with multiple cmds runs here
+		return false
 	}
 	switch nd.Kind {
 	case Nblk, Nfor, Ncond, Nwhile, Nset:
@@ -601,7 +601,7 @@ func (x *xNd) runTee(nd *Nd) error {
 	left := len(nd.Child)
 	var err error
 	in := app.In()
-	doselect{
+	doselect {
 	case cerr := <-wc:
 		if err == nil {
 			err = cerr
@@ -625,7 +625,7 @@ func (x *xNd) runTee(nd *Nd) error {
 	for _, ic := range ics {
 		close(ic, err)
 	}
-	for ; left > 0; left -- {
+	for ; left > 0; left-- {
 		cerr := <-wc
 		if err == nil {
 			err = cerr
@@ -651,7 +651,7 @@ func (x *xNd) runFor(nd *Nd) error {
 		doselect {
 		case <-c.Sig:
 			break
-		case m, ok := <- in:
+		case m, ok := <-in:
 			if !ok {
 				break
 			}
@@ -705,7 +705,7 @@ func (x *xNd) runWhile(nd *Nd) error {
 	if len(nd.Child) != 2 {
 		dbg.Fatal("ql while bug")
 	}
-	cond,bdy := nd.Child[0],nd.Child[1]
+	cond, bdy := nd.Child[0], nd.Child[1]
 	for x.runPipe(cond, nil) == nil {
 		x.runBlk(bdy)
 	}
@@ -750,7 +750,7 @@ func (x *xNd) xexec(argv []string) error {
 	}
 	out := app.Out()
 	var ofd io.ReadCloser
-	donec := make(chan bool , 2)
+	donec := make(chan bool, 2)
 	if out != app.Null {
 		ofd, err = xcmd.StdoutPipe()
 		if err != nil {
@@ -789,7 +789,7 @@ func (x *xNd) xexec(argv []string) error {
 		if ndone == 0 {
 			break
 		}
-	case s  := <-ctx.Sig:
+	case s := <-ctx.Sig:
 		if s == "intr" {
 			if !x.bg {
 				xcmd.Process.Signal(os.Interrupt)
@@ -803,4 +803,3 @@ func (x *xNd) xexec(argv []string) error {
 	err = xcmd.Wait()
 	return err
 }
-

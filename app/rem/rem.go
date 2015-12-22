@@ -3,21 +3,20 @@
 */
 package rem
 
-
 import (
 	"clive/app"
-	"clive/dbg"
 	"clive/app/opt"
+	"clive/dbg"
 	"clive/zx"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
 	aflag, fflag, dry, verb bool
-	dirs []zx.Dir
-	vprintf app.PrintFunc
+	dirs                    []zx.Dir
+	vprintf                 app.PrintFunc
 }
 
 var astr = map[bool]string{true: "-r "}
@@ -81,7 +80,7 @@ func Run() {
 			app.Dprintf("got %T\n", m)
 		}
 	}
-	for i := len(x.dirs)-1; i >= 0; i-- {
+	for i := len(x.dirs) - 1; i >= 0; i-- {
 		if cerr := x.rem(x.dirs[i]); cerr != nil {
 			if !x.fflag {
 				app.Warn("%s", cerr)

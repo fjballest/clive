@@ -50,7 +50,7 @@ func isBrokenOpenSSHVersion(versionStr string) bool {
 	i += len(openSSHPrefix)
 	j := i
 	for ; j < len(versionStr); j++ {
-		if versionStr[j]<'0' || versionStr[j]>'9' {
+		if versionStr[j] < '0' || versionStr[j] > '9' {
 			break
 		}
 	}
@@ -77,7 +77,7 @@ func (c *Client) autoPortListenWorkaround(laddr *net.TCPAddr) (net.Listener, err
 }
 
 // RFC 4254 7.1
-type channelForwardMsg  {
+type channelForwardMsg struct {
 	addr  string
 	rport uint32
 }
@@ -86,7 +86,7 @@ type channelForwardMsg  {
 // on laddr. Incoming connections will be available by calling
 // Accept on the returned net.Listener.
 func (c *Client) ListenTCP(laddr *net.TCPAddr) (net.Listener, error) {
-	if laddr.Port==0 && isBrokenOpenSSHVersion(string(c.ServerVersion())) {
+	if laddr.Port == 0 && isBrokenOpenSSHVersion(string(c.ServerVersion())) {
 		return c.autoPortListenWorkaround(laddr)
 	}
 
@@ -123,14 +123,14 @@ func (c *Client) ListenTCP(laddr *net.TCPAddr) (net.Listener, error) {
 
 // forwardList stores a mapping between remote
 // forward requests and the tcpListeners.
-type forwardList  {
+type forwardList struct {
 	sync.Mutex
 	entries []forwardEntry
 }
 
 // forwardEntry represents an established mapping of a laddr on a
 // remote ssh server to a channel connected to a tcpListener.
-type forwardEntry  {
+type forwardEntry struct {
 	laddr net.TCPAddr
 	c     chan forward
 }
@@ -138,7 +138,7 @@ type forwardEntry  {
 // forward represents an incoming forwarded tcpip connection. The
 // arguments to add/remove/lookup should be address as specified in
 // the original forward-request.
-type forward  {
+type forward struct {
 	newCh NewChannel   // the ssh client channel underlying this forward
 	raddr *net.TCPAddr // the raddr of the incoming connection
 }
@@ -185,7 +185,7 @@ func (l *forwardList) remove(addr net.TCPAddr) {
 	l.Lock()
 	defer l.Unlock()
 	for i, f := range l.entries {
-		if addr.IP.Equal(f.laddr.IP) && addr.Port==f.laddr.Port {
+		if addr.IP.Equal(f.laddr.IP) && addr.Port == f.laddr.Port {
 			l.entries = append(l.entries[:i], l.entries[i+1:]...)
 			close(f.c)
 			return
@@ -207,7 +207,7 @@ func (l *forwardList) forward(laddr, raddr net.TCPAddr, ch NewChannel) bool {
 	l.Lock()
 	defer l.Unlock()
 	for _, f := range l.entries {
-		if laddr.IP.Equal(f.laddr.IP) && laddr.Port==f.laddr.Port {
+		if laddr.IP.Equal(f.laddr.IP) && laddr.Port == f.laddr.Port {
 			f.c <- forward{ch, &raddr}
 			return true
 		}
@@ -215,7 +215,7 @@ func (l *forwardList) forward(laddr, raddr net.TCPAddr, ch NewChannel) bool {
 	return false
 }
 
-type tcpListener  {
+type tcpListener struct {
 	laddr *net.TCPAddr
 
 	conn *Client
@@ -251,7 +251,7 @@ func (l *tcpListener) Close() error {
 	// this also closes the listener.
 	l.conn.forwards.remove(*l.laddr)
 	ok, _, err := l.conn.SendRequest("cancel-tcpip-forward", true, Marshal(&m))
-	if err==nil && !ok {
+	if err == nil && !ok {
 		err = errors.New("ssh: cancel-tcpip-forward failed")
 	}
 	return err
@@ -312,7 +312,7 @@ func (c *Client) DialTCP(n string, laddr, raddr *net.TCPAddr) (net.Conn, error) 
 }
 
 // RFC 4254 7.2
-type channelOpenDirectMsg  {
+type channelOpenDirectMsg struct {
 	raddr string
 	rport uint32
 	laddr string
@@ -331,13 +331,13 @@ func (c *Client) dial(laddr string, lport int, raddr string, rport int) (Channel
 	return ch, err
 }
 
-type tcpChan  {
+type tcpChan struct {
 	Channel // the backing channel
 }
 
 // tcpChanConn fulfills the net.Conn interface without
 // the tcpChan having to hold laddr or raddr directly.
-type tcpChanConn  {
+type tcpChanConn struct {
 	Channel
 	laddr, raddr net.Addr
 }

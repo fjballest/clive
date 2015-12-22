@@ -2,10 +2,10 @@ package trfs
 
 import (
 	"clive/dbg"
-	"clive/zx"
-	"clive/zx/mfs"
-	"clive/zx/fstest"
 	"clive/net/auth"
+	"clive/zx"
+	"clive/zx/fstest"
+	"clive/zx/mfs"
 	"os"
 	"testing"
 )
@@ -13,7 +13,7 @@ import (
 const tdir = "/tmp/mfs_test"
 
 var (
-	printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
+	printf   = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 	moreverb = false
 )
 
@@ -23,7 +23,7 @@ func testfn(t *testing.T, fn func(t fstest.Fataler, fss ...zx.Tree)) {
 	if err != nil {
 		dbg.Fatal("lfs: %s", err)
 	}
-	xfs, _:= fs.AuthFor(&auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true})
+	xfs, _ := fs.AuthFor(&auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true})
 	tr := New(xfs)
 	tc := make(chan string)
 	dc := make(chan bool)
@@ -31,7 +31,7 @@ func testfn(t *testing.T, fn func(t fstest.Fataler, fss ...zx.Tree)) {
 		for x := range tc {
 			printf("%s\n", x)
 		}
-		dc <-true
+		dc <- true
 	}()
 	fstest.MkZXTree(t, tr)
 	fs.Dbg = testing.Verbose()
@@ -83,13 +83,12 @@ func TestWstats(t *testing.T) {
 	testfn(t, fstest.Wstats)
 }
 
-
 func TestAsAFile(t *testing.T) {
 	testfn(t, fstest.AsAFile)
 }
 
 func TestParse(t *testing.T) {
-	ops := []string {
+	ops := []string{
 		`->put[32] /a/b path:/a/b mode:0777`,
 		`cfs->put[32] /a/b path:/a/b mode:0777`,
 	}

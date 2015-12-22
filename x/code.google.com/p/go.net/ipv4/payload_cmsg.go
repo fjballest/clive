@@ -31,7 +31,7 @@ func (c *payloadHandler) ReadFrom(b []byte) (n int, cm *ControlMessage, src net.
 		if n, oobn, _, src, err = c.ReadMsgIP(nb, oob); err != nil {
 			return 0, nil, nil, err
 		}
-		hdrlen := int(nb[0]&0x0f)<<2
+		hdrlen := int(nb[0]&0x0f) << 2
 		copy(b, nb[hdrlen:])
 		n -= hdrlen
 	default:

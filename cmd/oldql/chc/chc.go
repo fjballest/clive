@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	debug bool
 	*opt.Flags
@@ -38,12 +38,12 @@ func bit(s string) uint64 {
 
 func ugoa(s string, bit uint64) uint64 {
 	b := uint64(0)
-	all := s[0]=='+' || s[0]=='-'
+	all := s[0] == '+' || s[0] == '-'
 	if strings.ContainsRune(s, 'u') || strings.ContainsRune(s, 'a') || all {
-		b |= bit<<6
+		b |= bit << 6
 	}
 	if strings.ContainsRune(s, 'g') || strings.ContainsRune(s, 'a') || all {
-		b |= bit<<3
+		b |= bit << 3
 	}
 	if strings.ContainsRune(s, 'o') || strings.ContainsRune(s, 'a') || all {
 		b |= bit
@@ -75,10 +75,10 @@ var units = map[uint8]uint64{
 	'B': 1,
 	'k': 1024,
 	'K': 1024,
-	'm': 1024*1024,
-	'M': 1024*1024,
-	'g': 1024*1024,
-	'G': 1024*1024*1024,
+	'm': 1024 * 1024,
+	'M': 1024 * 1024,
+	'g': 1024 * 1024,
+	'G': 1024 * 1024 * 1024,
 }
 
 func size(val string) string {
@@ -100,7 +100,7 @@ func size(val string) string {
 
 func (x *xCmd) run(d zx.Dir, attr, val string) error {
 	p := d["spath"]
-	if attr=="name" || attr=="path" || attr=="spath" || len(val)==0 {
+	if attr == "name" || attr == "path" || attr == "spath" || len(val) == 0 {
 		return fmt.Errorf("%s: won't change '%s'", d["path"], attr)
 	}
 	if attr == "uids" {
@@ -156,7 +156,7 @@ func Run(c cmd.Ctx) (err error) {
 		x.usage()
 		return err
 	}
-	if len(args)==2 && ismode(args[0]) {
+	if len(args) == 2 && ismode(args[0]) {
 		args = append([]string{"mode"}, args...)
 	}
 	if len(args) < 3 {

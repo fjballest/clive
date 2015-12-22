@@ -14,7 +14,7 @@ import (
 	"os"
 )
 
-type Env  {
+type Env struct {
 	id   uint
 	tab  map[string]*Sym
 	prev *Env
@@ -22,12 +22,12 @@ type Env  {
 	rec  *Type
 }
 
-type List  {
+type List struct {
 	kind int
 	item []interface{}
 }
 
-type Builtin  {
+type Builtin struct {
 	name string
 	id   uint32
 	kind int
@@ -36,7 +36,7 @@ type Builtin  {
 	fn   func(b *Builtin, args *List) *Sym
 }
 
-type Stmt  {
+type Stmt struct {
 	op     int
 	sfname string
 	lineno int
@@ -58,7 +58,7 @@ type Stmt  {
 	incr *Stmt // last statement in fors (i++|i--)
 }
 
-type Type  {
+type Type struct {
 	op    int
 	sym   *Sym
 	first int
@@ -86,7 +86,7 @@ type Type  {
 }
 
 // pc/src table
-type Pcent  {
+type Pcent struct {
 	next *Pcent
 	st   *Stmt
 	nd   *Sym
@@ -94,7 +94,7 @@ type Pcent  {
 }
 
 // generated code
-type Code  {
+type Code struct {
 	addr  uint32
 	pcs   *Pcent
 	pcstl *Pcent
@@ -103,7 +103,7 @@ type Code  {
 	ap    uint
 }
 
-type Prog  {
+type Prog struct {
 	psym   *Sym
 	parms  *List
 	rtype  *Type // ret type or nil if none
@@ -121,7 +121,7 @@ type Prog  {
 	varsz  uint
 }
 
-type Val  {
+type Val struct {
 	//--one of:
 	ival int
 
@@ -133,7 +133,7 @@ type Val  {
 	//--
 }
 
-type Sym  {
+type Sym struct {
 	id     uint
 	name   string
 	stype  int
@@ -169,7 +169,7 @@ type Sym  {
 	off  uint // fields
 }
 
-type Stats  {
+type Stats struct {
 	nenvs  uint // # of envs used
 	menvs  uint // # of envs allocated
 	nsyms  uint // # of syms allocated
@@ -183,7 +183,7 @@ type Stats  {
 }
 
 //line p.y:182
-type YySymType  {
+type YySymType struct {
 	yys   int
 	bval  int
 	sval  string
@@ -320,7 +320,7 @@ func diag(sfmt string, arg ...interface{}) {
 
 func (sc *Scan) Errorf(ffmt string, arg ...interface{}) {
 	Nerrors++
-	if ffmt=="syntax error" && len(Scanner.sval)>0 {
+	if ffmt == "syntax error" && len(Scanner.sval) > 0 {
 
 		puterror(sc.fname, sc.lineno, string(sc.sval[:]), "syntax error", arg...)
 	} else {
@@ -712,7 +712,7 @@ const YyFlag = -1000
 
 func YyTokname(c int) string {
 	// 4 is TOKSTART above
-	if c>=4 && c-4<len(YyToknames) {
+	if c >= 4 && c-4 < len(YyToknames) {
 		if YyToknames[c-4] != "" {
 			return YyToknames[c-4]
 		}
@@ -721,7 +721,7 @@ func YyTokname(c int) string {
 }
 
 func YyStatname(s int) string {
-	if s>=0 && s<len(YyStatenames) {
+	if s >= 0 && s < len(YyStatenames) {
 		if YyStatenames[s] != "" {
 			return YyStatenames[s]
 		}
@@ -807,7 +807,7 @@ Yynewstate:
 		Yychar = Yylex1(Yylex, &Yylval)
 	}
 	Yyn += Yychar
-	if Yyn<0 || Yyn>=YyLast {
+	if Yyn < 0 || Yyn >= YyLast {
 		goto Yydefault
 	}
 	Yyn = YyAct[Yyn]
@@ -832,14 +832,14 @@ Yydefault:
 		/* look through exception table */
 		xi := 0
 		for {
-			if YyExca[xi+0]==-1 && YyExca[xi+1]==Yystate {
+			if YyExca[xi+0] == -1 && YyExca[xi+1] == Yystate {
 				break
 			}
 			xi += 2
 		}
 		for xi += 2; ; xi += 2 {
 			Yyn = YyExca[xi+0]
-			if Yyn<0 || Yyn==Yychar {
+			if Yyn < 0 || Yyn == Yychar {
 				break
 			}
 		}
@@ -866,7 +866,7 @@ Yydefault:
 			/* find a state where "error" is a legal shift action */
 			for Yyp >= 0 {
 				Yyn = YyPact[YyS[Yyp].yys] + YyErrCode
-				if Yyn>=0 && Yyn<YyLast {
+				if Yyn >= 0 && Yyn < YyLast {
 					Yystate = YyAct[Yyn] /* simulate a shift of "error" */
 					if YyChk[Yystate] == YyErrCode {
 						goto Yystack

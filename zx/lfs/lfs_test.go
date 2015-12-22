@@ -12,7 +12,7 @@ import (
 const tdir = "/tmp/lfs_test"
 
 var (
-	printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
+	printf   = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 	moreverb = false
 )
 
@@ -66,7 +66,7 @@ func testfn(t *testing.T, fns ...func(t fstest.Fataler, fss ...zx.Tree)) {
 	}
 	lfs.SaveAttrs(true)
 	lfs.Dbg = testing.Verbose()
-	xfs, _:= lfs.AuthFor(&auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true})
+	xfs, _ := lfs.AuthFor(&auth.Info{Uid: dbg.Usr, SpeaksFor: dbg.Usr, Ok: true})
 	fs := xfs.(zx.RWTree)
 	for _, fn := range fns {
 		if fn != nil {

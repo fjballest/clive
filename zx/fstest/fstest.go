@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 	"testing"
 	"time"
-	"path"
 )
 
 /*
@@ -63,16 +63,16 @@ var (
 //	- Create /a/n /a/n/m /a/n/m/m1
 func MkChgs(t Fataler, tdir string) {
 	Touch(tdir + "/a/a1")
-	if err := os.Chmod(tdir + "/a/a2", 0750); err != nil {
+	if err := os.Chmod(tdir+"/a/a2", 0750); err != nil {
 		t.Fatalf("chmod: %s", err)
 	}
 	if err := os.RemoveAll(tdir + "/a/b/c"); err != nil {
 		t.Fatalf("rm: %s", err)
 	}
-	if err := os.MkdirAll(tdir + "/a/n/m", 0750); err != nil {
+	if err := os.MkdirAll(tdir+"/a/n/m", 0750); err != nil {
 		t.Fatalf("mkdir: %s", err)
 	}
-	if err := ioutil.WriteFile(tdir + "/a/n/m/m1", []byte("a new file\n"), 0640); err != nil {
+	if err := ioutil.WriteFile(tdir+"/a/n/m/m1", []byte("a new file\n"), 0640); err != nil {
 		t.Fatalf("new file: %s", err)
 	}
 	Touch(tdir + "/a/n/m/m1")
@@ -88,7 +88,7 @@ func MkChgs(t Fataler, tdir string) {
 //	- Create /a/n /a/n/m /a/n/m/m1
 func MkZXChgs(t Fataler, fs zx.RWTree) {
 	TouchZX(fs, "/a/a1")
-	if err := <- fs.Wstat("/a/a2", zx.Dir{"mode": "0750"}); err != nil {
+	if err := <-fs.Wstat("/a/a2", zx.Dir{"mode": "0750"}); err != nil {
 		t.Fatalf("chmod: %s", err)
 	}
 	if err := <-fs.RemoveAll("/a/b/c"); err != nil {
@@ -117,7 +117,7 @@ func MkChgs2(t Fataler, tdir string) {
 	if err := os.Remove(tdir + "/2"); err != nil {
 		t.Fatalf("rm: %s", err)
 	}
-	if err := os.MkdirAll(tdir + "/2/n2", 0750); err != nil {
+	if err := os.MkdirAll(tdir+"/2/n2", 0750); err != nil {
 		t.Fatalf("mkdir: %s", err)
 	}
 	Touch(tdir + "/2/n2")
@@ -205,7 +205,7 @@ func MkTree(t Fataler, tdir string) {
 // Create a tree with Dirs and Files at tdir at the given zx tree.
 func MkZXTree(t Fataler, fs zx.RWTree) {
 	for _, dn := range Dirs {
-		if err := zx.MkdirAll(fs, dn, zx.Dir{"mode":"0755"}); err != nil {
+		if err := zx.MkdirAll(fs, dn, zx.Dir{"mode": "0755"}); err != nil {
 			t.Fatalf("mkdir: %s", err)
 		}
 	}
@@ -281,7 +281,7 @@ func EqFiles(t Fataler, path string, fss ...zx.Tree) {
 
 }
 
-type StatTest  {
+type StatTest struct {
 	Path  string
 	Name  string
 	Res   string
@@ -307,12 +307,12 @@ func Stats(t Fataler, fss ...zx.Tree) {
 				dc := fs.Stat(st.Path)
 				d := <-dc
 				if st.Fails {
-					if d!=nil || cerror(dc)==nil {
+					if d != nil || cerror(dc) == nil {
 						t.Fatalf("stat %s didn't fail", st.Path)
 					}
 					continue
 				}
-				if d==nil || cerror(dc)!=nil {
+				if d == nil || cerror(dc) != nil {
 					t.Fatalf("stat %s: %s", st.Path, cerror(dc))
 				}
 				printf("got %s\n", d.LongTestFmt())
@@ -331,11 +331,11 @@ func Stats(t Fataler, fss ...zx.Tree) {
 	}
 }
 
-type MoveTest {
+type MoveTest struct {
 	From, To string
-	Fails bool
-	Child string
-	Res string
+	Fails    bool
+	Child    string
+	Res      string
 }
 
 // Use size X for /
@@ -347,24 +347,23 @@ var MoveTests = []MoveTest{
 	{"/", "/", false, "",
 		"path / name / type d mode 0755 size X Gid nemo Uid nemo",
 	},
-	{"/a/a1", "/a/a2", false,"",
+	{"/a/a1", "/a/a2", false, "",
 		`path /a/a2 name a2 type - mode 0644 size 10154 Gid nemo Uid nemo`,
 	},
-	{"/a/a2", "/a3", false,"",
+	{"/a/a2", "/a3", false, "",
 		`path /a3 name a3 type - mode 0644 size 10154 Gid nemo Uid nemo`,
 	},
-	{"/a/b", "/d/b", false,"/d/b/c/c3",
+	{"/a/b", "/d/b", false, "/d/b/c/c3",
 		`path /d/b name b type d mode 0755 size 1 Gid nemo Uid nemo`,
 	},
 	{"/1", "/e", true, "", ""},
 	{"/e", "/1", true, "", ""},
 	{"/Ctl", "/x", true, "", ""},
 	{"/x", "/Ctl", true, "", ""},
-	{"/d", "/d/b", true,"",``,},
-	{"/", "/x", true,"",``,},
-	{"/", "/a", true,"",``,},
-	{"/a/a2", "/a", true,"",``,},
-
+	{"/d", "/d/b", true, "", ``},
+	{"/", "/x", true, "", ``},
+	{"/", "/a", true, "", ``},
+	{"/a/a2", "/a", true, "", ``},
 }
 
 func Moves(t Fataler, fss ...zx.Tree) {
@@ -373,7 +372,7 @@ func Moves(t Fataler, fss ...zx.Tree) {
 		printf("mv %s %s\n", mv.From, mv.To)
 		err := <-fs.Move(mv.From, mv.To)
 		if mv.Fails {
-			if err==nil {
+			if err == nil {
 				t.Fatalf("mv %s didn't fail", mv.From)
 			}
 			continue
@@ -388,7 +387,7 @@ func Moves(t Fataler, fss ...zx.Tree) {
 		delete(d, "Sum")
 		r := d.LongTestFmt()
 		printf("new stat: %s\n", r)
-		if strings.Contains(mv.Res, "size X") {	// as is, with ctl, with ctl and chg
+		if strings.Contains(mv.Res, "size X") { // as is, with ctl, with ctl and chg
 			r = strings.Replace(r, "size 5", "size X", 1)
 			r = strings.Replace(r, "size 6", "size X", 1)
 			r = strings.Replace(r, "size 7", "size X", 1)
@@ -456,7 +455,7 @@ func DirSizes(t Fataler, fss ...zx.Tree) {
 
 func StatsBench(b *testing.B, fs zx.Tree) {
 	for bi := 0; bi < b.N; bi++ {
-		i := bi%len(StatTests)
+		i := bi % len(StatTests)
 		st := StatTests[i]
 		if st.Fails {
 			continue
@@ -526,7 +525,7 @@ func Gets(t Fataler, fss ...zx.Tree) {
 			}
 			for _, p := range BadPaths {
 				dat, err := zx.GetAll(fs, p)
-				if err==nil || len(dat)>0 {
+				if err == nil || len(dat) > 0 {
 					t.Fatalf("get %s didn't fail", p)
 				}
 			}
@@ -548,7 +547,7 @@ func GetsBench(b *testing.B, fs zx.Tree) {
 	}
 }
 
-type FindTest  {
+type FindTest struct {
 	Path         string
 	Pred         string
 	Spref, Dpref string
@@ -663,7 +662,7 @@ func FindGets(t Fataler, fss ...zx.Tree) {
 							fdata = append(fdata, d...)
 						}
 					}
-					if d["path"]=="/Ctl" || d["path"]=="/Chg" {
+					if d["path"] == "/Ctl" || d["path"] == "/Chg" {
 						continue
 					}
 					printf("\t%s err=%v data=[%d]\n", d.LongTestFmt(), d["err"], len(fdata))
@@ -675,7 +674,7 @@ func FindGets(t Fataler, fss ...zx.Tree) {
 					data := string(fdata)
 					fdatas = append(fdatas, data)
 					fd := FileData[d["path"]]
-					if len(data)>0 && len(fd)>0 && data!=string(fd) {
+					if len(data) > 0 && len(fd) > 0 && data != string(fd) {
 						t.Fail()
 						t.Logf("bad content for %s", d["path"])
 						t.Logf("file is <%s>\n\n\n", data)
@@ -689,10 +688,10 @@ func FindGets(t Fataler, fss ...zx.Tree) {
 					}
 					continue
 				}
-				if !f.Fails && err!=nil {
+				if !f.Fails && err != nil {
 					t.Fatalf("%s failed: %s", f.Path, err)
 				}
-				if f.Res!=nil && strings.Join(f.Res, "\n")!=strings.Join(dents, "\n") {
+				if f.Res != nil && strings.Join(f.Res, "\n") != strings.Join(dents, "\n") {
 					t.Logf("expected <%s>\n",
 						strings.Join(f.Res, "\n"))
 					t.Logf("got <%s>\n",
@@ -724,7 +723,7 @@ func Finds(t Fataler, fss ...zx.Tree) {
 					if d["path"] == "/" {
 						d["size"] = "0" // get dir of ctl, chg
 					}
-					if d["path"]=="/Ctl" || d["path"]=="/Chg" {
+					if d["path"] == "/Ctl" || d["path"] == "/Chg" {
 						continue
 					}
 					if d["err"] != "" {
@@ -745,10 +744,10 @@ func Finds(t Fataler, fss ...zx.Tree) {
 					}
 					continue
 				}
-				if !f.Fails && err!=nil {
+				if !f.Fails && err != nil {
 					t.Fatalf("%s failed: %s", f.Path, err)
 				}
-				if f.Res!=nil && strings.Join(f.Res, "\n")!=strings.Join(dents, "\n") {
+				if f.Res != nil && strings.Join(f.Res, "\n") != strings.Join(dents, "\n") {
 					t.Logf("expected <%s>\n",
 						strings.Join(f.Res, "\n"))
 					t.Logf("got <%s>\n",
@@ -765,7 +764,7 @@ func FindsBench(b *testing.B, fs zx.Tree) {
 		dc := fs.Find("/", "", "/", "/", 0)
 		tot := 0
 		for d := range dc {
-			if d["path"]=="/Ctl" || d["path"]=="/Chg" {
+			if d["path"] == "/Ctl" || d["path"] == "/Chg" {
 				continue
 			}
 			tot++
@@ -776,76 +775,76 @@ func FindsBench(b *testing.B, fs zx.Tree) {
 	}
 }
 
-type PutTest  {
+type PutTest struct {
 	Path  string
-	Dir zx.Dir
+	Dir   zx.Dir
 	Res   string
-	Rdir string
+	Rdir  string
 	Fails bool
-	N int
+	N     int
 	data  []byte
 }
 
 var PutTests = []PutTest{
 	{
 		Path: "/n1",
-		Dir: zx.Dir{"mode": "0640"},
+		Dir:  zx.Dir{"mode": "0640"},
 		Res:  "path  name  type  mode  size 10890",
 		Rdir: "path /n1 name n1 type - mode 0640 size 10890",
 	},
 	{
 		Path: "/n1",
-		Dir: zx.Dir{"mode": "0640"},
+		Dir:  zx.Dir{"mode": "0640"},
 		Res:  "path  name  type  mode  size 22890",
 		Rdir: "path /n1 name n1 type - mode 0640 size 22890",
 	},
 	{
 		Path: "/a/n2",
-		Dir: zx.Dir{"mode": "0640"},
+		Dir:  zx.Dir{"mode": "0640"},
 		Res:  "path  name  type  mode  size 40890",
 		Rdir: "path /a/n2 name n2 type - mode 0640 size 40890",
 	},
 	{
 		Path:  "/",
-		Dir: zx.Dir{"mode": "0640"},
+		Dir:   zx.Dir{"mode": "0640"},
 		Fails: true,
 	},
 	{
 		Path:  "/a",
-		Dir: zx.Dir{"mode": "0640"},
+		Dir:   zx.Dir{"mode": "0640"},
 		Fails: true,
 	},
 	{
 		Path:  "/a/b/c/d/e/f",
-		Dir: zx.Dir{"mode": "0640"},
+		Dir:   zx.Dir{"mode": "0640"},
 		Fails: true,
 	},
 	{
 		Path: "/newfile",
-		Dir: zx.Dir{"mode": "0600", "size": "50000"},
-		Res: "path  name  type  mode  size 50000",
-		N: 50000,
+		Dir:  zx.Dir{"mode": "0600", "size": "50000"},
+		Res:  "path  name  type  mode  size 50000",
+		N:    50000,
 	},
 	{
-		Path: "/newfile",
-		Dir: zx.Dir{"Wuid": "xx"},
+		Path:  "/newfile",
+		Dir:   zx.Dir{"Wuid": "xx"},
 		Fails: true,
 	},
 	{
-		Path: "/newfile",
-		Dir: zx.Dir{"type": "xx"},
+		Path:  "/newfile",
+		Dir:   zx.Dir{"type": "xx"},
 		Fails: true,
 	},
 	/*
-		won't work for lfs w/o attrs
-	{
-		Path: "/newfile",
-		Dir: zx.Dir{"mtime": "7000000000", "size": "40003", "X": "Y"},
-		Res: "path  name  type  mode  size 40003 mtime 7000000000",
-		// mode is 640 because 40 is inherited in previous put.
-		Rdir: "path /newfile name newfile type - mode 0640 size 40003 mtime 7000000000 X Y",
-		N: 40003,
-	},
+			won't work for lfs w/o attrs
+		{
+			Path: "/newfile",
+			Dir: zx.Dir{"mtime": "7000000000", "size": "40003", "X": "Y"},
+			Res: "path  name  type  mode  size 40003 mtime 7000000000",
+			// mode is 640 because 40 is inherited in previous put.
+			Rdir: "path /newfile name newfile type - mode 0640 size 40003 mtime 7000000000 X Y",
+			N: 40003,
+		},
 	*/
 }
 
@@ -886,12 +885,12 @@ func Puts(t Fataler, fss ...zx.Tree) {
 			close(dc)
 			xd = <-xc
 			if nf.Fails {
-				if xd!=nil || cerror(xc)==nil {
+				if xd != nil || cerror(xc) == nil {
 					t.Fatalf("%s: didn't fail", nf.Path)
 				}
 				continue
 			}
-			if xd==nil || cerror(xc)!=nil {
+			if xd == nil || cerror(xc) != nil {
 				t.Fatalf("%s: %s\n", nf.Path, cerror(xc))
 			}
 			got := xd.TestFmt()
@@ -941,7 +940,6 @@ func Puts(t Fataler, fss ...zx.Tree) {
 		}
 	}
 }
-
 
 func GetCtl(t Fataler, fss ...zx.Tree) {
 	if len(fss) == 0 {
@@ -998,7 +996,6 @@ func PutCtl(t Fataler, fss ...zx.Tree) {
 	printf("put sts %s\n", err)
 }
 
-
 func PutsBench(b *testing.B, xfs zx.Tree) {
 	fs := xfs.(zx.RWTree)
 	b.StopTimer()
@@ -1036,15 +1033,15 @@ func Mkdirs(t Fataler, fss ...zx.Tree) {
 			printf("mkdir %s\n", p)
 			ec := fs.Mkdir(p, zx.Dir{"mode": "0750"})
 			err := <-ec
-			if i>0 && err==nil {
+			if i > 0 && err == nil {
 				t.Fatalf("could re-mkdir %s", p)
 			}
-			if i==0 && err!=nil {
+			if i == 0 && err != nil {
 				t.Fatalf("%s: %s", p, err)
 			}
 			for _, fs := range fss {
 				d, err := zx.Stat(fs, p)
-				if err!=nil || d["type"]!="d" || d["mode"]!="0750" {
+				if err != nil || d["type"] != "d" || d["mode"] != "0750" {
 					t.Fatalf("mkdir not there %v %v", err, d)
 				}
 			}
@@ -1075,15 +1072,15 @@ func Removes(t Fataler, fss ...zx.Tree) {
 			printf("remove %s\n", p)
 			ec := fs.Remove(p)
 			err := <-ec
-			if i>0 && err==nil {
+			if i > 0 && err == nil {
 				t.Fatalf("could re-remove %s", p)
 			}
-			if i==0 && err!=nil {
+			if i == 0 && err != nil {
 				t.Fatalf("%s: %s", p, err)
 			}
 			for _, fs := range fss {
 				d, err := zx.Stat(fs, p)
-				if err==nil || d!=nil {
+				if err == nil || d != nil {
 					t.Fatalf("%s still there", p)
 				}
 			}
@@ -1115,12 +1112,12 @@ func MkdirRemoveBench(b *testing.B, xfs zx.Tree) {
 	}
 }
 
-type WstatTest  {
-	Path  string
-	Dir   zx.Dir
+type WstatTest struct {
+	Path   string
+	Dir    zx.Dir
 	AppDir bool
-	Res   string
-	Fails bool
+	Res    string
+	Fails  bool
 }
 
 var WstatTests = []WstatTest{
@@ -1182,7 +1179,7 @@ func Wstats(t Fataler, fss ...zx.Tree) {
 				}
 				continue
 			}
-			if !f.Fails && err!=nil {
+			if !f.Fails && err != nil {
 				t.Fatalf("%s: %s", f.Path, err)
 			}
 			for _, fs := range fss {
@@ -1209,93 +1206,93 @@ var UsrWstatTests = []WstatTest{
 	{
 		Path: "/a",
 		Dir:  zx.Dir{"mode": "07755"},
-		Res: `path /a name a type d mode 0755 size 3 Gid nemo Uid nemo Wuid nemo`,
+		Res:  `path /a name a type d mode 0755 size 3 Gid nemo Uid nemo Wuid nemo`,
 	},
 	// changing size in a dir is ignored if writing existing attributes.
 	{
-		Path: "/a",
-		Dir:  zx.Dir{"size": "5"},
+		Path:   "/a",
+		Dir:    zx.Dir{"size": "5"},
 		AppDir: true,
-		Res: `path /a name a type d mode 0755 size 3 Gid nemo Uid nemo Wuid nemo`,
+		Res:    `path /a name a type d mode 0755 size 3 Gid nemo Uid nemo Wuid nemo`,
 	},
 	// writing a non  user attribute
 	{
-		Path: "/a",
-		Dir:  zx.Dir{"foo": "bar"},
+		Path:  "/a",
+		Dir:   zx.Dir{"foo": "bar"},
 		Fails: true,
 	},
 	// writing a ignored non  user attribute
 	{
 		Path: "/a",
 		Dir:  zx.Dir{"mtime": "0", "foo": "bar"},
-		Res: `path /a name a type d mode 0755 size 3 Gid nemo Uid nemo Wuid nemo`,
+		Res:  `path /a name a type d mode 0755 size 3 Gid nemo Uid nemo Wuid nemo`,
 	},
 	// Adding a user attribute
 	{
 		Path: "/a",
 		Dir:  zx.Dir{"Dir": "X"},
-		Res: `path /a name a type d mode 0755 size 3 Dir X Gid nemo Uid nemo Wuid nemo`,
+		Res:  `path /a name a type d mode 0755 size 3 Dir X Gid nemo Uid nemo Wuid nemo`,
 	},
 	// Same, using the previous dir
 	{
-		Path: "/a",
-		Dir:  zx.Dir{"Dir": "X"},
+		Path:   "/a",
+		Dir:    zx.Dir{"Dir": "X"},
 		AppDir: true,
-		Res: `path /a name a type d mode 0755 size 3 Dir X Gid nemo Uid nemo Wuid nemo`,
+		Res:    `path /a name a type d mode 0755 size 3 Dir X Gid nemo Uid nemo Wuid nemo`,
 	},
 	// Adding a two user attributes
 	{
 		Path: "/a",
 		Dir:  zx.Dir{"Dir": "X", "Abc": "A"},
-		Res: `path /a name a type d mode 0755 size 3 Abc A Dir X Gid nemo Uid nemo Wuid nemo`,
+		Res:  `path /a name a type d mode 0755 size 3 Abc A Dir X Gid nemo Uid nemo Wuid nemo`,
 	},
 	// Removing a non existing user attribute
 	{
 		Path: "/a",
 		Dir:  zx.Dir{"Non": ""},
-		Res: `path /a name a type d mode 0755 size 3 Abc A Dir X Gid nemo Uid nemo Wuid nemo`,
+		Res:  `path /a name a type d mode 0755 size 3 Abc A Dir X Gid nemo Uid nemo Wuid nemo`,
 	},
 	// Rewriting a user attribute
 	{
 		Path: "/a",
 		Dir:  zx.Dir{"Abc": "B"},
-		Res: `path /a name a type d mode 0755 size 3 Abc B Dir X Gid nemo Uid nemo Wuid nemo`,
+		Res:  `path /a name a type d mode 0755 size 3 Abc B Dir X Gid nemo Uid nemo Wuid nemo`,
 	},
 	// Removing a user attribute
 	{
 		Path: "/a",
 		Dir:  zx.Dir{"Abc": ""},
-		Res: `path /a name a type d mode 0755 size 3 Dir X Gid nemo Uid nemo Wuid nemo`,
+		Res:  `path /a name a type d mode 0755 size 3 Dir X Gid nemo Uid nemo Wuid nemo`,
 	},
 	// Type change
 	{
-		Path: "/a",
-		Dir:  zx.Dir{"type": "x"},
+		Path:  "/a",
+		Dir:   zx.Dir{"type": "x"},
 		Fails: true,
 	},
 	// Removing a sys attribute
 	{
-		Path: "/a",
-		Dir:  zx.Dir{"type": "", "Dir": "X"},
+		Path:  "/a",
+		Dir:   zx.Dir{"type": "", "Dir": "X"},
 		Fails: true,
 	},
 	// Trying to change size
 	{
-		Path: "/a",
-		Dir:  zx.Dir{"size": "55"},
+		Path:  "/a",
+		Dir:   zx.Dir{"size": "55"},
 		Fails: true,
 	},
 	// Bad path
 	{
-		Path: "2",
-		Dir:  zx.Dir{"size": "55"},
+		Path:  "2",
+		Dir:   zx.Dir{"size": "55"},
 		Fails: true,
 	},
 	// Truncating a file
 	{
 		Path: "/2",
 		Dir:  zx.Dir{"size": "55"},
-		Res: `path /2 name 2 type - mode 0644 size 55 Gid nemo Uid nemo Wuid nemo`,
+		Res:  `path /2 name 2 type - mode 0644 size 55 Gid nemo Uid nemo Wuid nemo`,
 	},
 }
 
@@ -1326,7 +1323,7 @@ func UsrWstats(t Fataler, fss ...zx.Tree) {
 				}
 				continue
 			}
-			if !f.Fails && err!=nil {
+			if !f.Fails && err != nil {
 				t.Fatalf("%s: %s", f.Path, err)
 			}
 			for _, fs := range fss {
@@ -1386,7 +1383,7 @@ var SendOuts = []string{
 func SendRecv(t Fataler, sfs, rfs zx.RWTree) {
 	dc := make(chan []byte)
 	rf, err := zx.Stat(sfs, "/")
-	if err!=nil || rf==nil {
+	if err != nil || rf == nil {
 		t.Fatalf("stat: %s", err)
 	}
 	zx.DebugSend = testing.Verbose()
@@ -1418,7 +1415,7 @@ func SendRecv(t Fataler, sfs, rfs zx.RWTree) {
 		if d["path"] == "/" {
 			d["size"] = "0" // get rid of ctl, chg
 		}
-		if d["path"]=="/Ctl" || d["path"]=="/Chg" {
+		if d["path"] == "/Ctl" || d["path"] == "/Chg" {
 			continue
 		}
 		tot++

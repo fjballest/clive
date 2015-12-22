@@ -10,7 +10,7 @@ const nBuf = 8192
 // An interactive reader capable of prompting the user.
 // IsTTY can be used to decide if the prompt should be empty,
 // in which case it is not written.
-type Reader  {
+type Reader struct {
 	lk     sync.Mutex
 	in     io.Reader
 	out    io.Writer

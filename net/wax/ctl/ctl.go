@@ -36,7 +36,7 @@ type Radio string
 	Once created and applied to a wax page the channels can be used
 	to receive events an post udpates.
 */
-type Bar  {
+type Bar struct {
 	*wax.Conn
 	Buttons  []interface{} // must contain only Button, Radio, and Check
 	napplies int
@@ -176,7 +176,7 @@ type Label string
 	Once created and applied to a wax page, the channels are used
 	to retrieve events and post updates.
 */
-type Menu  {
+type Menu struct {
 	*wax.Conn
 	Label    string
 	Opts     []interface{} // Must contain only Label or Menu entries
@@ -256,7 +256,7 @@ func (m *Menu) ShowAt(w io.Writer, nm string) error {
 	Once created and applied to a wax page the channels can be used
 	to receive events an post udpates.
 */
-type Entry  {
+type Entry struct {
 	*wax.Conn
 	Label    string
 	napplies int

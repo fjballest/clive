@@ -20,7 +20,7 @@ import (
 // than version 4 and should not be used to create new signatures. They are included
 // here for backwards compatibility to read and validate with older key material.
 // See RFC 4880, section 5.2.2.
-type SignatureV3  {
+type SignatureV3 struct {
 	SigType      SignatureType
 	CreationTime time.Time
 	IssuerKeyId  uint64
@@ -38,7 +38,7 @@ func (sig *SignatureV3) parse(r io.Reader) (err error) {
 	if _, err = readFull(r, buf[:1]); err != nil {
 		return
 	}
-	if buf[0]<2 || buf[0]>3 {
+	if buf[0] < 2 || buf[0] > 3 {
 		err = errors.UnsupportedError("signature packet version " + strconv.Itoa(int(buf[0])))
 		return
 	}
@@ -130,7 +130,7 @@ func (sig *SignatureV3) Serialize(w io.Writer) (err error) {
 		return
 	}
 
-	if sig.RSASignature.bytes==nil && sig.DSASigR.bytes==nil {
+	if sig.RSASignature.bytes == nil && sig.DSASigR.bytes == nil {
 		return errors.InvalidArgumentError("Signature: need to call Sign, SignUserId or SignKey before Serialize")
 	}
 

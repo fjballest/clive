@@ -4,14 +4,14 @@
 package lf
 
 import (
-	"clive/dbg"
 	"clive/app"
 	"clive/app/opt"
+	"clive/dbg"
 	"clive/zx"
 	"errors"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 	gflag bool
@@ -62,7 +62,7 @@ func Run() {
 			ok = out <- m
 		case zx.Dir:
 			app.Dprintf("got %T %s\n", m, m["upath"])
-			if m["err"]!="" {
+			if m["err"] != "" {
 				if m["err"] != "pruned" {
 					sts = errors.New(m["err"])
 					app.Warn("%s", m["err"])

@@ -91,7 +91,7 @@ func isQuery(msg []byte) (greatestCommonVersion int) {
 			return
 		}
 
-		if c==' ' || c=='\t' {
+		if c == ' ' || c == '\t' {
 			// Probably an invalid message
 			return 0
 		}
@@ -161,7 +161,7 @@ func init() {
 // Conversation.Receive and all outbound messages to Conversation.Send. The
 // Conversation will take care of maintaining the encryption state and
 // negotiating encryption as needed.
-type Conversation  {
+type Conversation struct {
 	// PrivateKey contains the private key to use to sign key exchanges.
 	PrivateKey *PrivateKey
 
@@ -210,7 +210,7 @@ type Conversation  {
 }
 
 // A keySlot contains key material for a specific (their keyid, my keyid) pair.
-type keySlot  {
+type keySlot struct {
 	// used is true if this slot is valid. If false, it's free for reuse.
 	used                   bool
 	theirKeyId             uint32
@@ -223,7 +223,7 @@ type keySlot  {
 // akeKeys are generated during key exchange. There's one set for the reveal
 // signature message and another for the signature message. In the protocol
 // spec the latter are indicated with a prime mark.
-type akeKeys  {
+type akeKeys struct {
 	c      [16]byte
 	m1, m2 [32]byte
 }
@@ -245,7 +245,7 @@ func (c *Conversation) randMPI(buf []byte) *big.Int {
 }
 
 // tlv represents the type-length value from the protocol.
-type tlv  {
+type tlv struct {
 	typ, length uint16
 	data        []byte
 }
@@ -268,12 +268,12 @@ const (
 func (c *Conversation) Receive(in []byte) (out []byte, encrypted bool, change SecurityChange, toSend [][]byte, err error) {
 	if bytes.HasPrefix(in, fragmentPrefix) {
 		in, err = c.processFragment(in)
-		if in==nil || err!=nil {
+		if in == nil || err != nil {
 			return
 		}
 	}
 
-	if bytes.HasPrefix(in, msgPrefix) && in[len(in)-1]=='.' {
+	if bytes.HasPrefix(in, msgPrefix) && in[len(in)-1] == '.' {
 		in = in[len(msgPrefix) : len(in)-1]
 	} else if version := isQuery(in); version > 0 {
 		c.authState = authStateAwaitingDHKey
@@ -295,7 +295,7 @@ func (c *Conversation) Receive(in []byte) (out []byte, encrypted bool, change Se
 	msg = msg[:msgLen]
 
 	// The first two bytes are the protocol version (2)
-	if len(msg)<3 || msg[0]!=0 || msg[1]!=2 {
+	if len(msg) < 3 || msg[0] != 0 || msg[1] != 2 {
 		err = errors.New("otr: invalid OTR message")
 		return
 	}
@@ -528,7 +528,7 @@ var fragmentError = errors.New("otr: invalid OTR fragment")
 func (c *Conversation) processFragment(in []byte) (out []byte, err error) {
 	in = in[len(fragmentPrefix):] // remove "?OTR,"
 	parts := bytes.Split(in, fragmentPartSeparator)
-	if len(parts)!=4 || len(parts[3])!=0 {
+	if len(parts) != 4 || len(parts[3]) != 0 {
 		return nil, fragmentError
 	}
 
@@ -542,14 +542,14 @@ func (c *Conversation) processFragment(in []byte) (out []byte, err error) {
 		return nil, fragmentError
 	}
 
-	if k<1 || n<1 || k>n {
+	if k < 1 || n < 1 || k > n {
 		return nil, fragmentError
 	}
 
 	if k == 1 {
 		c.frag = append(c.frag[:0], parts[2]...)
 		c.k, c.n = k, n
-	} else if n==c.n && k==c.k+1 {
+	} else if n == c.n && k == c.k+1 {
 		c.frag = append(c.frag, parts[2]...)
 		c.k++
 	} else {
@@ -557,7 +557,7 @@ func (c *Conversation) processFragment(in []byte) (out []byte, err error) {
 		c.n, c.k = 0, 0
 	}
 
-	if c.n>0 && c.k==c.n {
+	if c.n > 0 && c.k == c.n {
 		c.n, c.k = 0, 0
 		return c.frag, nil
 	}
@@ -606,7 +606,7 @@ func (c *Conversation) processDHCommit(in []byte) error {
 	var ok1, ok2 bool
 	c.gxBytes, in, ok1 = getData(in)
 	digest, in, ok2 := getData(in)
-	if !ok1 || !ok2 || len(in)>0 {
+	if !ok1 || !ok2 || len(in) > 0 {
 		return errors.New("otr: corrupt DH commit message")
 	}
 	copy(c.digest[:], digest)
@@ -616,7 +616,7 @@ func (c *Conversation) processDHCommit(in []byte) error {
 func (c *Conversation) compareToDHCommit(in []byte) (int, error) {
 	_, in, ok1 := getData(in)
 	digest, in, ok2 := getData(in)
-	if !ok1 || !ok2 || len(in)>0 {
+	if !ok1 || !ok2 || len(in) > 0 {
 		return 0, errors.New("otr: corrupt DH commit message")
 	}
 	return bytes.Compare(c.digest[:], digest), nil
@@ -643,7 +643,7 @@ func (c *Conversation) processDHKey(in []byte) (isSame bool, err error) {
 		err = errors.New("otr: corrupt DH key message")
 		return
 	}
-	if gy.Cmp(g)<0 || gy.Cmp(pMinus2)>0 {
+	if gy.Cmp(g) < 0 || gy.Cmp(pMinus2) > 0 {
 		err = errors.New("otr: DH value out of range")
 		return
 	}
@@ -718,7 +718,7 @@ func (c *Conversation) processEncryptedSig(encryptedSig, theirMAC []byte, keys *
 	mac.Write(appendData(nil, encryptedSig))
 	myMAC := mac.Sum(nil)[:20]
 
-	if len(myMAC)!=len(theirMAC) || subtle.ConstantTimeCompare(myMAC, theirMAC)==0 {
+	if len(myMAC) != len(theirMAC) || subtle.ConstantTimeCompare(myMAC, theirMAC) == 0 {
 		return errors.New("bad signature MAC in encrypted signature")
 	}
 
@@ -769,7 +769,7 @@ func (c *Conversation) processRevealSig(in []byte) error {
 	r, in, ok1 := getData(in)
 	encryptedSig, in, ok2 := getData(in)
 	theirMAC := in
-	if !ok1 || !ok2 || len(theirMAC)!=20 {
+	if !ok1 || !ok2 || len(theirMAC) != 20 {
 		return errors.New("otr: corrupt reveal signature message")
 	}
 
@@ -783,15 +783,15 @@ func (c *Conversation) processRevealSig(in []byte) error {
 	h := sha256.New()
 	h.Write(c.gxBytes)
 	digest := h.Sum(nil)
-	if len(digest)!=len(c.digest) || subtle.ConstantTimeCompare(digest, c.digest[:])==0 {
+	if len(digest) != len(c.digest) || subtle.ConstantTimeCompare(digest, c.digest[:]) == 0 {
 		return errors.New("otr: bad commit MAC in reveal signature message")
 	}
 	var rest []byte
 	c.gx, rest, ok1 = getMPI(c.gxBytes)
-	if !ok1 || len(rest)>0 {
+	if !ok1 || len(rest) > 0 {
 		return errors.New("otr: gx corrupt after decryption")
 	}
-	if c.gx.Cmp(g)<0 || c.gx.Cmp(pMinus2)>0 {
+	if c.gx.Cmp(g) < 0 || c.gx.Cmp(pMinus2) > 0 {
 		return errors.New("otr: DH value out of range")
 	}
 	s := new(big.Int).Exp(c.gx, c.y, p)
@@ -828,7 +828,7 @@ func (c *Conversation) generateSig() []byte {
 func (c *Conversation) processSig(in []byte) error {
 	encryptedSig, in, ok1 := getData(in)
 	theirMAC := in
-	if !ok1 || len(theirMAC)!=macPrefixBytes {
+	if !ok1 || len(theirMAC) != macPrefixBytes {
 		return errors.New("otr: corrupt signature message")
 	}
 
@@ -846,7 +846,7 @@ func (c *Conversation) rotateDHKeys() {
 	// evict slots using our retired key id
 	for i := range c.keySlots {
 		slot := &c.keySlots[i]
-		if slot.used && slot.myKeyId==c.myKeyId-1 {
+		if slot.used && slot.myKeyId == c.myKeyId-1 {
 			slot.used = false
 			c.oldMACs = append(c.oldMACs, slot.sendMACKey...)
 			c.oldMACs = append(c.oldMACs, slot.recvMACKey...)
@@ -873,7 +873,7 @@ func (c *Conversation) processData(in []byte) (out []byte, tlvs []tlv, err error
 	macedData := origIn[:len(origIn)-len(in)]
 	theirMAC, in, ok7 := getNBytes(in, macPrefixBytes)
 	_, in, ok8 := getData(in)
-	if !ok1 || !ok2 || !ok3 || !ok4 || !ok5 || !ok6 || !ok7 || !ok8 || len(in)>0 {
+	if !ok1 || !ok2 || !ok3 || !ok4 || !ok5 || !ok6 || !ok7 || !ok8 || len(in) > 0 {
 		err = errors.New("otr: corrupt data message")
 		return
 	}
@@ -892,7 +892,7 @@ func (c *Conversation) processData(in []byte) (out []byte, tlvs []tlv, err error
 	mac.Write([]byte{0, 2, 3})
 	mac.Write(macedData)
 	myMAC := mac.Sum(nil)
-	if len(myMAC)!=len(theirMAC) || subtle.ConstantTimeCompare(myMAC, theirMAC)==0 {
+	if len(myMAC) != len(theirMAC) || subtle.ConstantTimeCompare(myMAC, theirMAC) == 0 {
 		if !ignoreErrors {
 			err = errors.New("otr: bad MAC on data message")
 		}
@@ -922,7 +922,7 @@ func (c *Conversation) processData(in []byte) (out []byte, tlvs []tlv, err error
 		// evict slots using their retired key id
 		for i := range c.keySlots {
 			slot := &c.keySlots[i]
-			if slot.used && slot.theirKeyId==theirKeyId-1 {
+			if slot.used && slot.theirKeyId == theirKeyId-1 {
 				slot.used = false
 				c.oldMACs = append(c.oldMACs, slot.sendMACKey...)
 				c.oldMACs = append(c.oldMACs, slot.recvMACKey...)
@@ -966,7 +966,7 @@ func (c *Conversation) generateData(msg []byte, extra *tlv) []byte {
 	plaintext = append(plaintext, msg...)
 	plaintext = append(plaintext, 0)
 
-	padding := paddingGranularity - ((len(plaintext) + 4)%paddingGranularity)
+	padding := paddingGranularity - ((len(plaintext) + 4) % paddingGranularity)
 	plaintext = appendU16(plaintext, tlvTypePadding)
 	plaintext = appendU16(plaintext, uint16(padding))
 	for i := 0; i < padding; i++ {
@@ -1025,7 +1025,7 @@ func (c *Conversation) calcDataKeys(myKeyId, theirKeyId uint32) (slot *keySlot, 
 	// Check for a cache hit.
 	for i := range c.keySlots {
 		slot = &c.keySlots[i]
-		if slot.used && slot.theirKeyId==theirKeyId && slot.myKeyId==myKeyId {
+		if slot.used && slot.theirKeyId == theirKeyId && slot.myKeyId == myKeyId {
 			return
 		}
 	}
@@ -1058,7 +1058,7 @@ func (c *Conversation) calcDataKeys(myKeyId, theirKeyId uint32) (slot *keySlot, 
 
 	if theirKeyId == c.theirKeyId {
 		theirPub = c.theirCurrentDHPub
-	} else if theirKeyId==c.theirKeyId-1 && c.theirLastDHPub!=nil {
+	} else if theirKeyId == c.theirKeyId-1 && c.theirLastDHPub != nil {
 		theirPub = c.theirLastDHPub
 	} else {
 		err = errors.New("otr: peer requested keyid " + strconv.FormatUint(uint64(myKeyId), 10) + " when they're on " + strconv.FormatUint(uint64(c.myKeyId), 10))
@@ -1137,7 +1137,7 @@ func (c *Conversation) encode(msg []byte) [][]byte {
 	copy(b64, msgPrefix)
 	b64[len(b64)-1] = '.'
 
-	if c.FragmentSize<minFragmentSize || len(b64)<=c.FragmentSize {
+	if c.FragmentSize < minFragmentSize || len(b64) <= c.FragmentSize {
 		// We can encode this in a single fragment.
 		return [][]byte{b64}
 	}
@@ -1145,7 +1145,7 @@ func (c *Conversation) encode(msg []byte) [][]byte {
 	// We have to fragment this message.
 	var ret [][]byte
 	bytesPerFragment := c.FragmentSize - minFragmentSize
-	numFragments := (len(b64) + bytesPerFragment)/bytesPerFragment
+	numFragments := (len(b64) + bytesPerFragment) / bytesPerFragment
 
 	for i := 0; i < numFragments; i++ {
 		frag := []byte("?OTR," + strconv.Itoa(i+1) + "," + strconv.Itoa(numFragments) + ",")
@@ -1162,7 +1162,7 @@ func (c *Conversation) encode(msg []byte) [][]byte {
 	return ret
 }
 
-type PublicKey  {
+type PublicKey struct {
 	dsa.PublicKey
 }
 
@@ -1170,7 +1170,7 @@ func (pk *PublicKey) Parse(in []byte) ([]byte, bool) {
 	var ok bool
 	var pubKeyType uint16
 
-	if pubKeyType, in, ok = getU16(in); !ok || pubKeyType!=0 {
+	if pubKeyType, in, ok = getU16(in); !ok || pubKeyType != 0 {
 		return nil, false
 	}
 	if pk.P, in, ok = getMPI(in); !ok {
@@ -1216,7 +1216,7 @@ func (pk *PublicKey) Verify(hashed, sig []byte) ([]byte, bool) {
 	return sig[dsaSubgroupBytes*2:], ok
 }
 
-type PrivateKey  {
+type PrivateKey struct {
 	PublicKey
 	dsa.PrivateKey
 }
@@ -1228,7 +1228,7 @@ func (priv *PrivateKey) Sign(rand io.Reader, hashed []byte) []byte {
 	}
 	rBytes := r.Bytes()
 	sBytes := s.Bytes()
-	if len(rBytes)>dsaSubgroupBytes || len(sBytes)>dsaSubgroupBytes {
+	if len(rBytes) > dsaSubgroupBytes || len(sBytes) > dsaSubgroupBytes {
 		panic("DSA signature too large")
 	}
 
@@ -1265,9 +1265,9 @@ func (priv *PrivateKey) Generate(rand io.Reader) {
 }
 
 func notHex(r rune) bool {
-	if r>='0' && r<='9' ||
-		r>='a' && r<='f' ||
-		r>='A' && r<='F' {
+	if r >= '0' && r <= '9' ||
+		r >= 'a' && r <= 'f' ||
+		r >= 'A' && r <= 'F' {
 		return false
 	}
 
@@ -1341,7 +1341,7 @@ func getU32(in []byte) (uint32, []byte, bool) {
 
 func getMPI(in []byte) (*big.Int, []byte, bool) {
 	l, in, ok := getU32(in)
-	if !ok || uint32(len(in))<l {
+	if !ok || uint32(len(in)) < l {
 		return nil, in, false
 	}
 	r := new(big.Int).SetBytes(in[:l])
@@ -1350,7 +1350,7 @@ func getMPI(in []byte) (*big.Int, []byte, bool) {
 
 func getData(in []byte) ([]byte, []byte, bool) {
 	l, in, ok := getU32(in)
-	if !ok || uint32(len(in))<l {
+	if !ok || uint32(len(in)) < l {
 		return nil, in, false
 	}
 	return in[:l], in[l:], true

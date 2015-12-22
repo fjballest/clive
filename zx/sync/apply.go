@@ -1,8 +1,8 @@
 package sync
 
 import (
-	"clive/zx"
 	"clive/nchan"
+	"clive/zx"
 	"errors"
 )
 
@@ -36,7 +36,7 @@ func (ch Chg) Apply(lfs zx.RWTree, rfs zx.Tree, pred string, ec chan<- error) er
 		// get rid of the old and add the new
 		nch := ch
 		nch.Type = Del
-		err := nch.Apply(lfs, rfs, pred, ec)	// and ignore the error
+		err := nch.Apply(lfs, rfs, pred, ec) // and ignore the error
 		nch.Type = Add
 		ne := nch.Apply(lfs, rfs, pred, ec)
 		if err == nil {
@@ -72,7 +72,7 @@ func (ch Chg) applyDel(lfs zx.RWTree) error {
 	return <-lfs.RemoveAll(ch.D["path"])
 }
 
-func (ch Chg) applyAdd(lfs zx.RWTree, rfs zx.Tree, pred string, ec chan<-error) error {
+func (ch Chg) applyAdd(lfs zx.RWTree, rfs zx.Tree, pred string, ec chan<- error) error {
 	var err error
 	gc := rfs.FindGet(ch.D["path"], pred, "", "", 0)
 	for g := range gc {

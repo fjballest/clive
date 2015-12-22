@@ -26,10 +26,10 @@ const laneSize = 8
 const sliceSize = 5
 
 // numLanes represents the total number of lanes in the state.
-const numLanes = sliceSize*sliceSize
+const numLanes = sliceSize * sliceSize
 
 // stateSize is the size in bytes of the internal state of SHA3 (5 * 5 * WSize).
-const stateSize = laneSize*numLanes
+const stateSize = laneSize * numLanes
 
 // digest represents the partial evaluation of a checksum.
 // Note that capacity, and not outputSize, is the critical security parameter, as SHA3 can output
@@ -37,7 +37,7 @@ const stateSize = laneSize*numLanes
 // capacity = 2*outputSize to ensure that finding a collision of size outputSize requires
 // O(2^{outputSize/2}) computations (the birthday lower bound). Future standards may modify the
 // capacity/outputSize ratio to allow for more output with lower cryptographic security.
-type digest  {
+type digest struct {
 	a          [numLanes]uint64 // main state of the hash
 	outputSize int              // desired output size in bytes
 	capacity   int              // number of bytes to leave untouched during squeeze/absorb
@@ -88,8 +88,8 @@ func (d *digest) unalignedAbsorb(p []byte) {
 		t <<= 8
 		t |= uint64(p[i])
 	}
-	offset := (d.absorbed)%d.rate()
-	t <<= 8*uint(offset%laneSize)
+	offset := (d.absorbed) % d.rate()
+	t <<= 8 * uint(offset%laneSize)
 	d.a[offset/laneSize] ^= t
 	d.absorbed += len(p)
 }
@@ -101,15 +101,15 @@ func (d *digest) unalignedAbsorb(p []byte) {
 // Non-aligned or uneven numbers of bytes require shifting and are slower.
 func (d *digest) Write(p []byte) (int, error) {
 	// An initial offset is needed if the we aren't absorbing to the first lane initially.
-	offset := d.absorbed%d.rate()
+	offset := d.absorbed % d.rate()
 	toWrite := len(p)
 
 	// The first lane may need to absorb unaligned and/or incomplete data.
-	if (offset%laneSize!=0 || len(p)<8) && len(p)>0 {
+	if (offset%laneSize != 0 || len(p) < 8) && len(p) > 0 {
 		toAbsorb := minInt(laneSize-(offset%laneSize), len(p))
 		d.unalignedAbsorb(p[:toAbsorb])
 		p = p[toAbsorb:]
-		offset = (d.absorbed)%d.rate()
+		offset = (d.absorbed) % d.rate()
 
 		// For every rate() bytes absorbed, the state must be permuted via the F Function.
 		if (d.absorbed)%d.rate() == 0 {
@@ -120,7 +120,7 @@ func (d *digest) Write(p []byte) (int, error) {
 	// This loop should absorb the bulk of the data into full, aligned lanes.
 	// It will call the update function as necessary.
 	for len(p) > 7 {
-		firstLane := offset/laneSize
+		firstLane := offset / laneSize
 		lastLane := minInt(d.rate()/laneSize, firstLane+len(p)/laneSize)
 
 		// This inner loop absorbs input bytes into the state in groups of 8, converted to uint64s.
@@ -128,7 +128,7 @@ func (d *digest) Write(p []byte) (int, error) {
 			d.a[lane] ^= binary.LittleEndian.Uint64(p[:laneSize])
 			p = p[laneSize:]
 		}
-		d.absorbed += (lastLane - firstLane)*laneSize
+		d.absorbed += (lastLane - firstLane) * laneSize
 		// For every rate() bytes absorbed, the state must be permuted via the F Function.
 		if (d.absorbed)%d.rate() == 0 {
 			keccakF(&d.a)
@@ -152,12 +152,12 @@ func (d *digest) Write(p []byte) (int, error) {
 // the input bits plus padding bits are a multiple of rate(). Adding the padding simply requires
 // xoring an opening and closing bit into the appropriate lanes.
 func (d *digest) pad() {
-	offset := d.absorbed%d.rate()
+	offset := d.absorbed % d.rate()
 	// The opening pad bit must be shifted into position based on the number of bytes absorbed
-	padOpenLane := offset/laneSize
-	d.a[padOpenLane] ^= 0x0000000000000001<<uint(8*(offset%laneSize))
+	padOpenLane := offset / laneSize
+	d.a[padOpenLane] ^= 0x0000000000000001 << uint(8*(offset%laneSize))
 	// The closing padding bit is always in the last position
-	padCloseLane := (d.rate()/laneSize) - 1
+	padCloseLane := (d.rate() / laneSize) - 1
 	d.a[padCloseLane] ^= 0x8000000000000000
 }
 
@@ -184,7 +184,7 @@ func (d *digest) squeeze(in []byte, toSqueeze int) []byte {
 	out := in[len(in) : len(in)+needed]
 
 	for len(out) > 0 {
-		for i := 0; i<d.rate() && len(out)>0; i += laneSize {
+		for i := 0; i < d.rate() && len(out) > 0; i += laneSize {
 			binary.LittleEndian.PutUint64(out[:], d.a[i/laneSize])
 			out = out[laneSize:]
 		}
@@ -207,7 +207,7 @@ func (d *digest) Sum(in []byte) []byte {
 // from the Keccak specification, all of which set capacity=2*outputSize. Note that the final
 // NIST standard for SHA3 may specify different input/output lengths.
 // The output size is indicated in bits but converted into bytes internally.
-func NewKeccak224() hash.Hash { return &digest{outputSize: 224/8, capacity: 2*224/8} }
-func NewKeccak256() hash.Hash { return &digest{outputSize: 256/8, capacity: 2*256/8} }
-func NewKeccak384() hash.Hash { return &digest{outputSize: 384/8, capacity: 2*384/8} }
-func NewKeccak512() hash.Hash { return &digest{outputSize: 512/8, capacity: 2*512/8} }
+func NewKeccak224() hash.Hash { return &digest{outputSize: 224 / 8, capacity: 2 * 224 / 8} }
+func NewKeccak256() hash.Hash { return &digest{outputSize: 256 / 8, capacity: 2 * 256 / 8} }
+func NewKeccak384() hash.Hash { return &digest{outputSize: 384 / 8, capacity: 2 * 384 / 8} }
+func NewKeccak512() hash.Hash { return &digest{outputSize: 512 / 8, capacity: 2 * 512 / 8} }

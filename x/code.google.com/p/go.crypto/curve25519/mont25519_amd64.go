@@ -45,7 +45,7 @@ func mladder(xr, zr *[5]uint64, s *[32]byte) {
 
 	for i := 31; i >= 0; i-- {
 		for j < 8 {
-			bit := ((*s)[i]>>j)&1
+			bit := ((*s)[i] >> j) & 1
 			swap := bit ^ prevbit
 			prevbit = bit
 			cswap(&work[1], uint64(swap))
@@ -134,45 +134,45 @@ func pack(out *[32]byte, x *[5]uint64) {
 	freeze(&t)
 
 	out[0] = byte(t[0])
-	out[1] = byte(t[0]>>8)
-	out[2] = byte(t[0]>>16)
-	out[3] = byte(t[0]>>24)
-	out[4] = byte(t[0]>>32)
-	out[5] = byte(t[0]>>40)
-	out[6] = byte(t[0]>>48)
+	out[1] = byte(t[0] >> 8)
+	out[2] = byte(t[0] >> 16)
+	out[3] = byte(t[0] >> 24)
+	out[4] = byte(t[0] >> 32)
+	out[5] = byte(t[0] >> 40)
+	out[6] = byte(t[0] >> 48)
 
-	out[6] ^= byte(t[1]<<3)&0xf8
-	out[7] = byte(t[1]>>5)
-	out[8] = byte(t[1]>>13)
-	out[9] = byte(t[1]>>21)
-	out[10] = byte(t[1]>>29)
-	out[11] = byte(t[1]>>37)
-	out[12] = byte(t[1]>>45)
+	out[6] ^= byte(t[1]<<3) & 0xf8
+	out[7] = byte(t[1] >> 5)
+	out[8] = byte(t[1] >> 13)
+	out[9] = byte(t[1] >> 21)
+	out[10] = byte(t[1] >> 29)
+	out[11] = byte(t[1] >> 37)
+	out[12] = byte(t[1] >> 45)
 
-	out[12] ^= byte(t[2]<<6)&0xc0
-	out[13] = byte(t[2]>>2)
-	out[14] = byte(t[2]>>10)
-	out[15] = byte(t[2]>>18)
-	out[16] = byte(t[2]>>26)
-	out[17] = byte(t[2]>>34)
-	out[18] = byte(t[2]>>42)
-	out[19] = byte(t[2]>>50)
+	out[12] ^= byte(t[2]<<6) & 0xc0
+	out[13] = byte(t[2] >> 2)
+	out[14] = byte(t[2] >> 10)
+	out[15] = byte(t[2] >> 18)
+	out[16] = byte(t[2] >> 26)
+	out[17] = byte(t[2] >> 34)
+	out[18] = byte(t[2] >> 42)
+	out[19] = byte(t[2] >> 50)
 
-	out[19] ^= byte(t[3]<<1)&0xfe
-	out[20] = byte(t[3]>>7)
-	out[21] = byte(t[3]>>15)
-	out[22] = byte(t[3]>>23)
-	out[23] = byte(t[3]>>31)
-	out[24] = byte(t[3]>>39)
-	out[25] = byte(t[3]>>47)
+	out[19] ^= byte(t[3]<<1) & 0xfe
+	out[20] = byte(t[3] >> 7)
+	out[21] = byte(t[3] >> 15)
+	out[22] = byte(t[3] >> 23)
+	out[23] = byte(t[3] >> 31)
+	out[24] = byte(t[3] >> 39)
+	out[25] = byte(t[3] >> 47)
 
-	out[25] ^= byte(t[4]<<4)&0xf0
-	out[26] = byte(t[4]>>4)
-	out[27] = byte(t[4]>>12)
-	out[28] = byte(t[4]>>20)
-	out[29] = byte(t[4]>>28)
-	out[30] = byte(t[4]>>36)
-	out[31] = byte(t[4]>>44)
+	out[25] ^= byte(t[4]<<4) & 0xf0
+	out[26] = byte(t[4] >> 4)
+	out[27] = byte(t[4] >> 12)
+	out[28] = byte(t[4] >> 20)
+	out[29] = byte(t[4] >> 28)
+	out[30] = byte(t[4] >> 36)
+	out[31] = byte(t[4] >> 44)
 }
 
 // invert calculates r = x^-1 mod p using Fermat's little theorem.

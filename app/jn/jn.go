@@ -4,23 +4,23 @@
 package jn
 
 import (
-	"clive/dbg"
 	"clive/app"
 	"clive/app/opt"
+	"clive/dbg"
 	"clive/zx"
-	"sort"
-	"strings"
 	"errors"
+	"sort"
 	"strconv"
+	"strings"
 )
 
 type line []string
 type file struct {
-	lines map[string]line
+	lines   map[string]line
 	nfields int
 }
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
@@ -29,7 +29,7 @@ type xCmd {
 	seps       string
 	osep       string
 	files      []*file
-	keys map[string]bool
+	keys       map[string]bool
 	blanks     []string
 }
 
@@ -57,8 +57,8 @@ func (x *xCmd) fields(s string) []string {
 		return strings.Fields(s)
 	}
 	return strings.FieldsFunc(s, func(r rune) bool {
-			return strings.ContainsRune(x.seps, r)
-		})
+		return strings.ContainsRune(x.seps, r)
+	})
 }
 
 func (x *xCmd) getFiles(in chan interface{}) error {
@@ -89,7 +89,7 @@ func (x *xCmd) getFiles(in chan interface{}) error {
 				f = &file{lines: map[string]line{}}
 			}
 			s := string(m)
-			if len(s)>0 && s[len(s)-1]=='\n' {
+			if len(s) > 0 && s[len(s)-1] == '\n' {
 				s = s[:len(s)-1]
 			}
 			fields := x.fields(s)
@@ -99,7 +99,7 @@ func (x *xCmd) getFiles(in chan interface{}) error {
 			if len(fields) > nfields {
 				nfields = len(fields)
 			}
-			if fldno<1 || fldno>len(fields) {
+			if fldno < 1 || fldno > len(fields) {
 				app.Warn("%s: wrong number of fields in '%s'", name, s)
 				err = errors.New("wrong number of fields")
 				continue
@@ -128,14 +128,14 @@ func (x *xCmd) getFiles(in chan interface{}) error {
 	}
 	if err == nil {
 		err = cerror(in)
-	}	
+	}
 	return err
 }
 
 type asNumbers []string
 
-func (x asNumbers) Len() int { return len(x); }
-func (x asNumbers) Swap(i, j int) {x[i],x[j] = x[j], x[i]; }
+func (x asNumbers) Len() int      { return len(x) }
+func (x asNumbers) Swap(i, j int) { x[i], x[j] = x[j], x[i] }
 func (x asNumbers) Less(i, j int) bool {
 	// could convert first and then sort, but this suffices by now.
 	n1, _ := strconv.ParseFloat(x[i], 64)

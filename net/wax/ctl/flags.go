@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-type Control  {
+type Control struct {
 	names []string
 	set   []func(string)
 	get   []func() string
@@ -70,7 +70,7 @@ func (c *Control) Bar(id string) *Bar {
 				continue
 			}
 			i := ev.CtlId()
-			if i>=0 && i<len(c.names) {
+			if i >= 0 && i < len(c.names) {
 				fmt.Printf("set %s %s\n", c.names[i], ev.Args[1])
 				c.set[i](ev.Args[1])
 			}

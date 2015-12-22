@@ -33,7 +33,7 @@ type Node interface {
 // Without this, each Node will get a new NodeID, causing spurious
 // cache invalidations, extra lookups and aliasing anomalies. This may
 // not matter for a simple, read-only filesystem.
-type NodeRef  {
+type NodeRef struct {
 	id         fuse.NodeID
 	generation uint64
 }

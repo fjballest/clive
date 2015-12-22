@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-type cmd  {
+type cmd struct {
 	op   tok
 	txt  string
 	e    *el
@@ -31,7 +31,7 @@ func (p *Part) parseBlock(sep ...tok) (tok, *cmd, error) {
 	for {
 		t := l.next()
 		for _, e := range sep {
-			if t==e || t==tEOF || t==tErr {
+			if t == e || t == tEOF || t == tErr {
 				dprintf("%s ", l.val())
 				return e, c, nil
 			}

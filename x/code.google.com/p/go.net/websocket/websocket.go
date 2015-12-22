@@ -35,7 +35,7 @@ const (
 )
 
 // ProtocolError represents WebSocket protocol errors.
-type ProtocolError  {
+type ProtocolError struct {
 	ErrorString string
 }
 
@@ -59,7 +59,7 @@ var (
 )
 
 // Addr is an implementation of net.Addr for WebSocket.
-type Addr  {
+type Addr struct {
 	*url.URL
 }
 
@@ -67,7 +67,7 @@ type Addr  {
 func (addr *Addr) Network() string { return "websocket" }
 
 // Config is a WebSocket configuration
-type Config  {
+type Config struct {
 	// A WebSocket server address.
 	Location *url.URL
 
@@ -144,7 +144,7 @@ type frameHandler interface {
 }
 
 // Conn represents a WebSocket connection.
-type Conn  {
+type Conn struct {
 	config  *Config
 	request *http.Request
 
@@ -277,7 +277,7 @@ func (ws *Conn) Config() *Config { return ws.config }
 func (ws *Conn) Request() *http.Request { return ws.request }
 
 // Codec represents a symmetric pair of functions that implement a codec.
-type Codec  {
+type Codec struct {
 	Marshal   func(v interface{}) (data []byte, payloadType byte, err error)
 	Unmarshal func(data []byte, payloadType byte, v interface{}) (err error)
 }

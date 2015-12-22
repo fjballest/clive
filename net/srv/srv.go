@@ -20,7 +20,7 @@ import (
 )
 
 // A network server handling each client on a different process.
-type Srv  {
+type Srv struct {
 	name string
 	net  string
 	mach string
@@ -61,7 +61,7 @@ func TlsDialTimeout(network, addr string, config *tls.Config, tout time.Duration
 		return nil, err
 	}
 	if tc, ok := c.(*net.TCPConn); ok {
-		tc.SetKeepAlivePeriod(2*time.Second)
+		tc.SetKeepAlivePeriod(2 * time.Second)
 		tc.SetKeepAlive(true)
 	}
 	colonPos := strings.LastIndex(raddr, ":")
@@ -177,7 +177,7 @@ func (s *Srv) Serve() error {
 			}
 			if tc, ok := c.(*net.TCPConn); ok {
 				// Beware this is not enough if you have NATs
-				tc.SetKeepAlivePeriod(2*time.Second)
+				tc.SetKeepAlivePeriod(2 * time.Second)
 				tc.SetKeepAlive(true)
 			}
 			if usetls {

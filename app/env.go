@@ -1,15 +1,15 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"sync"
-	"fmt"
 )
 
-type envSet {
+type envSet struct {
 	vars map[string]string
-	lk sync.Mutex
+	lk   sync.Mutex
 }
 
 func mkEnv() map[string]string {
@@ -53,7 +53,7 @@ func Env() map[string]string {
 }
 
 // Return the environment of this context.
-func (c *Ctx) Env() map[string] string {
+func (c *Ctx) Env() map[string]string {
 	c.lk.Lock()
 	e := c.env
 	c.lk.Unlock()

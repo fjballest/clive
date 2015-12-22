@@ -15,7 +15,7 @@ const BlockSize = 8
 
 // A Cipher is an instance of an XTEA cipher using a particular key.
 // table contains a series of precalculated values that are used each round.
-type Cipher  {
+type Cipher struct {
 	table [64]uint32
 }
 
@@ -63,7 +63,7 @@ func initCipher(c *Cipher, key []byte) {
 	// Load the key into four uint32s
 	var k [4]uint32
 	for i := 0; i < len(k); i++ {
-		j := i<<2 // Multiply by 4
+		j := i << 2 // Multiply by 4
 		k[i] = uint32(key[j+0])<<24 | uint32(key[j+1])<<16 | uint32(key[j+2])<<8 | uint32(key[j+3])
 	}
 

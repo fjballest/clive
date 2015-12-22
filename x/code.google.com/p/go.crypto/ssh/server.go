@@ -18,7 +18,7 @@ import (
 // the server application layer, after successful authentication. The
 // Permissions are passed on in ServerConn so a server implementation
 // can honor them.
-type Permissions  {
+type Permissions struct {
 	// Critical options restrict default permissions. Common
 	// restrictions are "source-address" and "force-command". If
 	// the server cannot enforce the restriction, or does not
@@ -34,7 +34,7 @@ type Permissions  {
 }
 
 // ServerConfig holds server specific configuration data.
-type ServerConfig  {
+type ServerConfig struct {
 	// Config contains configuration shared between client and server.
 	Config
 
@@ -83,7 +83,7 @@ func (s *ServerConfig) AddHostKey(key Signer) {
 
 // cachedPubKey contains the results of querying whether a public key is
 // acceptable for a user.
-type cachedPubKey  {
+type cachedPubKey struct {
 	user       string
 	pubKeyData []byte
 	result     error
@@ -96,14 +96,14 @@ const maxCachedPubKeys = 16
 // will query whether a public key is acceptable before attempting to
 // authenticate with it, we end up with duplicate queries for public
 // key validity.  The cache only applies to a single ServerConn.
-type pubKeyCache  {
+type pubKeyCache struct {
 	keys []cachedPubKey
 }
 
 // get returns the result for a given user/algo/key tuple.
 func (c *pubKeyCache) get(user string, pubKeyData []byte) (cachedPubKey, bool) {
 	for _, k := range c.keys {
-		if k.user==user && bytes.Equal(k.pubKeyData, pubKeyData) {
+		if k.user == user && bytes.Equal(k.pubKeyData, pubKeyData) {
 			return k, true
 		}
 	}
@@ -119,7 +119,7 @@ func (c *pubKeyCache) add(candidate cachedPubKey) {
 
 // ServerConn is an authenticated SSH connection, as seen from the
 // server
-type ServerConn  {
+type ServerConn struct {
 	Conn
 
 	// If the succeeding authentication callback returned a
@@ -281,12 +281,12 @@ userAuthLoop:
 				break
 			}
 			payload := userAuthReq.Payload
-			if len(payload)<1 || payload[0]!=0 {
+			if len(payload) < 1 || payload[0] != 0 {
 				return nil, parseError(msgUserAuthRequest)
 			}
 			payload = payload[1:]
 			password, payload, ok := parseString(payload)
-			if !ok || len(payload)>0 {
+			if !ok || len(payload) > 0 {
 				return nil, parseError(msgUserAuthRequest)
 			}
 
@@ -335,7 +335,7 @@ userAuthLoop:
 				candidate.user = s.user
 				candidate.pubKeyData = pubKeyData
 				candidate.perms, candidate.result = config.PublicKeyCallback(s, pubKey)
-				if candidate.result==nil && candidate.perms!=nil && candidate.perms.CriticalOptions!=nil && candidate.perms.CriticalOptions[sourceAddressCriticalOption]!="" {
+				if candidate.result == nil && candidate.perms != nil && candidate.perms.CriticalOptions != nil && candidate.perms.CriticalOptions[sourceAddressCriticalOption] != "" {
 					candidate.result = checkSourceAddress(
 						s.RemoteAddr(),
 						candidate.perms.CriticalOptions[sourceAddressCriticalOption])
@@ -363,7 +363,7 @@ userAuthLoop:
 				authErr = candidate.result
 			} else {
 				sig, payload, ok := parseSignature(payload)
-				if !ok || len(payload)>0 {
+				if !ok || len(payload) > 0 {
 					return nil, parseError(msgUserAuthRequest)
 				}
 				// Ensure the public key algo and signature algo
@@ -423,7 +423,7 @@ userAuthLoop:
 
 // sshClientKeyboardInteractive implements a ClientKeyboardInteractive by
 // asking the client on the other side of a ServerConn.
-type sshClientKeyboardInteractive  {
+type sshClientKeyboardInteractive struct {
 	*connection
 }
 
@@ -456,7 +456,7 @@ func (c *sshClientKeyboardInteractive) Challenge(user, instruction string, quest
 	packet = packet[1:]
 
 	n, packet, ok := parseUint32(packet)
-	if !ok || int(n)!=len(questions) {
+	if !ok || int(n) != len(questions) {
 		return nil, parseError(msgUserAuthInfoResponse)
 	}
 

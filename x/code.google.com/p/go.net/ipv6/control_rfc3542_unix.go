@@ -43,9 +43,9 @@ func setControlMessage(fd int, opt *rawOpt, cf ControlFlags, on bool) error {
 			return err
 		}
 		if on {
-			opt.set(cf&pktinfo)
+			opt.set(cf & pktinfo)
 		} else {
-			opt.clear(cf&pktinfo)
+			opt.clear(cf & pktinfo)
 		}
 	}
 	if cf&FlagPathMTU != 0 {
@@ -155,7 +155,7 @@ func marshalControlMessage(cm *ControlMessage) (oob []byte) {
 		l += syscall.CmsgSpace(4)
 	}
 	pion := false
-	if cm.Src.To4()==nil && cm.Src.To16()!=nil || cm.IfIndex!=0 {
+	if cm.Src.To4() == nil && cm.Src.To16() != nil || cm.IfIndex != 0 {
 		pion = true
 		l += syscall.CmsgSpace(sysSizeofPacketInfo)
 	}
@@ -188,7 +188,7 @@ func marshalControlMessage(cm *ControlMessage) (oob []byte) {
 			m.Type = sysSockoptPacketInfo
 			m.SetLen(syscall.CmsgLen(sysSizeofPacketInfo))
 			pi := (*sysPacketInfo)(unsafe.Pointer(&oob[off+syscall.CmsgLen(0)]))
-			if ip := cm.Src.To16(); ip!=nil && ip.To4()==nil {
+			if ip := cm.Src.To16(); ip != nil && ip.To4() == nil {
 				copy(pi.IP[:], ip)
 			}
 			if cm.IfIndex != 0 {

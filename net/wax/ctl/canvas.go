@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-type Canvas  {
+type Canvas struct {
 	*wax.Conn
 	cmds   []Cmd
 	dx, dy int

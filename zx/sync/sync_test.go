@@ -1,14 +1,14 @@
 package sync
 
 import (
-	"clive/dbg"
-	"clive/zx/lfs"
-	"clive/zx/fstest"
-	"os"
-	"testing"
 	"bytes"
+	"clive/dbg"
+	"clive/zx/fstest"
+	"clive/zx/lfs"
 	"fmt"
+	"os"
 	"strings"
+	"testing"
 )
 
 type chg struct {
@@ -20,7 +20,7 @@ const tdir = "/tmp/db_test"
 const tdir2 = "/tmp/db_test2"
 
 var (
-	printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
+	printf   = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 	moreverb = false
 )
 
@@ -34,24 +34,24 @@ func chkcc(tag string, cc <-chan Chg, ccs []chg, rc chan error) {
 		}
 		if n >= len(ccs) {
 			close(cc, "failed")
-			rc <-fmt.Errorf("%s: unexpected %s", tag, c)
+			rc <- fmt.Errorf("%s: unexpected %s", tag, c)
 			return
 		}
 		cpath := c.D["path"]
 		if c.Type != ccs[n].Type || cpath != ccs[n].Path {
 			close(cc, "failed")
-			rc <-fmt.Errorf("%s: bad change %s", tag, c)
+			rc <- fmt.Errorf("%s: bad change %s", tag, c)
 			return
 		}
 		n++
 	}
 	if ccs != nil && n < len(ccs) {
 		close(cc, "failed")
-		rc <-fmt.Errorf("%s: missing %s", tag, ccs[n])
+		rc <- fmt.Errorf("%s: missing %s", tag, ccs[n])
 		return
 	}
 	if err := cerror(cc); err != nil {
-		rc <-fmt.Errorf("%s: sts: %s", tag, err)
+		rc <- fmt.Errorf("%s: sts: %s", tag, err)
 	} else {
 		rc <- nil
 	}
@@ -160,7 +160,7 @@ func TestCmpNoChg(t *testing.T) {
 	cc := db.ChangesTo(db2)
 	ec := make(chan error, 1)
 	chkcc("chgs", cc, []chg{}, ec)
-	if e := <-ec ; e != nil {
+	if e := <-ec; e != nil {
 		t.Fatal(e)
 	}
 }
@@ -201,11 +201,11 @@ func TestCmpChgs(t *testing.T) {
 	if testing.Verbose() {
 		db2.DumpTo(os.Stdout)
 	}
-	chgs := []chg {
-		chg{Type:Data, Path: "/a/a1"},
-		chg{Type:Meta, Path: "/a/a2"},
-		chg{Type:Del, Path: "/a/b/c"},
-		chg{Type:Add, Path: "/a/n"},
+	chgs := []chg{
+		chg{Type: Data, Path: "/a/a1"},
+		chg{Type: Meta, Path: "/a/a2"},
+		chg{Type: Del, Path: "/a/b/c"},
+		chg{Type: Add, Path: "/a/n"},
 	}
 	ec := make(chan error)
 	go chkcc("chgs", db.ChangesTo(db2), chgs, ec)
@@ -258,13 +258,13 @@ func TestSync0Chgs(t *testing.T) {
 	if testing.Verbose() {
 		db2.DumpTo(os.Stdout)
 	}
-	pulls := []chg {
-		chg{Type:Data, Path: "/a/a1"},
-		chg{Type:Meta, Path: "/a/a2"},
-		chg{Type:Add, Path: "/a/n"},
+	pulls := []chg{
+		chg{Type: Data, Path: "/a/a1"},
+		chg{Type: Meta, Path: "/a/a2"},
+		chg{Type: Add, Path: "/a/n"},
 	}
-	pushes := []chg {
-		chg{Type:Add, Path: "/a/b/c"},
+	pushes := []chg{
+		chg{Type: Add, Path: "/a/b/c"},
 	}
 	pullc, pushc := Changes(db, db2)
 	ec := make(chan error, 2)
@@ -418,16 +418,16 @@ func TestSyncChgs(t *testing.T) {
 		db2.DumpTo(os.Stdout)
 	}
 
-	// Now sync 
-	pulls := []chg {
-		chg{Type:Data, Path: "/a/a1"},
-		chg{Type:Meta, Path: "/a/a2"},
-		chg{Type:Del, Path: "/a/b/c"},
-		chg{Type:Add, Path: "/a/n"},
+	// Now sync
+	pulls := []chg{
+		chg{Type: Data, Path: "/a/a1"},
+		chg{Type: Meta, Path: "/a/a2"},
+		chg{Type: Del, Path: "/a/b/c"},
+		chg{Type: Add, Path: "/a/n"},
 	}
-	pushes := []chg {
-		chg{Type:Data, Path: "/1"},
-		chg{Type:DirFile, Path: "/2"},
+	pushes := []chg{
+		chg{Type: Data, Path: "/1"},
+		chg{Type: DirFile, Path: "/2"},
 	}
 
 	pullc, pushc := Changes(db, db2)
@@ -512,7 +512,7 @@ func TestApplyChgs(t *testing.T) {
 		db2.DumpTo(os.Stdout)
 	}
 
-	// Now apply changes 
+	// Now apply changes
 	pullc, pushc := Changes(db, db2)
 	ec = make(chan error, 2)
 	errsc := make(chan error)
@@ -561,7 +561,7 @@ func TestApplyChgs(t *testing.T) {
 	db.DumpTo(&b)
 	db2.DumpTo(&b2)
 	if strings.Replace(b.String(), dbg.Usr, "none", -1) !=
-	strings.Replace(b2.String(), dbg.Usr, "none", -1) {
+		strings.Replace(b2.String(), dbg.Usr, "none", -1) {
 		t.Fatal("dbs do not match")
 	}
 }

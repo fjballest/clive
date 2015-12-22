@@ -66,7 +66,6 @@ const yyErrCode = 2
 const yyMaxDepth = 200
 
 //line parse.y:605
-
 func yprintf(l interface{}, fmts string, args ...interface{}) {
 	app.Dprintf(fmts, args...)
 }
@@ -263,7 +262,7 @@ const yyFlag = -1000
 
 func yyTokname(c int) string {
 	// 4 is TOKSTART above
-	if c>=4 && c-4<len(yyToknames) {
+	if c >= 4 && c-4 < len(yyToknames) {
 		if yyToknames[c-4] != "" {
 			return yyToknames[c-4]
 		}
@@ -272,7 +271,7 @@ func yyTokname(c int) string {
 }
 
 func yyStatname(s int) string {
-	if s>=0 && s<len(yyStatenames) {
+	if s >= 0 && s < len(yyStatenames) {
 		if yyStatenames[s] != "" {
 			return yyStatenames[s]
 		}
@@ -358,7 +357,7 @@ yynewstate:
 		yychar = yylex1(yylex, &yylval)
 	}
 	yyn += yychar
-	if yyn<0 || yyn>=yyLast {
+	if yyn < 0 || yyn >= yyLast {
 		goto yydefault
 	}
 	yyn = yyAct[yyn]
@@ -383,14 +382,14 @@ yydefault:
 		/* look through exception table */
 		xi := 0
 		for {
-			if yyExca[xi+0]==-1 && yyExca[xi+1]==yystate {
+			if yyExca[xi+0] == -1 && yyExca[xi+1] == yystate {
 				break
 			}
 			xi += 2
 		}
 		for xi += 2; ; xi += 2 {
 			yyn = yyExca[xi+0]
-			if yyn<0 || yyn==yychar {
+			if yyn < 0 || yyn == yychar {
 				break
 			}
 		}
@@ -417,7 +416,7 @@ yydefault:
 			/* find a state where "error" is a legal shift action */
 			for yyp >= 0 {
 				yyn = yyPact[yyS[yyp].yys] + yyErrCode
-				if yyn>=0 && yyn<yyLast {
+				if yyn >= 0 && yyn < yyLast {
 					yystate = yyAct[yyn] /* simulate a shift of "error" */
 					if yyChk[yystate] == yyErrCode {
 						goto yystack
@@ -477,7 +476,7 @@ yydefault:
 		//line parse.y:48
 		{
 			x := yylex.(*xCmd)
-			if yyS[yypt-1].nd!=nil && yyS[yypt-1].nd.Kind!=Nnop && !x.interrupted {
+			if yyS[yypt-1].nd != nil && yyS[yypt-1].nd.Kind != Nnop && !x.interrupted {
 				if x.nerrors > 0 {
 					yprintf("ERR %s\n", yyS[yypt-1].nd.sprint())
 				} else {
@@ -499,9 +498,9 @@ yydefault:
 		{
 			yyVAL.nd = yyS[yypt-0].nd
 			// If it's or(and(x)) then return just x
-			if yyVAL.nd!=nil && len(yyVAL.nd.Child)==1 {
+			if yyVAL.nd != nil && len(yyVAL.nd.Child) == 1 {
 				c := yyVAL.nd.Child[0]
-				if c!=nil && len(c.Child)==1 {
+				if c != nil && len(c.Child) == 1 {
 					yyVAL.nd = c.Child[0]
 				}
 			}
@@ -718,7 +717,7 @@ yydefault:
 			x.lvl--
 			x.plvl--
 			yyVAL.nd = x.newList(Nfor, yyS[yypt-4].nd, yyS[yypt-1].nd)
-			if yyS[yypt-4].nd.Kind==Nnames && len(yyS[yypt-4].nd.Child)==1 {
+			if yyS[yypt-4].nd.Kind == Nnames && len(yyS[yypt-4].nd.Child) == 1 {
 				yyVAL.nd.IsGet = true
 			}
 		}

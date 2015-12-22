@@ -17,7 +17,7 @@ import (
 // SymmetricallyEncrypted represents a symmetrically encrypted byte string. The
 // encrypted contents will consist of more OpenPGP packets. See RFC 4880,
 // sections 5.7 and 5.13.
-type SymmetricallyEncrypted  {
+type SymmetricallyEncrypted struct {
 	MDC      bool // true iff this is a type 18 packet and thus has an embedded MAC.
 	contents io.Reader
 	prefix   []byte
@@ -88,7 +88,7 @@ func (se *SymmetricallyEncrypted) Decrypt(c CipherFunction, key []byte) (io.Read
 }
 
 // seReader wraps an io.Reader with a no-op Close method.
-type seReader  {
+type seReader struct {
 	in io.Reader
 }
 
@@ -106,7 +106,7 @@ const mdcTrailerSize = 1 /* tag byte */ + 1 /* length byte */ + sha1.Size
 // of the most recent 22 bytes (mdcTrailerSize). Upon EOF, those bytes form an
 // MDC packet containing a hash of the previous contents which is checked
 // against the running hash. See RFC 4880, section 5.13.
-type seMDCReader  {
+type seMDCReader struct {
 	in          io.Reader
 	h           hash.Hash
 	trailer     [mdcTrailerSize]byte
@@ -195,7 +195,7 @@ func (ser *seMDCReader) Close() error {
 		}
 	}
 
-	if ser.trailer[0]!=mdcPacketTagByte || ser.trailer[1]!=sha1.Size {
+	if ser.trailer[0] != mdcPacketTagByte || ser.trailer[1] != sha1.Size {
 		return errors.SignatureError("MDC packet not found")
 	}
 	ser.h.Write(ser.trailer[:2])
@@ -210,7 +210,7 @@ func (ser *seMDCReader) Close() error {
 // An seMDCWriter writes through to an io.WriteCloser while maintains a running
 // hash of the data written. On close, it emits an MDC packet containing the
 // running hash.
-type seMDCWriter  {
+type seMDCWriter struct {
 	w io.WriteCloser
 	h hash.Hash
 }
@@ -237,7 +237,7 @@ func (w *seMDCWriter) Close() (err error) {
 }
 
 // noOpCloser is like an ioutil.NopCloser, but for an io.Writer.
-type noOpCloser  {
+type noOpCloser struct {
 	w io.Writer
 }
 

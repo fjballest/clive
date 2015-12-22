@@ -26,10 +26,10 @@ import (
 	Keeps an in-memory cache of directory entries to track
 	generated inode numbers for each path/entry.
 */
-type FS  {
-	fs     zx.Tree
-	igen   uint64
-	paths  map[string]*Dir
+type FS struct {
+	fs    zx.Tree
+	igen  uint64
+	paths map[string]*Dir
 	sync.RWMutex
 	isctl bool
 }
@@ -39,7 +39,7 @@ type FS  {
 	To match unix semantics we issue many more zx calls
 	than needed so that each call is made when unix expects it.
 */
-type Dir  {
+type Dir struct {
 	fs.NodeRef
 	z  *FS
 	fs zx.Tree
@@ -52,7 +52,7 @@ type Dir  {
 /*
 	Implementation of fuse handle interface.
 */
-type Fd  {
+type Fd struct {
 	// everything kept at and locked by Dir
 	*Dir
 }
@@ -94,8 +94,8 @@ func (fd *Fd) IsCtl() bool {
 // with size not reporting the actual size for files.
 func New(fs zx.Tree) (*FS, error) {
 	t := &FS{
-		fs:     fs,
-		paths:  make(map[string]*Dir, 1024),
+		fs:    fs,
+		paths: make(map[string]*Dir, 1024),
 	}
 	if cfs, ok := fs.(zx.IsCtler); ok {
 		t.isctl = cfs.IsCtl()
@@ -206,7 +206,7 @@ func (zd *Dir) Xattrs() []string {
 	return []string{}
 	var ats []string
 	for k := range zd.d {
-		if len(k)>0 && k[0]>='A' && k[0]<='Z' {
+		if len(k) > 0 && k[0] >= 'A' && k[0] <= 'Z' {
 			ats = append(ats, k)
 		}
 	}
@@ -253,11 +253,11 @@ func (zd *Dir) SetAttr(r *fuse.SetattrRequest, _ fs.Intr) fuse.Error {
 	if r.Valid.Mode() {
 		nd.SetMode(uint64(r.Mode))
 	}
-	if r.Valid.Size() && zd.d["type"]!="d" {
+	if r.Valid.Size() && zd.d["type"] != "d" {
 		nd["size"] = fmt.Sprintf("%d", r.Size)
 	}
 	if r.Valid.MtimeNow() {
-		nd.SetTime("mtime",time.Now())
+		nd.SetTime("mtime", time.Now())
 	} else if r.Valid.Mtime() {
 		nd.SetTime("mtime", r.Mtime)
 	}
@@ -280,7 +280,7 @@ func (zd *Dir) SetAttr(r *fuse.SetattrRequest, _ fs.Intr) fuse.Error {
 }
 
 func (zd *Dir) elemcall(elem string) (wfs zx.RWTree, npath string, err error) {
-	if strings.Contains(elem, "/") || elem=="." || elem==".." {
+	if strings.Contains(elem, "/") || elem == "." || elem == ".." {
 		return nil, "", fmt.Errorf("bad element name '%s", elem)
 	}
 	wfs, ok := zd.fs.(zx.RWTree)
@@ -473,7 +473,7 @@ func (fd *Fd) Close(_ fs.Intr) fuse.Error {
 
 	err := zd.putfd(fd)
 	// err is a placeholder for later
-	if err!=nil && false {
+	if err != nil && false {
 		vprintf("%s: close: write error: %s\n", fd, err)
 		return fuse.EPERM
 	}
@@ -528,7 +528,7 @@ func fuseCtl(data []byte) bool {
 		return false
 	}
 	s = strings.TrimSpace(s)
-	err := fuseflags.Ctl(s)	// and ignore errors
+	err := fuseflags.Ctl(s) // and ignore errors
 	dbg.Warn("***** fuse ctl %s sts %v", s, err)
 	Verb = fs.Debug
 	if !Debug {
@@ -548,7 +548,7 @@ func fuseCtl(data []byte) bool {
 // Speed seems to be ok
 func (fd *Fd) Write(data []byte, off int64, _ fs.Intr) (int, fuse.Error) {
 	sz := len(data)
-	dprintf("%s: write %d #%d\n", fd, off, sz) 
+	dprintf("%s: write %d #%d\n", fd, off, sz)
 	wfs, ok := fd.fs.(zx.RWTree)
 	if !ok {
 		vprintf("%s: write: not a rw tree\n", fd)

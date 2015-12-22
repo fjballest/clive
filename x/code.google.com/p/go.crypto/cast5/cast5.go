@@ -11,7 +11,7 @@ import "errors"
 const BlockSize = 8
 const KeySize = 16
 
-type Cipher  {
+type Cipher struct {
 	masking [16]uint32
 	rotate  [16]uint8
 }
@@ -54,13 +54,13 @@ func (c *Cipher) Encrypt(dst, src []byte) {
 	l, r = r, l^f3(r, c.masking[14], c.rotate[14])
 	l, r = r, l^f1(r, c.masking[15], c.rotate[15])
 
-	dst[0] = uint8(r>>24)
-	dst[1] = uint8(r>>16)
-	dst[2] = uint8(r>>8)
+	dst[0] = uint8(r >> 24)
+	dst[1] = uint8(r >> 16)
+	dst[2] = uint8(r >> 8)
 	dst[3] = uint8(r)
-	dst[4] = uint8(l>>24)
-	dst[5] = uint8(l>>16)
-	dst[6] = uint8(l>>8)
+	dst[4] = uint8(l >> 24)
+	dst[5] = uint8(l >> 16)
+	dst[6] = uint8(l >> 8)
 	dst[7] = uint8(l)
 }
 
@@ -88,13 +88,13 @@ func (c *Cipher) Decrypt(dst, src []byte) {
 	l, r = r, l^f2(r, c.masking[1], c.rotate[1])
 	l, r = r, l^f1(r, c.masking[0], c.rotate[0])
 
-	dst[0] = uint8(r>>24)
-	dst[1] = uint8(r>>16)
-	dst[2] = uint8(r>>8)
+	dst[0] = uint8(r >> 24)
+	dst[1] = uint8(r >> 16)
+	dst[2] = uint8(r >> 8)
 	dst[3] = uint8(r)
-	dst[4] = uint8(l>>24)
-	dst[5] = uint8(l>>16)
-	dst[6] = uint8(l>>8)
+	dst[4] = uint8(l >> 24)
+	dst[5] = uint8(l >> 16)
+	dst[6] = uint8(l >> 8)
 	dst[7] = uint8(l)
 }
 
@@ -120,7 +120,7 @@ type keyScheduleB [4][5]uint8
 // elements are the S-box indexes. They use the same form as in keyScheduleA,
 // above.
 
-type keyScheduleRound {}
+type keyScheduleRound struct{}
 type keySchedule []keyScheduleRound
 
 var schedule = []struct {
@@ -190,7 +190,7 @@ func (c *Cipher) keySchedule(in []byte) {
 	var k [32]uint32
 
 	for i := 0; i < 4; i++ {
-		j := i*4
+		j := i * 4
 		t[i] = uint32(in[j])<<24 | uint32(in[j+1])<<16 | uint32(in[j+2])<<8 | uint32(in[j+3])
 	}
 
@@ -227,26 +227,26 @@ func (c *Cipher) keySchedule(in []byte) {
 
 	for i := 0; i < 16; i++ {
 		c.masking[i] = k[i]
-		c.rotate[i] = uint8(k[16+i]&0x1f)
+		c.rotate[i] = uint8(k[16+i] & 0x1f)
 	}
 }
 
 // These are the three 'f' functions. See RFC 2144, section 2.2.
 func f1(d, m uint32, r uint8) uint32 {
 	t := m + d
-	I := (t<<r) | (t>>(32 - r))
+	I := (t << r) | (t >> (32 - r))
 	return ((sBox[0][I>>24] ^ sBox[1][(I>>16)&0xff]) - sBox[2][(I>>8)&0xff]) + sBox[3][I&0xff]
 }
 
 func f2(d, m uint32, r uint8) uint32 {
 	t := m ^ d
-	I := (t<<r) | (t>>(32 - r))
+	I := (t << r) | (t >> (32 - r))
 	return ((sBox[0][I>>24] - sBox[1][(I>>16)&0xff]) + sBox[2][(I>>8)&0xff]) ^ sBox[3][I&0xff]
 }
 
 func f3(d, m uint32, r uint8) uint32 {
 	t := m - d
-	I := (t<<r) | (t>>(32 - r))
+	I := (t << r) | (t >> (32 - r))
 	return ((sBox[0][I>>24] + sBox[1][(I>>16)&0xff]) ^ sBox[2][(I>>8)&0xff]) - sBox[3][I&0xff]
 }
 

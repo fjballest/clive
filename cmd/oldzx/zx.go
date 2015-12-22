@@ -57,10 +57,10 @@ import (
 	"clive/net/wax"
 	"clive/net/wax/ctl"
 	"clive/zx"
-	cfs "clive/zx/ocfs"
 	ncfs "clive/zx/cfs"
 	"clive/zx/lfs"
 	"clive/zx/mfs"
+	cfs "clive/zx/ocfs"
 	"clive/zx/rfs"
 	"fmt"
 	"os"
@@ -70,7 +70,7 @@ import (
 )
 
 var (
-	Verbose                = true
+	Verbose                     = true
 	Persist, Debug, Zdebug, New bool
 
 	Dprintf = dbg.FlagPrintf(os.Stdout, &Debug)
@@ -148,7 +148,7 @@ func main() {
 	cfs.Zdebug = Zdebug
 	rfs.Verb = Verbose
 	var trs []zx.Tree
-	var ros = map[bool] string {false: "rw", true: "ro"}
+	var ros = map[bool]string{false: "rw", true: "ro"}
 
 	for i := 0; i < len(args); i++ {
 		al := strings.Split(args[i], "!")
@@ -190,7 +190,7 @@ func main() {
 			x.IOstats = &zx.IOstats{}
 			zxw[al[0]] = fp
 			trs = append(trs, x)
-		
+
 		} else if !New && caching {
 			dbg.Warn("%s old cfs + lfs %s caching", al[0], ros[ronly])
 			x, err := cfs.New("", t, ronly)
@@ -223,7 +223,7 @@ func main() {
 	for c := range cc {
 		go func(c nchan.Conn) {
 			ai, err := auth.AtServer(c, "", "zx", "finder")
-			if err!=nil && err!=auth.ErrDisabled {
+			if err != nil && err != auth.ErrDisabled {
 				Vprintf("%s: auth %s: %s\n", os.Args[0], c.Tag, err)
 				close(c.In, err)
 				close(c.Out, err)

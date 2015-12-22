@@ -22,7 +22,7 @@ import (
 
 // PrivateKey represents a possibly encrypted private key. See RFC 4880,
 // section 5.5.3.
-type PrivateKey  {
+type PrivateKey struct {
 	PublicKey
 	Encrypted     bool // if true then the private key is unavailable until Decrypt has been called.
 	encryptedData []byte
@@ -158,7 +158,7 @@ func (pk *PrivateKey) Serialize(w io.Writer) (err error) {
 
 	checksum := mod64kHash(privateKeyBytes)
 	var checksumBytes [2]byte
-	checksumBytes[0] = byte(checksum>>8)
+	checksumBytes[0] = byte(checksum >> 8)
 	checksumBytes[1] = byte(checksum)
 	_, err = w.Write(checksumBytes[:])
 
@@ -218,8 +218,8 @@ func (pk *PrivateKey) Decrypt(passphrase []byte) error {
 		for i := 0; i < len(data)-2; i++ {
 			sum += uint16(data[i])
 		}
-		if data[len(data)-2]!=uint8(sum>>8) ||
-			data[len(data)-1]!=uint8(sum) {
+		if data[len(data)-2] != uint8(sum>>8) ||
+			data[len(data)-1] != uint8(sum) {
 			return errors.StructuralError("private key checksum failure")
 		}
 		data = data[:len(data)-2]

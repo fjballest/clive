@@ -15,13 +15,13 @@ import (
 	"strings"
 )
 
-type addr  {
+type addr struct {
 	from, to int
 }
 
 type flines map[string][]string
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	debug      bool
@@ -55,7 +55,7 @@ func (x *xCmd) RunFile(d zx.Dir, dc <-chan []byte) error {
 		if !ok {
 			break
 		}
-		if len(s)>0 && s[len(s)-1]=='\n' {
+		if len(s) > 0 && s[len(s)-1] == '\n' {
 			s = s[:len(s)-1]
 		}
 		var fields []string
@@ -79,7 +79,7 @@ func (x *xCmd) RunFile(d zx.Dir, dc <-chan []byte) error {
 		if len(fields) == 0 {
 			continue
 		}
-		if fldno<1 || fldno>len(fields) {
+		if fldno < 1 || fldno > len(fields) {
 			x.Warn("%s: wrong number of fields in '%s'", name, s)
 			err = errors.New("wrong number of fields")
 			continue

@@ -29,16 +29,16 @@
 package app
 
 import (
-	"clive/dbg"
-	"sync"
-	"runtime"
-	"os"
-	"io"
-	"fmt"
-	"clive/zx"
 	"bytes"
+	"clive/dbg"
+	"clive/zx"
 	"errors"
+	"fmt"
+	"io"
+	"os"
 	"reflect"
+	"runtime"
+	"sync"
 )
 
 // Argument to Ctx.Handle returning true if the signal was handled.
@@ -51,31 +51,31 @@ type PrintFunc func(fmts string, arg ...interface{}) error
 // In, Out, and Err carry []byte as data, but may carry other pieces of
 // data as context (eg., zx.Dir)
 // When fed into external processes, non []byte messages are discarded.
-type Ctx {
-	Id int64		// AppId() for this ctx
-	Args	[]string	// command line arguments
-	Sig chan string	// signals posted
-	intr chan string	// copy of signals sent to readers
-	Wait chan bool	// cerror(Wait) is the status
-	Sts error		// set to the exit status when dead
-	lk sync.Mutex
+type Ctx struct {
+	Id   int64       // AppId() for this ctx
+	Args []string    // command line arguments
+	Sig  chan string // signals posted
+	intr chan string // copy of signals sent to readers
+	Wait chan bool   // cerror(Wait) is the status
+	Sts  error       // set to the exit status when dead
+	lk   sync.Mutex
 	sigs map[string][]SigFun
 
-	ns zx.Finder	// name space
-	dot *cwd		// dot
-	env *envSet	// environment
-	io  *IOSet		// io chans
+	ns  zx.Finder // name space
+	dot *cwd      // dot
+	env *envSet   // environment
+	io  *IOSet    // io chans
 
-	Debug bool	// global debug flag
-	exited bool	// Exiting did run for this already
-	bg bool		// if true, OS intrs are not posted to this context
-			// this is inherited by children apps.
+	Debug  bool // global debug flag
+	exited bool // Exiting did run for this already
+	bg     bool // if true, OS intrs are not posted to this context
+	// this is inherited by children apps.
 }
 
 var (
 	Debug, Verb bool
-	ctxs = map[int64]*Ctx{}
-	ctxlk sync.Mutex
+	ctxs        = map[int64]*Ctx{}
+	ctxlk       sync.Mutex
 
 	usingApp bool
 )
@@ -103,9 +103,9 @@ func vprintf(fmts string, args ...interface{}) {
 func mkCtx(id int64) *Ctx {
 	return &Ctx{
 		Args: []string{"noname"},
-		Id: id,
+		Id:   id,
 		Wait: make(chan bool),
-		Sig: make(chan string, 10),
+		Sig:  make(chan string, 10),
 		intr: make(chan string),
 	}
 }
@@ -318,7 +318,7 @@ func Bg() {
 	if c != nil {
 		c.bg = true
 	}
-	
+
 }
 
 // Run fn when the named signal arrives (or any signal if the name is empty)
@@ -476,7 +476,7 @@ func fatal(warn bool, args ...interface{}) {
 	if c == nil {
 		panic("fatal")
 	}
-	ctxlk.Lock() 
+	ctxlk.Lock()
 	n := len(ctxs)
 	ctxlk.Unlock()
 	sts := mkSts(args...)
@@ -499,9 +499,9 @@ func fatal(warn bool, args ...interface{}) {
 		<-errdone
 		os.Args = c.Args
 		if warn {
-			dbg.Fatal(args...)	// never returns
+			dbg.Fatal(args...) // never returns
 		} else {
-			dbg.Exits(args...)	// never returns
+			dbg.Exits(args...) // never returns
 		}
 	}
 	dprintf("c %d: app fatal (%d args, %d apps)\n", c.Id, len(args), n)
@@ -517,8 +517,8 @@ func dump(t string) {
 	if !Verb {
 		return
 	}
-	ctxlk.Lock() 
-	defer ctxlk.Unlock() 
+	ctxlk.Lock()
+	defer ctxlk.Unlock()
 	if t != "" {
 		vprintf("at %s:\n", t)
 	}

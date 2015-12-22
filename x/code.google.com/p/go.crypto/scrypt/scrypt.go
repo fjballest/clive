@@ -14,7 +14,7 @@ import (
 	"clive/x/code.google.com/p/go.crypto/pbkdf2"
 )
 
-const maxInt = int(^uint(0)>>1)
+const maxInt = int(^uint(0) >> 1)
 
 // blockCopy copies n numbers from src into dst.
 func blockCopy(dst, src []uint32, n int) {
@@ -168,7 +168,7 @@ func blockMix(tmp *[16]uint32, in, out []uint32, r int) {
 }
 
 func integer(b []uint32, r int) uint64 {
-	j := (2*r - 1)*16
+	j := (2*r - 1) * 16
 	return uint64(b[j]) | uint64(b[j+1])<<32
 }
 
@@ -190,20 +190,20 @@ func smix(b []byte, r, N int, v, xy []uint32) {
 		blockMix(&tmp, y, x, r)
 	}
 	for i := 0; i < N; i += 2 {
-		j := int(integer(x, r)&uint64(N-1))
+		j := int(integer(x, r) & uint64(N-1))
 		blockXOR(x, v[j*(32*r):], 32*r)
 		blockMix(&tmp, x, y, r)
 
-		j = int(integer(y, r)&uint64(N-1))
+		j = int(integer(y, r) & uint64(N-1))
 		blockXOR(y, v[j*(32*r):], 32*r)
 		blockMix(&tmp, y, x, r)
 	}
 	j = 0
 	for _, v := range x[:32*r] {
-		b[j+0] = byte(v>>0)
-		b[j+1] = byte(v>>8)
-		b[j+2] = byte(v>>16)
-		b[j+3] = byte(v>>24)
+		b[j+0] = byte(v >> 0)
+		b[j+1] = byte(v >> 8)
+		b[j+2] = byte(v >> 16)
+		b[j+3] = byte(v >> 24)
 		j += 4
 	}
 }
@@ -224,10 +224,10 @@ func smix(b []byte, r, N int, v, xy []uint32) {
 // r=8, p=1. They should be increased as memory latency and CPU parallelism
 // increases. Remember to get a good random salt.
 func Key(password, salt []byte, N, r, p, keyLen int) ([]byte, error) {
-	if N<=1 || N&(N-1)!=0 {
+	if N <= 1 || N&(N-1) != 0 {
 		return nil, errors.New("scrypt: N must be > 1 and a power of 2")
 	}
-	if uint64(r)*uint64(p)>=1<<30 || r>maxInt/128/p || r>maxInt/256 || N>maxInt/128/r {
+	if uint64(r)*uint64(p) >= 1<<30 || r > maxInt/128/p || r > maxInt/256 || N > maxInt/128/r {
 		return nil, errors.New("scrypt: parameters are too large")
 	}
 

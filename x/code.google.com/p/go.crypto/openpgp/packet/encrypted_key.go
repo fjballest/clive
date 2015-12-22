@@ -18,7 +18,7 @@ const encryptedKeyVersion = 3
 
 // EncryptedKey represents a public-key encrypted session key. See RFC 4880,
 // section 5.1.
-type EncryptedKey  {
+type EncryptedKey struct {
 	KeyId      uint64
 	Algo       PublicKeyAlgorithm
 	CipherFunc CipherFunction // only valid after a successful Decrypt
@@ -108,7 +108,7 @@ func SerializeEncryptedKey(w io.Writer, pub *PublicKey, cipherFunc CipherFunctio
 	keyBlock[0] = byte(cipherFunc)
 	copy(keyBlock[1:], key)
 	checksum := checksumKeyMaterial(key)
-	keyBlock[1+len(key)] = byte(checksum>>8)
+	keyBlock[1+len(key)] = byte(checksum >> 8)
 	keyBlock[1+len(key)+1] = byte(checksum)
 
 	switch pub.PubKeyAlgo {

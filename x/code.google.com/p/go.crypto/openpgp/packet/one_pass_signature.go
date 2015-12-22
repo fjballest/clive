@@ -15,7 +15,7 @@ import (
 
 // OnePassSignature represents a one-pass signature packet. See RFC 4880,
 // section 5.4.
-type OnePassSignature  {
+type OnePassSignature struct {
 	SigType    SignatureType
 	Hash       crypto.Hash
 	PubKeyAlgo PublicKeyAlgorithm

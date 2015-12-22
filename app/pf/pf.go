@@ -4,23 +4,23 @@
 package pf
 
 import (
+	"bytes"
 	"clive/app"
-	"clive/dbg"
+	"clive/app/gr"
 	"clive/app/nsutil"
 	"clive/app/opt"
-	"path"
+	"clive/dbg"
 	"clive/zx"
-	"clive/app/gr"
 	"errors"
-	"bytes"
+	"path"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
 	lflag, llflag, pflag, vflag, dflag, fflag,
-		xflag, sflag, Sflag, aflag, wflag, dryw bool
+	xflag, sflag, Sflag, aflag, wflag, dryw bool
 }
 
 func (x *xCmd) pd(d zx.Dir) error {
@@ -116,7 +116,7 @@ func (x *xCmd) write(bd zx.Dir, b *bytes.Buffer) error {
 		}
 	}
 	b.Reset()
-	return  err
+	return err
 }
 
 // -w requires storing all the data in memory so that the entire source file
@@ -185,7 +185,7 @@ func (x *xCmd) wf(in, out chan interface{}) error {
 }
 
 // update ql/builtin.go bltin table if new aliases are added or some are removed.
-var aliases = map[string]string {
+var aliases = map[string]string{
 	"wf": "-w",
 }
 

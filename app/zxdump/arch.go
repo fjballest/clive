@@ -16,7 +16,7 @@ func waitDumpTime(name string) {
 	t := time.Now()
 	dt := time.Date(t.Year(), t.Month(), t.Day(), 5, 0, 0, 0, time.Local)
 	if dt.Before(time.Now()) {
-		dt = dt.Add(24*time.Hour)
+		dt = dt.Add(24 * time.Hour)
 	}
 	dbg.Warn("next %s dump at %v", name, dt)
 	delta := dt.Sub(t)
@@ -88,7 +88,7 @@ func dump(dir string, t zx.Tree, ec chan bool) {
 func excluded(name string) bool {
 	for _, x := range Xcludes {
 		ok, err := filepath.Match(x, name)
-		if err==nil && ok {
+		if err == nil && ok {
 			return true
 		}
 	}
@@ -140,7 +140,7 @@ func dumpDir(dir, name string, rf zx.File) (string, error) {
 			dprintf("dump ignored %s\n", d["path"])
 			continue
 		}
-		if t := d["type"]; t!="d" && t!="-" {
+		if t := d["type"]; t != "d" && t != "-" {
 			dbg.Warn("dump ignored %s type '%s'\n", d["path"], t)
 			continue
 		}
@@ -175,7 +175,7 @@ func dumpDir(dir, name string, rf zx.File) (string, error) {
 		} else {
 			dbg.Warn("%s: %s", df["path"], e)
 		}
-		if err==nil && e!=nil {
+		if err == nil && e != nil {
 			err = e
 			dhash = append(dhash, "")
 			dhash = append(dhash, "")
@@ -248,7 +248,7 @@ func newDumpDir(dir, dfpath string, rf zx.File, ds []zx.Dir, dhash []string) err
 		var e error
 		e = os.Symlink(cdfpath, cpath)
 		// TODO: save user attributes from ds[i] for cname at dfpath/.#zx
-		if err==nil && e!=nil {
+		if err == nil && e != nil {
 			err = e
 		}
 		if e == nil {
@@ -311,7 +311,7 @@ func newDumpFile(dfpath string, f zx.File) error {
 		}
 	}
 	err = cerror(dc)
-	if e := df.Close(); err==nil && e!=nil {
+	if e := df.Close(); err == nil && e != nil {
 		err = e
 	}
 	if err != nil {

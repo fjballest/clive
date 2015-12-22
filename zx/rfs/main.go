@@ -1,17 +1,17 @@
 package rfs
 
 import (
-	"clive/nchan"
-	"clive/net/ds"
-	"os"
 	"clive/dbg"
-	"clive/zx"
+	"clive/nchan"
 	"clive/net/auth"
+	"clive/net/ds"
+	"clive/zx"
+	"os"
 )
 
 func serveFor(t zx.Tree, c nchan.Conn) {
 	ai, err := auth.AtServer(c, "", "zx", "finder")
-	if err!=nil && err!=auth.ErrDisabled {
+	if err != nil && err != auth.ErrDisabled {
 		dbg.Warn("auth %s: %s\n", c.Tag, err)
 		close(c.In, err)
 		close(c.Out, err)

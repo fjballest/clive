@@ -48,17 +48,17 @@ type (
 	short int16
 	word  uint16
 
-	coord  {
+	coord struct {
 		x short
 		y short
 	}
-	smallRect  {
+	smallRect struct {
 		left   short
 		top    short
 		right  short
 		bottom short
 	}
-	consoleScreenBufferInfo  {
+	consoleScreenBufferInfo struct {
 		size              coord
 		cursorPosition    coord
 		attributes        word
@@ -67,7 +67,7 @@ type (
 	}
 )
 
-type State  {
+type State struct {
 	mode uint32
 }
 
@@ -75,7 +75,7 @@ type State  {
 func IsTerminal(fd int) bool {
 	var st uint32
 	r, _, e := syscall.Syscall(procGetConsoleMode.Addr(), 2, uintptr(fd), uintptr(unsafe.Pointer(&st)), 0)
-	return r!=0 && e==0
+	return r != 0 && e == 0
 }
 
 // MakeRaw put the terminal connected to the given file descriptor into raw

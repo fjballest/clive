@@ -11,7 +11,7 @@ import (
 	"clive/zx"
 )
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	debug   bool

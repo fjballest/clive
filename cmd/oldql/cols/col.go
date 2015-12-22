@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	wid, ncols int
@@ -31,7 +31,7 @@ func (x *xCmd) col() {
 	}
 	colwid := x.maxwid + 1
 	if x.ncols == 0 {
-		x.ncols = x.wid/colwid
+		x.ncols = x.wid / colwid
 	}
 	if x.ncols == 0 {
 		x.ncols = 1

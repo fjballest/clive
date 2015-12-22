@@ -12,7 +12,7 @@ import (
 	"errors"
 )
 
-type xCmd  {
+type xCmd struct {
 	*cmd.Ctx
 	*opt.Flags
 	src, dst                string
@@ -85,7 +85,7 @@ func Run(c cmd.Ctx) (err error) {
 			}
 		}
 		for _, rc := range rcs {
-			if err := <-rc; err!=nil && !x.force {
+			if err := <-rc; err != nil && !x.force {
 				x.Warn("%s", err)
 				sts = err
 			}

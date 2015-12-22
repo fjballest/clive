@@ -38,7 +38,7 @@ const maxOIDLength = 8
 
 // ecdsaKey stores the algorithm-specific fields for ECDSA keys.
 // as defined in RFC 6637, Section 9.
-type ecdsaKey  {
+type ecdsaKey struct {
 	// oid contains the OID byte sequence identifying the elliptic curve used
 	oid []byte
 	// p contains the elliptic curve point that represents the public key
@@ -106,7 +106,7 @@ type kdfAlgorithm byte
 
 // ecdhKdf stores key derivation function parameters
 // used for ECDH encryption. See RFC 6637, Section 9.
-type ecdhKdf  {
+type ecdhKdf struct {
 	KdfHash kdfHashFunction
 	KdfAlgo kdfAlgorithm
 }
@@ -149,7 +149,7 @@ func (f *ecdhKdf) byteLen() int {
 }
 
 // PublicKey represents an OpenPGP public key. See RFC 4880, section 5.5.2.
-type PublicKey  {
+type PublicKey struct {
 	CreationTime time.Time
 	PubKeyAlgo   PublicKeyAlgorithm
 	PublicKey    interface{} // *rsa.PublicKey, *dsa.PublicKey or *ecdsa.PublicKey
@@ -372,7 +372,7 @@ func (pk *PublicKey) SerializeSignaturePrefix(h io.Writer) {
 		panic("unknown public key algorithm")
 	}
 	pLength += 6
-	h.Write([]byte{0x99, byte(pLength>>8), byte(pLength)})
+	h.Write([]byte{0x99, byte(pLength >> 8), byte(pLength)})
 	return
 }
 
@@ -418,9 +418,9 @@ func (pk *PublicKey) serializeWithoutHeaders(w io.Writer) (err error) {
 	var buf [6]byte
 	buf[0] = 4
 	t := uint32(pk.CreationTime.Unix())
-	buf[1] = byte(t>>24)
-	buf[2] = byte(t>>16)
-	buf[3] = byte(t>>8)
+	buf[1] = byte(t >> 24)
+	buf[2] = byte(t >> 16)
+	buf[3] = byte(t >> 8)
 	buf[4] = byte(t)
 	buf[5] = byte(pk.PubKeyAlgo)
 
@@ -449,7 +449,7 @@ func (pk *PublicKey) serializeWithoutHeaders(w io.Writer) (err error) {
 
 // CanSign returns true iff this public key can generate signatures
 func (pk *PublicKey) CanSign() bool {
-	return pk.PubKeyAlgo!=PubKeyAlgoRSAEncryptOnly && pk.PubKeyAlgo!=PubKeyAlgoElGamal
+	return pk.PubKeyAlgo != PubKeyAlgoRSAEncryptOnly && pk.PubKeyAlgo != PubKeyAlgoElGamal
 }
 
 // VerifySignature returns nil iff sig is a valid signature, made by this
@@ -462,7 +462,7 @@ func (pk *PublicKey) VerifySignature(signed hash.Hash, sig *Signature) (err erro
 	signed.Write(sig.HashSuffix)
 	hashBytes := signed.Sum(nil)
 
-	if hashBytes[0]!=sig.HashTag[0] || hashBytes[1]!=sig.HashTag[1] {
+	if hashBytes[0] != sig.HashTag[0] || hashBytes[1] != sig.HashTag[1] {
 		return errors.SignatureError("hash tag doesn't match")
 	}
 
@@ -481,7 +481,7 @@ func (pk *PublicKey) VerifySignature(signed hash.Hash, sig *Signature) (err erro
 	case PubKeyAlgoDSA:
 		dsaPublicKey, _ := pk.PublicKey.(*dsa.PublicKey)
 		// Need to truncate hashBytes to match FIPS 186-3 section 4.6.
-		subgroupSize := (dsaPublicKey.Q.BitLen() + 7)/8
+		subgroupSize := (dsaPublicKey.Q.BitLen() + 7) / 8
 		if len(hashBytes) > subgroupSize {
 			hashBytes = hashBytes[:subgroupSize]
 		}
@@ -514,7 +514,7 @@ func (pk *PublicKey) VerifySignatureV3(signed hash.Hash, sig *SignatureV3) (err 
 	signed.Write(suffix)
 	hashBytes := signed.Sum(nil)
 
-	if hashBytes[0]!=sig.HashTag[0] || hashBytes[1]!=sig.HashTag[1] {
+	if hashBytes[0] != sig.HashTag[0] || hashBytes[1] != sig.HashTag[1] {
 		return errors.SignatureError("hash tag doesn't match")
 	}
 
@@ -532,7 +532,7 @@ func (pk *PublicKey) VerifySignatureV3(signed hash.Hash, sig *SignatureV3) (err 
 	case PubKeyAlgoDSA:
 		dsaPublicKey := pk.PublicKey.(*dsa.PublicKey)
 		// Need to truncate hashBytes to match FIPS 186-3 section 4.6.
-		subgroupSize := (dsaPublicKey.Q.BitLen() + 7)/8
+		subgroupSize := (dsaPublicKey.Q.BitLen() + 7) / 8
 		if len(hashBytes) > subgroupSize {
 			hashBytes = hashBytes[:subgroupSize]
 		}
@@ -609,9 +609,9 @@ func userIdSignatureHash(id string, pk *PublicKey, hashFunc crypto.Hash) (h hash
 
 	var buf [5]byte
 	buf[0] = 0xb4
-	buf[1] = byte(len(id)>>24)
-	buf[2] = byte(len(id)>>16)
-	buf[3] = byte(len(id)>>8)
+	buf[1] = byte(len(id) >> 24)
+	buf[2] = byte(len(id) >> 16)
+	buf[3] = byte(len(id) >> 8)
 	buf[4] = byte(len(id))
 	h.Write(buf[:])
 	h.Write([]byte(id))
@@ -654,7 +654,7 @@ func (pk *PublicKey) KeyIdShortString() string {
 // A parsedMPI is used to store the contents of a big integer, along with the
 // bit length that was specified in the original input. This allows the MPI to
 // be reserialized exactly.
-type parsedMPI  {
+type parsedMPI struct {
 	bytes     []byte
 	bitLength uint16
 }

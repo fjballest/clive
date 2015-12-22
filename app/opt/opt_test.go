@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-type chk  {
+type chk struct {
 	argv        []string
 	flags, args string
 }
@@ -88,7 +88,7 @@ func TestFlags(t *testing.T) {
 		if testing.Verbose() {
 			fmt.Printf("flags %s args %s sts %v\n", flg, left, err)
 		}
-		if flg!=c.flags || left!=c.args {
+		if flg != c.flags || left != c.args {
 			t.Fatal("bad result")
 		}
 	}
@@ -116,7 +116,7 @@ func TestFlags(t *testing.T) {
 	if testing.Verbose() {
 		fmt.Printf("flags %s args %s sts %v\n", flg, left, err)
 	}
-	if flg!=`true true false 15 3 -5` || left!="/tmp" {
+	if flg != `true true false 15 3 -5` || left != "/tmp" {
 		t.Fatal("bad arg")
 	}
 }

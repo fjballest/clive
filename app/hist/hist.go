@@ -6,8 +6,8 @@ package hist
 
 import (
 	"clive/app"
-	"clive/app/opt"
 	"clive/app/nsutil"
+	"clive/app/opt"
 	"clive/dbg"
 	"clive/zx"
 	"errors"
@@ -16,31 +16,31 @@ import (
 	"time"
 )
 
-type xCmd {
+type xCmd struct {
 	*opt.Flags
 	*app.Ctx
 
-	force, all	bool
-	lflag, cflag, dflag	bool
-	cmd, dump	string
+	force, all          bool
+	lflag, cflag, dflag bool
+	cmd, dump           string
 
 	lastyear, lastday string
 }
 
 var (
 	errNoDump = errors.New("no dump")
-	prefs = map[string]string{
+	prefs     = map[string]string{
 		// frrom <pref>/path into: <dump>/<pref>/yyyy/mmdd/path
 		"/zx": "/zx",
 	}
 )
 
 func (x *xCmd) ignored(year, day string) bool {
-	if x.lastyear!="" && strings.Split(year, ".")[0]>x.lastyear {
+	if x.lastyear != "" && strings.Split(year, ".")[0] > x.lastyear {
 		app.Dprintf("ignored %s\n", year)
 		return true
 	}
-	if day != "" && x.lastday != "" && strings.Split(day, ".")[0] >x.lastday {
+	if day != "" && x.lastday != "" && strings.Split(day, ".")[0] > x.lastday {
 		app.Dprintf("ignored %s %s\n", year, day)
 		return true
 	}
@@ -81,7 +81,7 @@ func (x *xCmd) find(dpref, rel string, dc chan<- zx.Dir, ufile zx.Dir) {
 				continue
 			}
 			newm, newsz, newmt := d["mode"], d["size"], d["mtime"]
-			if newsz==lastsz && newmt==lastmt && newm==lastm {
+			if newsz == lastsz && newmt == lastmt && newm == lastm {
 				continue
 			}
 			lastm, lastsz, lastmt = newm, newsz, newmt
@@ -167,7 +167,7 @@ func (x *xCmd) hist(in chan interface{}) error {
 			x.find(dpref, rel, dc, m.Dup())
 		default:
 			app.Dprintf("got %T\n", m)
-			
+
 		}
 	}
 	<-ec

@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type attr  {
+type attr struct {
 	Ino        uint64
 	Size       uint64
 	Blocks     uint64
@@ -32,7 +32,7 @@ func (a *attr) SetFlags(f uint32) {
 	a.Flags_ = f
 }
 
-type setattrIn  {
+type setattrIn struct {
 	setattrInCommon
 
 	// OS X only
@@ -61,7 +61,7 @@ func openFlags(flags uint32) OpenFlags {
 	return OpenFlags(flags)
 }
 
-type getxattrIn  {
+type getxattrIn struct {
 	getxattrInCommon
 
 	// OS X only
@@ -73,7 +73,7 @@ func (g *getxattrIn) position() uint32 {
 	return g.Position
 }
 
-type setxattrIn  {
+type setxattrIn struct {
 	setxattrInCommon
 
 	// OS X only

@@ -19,7 +19,7 @@ func (typ ICMPType) String() string {
 
 // An ICMPFilter represents an ICMP message filter for incoming
 // packets.
-type ICMPFilter  {
+type ICMPFilter struct {
 	mu sync.RWMutex
 	sysICMPFilter
 }

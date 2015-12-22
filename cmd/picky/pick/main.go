@@ -9,6 +9,8 @@ import (
 	"runtime"
 )
 
+const BPath = "/bin/pam"
+
 func main() {
 	defer func() {
 		if e := recover(); e != nil {
@@ -26,8 +28,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if runtime.GOOS == "windows" {
+	bpath := BPath
+	switch runtime.GOOS {
+	case "windows":
 		paminstr.EOL = "\r\n"
+	case "darwin":
+		bpath = "/usr/local/bin/pam"
 	}
 	args := flag.Args()
 	comp.Scanner = comp.NewScanner(nil, "", -1)
@@ -52,7 +58,7 @@ func main() {
 	}
 	nm := comp.Oname
 	fout, out := comp.Mkout(nm)
-	comp.Gen(out, nm)
+	comp.Gen(out, nm, bpath)
 	out.Flush()
 	fout.Close()
 	os.Chmod(nm, os.FileMode(0755))

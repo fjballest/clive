@@ -13,7 +13,7 @@ import (
 
 // Config collects a number of parameters along with sensible defaults.
 // A nil *Config is valid and results in all default values.
-type Config  {
+type Config struct {
 	// Rand provides the source of entropy.
 	// If nil, the crypto/rand Reader is used.
 	Rand io.Reader
@@ -35,28 +35,28 @@ type Config  {
 }
 
 func (c *Config) Random() io.Reader {
-	if c==nil || c.Rand==nil {
+	if c == nil || c.Rand == nil {
 		return rand.Reader
 	}
 	return c.Rand
 }
 
 func (c *Config) Hash() crypto.Hash {
-	if c==nil || uint(c.DefaultHash)==0 {
+	if c == nil || uint(c.DefaultHash) == 0 {
 		return crypto.SHA256
 	}
 	return c.DefaultHash
 }
 
 func (c *Config) Cipher() CipherFunction {
-	if c==nil || uint8(c.DefaultCipher)==0 {
+	if c == nil || uint8(c.DefaultCipher) == 0 {
 		return CipherAES128
 	}
 	return c.DefaultCipher
 }
 
 func (c *Config) Now() time.Time {
-	if c==nil || c.Time==nil {
+	if c == nil || c.Time == nil {
 		return time.Now()
 	}
 	return c.Time()

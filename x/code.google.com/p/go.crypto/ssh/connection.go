@@ -11,7 +11,7 @@ import (
 
 // OpenChannelError is returned if the other side rejects an
 // OpenChannel request.
-type OpenChannelError  {
+type OpenChannelError struct {
 	Reason  RejectionReason
 	Message string
 }
@@ -86,7 +86,7 @@ func DiscardRequests(in <-chan *Request) {
 }
 
 // A connection represents an incoming connection.
-type connection  {
+type connection struct {
 	transport *handshakeTransport
 	sshConn
 
@@ -100,7 +100,7 @@ func (c *connection) Close() error {
 
 // sshconn provides net.Conn metadata, but disallows direct reads and
 // writes.
-type sshConn  {
+type sshConn struct {
 	conn net.Conn
 
 	user          string
