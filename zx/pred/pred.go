@@ -1,5 +1,5 @@
 /*
-	Predicates on files as used by the zx.Finder interface.
+	Predicates on files as used by the zx interfaces
 
 	A predicate is a string with a specific format that may be compiled to a Pred
 	and used to implement zx.Find.
@@ -67,10 +67,6 @@ import (
 	"strconv"
 )
 
-// REFERENCE(x): clive/nspace, name spaces and Finder interface.
-
-// REFERENCE(x): clive/zx, ZX implementations and finders.
-
 /*
 	predicate operators
 */
@@ -102,9 +98,7 @@ var (
 	debug bool
 )
 
-/*
-	A compiled predicate.
-*/
+// A compiled predicate.
 type Pred struct {
 	op    op // operation
 	name  string
@@ -169,10 +163,8 @@ func pathMatch(exp, p string) (value, pruned bool, err error) {
 	return len(pels) == len(els), false, nil
 }
 
-/*
-	Like Pred.EvalAt, but useful when you want to specify the predicate
-	by using a string.
-*/
+// Like Pred.EvalAt, but useful when you want to specify the predicate
+// using a string.
 func EvalStr(e zx.Dir, p string, depth int) (value, pruned bool, err error) {
 	x, err := New(p)
 	if err != nil {
@@ -181,13 +173,11 @@ func EvalStr(e zx.Dir, p string, depth int) (value, pruned bool, err error) {
 	return x.EvalAt(e, depth)
 }
 
-/*
-	Evaluate the predicate at the given directory
-	entry (considering that its depth is the given one).
-	Returns true or false as the value of the predicate, a prune indication
-	that is true if we can prune the tree at this directory entry (e.g., the depth
-	indicated is beyond that asked by the predicate), and any error indication.
-*/
+// Evaluate the predicate at the given directory
+// entry (considering that its depth is the given one).
+// Returns true or false as the value of the predicate, a prune indication
+// that is true if we can prune the tree at this directory entry (e.g., the depth
+// indicated is beyond that asked by the predicate), and any error indication.
 func (p *Pred) EvalAt(e zx.Dir, lvl int) (value, pruned bool, err error) {
 	if p == nil {
 		return true, false, nil
@@ -323,15 +313,12 @@ func (p *Pred) EvalAt(e zx.Dir, lvl int) (value, pruned bool, err error) {
 	return false, false, nil
 }
 
-/*
-	Execute the part of the ns.Find operation that evaluates p
-	at the tree rooted at d (considering that its level is the one
-	indicated). Found entries are sent through the given channel,
-	which is closed only upon errors.
-
-	This is useful to implement ns.Find when writting services.
-*/
-func (p *Pred) FindAt(fs zx.Sender, d zx.Dir, c chan<- zx.Dir, lvl int) {
+// Execute the part of the ns.Find operation that evaluates p
+// at the tree rooted at d (considering that its level is the one
+// indicated). Found entries are sent through the given channel,
+// which is closed only upon errors.
+// This is useful to implement ns.Find when writting services.
+func (p *Pred) FindAt(fs zx.Getter, d zx.Dir, c chan<- zx.Dir, lvl int) {
 	match, pruned, err := p.EvalAt(d, lvl)
 	if err != nil {
 		close(c, err)
@@ -370,7 +357,8 @@ func (p *Pred) FindAt(fs zx.Sender, d zx.Dir, c chan<- zx.Dir, lvl int) {
 	}
 }
 
-func Find(fs zx.Tree, path, pred string) <-chan zx.Dir {
+
+func Find(fs zx.Getter, path, pred string) <-chan zx.Dir {
 	c := make(chan zx.Dir)
 	go func() {
 		d, err := zx.Stat(fs, path)

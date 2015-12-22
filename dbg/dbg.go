@@ -19,7 +19,6 @@ struct Flag {
 	Tag string		// prefixing debug prints
 	Debug bool	// enable debug prints
 }
-
 	
 
 var (
@@ -124,7 +123,7 @@ func HexStr(data []byte, n int) string {
 	if n < len(data) {
 		fmt.Fprintf(&b, "...")
 	}
-	for i := len(data)-1; i >= n/2; i-- {
+	for i := len(data)-n/2; i < len(data); i++ {
 		fmt.Fprintf(&b, " %02x", data[i])
 	}
 	return b.String()
