@@ -1,16 +1,13 @@
 package pred
 
 import (
-	"clive/dbg"
 	"errors"
 	"fmt"
 	"io"
 	"strconv"
 )
 
-/*
-	keep Ops and toks exactly the same for the ops used as tokens.
-*/
+// keep Ops and toks exactly the same for the ops used as tokens.
 
 type tok int
 
@@ -344,9 +341,6 @@ func (l *lex) parse() (*Pred, error) {
 }
 
 func (l *lex) parseOrs() (*Pred, error) {
-	if l.debug {
-		defer dbg.Trace(dbg.Call("ors"))
-	}
 	args := []*Pred{}
 	a1, err := l.parseAnds()
 	if err != nil {
@@ -375,9 +369,6 @@ func (l *lex) parseOrs() (*Pred, error) {
 }
 
 func (l *lex) parseAnds() (*Pred, error) {
-	if l.debug {
-		defer dbg.Trace(dbg.Call("ands"))
-	}
 	args := []*Pred{}
 	a1, err := l.parsePrim()
 	if err != nil {
@@ -404,14 +395,9 @@ func (l *lex) parseAnds() (*Pred, error) {
 	}
 }
 
-/*
-	prim ::= prune | t | true | f | false | name op name | unop prim | maxmin name | n | ( ors )
-	but handle ~ str as meaning "name~str"
-*/
+// prim ::= prune | t | true | f | false | name op name | unop prim | maxmin name | n | ( ors )
+// but handle ~ str as meaning "name~str"
 func (l *lex) parsePrim() (*Pred, error) {
-	if l.debug {
-		defer dbg.Trace(dbg.Call("prim"))
-	}
 	t, _, err := l.peek()
 	if err != nil {
 		return nil, err

@@ -9,19 +9,10 @@ import (
 	"strings"
 )
 
-// Useful to embed into a Fs
+// Flags for Fs implementors and to aid in Ctl requests.
 type Flags struct {
-	Dbg         bool                   // set to true to print zx requests to stderr
-	NoPermCheck bool                   // set to avoid perm checks in trees that support this
-	WstatAll    bool                   // enable wstat of everything if ai is nil.
-	IOstats     *IOstats               // set to &IOstats{} to account
 	usr         map[string]interface{} // user defined flags
 	ro          map[string]bool        // read only flags
-}
-
-// Return a pointer to the debug flag
-func (t *Flags) Debug() *bool {
-	return &t.Dbg
 }
 
 // Add a user defined flag to the flag set.
@@ -136,7 +127,7 @@ func (t *Flags) String() string {
 func (t *Flags) Ctl(cmd string) error {
 	toks := strings.Fields(cmd)
 	if len(toks) < 1 {
-		return dbg.ErrBadCtl
+		return ErrBadCtl
 	}
 	if len(toks) == 1 {
 		if strings.HasPrefix(toks[0], "no") {
@@ -148,7 +139,7 @@ func (t *Flags) Ctl(cmd string) error {
 	}
 	vp, ok := t.usr[toks[0]]
 	if !ok {
-		return fmt.Errorf("%s: %s", toks[0], dbg.ErrBadCtl)
+		return fmt.Errorf("%s: %s", toks[0], ErrBadCtl)
 	}
 	if t.ro[toks[0]] {
 		return fmt.Errorf("%s: read only flag", toks[0])

@@ -21,7 +21,8 @@ import (
 	"bufio"
 	"bytes"
 	"clive/dbg"
-	"clive/nchan"
+	"clive/u"
+	"clive/ch"
 	"clive/x/code.google.com/p/go.crypto/pbkdf2"
 	"crypto/aes"
 	"crypto/cipher"
@@ -125,7 +126,7 @@ var (
 
 	// Enable debug diagnostics.
 	Debug   bool
-	dprintf = dbg.FlagPrintf(os.Stderr, &Debug)
+	dprintf = dbg.FlagPrintf(&Debug)
 
 	chc  chan uint64
 	keys []Key
@@ -264,7 +265,7 @@ func (m *msg) unpack(buf []byte) error {
 
 // Return the path to the directory where clive keys and certificates are kept.
 func KeyDir() string {
-	return path.Join(dbg.Home, ".ssh")
+	return path.Join(u.Home, ".ssh")
 }
 
 // Return the path to the file at dir where clive keys for the auth domain named are kept.
@@ -381,29 +382,29 @@ func LoadKey(dir, name string) (ks []Key, err error) {
 	Always returns true when Auth is not enabled.
 */
 func ChallengeResponseOk(name, ch, resp string) (user string, ok bool) {
-	u := dbg.Usr
+	usr := u.Usr
 	if !Enabled {
-		return u, true
+		return usr, true
 	}
 	if keys == nil || iv == nil {
-		return u, false
+		return usr, false
 	}
-	u = keys[0].Uid
+	usr = keys[0].Uid
 	key := keys[0].Key
 	if name != "" && name != "default" {
 		var err error
 		ks, err := LoadKey(KeyDir(), name)
 		if err != nil {
 			dbg.Warn("auth: loadkey %s: %s", name, err)
-			return u, false
+			return usr, false
 		}
-		u, key = ks[0].Uid, ks[0].Key
+		usr, key = ks[0].Uid, ks[0].Key
 	}
 	chresp, ok := encrypt(key, iv, []byte(ch))
 	if !ok || len(chresp) == 0 {
-		return u, false
+		return usr, false
 	}
-	return u, fmt.Sprintf("%x", chresp) == resp
+	return usr, fmt.Sprintf("%x", chresp) == resp
 }
 
 /*
@@ -425,7 +426,7 @@ func ChallengeResponseOk(name, ch, resp string) (user string, ok bool) {
 	Otherwise, c is closed unless it authenticates correctly and the auth info resulting
 	from the protocol is returned.
 */
-func AtClient(c nchan.Conn, name string, proto ...string) (*Info, error) {
+func AtClient(c ch.Conn, name string, proto ...string) (*Info, error) {
 	return conn(c, true, name, proto...)
 }
 
@@ -434,7 +435,7 @@ func AtClient(c nchan.Conn, name string, proto ...string) (*Info, error) {
 	Despite the names, the protocol is symmetric.
 	See Caller for a description.
 */
-func AtServer(c nchan.Conn, name string, proto ...string) (*Info, error) {
+func AtServer(c ch.Conn, name string, proto ...string) (*Info, error) {
 	return conn(c, false, name, proto...)
 }
 
@@ -462,10 +463,10 @@ func AtServer(c nchan.Conn, name string, proto ...string) (*Info, error) {
 	cli checks the response, hangup or it's ok
 	srv checks the response (using the client's uid), hangup or it's ok
 */
-func conn(c nchan.Conn, iscaller bool, name string, proto ...string) (*Info, error) {
+func conn(c ch.Conn, iscaller bool, name string, proto ...string) (*Info, error) {
 	ch := make([]byte, 16)
 	var k []byte
-	user := dbg.Usr
+	user := u.Usr
 	groups := []string{user}
 	if keys != nil {
 		user = keys[0].Uid
@@ -491,7 +492,7 @@ func conn(c nchan.Conn, iscaller bool, name string, proto ...string) (*Info, err
 	}
 
 	// 1. send the auth msg and challenge
-	m := &msg{enabled: Enabled, user: user, speaksfor: dbg.Usr, ch: ch}
+	m := &msg{enabled: Enabled, user: user, speaksfor: u.Usr, ch: ch}
 	m.proto = map[string]bool{}
 	for _, s := range proto {
 		m.proto[s] = true
@@ -518,7 +519,11 @@ func conn(c nchan.Conn, iscaller bool, name string, proto ...string) (*Info, err
 		close(c.In, ErrTimedOut)
 		return nil, ErrTimedOut
 	case rdata := <-c.In:
-		if err := rm.unpack(rdata); err != nil {
+		dat, ok := rdata.([]byte)
+		var err error
+		if !ok {
+			err = errors.New("bad message")
+		} else if err = rm.unpack(dat); err != nil {
 			if cerror(c.In) != nil {
 				err = fmt.Errorf("auth: %s", cerror(c.In))
 			}
@@ -608,7 +613,8 @@ func conn(c nchan.Conn, iscaller bool, name string, proto ...string) (*Info, err
 		close(c.Out, ErrTimedOut)
 		close(c.In, ErrTimedOut)
 		return info, ErrTimedOut
-	case repl = <-c.In:
+	case xrepl := <-c.In:
+		repl, _ = xrepl.([]byte)
 		if len(repl) == 0 {
 			close(c.In, ErrFailed)
 			close(c.Out, ErrFailed)

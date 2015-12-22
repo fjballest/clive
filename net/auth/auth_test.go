@@ -2,16 +2,16 @@ package auth
 
 import (
 	"clive/dbg"
-	"clive/nchan"
+	"clive/ch"
 	"encoding/binary"
-	"os"
 	"testing"
 )
 
-var printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
+var debug = testing.Verbose()
+var printf = dbg.FlagPrintf(&debug)
 
 func ExampleAtClient() {
-	var c nchan.Conn
+	var c ch.Conn
 
 	// Assume c comes from dialing a server.
 	// Authenticate c for domain lsub, to speak the finder
@@ -28,7 +28,7 @@ func ExampleAtClient() {
 }
 
 func ExampleAtServer() {
-	var c nchan.Conn
+	var c ch.Conn
 
 	// Assume we are listening for connections and get
 	// c as a fresh connection from a client.
@@ -49,7 +49,7 @@ func ExampleAtServer() {
 func TestAuth(t *testing.T) {
 	// Do it a few times...
 	for i := 0; i < 3; i++ {
-		c1, c2 := nchan.NewConnPipe(5)
+		c1, c2 := ch.NewPipePair(5)
 		ec := make(chan error, 1)
 		go func() {
 			_, err := AtClient(c1, "", "foo")
@@ -63,11 +63,11 @@ func TestAuth(t *testing.T) {
 		}
 		c1.Out <- []byte("hi")
 		c2.Out <- []byte("there")
-		d := <-c2.In
+		d := string((<-c2.In).([]byte))
 		if string(d) != "hi" {
 			t.Fatal("bad msg")
 		}
-		d = <-c1.In
+		d = string((<-c1.In).([]byte))
 		if string(d) != "there" {
 			t.Fatal("bad msg")
 		}
@@ -75,7 +75,7 @@ func TestAuth(t *testing.T) {
 }
 
 func TestBadAuth(t *testing.T) {
-	c1, c2 := nchan.NewConnPipe(5)
+	c1, c2 := ch.NewPipePair(5)
 	go func() {
 		var nb [8]byte
 		binary.LittleEndian.PutUint64(nb[0:], 33)

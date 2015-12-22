@@ -3,7 +3,6 @@ package pred
 import (
 	"clive/dbg"
 	"clive/zx"
-	"os"
 	"path"
 	"testing"
 )
@@ -17,7 +16,10 @@ import (
 	win go tool pprof pred.test /tmp/prof.out
 */
 
-var printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
+var (
+	verb bool
+	printf = dbg.FlagPrintf(&verb)
+)
 
 type top struct {
 	s   string
@@ -43,6 +45,7 @@ var preds = []top{
 }
 
 func TestPred(t *testing.T) {
+	verb = testing.Verbose()
 	for i := range preds {
 		printf("parse '%s'\n", preds[i].s)
 		p, err := New(preds[i].s)
