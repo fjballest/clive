@@ -73,7 +73,7 @@ var (
 	entryValidTime = 5 * time.Second
 	startTime      = time.Now()
 	Debug          bool
-	dprintf        = dbg.FlagPrintf(os.Stderr, &Debug)
+	dprintf        = dbg.FlagPrintf(&Debug)
 
 	uid, gid uint32
 )
@@ -166,7 +166,7 @@ func (s *Server) Serve(c *fuse.Conn) error {
 func Serve(c *fuse.Conn, fs FS) error {
 	server := Server{
 		FS:      fs,
-		dprintf: dbg.FlagPrintf(os.Stderr, &Debug),
+		dprintf: dbg.FlagPrintf(&Debug),
 	}
 	return server.Serve(c)
 }

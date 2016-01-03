@@ -1,4 +1,0 @@
-// +build !clive
-
-package picky
-

@@ -1,6 +1,0 @@
-stack trace at:
-main() pid 0	pc 0x0000000a dnil.p:23
-	local variables:
-	w = nil
-
-ok

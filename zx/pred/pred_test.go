@@ -17,11 +17,11 @@ import (
 */
 
 var (
-	verb bool
+	verb   bool
 	printf = dbg.FlagPrintf(&verb)
 )
 
-type top struct {
+struct top {
 	s   string
 	err bool
 	out string
@@ -131,7 +131,7 @@ func TestName(t *testing.T) {
 	}
 }
 
-type mTest struct {
+struct mTest {
 	pred, path      string
 	matches, prunes bool
 }

@@ -1,44 +1,44 @@
 package fstest
 
 import (
-	"clive/zx"
 	"bytes"
+	"clive/zx"
 )
 
-var dirs = []string {
-`c rw-r--r--      0 /Ctl
+var dirs = []string{
+	`c rw-r--r--      0 /Ctl
 - rw-r--r--      0 /1
 - rw-r--r--  30.9k /2
 d rwxr-xr-x      0 /a
 d rwxr-xr-x      0 /d
 d rwxr-xr-x      0 /e
 `,
-`- rw-r--r--   9.9k /a/a1
+	`- rw-r--r--   9.9k /a/a1
 - rw-r--r--  20.9k /a/a2
 d rwxr-xr-x      0 /a/b
 `,
-`d rwxr-xr-x      0 /a/b/c
+	`d rwxr-xr-x      0 /a/b/c
 `,
-`- rw-r--r--  43.9k /a/b/c/c3
+	`- rw-r--r--  43.9k /a/b/c/c3
 `,
-``,
-`d rwxr-xr-x      0 /e/f
+	``,
+	`d rwxr-xr-x      0 /e/f
 `,
-``,
+	``,
 }
 
-var dirs23 = []string {
-`- rw-r--r--  30.9k /2
+var dirs23 = []string{
+	`- rw-r--r--  30.9k /2
 d rwxr-xr-x      0 /a
 d rwxr-xr-x      0 /d
 `,
-`d rwxr-xr-x      0 /a/b
+	`d rwxr-xr-x      0 /a/b
 `,
-``,
-``,
-``,
-``,
-``,
+	``,
+	``,
+	``,
+	``,
+	``,
 }
 
 // Get all contents for a file
@@ -62,6 +62,18 @@ func slice(b []byte, o, c int) []byte {
 	return b[:c]
 }
 
+func GetCtl(t Fataler, xfs zx.Fs) {
+	fs, ok := xfs.(zx.Getter)
+	if !ok {
+		t.Fatalf("not a getter")
+	}
+	dat, err := zx.GetAll(fs, "/Ctl")
+	if err != nil {
+		t.Fatalf("get /Ctl: %s", err)
+	}
+	Printf("ctl is:\n%s\n", string(dat))
+}
+
 func Gets(t Fataler, xfs zx.Fs) {
 	fs, ok := xfs.(zx.Getter)
 	if !ok {
@@ -69,11 +81,12 @@ func Gets(t Fataler, xfs zx.Fs) {
 	}
 	for _, p := range Files {
 		data, err := zx.GetAll(fs, p)
-		Printf("get %s: %d bytes sts %v\n", p, len(data), err)
+		Printf("get all %s: %d bytes sts %v\n", p, len(data), err)
 		if err != nil {
 			t.Fatalf("get %s: %s", p, err)
 		}
 		if bytes.Compare(FileData[p], data) != 0 {
+			t.Logf("%d get %d data", len(data), len(FileData[p]))
 			t.Fatalf("get %s: bad data", p)
 		}
 	}
@@ -94,7 +107,7 @@ func Gets(t Fataler, xfs zx.Fs) {
 		out := ""
 		gc := fs.Get(p, 0, -1)
 		for b := range gc {
-			dir, err := zx.UnpackDir(b)
+			_, dir, err := zx.UnpackDir(b)
 			Printf("%s\n", dir.Fmt())
 			if err != nil {
 				t.Fatalf("get sts %v", err)
@@ -103,7 +116,8 @@ func Gets(t Fataler, xfs zx.Fs) {
 		}
 		Printf("\n")
 		if i > len(dirs) || dirs[i] != out {
-			t.Fatalf("bad dir contents")
+			t.Logf("dirs: <%s>\n out <%s>\n", dirs, out)
+			t.Fatalf("bad output")
 		}
 	}
 
@@ -112,7 +126,7 @@ func Gets(t Fataler, xfs zx.Fs) {
 		out := ""
 		gc := fs.Get(p, 2, 3)
 		for b := range gc {
-			dir, err := zx.UnpackDir(b)
+			_, dir, err := zx.UnpackDir(b)
 			Printf("%s\n", dir.Fmt())
 			if err != nil {
 				t.Fatalf("get sts %v", err)

@@ -20,9 +20,9 @@ package auth
 import (
 	"bufio"
 	"bytes"
+	"clive/ch"
 	"clive/dbg"
 	"clive/u"
-	"clive/ch"
 	"clive/x/code.google.com/p/go.crypto/pbkdf2"
 	"crypto/aes"
 	"crypto/cipher"
@@ -87,7 +87,7 @@ import (
 
 	- Otherwise permission checking is similar to that of unix (v6).
 */
-type Info struct {
+struct Info {
 	Uid       string          // authenticated user name
 	Gids      map[string]bool // local groups known for that user
 	SpeaksFor string          // user name as reported by the remote peer.
@@ -99,7 +99,7 @@ type Info struct {
 	Per-user keys.
 	See Info for a description.
 */
-type Key struct {
+struct Key {
 	Uid  string
 	Gids []string
 	Key  []byte
@@ -174,7 +174,7 @@ func TLScfg(pem, key string) (*tls.Config, error) {
 	}, nil
 }
 
-type msg struct {
+struct msg {
 	enabled         bool
 	user, speaksfor string
 	proto           map[string]bool
@@ -382,7 +382,7 @@ func LoadKey(dir, name string) (ks []Key, err error) {
 	Always returns true when Auth is not enabled.
 */
 func ChallengeResponseOk(name, ch, resp string) (user string, ok bool) {
-	usr := u.Usr
+	usr := u.Uid
 	if !Enabled {
 		return usr, true
 	}
@@ -427,7 +427,14 @@ func ChallengeResponseOk(name, ch, resp string) (user string, ok bool) {
 	from the protocol is returned.
 */
 func AtClient(c ch.Conn, name string, proto ...string) (*Info, error) {
-	return conn(c, true, name, proto...)
+	return conn(c, true, name, true, proto...)
+}
+
+/*
+	Like AtClient(), but with auth disabled for this client/server
+*/
+func NoneAtClient(c ch.Conn, name string, proto ...string) (*Info, error) {
+	return conn(c, true, name, false, proto...)
 }
 
 /*
@@ -436,7 +443,14 @@ func AtClient(c ch.Conn, name string, proto ...string) (*Info, error) {
 	See Caller for a description.
 */
 func AtServer(c ch.Conn, name string, proto ...string) (*Info, error) {
-	return conn(c, false, name, proto...)
+	return conn(c, false, name, true, proto...)
+}
+
+/*
+	Like AtServer(), but with auth disabled for this client/server
+*/
+func NoneAtServer(c ch.Conn, name string, proto ...string) (*Info, error) {
+	return conn(c, false, name, false, proto...)
 }
 
 /*
@@ -463,16 +477,17 @@ func AtServer(c ch.Conn, name string, proto ...string) (*Info, error) {
 	cli checks the response, hangup or it's ok
 	srv checks the response (using the client's uid), hangup or it's ok
 */
-func conn(c ch.Conn, iscaller bool, name string, proto ...string) (*Info, error) {
+func conn(c ch.Conn, iscaller bool, name string, enabled bool, proto ...string) (*Info, error) {
 	ch := make([]byte, 16)
 	var k []byte
-	user := u.Usr
+	user := u.Uid
 	groups := []string{user}
 	if keys != nil {
 		user = keys[0].Uid
 		k = keys[0].Key
 	}
-	if Enabled {
+	enabled = enabled && Enabled
+	if enabled {
 		if TLSclient == nil || TLSserver == nil {
 			return nil, errors.New("no tls")
 		}
@@ -492,7 +507,7 @@ func conn(c ch.Conn, iscaller bool, name string, proto ...string) (*Info, error)
 	}
 
 	// 1. send the auth msg and challenge
-	m := &msg{enabled: Enabled, user: user, speaksfor: u.Usr, ch: ch}
+	m := &msg{enabled: enabled, user: user, speaksfor: u.Uid, ch: ch}
 	m.proto = map[string]bool{}
 	for _, s := range proto {
 		m.proto[s] = true
@@ -618,7 +633,7 @@ func conn(c ch.Conn, iscaller bool, name string, proto ...string) (*Info, error)
 		if len(repl) == 0 {
 			close(c.In, ErrFailed)
 			close(c.Out, ErrFailed)
-			return info, ErrFailed
+			return info, fmt.Errorf("%s: empty reply", ErrFailed)
 		}
 	}
 
@@ -635,7 +650,7 @@ func conn(c ch.Conn, iscaller bool, name string, proto ...string) (*Info, error)
 		dbg.Warn("auth failed: %s (as %s)", info.SpeaksFor, info.Uid)
 		close(c.In, ErrFailed)
 		close(c.Out, ErrFailed)
-		return info, ErrFailed
+		return info, fmt.Errorf("%s: bad reply", ErrFailed)
 	}
 	info.Ok = true
 	return info, nil

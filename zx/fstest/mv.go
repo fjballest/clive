@@ -3,47 +3,82 @@ package fstest
 import (
 	"clive/zx"
 	"path"
+	"strings"
 )
 
-type mvTest struct {
+struct mvTest {
 	From, To string
 	Fails    bool
 	Child    string
 	Res      string
+	Stats    []string
 }
 
 // Use size X for /
 var mvs = []mvTest{
-	{"/1", "/1", false, "", ""},
+	{"/1", "/1", false, "", `- rw-r--r--      0 /1`, []string{
+		`- rw-r--r--      0 /1`,
+		`- rw-r--r--      0 /1`,
+		`d rwxr-xr-x      0 /`,
+		`d rwxr-xr-x      0 /`,
+	}},
+	// keep the next one, used to check zx attrs
 	{"/2", "/n2", false, "",
-		`path /n2 name n2 type - mode 0644 size 31658 Gid nemo Uid nemo`,
-	},
+		`- rw-r--r--  30.9k /n2`, []string{
+			`<nil dir>`,
+			`- rw-r--r--  30.9k /n2`,
+			`d rwxr-xr-x      0 /`,
+			`d rwxr-xr-x      0 /`,
+		}},
 	{"/", "/", false, "",
-		"path / name / type d mode 0755 size X Gid nemo Uid nemo",
-	},
+		"d rwxr-xr-x      0 /", []string{
+			`d rwxr-xr-x      0 /`,
+			`d rwxr-xr-x      0 /`,
+			`d rwxr-xr-x      0 /`,
+		}},
 	{"/a/a1", "/a/a2", false, "",
-		`path /a/a2 name a2 type - mode 0644 size 10154 Gid nemo Uid nemo`,
-	},
+		`- rw-r--r--   9.9k /a/a2`, []string{
+			`<nil dir>`,
+			`- rw-r--r--   9.9k /a/a2`,
+			`d rwxr-xr-x      0 /a`,
+			`d rwxr-xr-x      0 /a`,
+		}},
 	{"/a/a2", "/a3", false, "",
-		`path /a3 name a3 type - mode 0644 size 10154 Gid nemo Uid nemo`,
-	},
+		`- rw-r--r--   9.9k /a3`, []string{
+			`<nil dir>`,
+			`- rw-r--r--   9.9k /a3`,
+			`d rwxr-xr-x      0 /a`,
+			`d rwxr-xr-x      0 /`,
+		}},
 	{"/a/b", "/d/b", false, "/d/b/c/c3",
-		`path /d/b name b type d mode 0755 size 1 Gid nemo Uid nemo`,
-	},
-	{"/1", "/e", true, "", ""},
-	{"/e", "/1", true, "", ""},
-	{"/Ctl", "/x", true, "", ""},
-	{"/x", "/Ctl", true, "", ""},
-	{"/d", "/d/b", true, "", ``},
-	{"/", "/x", true, "", ``},
-	{"/", "/a", true, "", ``},
-	{"/a/a2", "/a", true, "", ``},
+		`d rwxr-xr-x      0 /d/b`, []string{
+			`<nil dir>`,
+			`d rwxr-xr-x      0 /d/b`,
+			`d rwxr-xr-x      0 /a`,
+			`d rwxr-xr-x      0 /d`,
+		}},
+	{"/1", "/e", true, "", "", nil},
+	{"/e", "/1", true, "", "", nil},
+	{"/Ctl", "/x", true, "", "", nil},
+	{"/x", "/Ctl", true, "", "", nil},
+	{"/d", "/d/b", true, "", ``, nil},
+	{"/", "/x", true, "", ``, nil},
+	{"/", "/a", true, "", ``, nil},
+	{"/a/a2", "/a", true, "", ``, nil},
 }
 
 func Moves(t Fataler, xfs zx.Fs) {
 	fs, ok := xfs.(zx.Mover)
 	if !ok {
 		t.Fatalf("not a Mover")
+	}
+	wfs, ok := xfs.(zx.Wstater)
+	if ok {
+		rc := wfs.Wstat("/2", zx.Dir{"foo": "bar"})
+		<-rc
+		if err := cerror(rc); err != nil {
+			t.Fatalf("can't wstat")
+		}
 	}
 	for i, mv := range mvs {
 		Printf("mv #%d %s %s\n", i, mv.From, mv.To)
@@ -61,23 +96,36 @@ func Moves(t Fataler, xfs zx.Fs) {
 		if err != nil {
 			t.Fatalf("stat %s: %s", mv.From, err)
 		}
-		Printf("new stat: %s\n", d.Fmt())
+		Printf("\t`%s`,\n", d.Fmt())
+		if mv.Res != "" && !strings.HasPrefix(d.Fmt(), mv.Res) {
+			t.Fatalf("bad stat. ")
+		}
 		if mv.Child != "" {
 			d, err = zx.Stat(xfs, mv.Child)
 			if err != nil {
 				t.Fatalf("stat %s: %s", mv.Child, err)
 			}
 			if d["path"] != mv.Child {
-				t.Fatalf("%s: bad path %s", mv.Child, d["path"])
+				t.Logf("%s: bad path %s", mv.Child, d["path"])
 			}
 		}
 		paths := []string{mv.From, mv.To, path.Dir(mv.From), path.Dir(mv.To)}
-		for _, p := range paths {
-			d, err := zx.Stat(xfs, mv.To)
-			if err != nil {
-				t.Fatalf("stat %s: %s", p, err)
+		for i, p := range paths {
+			d, _ := zx.Stat(xfs, p)
+			Printf("\t\t`%s`,\n", d.Fmt())
+			if i < len(mv.Stats) && !strings.HasPrefix(d.Fmt(), mv.Stats[i]) {
+				t.Fatalf("bad stat")
 			}
-			Printf("new child stat: %s\n", d.Fmt())
 		}
 	}
+	if wfs != nil {
+		d, err := zx.Stat(xfs, "/n2")
+		if err != nil {
+			t.Fatalf("stat /n2: %s", err)
+		}
+		if d["foo"] != "bar" {
+			t.Fatalf("didn't move the foo attr for /2 -> /n2")
+		}
+	}
+
 }

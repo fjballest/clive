@@ -1,32 +1,33 @@
 package zux
 
 import (
-	"sync"
-	fpath "path"
-	"io/ioutil"
 	"clive/zx"
+	"io/ioutil"
 	"os"
+	fpath "path"
+	"sync"
+	"time"
 )
 
 // File used to store zx attributes
 const AttrFile = ".zx"
 
 struct dirAttrs {
-	ents map[string]zx.Dir
+	ents  map[string]zx.Dir
 	dirty bool
 }
 
 struct aCache {
 	sync.Mutex
-	nents int
-	dirs map[string]*dirAttrs
+	nents         int
+	dirs          map[string]*dirAttrs
 	syncc, syncrc chan bool
 }
 
 var (
 	ac = &aCache{
-		dirs: make(map[string]*dirAttrs),
-		syncc: make(chan bool),
+		dirs:   make(map[string]*dirAttrs),
+		syncc:  make(chan bool),
 		syncrc: make(chan bool),
 	}
 )
@@ -35,19 +36,23 @@ func init() {
 	go ac.syncer()
 }
 
-func (ac *aCache) readDir(dpath string) error {
-	da := &dirAttrs{ents: make(map[string]zx.Dir)}
+func (ac *aCache) readDir(dpath string) *dirAttrs {
+	da := ac.dirs[dpath]
+	if da != nil {
+		return da
+	}
+	da = &dirAttrs{ents: make(map[string]zx.Dir)}
 	ac.dirs[dpath] = da
 	afname := fpath.Join(dpath, AttrFile)
 	dat, err := ioutil.ReadFile(afname)
 	if err != nil {
 		ac.dirs[dpath] = da
-		return err
+		return da
 	}
 	n := 0
 	for len(dat) > 0 {
 		var d zx.Dir
-		d, dat, err = zx.UnpackDir(dat)
+		dat, d, err = zx.UnpackDir(dat)
 		if err != nil {
 			break
 		}
@@ -58,15 +63,17 @@ func (ac *aCache) readDir(dpath string) error {
 	if n > 2*len(da.ents) {
 		da.sync(dpath, true)
 	}
-	return nil
+	return da
 }
 
+// CAUTION: If the format of the file changes, zxdump/arch.go:^/saveAttrs must
+// be updated as well.
 func (da *dirAttrs) sync(dpath string, creat bool) error {
 	if da == nil || !da.dirty {
 		return nil
 	}
 	afname := fpath.Join(dpath, AttrFile)
-	flg := os.O_WRONLY|os.O_APPEND|os.O_CREATE
+	flg := os.O_WRONLY | os.O_APPEND | os.O_CREATE
 	if creat {
 		flg |= os.O_TRUNC
 	}
@@ -94,13 +101,16 @@ func (ac *aCache) dosync() {
 }
 
 func (ac *aCache) syncer() {
-	for {
-		ok := <- ac.syncc
+	tick := time.Tick(15 * time.Second)
+	doselect {
+	case ok := <-ac.syncc:
 		if !ok {
 			break
 		}
 		ac.dosync()
 		ac.syncrc <- true
+	case <-tick:
+		ac.dosync()
 	}
 }
 
@@ -113,16 +123,9 @@ func (ac *aCache) get(path string, d zx.Dir) error {
 	ac.Lock()
 	defer ac.Unlock()
 	dpath := fpath.Dir(path)
-	da := ac.dirs[dpath]
-	if da == nil {
-		if err := ac.readDir(dpath); err != nil {
-			return err
-		}
-	}
-	fa := da.ents[d["name"]]
-	if fa == nil {
-		return nil
-	}
+	nm := fpath.Base(path)
+	da := ac.readDir(dpath)
+	fa := da.ents[nm]
 	for k, v := range fa {
 		d[k] = v
 	}
@@ -132,26 +135,27 @@ func (ac *aCache) get(path string, d zx.Dir) error {
 func (ac *aCache) set(path string, d zx.Dir) error {
 	ac.Lock()
 	defer ac.Unlock()
-	dpath := fpath.Dir(path)
-	da := ac.dirs[dpath]
-	if da == nil {
-		if err := ac.readDir(dpath); err != nil {
-			return err
-		}
-	}
 	d = d.Dup()
+	nm := fpath.Base(path)
+	d["name"] = nm
+	dpath := fpath.Dir(path)
+	da := ac.readDir(dpath)
 	delete(d, "path")
 	delete(d, "addr")
 	delete(d, "mode")
 	delete(d, "size")
 	delete(d, "mtime")
 	delete(d, "type")
-	nm := d["name"]
-	if _, ok := da.ents[nm]; !ok {
+
+	if od := da.ents[nm]; od != nil {
+		for k, v := range d {
+			od[k] = v
+		}
+		d = od
+	} else {
 		ac.nents++
 	}
 	da.ents[nm] = d
 	da.dirty = true
 	return nil
 }
-

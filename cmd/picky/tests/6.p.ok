@@ -1,5 +1,0 @@
-6.p:8: missing '()'
-6.p:9: no variable or constant with name 'zz'
-6.p:9: no variable or constant with name 'bbbb'
-6.p:9: no variable or constant with name 'dddd'
-6.p:9: too many arguments in call to 'writeln'

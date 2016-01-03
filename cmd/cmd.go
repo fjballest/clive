@@ -1,276 +1,416 @@
 /*
-	Helpers for clive commands used in UNIX.
+	Clive command tools and interfaces
 
-	It is likely that you should be using the clive/app package instead.
-	This package will go once all its commands are adapted to Clive.
+	Each application has a context including
+
+		- A set of IO channels
+
+		- A name space
+
+		- A dot path
+
+		- A set of environment variables
+
+		- Handlers for signals
+
+		- A wait channel and exit status
+
+
+	Importing this package initializes a command context for
+	the underlying OS environment.
+	Further commands may be created within the same OS process
+	with different contexts if so desired.
+	They may later change or dup the resources used.
+
+	All IO channels carry interface{} messages,
+	which usually are a series of zx.Dir{} []byte and error messages.
+	Other data may be sent as well.
+	In some cases it's context or app. specific data
+	not to be forwarded outside of the system.
+
+	All commands are expected to forward messages not understood
+	and process those they understand along the way, in very much
+	the same way a roff pipeline works.
 */
 package cmd
 
 import (
+	"sync"
+	"runtime"
 	"clive/dbg"
-	"clive/nchan"
-	"clive/nspace"
-	"clive/zx"
-	"clive/zx/lfs"
-	"errors"
-	"fmt"
-	"io"
+	"clive/ns"
 	"os"
-	"path"
-	"path/filepath"
-	"strings"
+	"bytes"
+	"fmt"
+	"errors"
+	fpath "path"
 )
+
+// Command context.
+// In, Out, and Err carry []byte as data, but may carry other pieces of
+// data as context (eg., zx.Dir)
+// When fed into external processes, non []byte messages are discarded.
+type Ctx struct {
+	lk sync.Mutex
+	id   int64       // AppId() for this ctx
+	Args []string    // command line arguments
+	wc chan error
+
+	ns  *ns.NS // name space
+	dot *cwd      // dot
+	env *envSet   // environment
+	io  *ioSet    // io chans
+}
 
 var (
-	// Name space
-	Ns zx.Finder
+	ctxs        = map[int64]*Ctx{}
+	ctxlk       sync.Mutex
 
-	// set to set the debug flags in types built by this package.
-	Debug   bool
-	dprintf = dbg.FlagPrintf(os.Stderr, &Debug)
+	ErrIO = errors.New("no such IO chan")
+
+	mainctx *Ctx
 )
 
-// Context to execute a command. Useful to write commands
-// that can be both built-ins in ql and stand-alone commands.
-type Ctx struct {
-	Stdin          io.Reader
-	Stdout, Stderr io.Writer
-	Intrc          <-chan bool
-	Args           []string
-}
-
-// Printf to stderr, prefixed with program name and terminating with \n.
-func (c *Ctx) Warn(str string, args ...interface{}) {
-	if c.Args == nil {
-		c.Args = os.Args
+// Return the current command application context.
+func AppCtx() *Ctx {
+	ctxlk.Lock()
+	defer ctxlk.Unlock()
+	id := runtime.AppId()
+	c := ctxs[id]
+	if c == nil {
+		return nil
 	}
-	if c.Stderr == nil {
-		c.Stderr = os.Stderr
+	return c
+}
+
+func ctx() *Ctx {
+	c := AppCtx()
+	if c == nil {
+		dbg.Fatal("no context for %d", runtime.AppId())
 	}
-	c.Eprintf("%s: %s\n", c.Args[0], fmt.Sprintf(str, args...))
+	return c
 }
 
-// Printf to c's stderr.
-func (c *Ctx) Eprintf(str string, args ...interface{}) {
-	fmt.Fprintf(c.Stderr, str, args...)
-}
-
-// Printf to c's stdout.
-func (c *Ctx) Printf(str string, args ...interface{}) {
-	fmt.Fprintf(c.Stdout, str, args...)
-}
-
-// get input; used by RunFile
-func (c *Ctx) In() io.Reader {
-	return c.Stdin
-}
-
-// get intrc; used by RunFile
-func (c *Ctx) Intr() <-chan bool {
-	return c.Intrc
-}
-
-// Initialize the name space from $NS or using "/".
-func MkNS() {
-	var fndr zx.Finder
-	s := os.Getenv("NS")
-	if s != "" {
-		ns, err := nspace.Parse(s)
-		if err != nil {
-			dbg.Fatal("ns: %s", err)
-		}
-		dprintf("ns is %s\n", ns)
-		ns.Debug = Debug
-		ns.DebugFind = Debug
-		fndr = ns
-	} else {
-		fs, err := lfs.New("lfs", "/", lfs.RW)
-		if err != nil {
-			dbg.Fatal("lfs: %s", err)
-		}
-		fs.SaveAttrs(true)
-		fndr = fs
-		fs.Dbg = Debug
-	}
-	Ns = fndr
-	if Ns == nil {
-		dbg.Fatal("no name space")
+func (c *Ctx) close() {
+	if c != nil {
+		close(c.wc)
+		ctxlk.Lock()
+		delete(ctxs, c.id)
+		ctxlk.Unlock()
+		c.io.close()
 	}
 }
 
-// Return the prefix resolving path, the array of trees involved
-// (one if it's not a union), and the array of path names in the server of the resource.
-func ResolveTree(path string) (string, []zx.RWTree, []string, error) {
-	if t, ok := Ns.(*lfs.Lfs); ok {
-		return "/", []zx.RWTree{t}, []string{path}, nil
+func mkCtx() *Ctx {
+	wc := make(chan error)
+	c := &Ctx{
+		Args: os.Args,
+		wc: wc,
+		env: mkEnv(),
+		io: mkIO(),
+		dot: mkDot(),
 	}
-	ns := Ns.(*nspace.Tree)
-	return ns.ResolveTree(path)
+	if len(c.Args) > 0 {
+		c.Args[0] = fpath.Base(c.Args[0])
+	}
+	ctxlk.Lock()
+	runtime.NewApp()	// we use the main AtExit for our main proc
+	c.id = runtime.AppId()
+	ctxs[c.id] = c
+	ctxlk.Unlock()
+	c.ns = mkNS()
+	runtime.AtExit(func() {
+		close(wc)
+	})
+	return c
 }
 
-// Issue a find for these names ("filename,predicate")
-// If no predicate is given, then "depth<1" is used.
-// eg. /a -> just /a; /a, -> subtree at /a
-// Found entries with errors lead to a printed warning and are
-// not sent through the channel.
-// The path attribute in the dir entries returned mimics the paths given
-// in the names. If you want absolute paths, supply absolute paths.
-func Files(names ...string) <-chan zx.Dir {
-	if Ns == nil {
-		dbg.Fatal("Files: no name space")
-	}
-	rc := make(chan zx.Dir)
+// Run the given function in a new process on a new context and return its context.
+func New(fun func(), args ...string) *Ctx {
+	ctxc := make(chan *Ctx, 1)
 	go func() {
-		var err error
-		for _, name := range names {
-			toks := strings.SplitN(name, ",", 2)
-			if len(toks) == 1 {
-				toks = append(toks, "depth<1")
-			}
-			if toks[0] == "" {
-				toks[0] = "."
-			}
-			toks[0] = path.Clean(toks[0])
-			name, _ = filepath.Abs(toks[0])
-			dc := Ns.Find(name, toks[1], "/", "/", 0)
-			for d := range dc {
-				if d == nil {
-					break
-				}
-				if toks[0] != name && zx.HasPrefix(d["path"], name) {
-					u := zx.Path(toks[0], zx.Suffix(d["path"], name))
-					d["path"] = u
-				}
-				if d["err"] != "" {
-					if d["err"] != "pruned" {
-						dbg.Warn("%s: %s", d["path"], d["err"])
-					}
-					continue
-				}
-				if ok := rc <- d; !ok {
-					close(dc, cerror(rc))
+		if runtime.GoId() == runtime.AppId() {
+			panic("cmd.New() already called on this proc")
+		}
+		old := ctx()
+		old.lk.Lock()
+		env := old.env
+		ns := old.ns
+		dot := old.dot
+		io := old.io.dup()
+		old.lk.Unlock()
+		wc := make(chan error)
+		if len(args) == 0 {
+			args = old.Args
+		}
+		c := &Ctx{
+			Args: args,
+			wc: wc,
+			env: env,
+			io: io,
+			dot: dot,
+			ns: ns,
+		}
+		c.id = runtime.NewApp()
+		ctxlk.Lock()
+		ctxs[c.id] = c
+		ctxlk.Unlock()
+		ctxc <-c
+
+		defer func() {
+			c.close()
+			if r := recover(); r != nil {
+				if r == "appexit" {
 					return
 				}
+				// We could decide that an app panic
+				// is not a panic for others not in the main app.
+				// In that case, this should go.
+				panic(r)
+				return
 			}
-			if derr := cerror(dc); derr != nil {
-				dbg.Warn("%s: %s", name, derr)
-				err = derr
-			} else {
-				close(dc) // in case a null was sent but no error
-			}
-		}
-		close(rc, err)
-	}()
-	return rc
-}
-
-// Like Files(names...) but issues a FindGet to retrieve data for all regular
-// files involved.
-// Remember that you must drain the DirData.Datac channels before receiving
-// further DirDatas from the returned channel.
-// Directories matching names are also sent.
-func GetFiles(names ...string) <-chan zx.DirData {
-	if Ns == nil {
-		dbg.Fatal("GetFiles: no name space")
-	}
-	rc := make(chan zx.DirData)
-	go func() {
-		var err error
-		for _, name := range names {
-			toks := strings.SplitN(name, ",", 2)
-			if len(toks) == 1 {
-				toks = append(toks, "depth<1")
-			}
-			if toks[0] == "" {
-				toks[0] = "."
-			}
-			toks[0] = path.Clean(toks[0])
-			name, _ = filepath.Abs(toks[0])
-			dprintf("getfiles: findget %s %s\n", name, toks[1])
-			gc := Ns.FindGet(name, toks[1], "/", "/", 0)
-			for g := range gc {
-				dprintf("getfiles: findget -> %v\n", g)
-				d := g.Dir
-				if d == nil {
-					break
-				}
-				if toks[0] != name && zx.HasPrefix(d["path"], name) {
-					u := zx.Path(toks[0], zx.Suffix(d["path"], name))
-					d["path"] = u
-				}
-				if d["err"] != "" {
-					if d["err"] != "pruned" {
-						dbg.Warn("%s: %s", d["path"], d["err"])
-					}
-					continue
-				}
-				if g.Datac == nil && d["type"] != "d" {
-					g.Datac = nchan.Null
-				}
-				if ok := rc <- g; !ok {
-					close(gc, cerror(rc))
-					return
-				}
-			}
-			if derr := cerror(gc); derr != nil {
-				dbg.Warn("%s: %s", name, derr)
-				err = derr
-			} else {
-				close(gc) // in case a null was sent but no error
-			}
-		}
-		close(rc, err)
-	}()
-	return rc
-}
-
-// Implementors of FileRunner may use RunFiles.
-type FileRunner interface {
-	Warn(fmt string, args ...interface{})
-	In() io.Reader
-	Intr() <-chan bool
-	RunFile(d zx.Dir, dc <-chan []byte) error
-}
-
-// Call x.RunFile on each of the files indicated in args (or stdin if none),
-// supplying at least the file name in dir and the chan for file data (or nil if it's a directory).
-func RunFiles(x FileRunner, args ...string) error {
-	if len(args) == 0 {
-		dc := make(chan []byte)
-		go func() {
-			_, _, err := nchan.ReadBytesFrom(x.In(), dc)
-			close(dc, err)
 		}()
-		return x.RunFile(zx.Dir{"path": "-"}, dc)
-	}
-	gc := GetFiles(args...)
-	defer func() {
-		close(gc, "done")
+		fun()
 	}()
-	var sts error
-	doselect {
-	case <-x.Intr():
-		close(gc, "interrupted")
-		return errors.New("interrupted")
-	case g, ok := <-gc:
-		if !ok {
-			break
-		}
-		dir := g.Dir
-		if dir["err"] != "" {
-			err := errors.New(dir["err"])
-			x.Warn("%s: %s", dir["path"], err)
-			sts = err
-			continue
-		}
-		if err := x.RunFile(dir, g.Datac); err != nil {
-			x.Warn("%s: %s", dir["path"], err)
-			sts = err
-		}
+
+	return <-ctxc
+}
+
+func (c *Ctx) ForkDot() {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	c.dot = c.dot.dup()
+}
+
+func ForkDot() {
+	ctx().ForkDot()
+}
+
+func (c *Ctx) ForkNS() {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	c.ns = c.ns.Dup()
+}
+
+func ForkNS() {
+	ctx().ForkNS()
+}
+
+func (c *Ctx) ForkEnv() {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	c.env = c.env.dup()
+}
+
+func ForkEnv() {
+	ctx().ForkEnv()
+}
+
+func (c *Ctx) ForkIO() {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	nio := c.io.dup()
+	oio := c.io
+	c.io = nio
+	oio.close()
+}
+
+func ForkIO() {
+	ctx().ForkIO()
+}
+
+func (c *Ctx) NS() *ns.NS {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	return c.ns
+}
+
+func NS() *ns.NS {
+	return ctx().NS()
+}
+
+func (c *Ctx) Dot() string {
+	c.lk.Lock()
+	d := c.dot
+	c.lk.Unlock()
+	return d.get()
+}
+
+func Dot() string {
+	return ctx().Dot()
+}
+
+func (c *Ctx) Cd(to string) error {
+	c.lk.Lock()
+	d := c.dot
+	c.lk.Unlock()
+	return d.set(to)
+}
+
+func Cd(to string) error {
+	return ctx().Cd(to)
+}
+
+func (c *Ctx) GetEnv(name string) string {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	return c.env.get(name)
+}
+
+func GetEnv(to string) string {
+	return ctx().GetEnv(to)
+}
+
+func (c *Ctx) SetEnv(name, value string) {
+	c.lk.Lock()
+	c.env.set(name, value)
+	c.lk.Unlock()
+}
+
+func SetEnv(name, value string) {
+	ctx().SetEnv(name, value)
+}
+
+func (c *Ctx) inout(name string) chan interface{} {
+	c.lk.Lock()
+	io := c.io
+	c.lk.Unlock()
+	cc := io.get(name)
+	if cc == nil {
+		return nil
 	}
-	if err := cerror(gc); err != nil {
-		x.Warn("%s", err)
-		sts = err
+	return cc.c
+}
+
+func (c *Ctx) UnixIO() {
+	c.lk.Lock()
+	io := c.io
+	c.lk.Unlock()
+	io.unixIO()
+}
+
+func UnixIO() {
+	ctx().UnixIO()
+}
+
+
+func (c *Ctx) IO(name string) chan interface{} {
+	c.lk.Lock()
+	io := c.io
+	c.lk.Unlock()
+	cc := io.get(name)
+	if cc == nil {
+		return nil
 	}
-	return sts
+	return cc.c
+}
+
+func IO(name string) chan interface{} {
+	return ctx().IO(name)
+}
+
+func (c *Ctx) CloseIO(name string) {
+	c.lk.Lock()
+	io := c.io
+	c.lk.Unlock()
+	io.del(name)
+}
+
+func (c *Ctx) Waitc() chan error {
+	return c.wc
+}
+
+func CloseIO(name string) {
+	ctx().CloseIO(name)
+}
+
+func (c *Ctx) AddIO(name string, ioc chan interface{}) {
+	if ioc == nil {
+		ioc = make(chan interface{})
+		close(ioc)
+	}
+	c.lk.Lock()
+	io := c.io
+	c.lk.Unlock()
+	io.add(name, ioc)
+}
+
+func (c *Ctx) cprintf(name, f string, args ...interface{}) (n int, err error) {
+	out := c.IO(name)
+	if out == nil {
+		return 0, ErrIO
+	}
+	var buf bytes.Buffer
+	n, _ = fmt.Fprintf(&buf, f, args...)
+	if ok := out <- buf.Bytes(); !ok {
+		return 0, cerror(out)
+	}
+	return n, nil	
+}
+
+func Printf(f string, args ...interface{}) (n int, err error) {
+	return ctx().cprintf("out", f, args...)
+}
+
+func EPrintf(f string, args ...interface{}) (n int, err error) {
+	return ctx().cprintf("err", f, args...)
+}
+
+func CPrintf(io, f string, args ...interface{}) (n int, err error) {
+	return ctx().cprintf(io, f, args...)
+}
+
+func AddIO(name string, c chan interface{}) {
+	ctx().AddIO(name, c)
+}
+
+func init() {
+	mainctx = mkCtx()
+}
+
+func appexit(rc int) {
+	if ctx() == mainctx {
+		mainctx.close()
+		os.Exit(rc)
+	}
+	panic("appexit")
+}
+
+func Exit(sts ...interface{}) {
+	if len(sts) == 0 || sts[0] == nil {
+		appexit(0)
+	} else if s, ok := sts[0].(string); ok && s == "" {
+		appexit(0)
+	} else if s, ok := sts[0].(error); ok && s == nil {
+		appexit(0)
+	}
+	appexit(1)
+}
+
+// Warn and exit
+func Fatal(args ...interface{}) {
+	if len(args) == 0 || args[0] == nil {
+		appexit(0)
+	}
+	if s, ok := args[0].(string); ok {
+		if s == "" {
+			appexit(0)
+		}
+		Warn(s, args[1:]...)
+	} else if e, ok := args[0].(error); ok {
+		if e == nil {
+			appexit(0)
+		}
+		Warn("%s", e)
+	} else {
+		Warn("fatal")
+	}
+	appexit(1)
+}
+
+// Printf to stderr, prefixed with app name and terminating with \n.
+// Each warn is atomic.
+func Warn(str string, args ...interface{}) (n int, err error)  {
+	c := ctx()
+	return EPrintf("%s: %s\n", c.Args[0], fmt.Sprintf(str, args...))
 }

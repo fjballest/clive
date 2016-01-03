@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"sync"
 )
 
@@ -64,7 +65,7 @@ var (
 // device is closed if it implements io.Closer.
 // No half-closes are ever used.
 func NewMux(rw io.ReadWriter, iscaller bool) *Mux {
-	in := make(chan Conn)
+	in := make(chan Conn, 10)
 	m := &Mux{
 		Flag: dbg.Flag{Tag: "mux"},
 		In:   in,
@@ -84,7 +85,7 @@ func NewMux(rw io.ReadWriter, iscaller bool) *Mux {
 
 func (m *Mux) newConn(tag uint32, in, out chan face{}) *conn {
 	tv := tag &^ tagmask
-	mc := &conn{tag: tv, in: in, out: out, flow: make(chan bool, 2)}
+	mc := &conn{tag: tv, in: in, out: out, flow: make(chan bool, 3)}
 	mc.flow <- true
 	mc.flow <- true
 	m.tags[tv] = mc
@@ -296,7 +297,9 @@ func (m *Mux) demux() {
 			// flow control: If this is a grant, make a ticket for out
 			if tag&flowtag != 0 {
 				m.Dprintf("flow<-%x\n", tag)
-				mc.flow <- true
+				go func() {
+					mc.flow <- true
+				}()
 				continue
 			}
 			m.Dprintf("mux %s: in<-%x\n", m.Tag, tag)
@@ -307,6 +310,7 @@ func (m *Mux) demux() {
 				if tag&rpctag == 0 {
 					m.closeConn(mc, err)
 				} else {
+					close(mc.flow, err)
 					close(mc.in, err)
 				}
 				m.lk.Unlock()
@@ -346,4 +350,57 @@ func (m *Mux) Close() {
 		m.closeConn(mc, m.err)
 	}
 	close(m.Hup, m.err)
+}
+
+struct muxpipe {
+	r io.ReadCloser
+	w io.WriteCloser
+}
+
+func (b *muxpipe) Write(dat []byte) (int, error) {
+	return b.w.Write(dat)
+}
+
+func (b *muxpipe) Read(dat []byte) (int, error) {
+	return b.r.Read(dat)
+}
+
+func (b *muxpipe) CloseWrite() error {
+	return b.w.Close()
+}
+
+func (b *muxpipe) CloseRead() error {
+	return b.r.Close()
+}
+
+func (b *muxpipe) Close() error {
+	if err := b.CloseWrite(); err != nil {
+		b.CloseRead()
+		return err
+	}
+	return b.CloseRead()
+}
+
+// Create a pair of (os) piped muxes
+func NewMuxPair() (*Mux, *Mux, error) {
+	// io.Pipe is synchronous and may lead to a deadlock
+	// if readers don't read, despite flow control
+	fd1 := &muxpipe{}
+	fd2 := &muxpipe{}
+	var err error
+	fd1.r, fd2.w, err = os.Pipe()
+	if err != nil {
+		return nil, nil, err
+	}
+	fd2.r, fd1.w, err = os.Pipe()
+	if err != nil {
+		fd1.r.Close()
+		fd2.w.Close()
+		return nil, nil, err
+	}
+	m1 := NewMux(fd1, false)
+	m1.Tag = "pipemux1"
+	m2 := NewMux(fd2, true)
+	m2.Tag = "pipemux2"
+	return m1, m2, nil
 }

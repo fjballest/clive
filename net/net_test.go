@@ -5,6 +5,7 @@ import (
 	"os"
 	"crypto/tls"
 	"clive/dbg"
+	"time"
 )
 
 type as struct {
@@ -177,38 +178,46 @@ func testMux(t *testing.T, addr string, clicfg, srvcfg *tls.Config) {
 	verb := testing.Verbose()
 	printf := dbg.FlagPrintf(&verb)
 	printf("serving...\n")
-	sc, ec, err := MuxServe(addr, srvcfg)
+	mc, ec, err := MuxServe(addr, srvcfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 	donec := make(chan bool)
 	go func() {
-		for cc := range sc {
-			printf("new conn %s\n", cc.Tag)
-			for m := range cc.In {
-				printf("new msg %s: %v\n", cc.Tag, m)
-				if cc.Out != nil {
-					cc.Out <- m
+		for mx := range mc {
+			mx.Debug = verb
+			printf("new muxed client %q\n", mx.Tag)
+			mx := mx
+			go func() {
+				for c := range mx.In {
+					printf("new muxed conn %s\n", c.Tag)
+					for m := range c.In {
+						printf("new msg %s: %v\n", c.Tag, m)
+						if c.Out != nil {
+							c.Out <- m
+						}
+					}
+					err := cerror(c.In)
+					printf("gone conn %s %v\n", c.Tag, err)
+					close(c.Out, "oops")
 				}
-			}
-			err := cerror(cc.In)
-			printf("gone conn %s %v\n", cc.Tag, err)
-			close(cc.Out, "oops")
+				printf("gone client %q %v\n", mx.Tag, cerror(mx.In))
+			}()
 		}
 		close(donec)
 	}()
 	go func() {
 		<-ec
-		printf("serve done: %v\n", cerror(ec))
+		printf("serve mux done: %v\n", cerror(ec))
 	}()
 	printf("dialing...\n")
-	c, err := MuxDial(addr, clicfg)
+	mx, err := MuxDial(addr, clicfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 	printf("now talking...\n")
 	reqs := [...]string{"hi there", "again", "and again"}
-	call := c.Rpc()
+	call := mx.Rpc()
 	for _, r := range reqs {
 		if ok := call.Out <- r; !ok {
 			t.Fatalf("send: %v", cerror(call.Out))
@@ -243,6 +252,8 @@ func TestTCPMux(t *testing.T) {
 }
 
 func TestTLSMux(t *testing.T) {
+	verb := testing.Verbose()
+	printf := dbg.FlagPrintf(&verb)
 	os.Args[0] = "net.test"
 	ccfg, err := TLSCfg("/Users/nemo/.ssh/client")
 	if err != nil {
@@ -255,5 +266,9 @@ func TestTLSMux(t *testing.T) {
 	ClientTLSCfg = ccfg
 	ServerTLSCfg = scfg
 	testMux(t, "tls!local!6667", nil, nil)
+	if false {
+		printf("pkill -QUIT net.test\n")
+		time.Sleep(60 * time.Second)
+	}
 }
 

@@ -1,6 +1,0 @@
-types.p:21: incompatible argument types (TypeOint and int) for op '+'
-types.p:22: incompatible argument types (int and TypeInt) for assignment
-types.p:23: incompatible argument types (TypeInt and int) for assignment
-types.p:24: incompatible argument types (strength and TypeInt) for assignment
-types.p:25: incompatible argument types (strength and int) for assignment
-types.p:32: incompatible argument types for op '!='

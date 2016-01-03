@@ -1,21 +1,21 @@
 package fstest
 
 import (
-	"clive/zx"
-	"clive/dbg"
-	"fmt"
 	"bytes"
+	"clive/dbg"
+	"clive/zx"
+	"fmt"
 )
 
 struct putTest {
 	Path  string
-	Off int64
+	Off   int64
 	Dir   zx.Dir
 	Fails bool
 	data  []byte
 }
 
-var puts = []putTest {
+var puts = []putTest{
 	{
 		Path: "/n1",
 		Dir:  zx.Dir{"type": "-", "size": "0", "mode": "0640"},
@@ -53,18 +53,18 @@ var puts = []putTest {
 		Fails: true,
 	},
 	{
-		Path: "/newfile2",
-		Dir:  zx.Dir{"mode": "0600", "size": "50000"},
+		Path:  "/newfile2",
+		Dir:   zx.Dir{"mode": "0600", "size": "50000"},
 		Fails: true,
 	},
 	{
 		Path: "/n2",
-		Off: 10,
+		Off:  10,
 		Dir:  zx.Dir{"type": "-", "size": "50000", "mode": "0640"},
 	},
 	{
 		Path: "/n3",
-		Off: -1,
+		Off:  -1,
 		Dir:  zx.Dir{"type": "-", "size": "50000", "mode": "0640"},
 	},
 }
@@ -76,7 +76,8 @@ func Puts(t Fataler, xfs zx.Fs) {
 	}
 	// We try twice so we check both creates and rewrites
 	ntry := 0
-Loop:	for i, pt := range puts {
+Loop:
+	for i, pt := range puts {
 		Printf("put #%d %s %d %s\n", i, pt.Path, pt.Off, pt.Dir.Fmt())
 		dc := make(chan []byte, 1)
 		xd := pt.Dir
@@ -98,7 +99,7 @@ Loop:	for i, pt := range puts {
 			var msg []byte
 			if pt.Off != 0 {
 				msg = []byte("hola")
-			}  else {
+			} else {
 				msg = []byte(fmt.Sprintf("hi %s %d\n", pt.Path, i))
 				pt.data = append(pt.data, msg...)
 			}
@@ -133,7 +134,7 @@ Loop:	for i, pt := range puts {
 			}
 		}
 		if rd.Size() != int64(len(pt.data)) {
-			t.Fatalf("bad resulting size %d vs %s", rd.Size(), len(pt.data))
+			t.Fatalf("bad resulting size %d vs %d", rd.Size(), len(pt.data))
 		}
 		pfs, ok := fs.(zx.Getter)
 		if !ok {
@@ -144,7 +145,7 @@ Loop:	for i, pt := range puts {
 		if err != nil {
 			t.Fatalf("%v", err)
 		}
-		if bytes.Compare(dat, pt.data) != 0 { 
+		if bytes.Compare(dat, pt.data) != 0 {
 			Printf("%s\n%s\n", dbg.HexStr(dat, 30), dbg.HexStr(pt.data, 30))
 			t.Fatalf("bad resulting data: %d vs %d bytes", len(dat), len(pt.data))
 		}
@@ -167,11 +168,12 @@ func Mkdirs(t Fataler, xfs zx.Fs) {
 	}
 	// We try twice so we check both creates and rewrites
 	ntry := 0
-Loop:	for i, p := range mkdirs {
+Loop:
+	for i, p := range mkdirs {
 		xd := zx.Dir{"type": "d", "mode": "0750"}
 		Printf("mkdir #%d %20s %s\n", i, p, xd)
 		rc := fs.Put(p, xd, 0, nil)
-		rd := <- rc
+		rd := <-rc
 		if err := cerror(rc); err != nil {
 			t.Fatalf("fails %s", err)
 		}
@@ -184,7 +186,7 @@ Loop:	for i, p := range mkdirs {
 		xd := zx.Dir{"type": "d", "mode": "0750"}
 		Printf("mkdir #%d %20s %s\n", i, p, xd)
 		rc := fs.Put(p, xd, 0, nil)
-		rd := <- rc
+		rd := <-rc
 		if rd != nil || cerror(rc) == nil {
 			t.Fatalf("did not fail")
 		}

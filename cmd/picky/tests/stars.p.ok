@@ -1,5 +1,0 @@
-stars.p:488: argument to 'greadmouse' is not an button
-stars.p:493: incompatible argument types for op '!='
-stars.p:516: at 'x': variable 'x' used before set
-stars.p:517: at 'y': variable 'y' used before set
-stars.p:499: at 'nb': variable 'nb' used before set

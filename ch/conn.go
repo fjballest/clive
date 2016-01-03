@@ -14,9 +14,10 @@ struct Conn {
 	Out chan<- face{}
 }
 
-// Creates a pipe with a Conn interface, using channels with
+// Creates an io.Pipe with a Conn interface, using channels with
 // nbuf elements of buffering.
 func NewPipe(nbuf int) Conn {
+	// We use io.Pipe so we can close with errors
 	r, w := io.Pipe()
 	in := make(chan face{}, nbuf)
 	out := make(chan face{}, nbuf)

@@ -1,5 +1,0 @@
-<<{pipe from this file name, using /dev/fd/0 in osx}
-mkdir touch
-sum
-avg	average and std deviation
-

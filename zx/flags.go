@@ -10,28 +10,28 @@ import (
 )
 
 // Flags for Fs implementors and to aid in Ctl requests.
-type Flags struct {
-	usr         map[string]interface{} // user defined flags
-	ro          map[string]bool        // read only flags
+struct Flags {
+	usr map[string]face{} // user defined flags
+	ro  map[string]bool   // read only flags
 }
 
 // Add a user defined flag to the flag set.
 // vp must be a pointer type.
 // Known flag types are *bool, *int, *string, and func(...string)error
-func (t *Flags) Add(name string, vp interface{}) {
+func (t *Flags) Add(name string, vp face{}) {
 	t.add(name, vp, false)
 }
 
 // Add a read-only user defined flag to the flag set.
 // vp must be a pointer type.
 // Known flag types are *bool, *int, and *string
-func (t *Flags) AddRO(name string, vp interface{}) {
+func (t *Flags) AddRO(name string, vp face{}) {
 	t.add(name, vp, true)
 }
 
-func (t *Flags) add(name string, vp interface{}, ro bool) {
+func (t *Flags) add(name string, vp face{}, ro bool) {
 	if t.usr == nil {
-		t.usr = make(map[string]interface{})
+		t.usr = make(map[string]face{})
 		t.ro = make(map[string]bool)
 	}
 	if vp == nil {
@@ -42,20 +42,21 @@ func (t *Flags) add(name string, vp interface{}, ro bool) {
 	case *int:
 	case *string:
 	case func(...string) error:
+	case fmt.Stringer:
 	default:
 		dbg.Fatal("unknown flag type %T", t)
 	}
 	if t.usr == nil {
-		t.usr = make(map[string]interface{})
+		t.usr = make(map[string]face{})
 	}
 	t.usr[name] = vp
 	t.ro[name] = ro
 }
 
 // Set the named flag to the given value
-func (t *Flags) Set(name string, v interface{}) error {
+func (t *Flags) Set(name string, v face{}) error {
 	if t.usr == nil {
-		t.usr = make(map[string]interface{})
+		t.usr = make(map[string]face{})
 		t.ro = make(map[string]bool)
 	}
 	vp, ok := t.usr[name]
@@ -87,6 +88,8 @@ func (t *Flags) Set(name string, v interface{}) error {
 		default:
 			return errors.New("wrong flag type")
 		}
+	case fmt.Stringer:
+		return errors.New("can't set a Stringer() flag")
 	}
 	return errors.New("unknown flag type")
 }
@@ -108,6 +111,8 @@ func (t *Flags) String() string {
 			fmt.Fprintf(&buf, "%s %d\n", k, *t)
 		case *string:
 			fmt.Fprintf(&buf, "%s %s\n", k, *t)
+		case fmt.Stringer:
+			fmt.Fprintf(&buf, "%s %s\n", k, t.String())
 		}
 	}
 	return buf.String()

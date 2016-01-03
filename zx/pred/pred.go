@@ -99,7 +99,7 @@ var (
 )
 
 // A compiled predicate.
-type Pred struct {
+struct Pred {
 	op    op // operation
 	name  string
 	value string
@@ -356,7 +356,6 @@ func (p *Pred) FindAt(fs zx.Getter, d zx.Dir, c chan<- zx.Dir, lvl int) {
 		p.FindAt(fs, cd, c, lvl+1)
 	}
 }
-
 
 func Find(fs zx.Getter, path, pred string) <-chan zx.Dir {
 	c := make(chan zx.Dir)

@@ -1,7 +1,0 @@
-#!/bin/bash
-
-arch=`uname -m`
-if [ $arch != "x86_64" ]; then
-	echo "bad architecture ... try another package (32 bits?)";
-	exit 1
-fi

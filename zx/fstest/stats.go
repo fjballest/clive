@@ -6,21 +6,20 @@ import (
 )
 
 var (
-	stats = []string {
-`name:"/" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/" addr:"lfs!local!/tmp/zx_test"`,
-`name:"a" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/a" addr:"lfs!local!/tmp/zx_test/a"`,
-`name:"b" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/a/b" addr:"lfs!local!/tmp/zx_test/a/b"`,
-`name:"c" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/a/b/c" addr:"lfs!local!/tmp/zx_test/a/b/c"`,
-`name:"d" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/d" addr:"lfs!local!/tmp/zx_test/d"`,
-`name:"e" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/e" addr:"lfs!local!/tmp/zx_test/e"`,
-`name:"f" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/e/f" addr:"lfs!local!/tmp/zx_test/e/f"`,
-`name:"1" type:"-" mode:"0644" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/1" addr:"lfs!local!/tmp/zx_test/1"`,
-`name:"a1" type:"-" mode:"0644" size:"10154" uid:"elf" gid:"root" wuid:"elf" path:"/a/a1" addr:"lfs!local!/tmp/zx_test/a/a1"`,
-`name:"a2" type:"-" mode:"0644" size:"21418" uid:"elf" gid:"root" wuid:"elf" path:"/a/a2" addr:"lfs!local!/tmp/zx_test/a/a2"`,
-`name:"c3" type:"-" mode:"0644" size:"44970" uid:"elf" gid:"root" wuid:"elf" path:"/a/b/c/c3" addr:"lfs!local!/tmp/zx_test/a/b/c/c3"`,
-`name:"2" type:"-" mode:"0644" size:"31658" uid:"elf" gid:"root" wuid:"elf" path:"/2" addr:"lfs!local!/tmp/zx_test/2"`,
-}
-
+	stats = []string{
+		`name:"/" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/"`,
+		`name:"a" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/a"`,
+		`name:"b" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/a/b"`,
+		`name:"c" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/a/b/c"`,
+		`name:"d" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/d"`,
+		`name:"e" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/e"`,
+		`name:"f" type:"d" mode:"0755" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/e/f"`,
+		`name:"1" type:"-" mode:"0644" size:"0" uid:"elf" gid:"root" wuid:"elf" path:"/1"`,
+		`name:"a1" type:"-" mode:"0644" size:"10154" uid:"elf" gid:"root" wuid:"elf" path:"/a/a1"`,
+		`name:"a2" type:"-" mode:"0644" size:"21418" uid:"elf" gid:"root" wuid:"elf" path:"/a/a2"`,
+		`name:"c3" type:"-" mode:"0644" size:"44970" uid:"elf" gid:"root" wuid:"elf" path:"/a/b/c/c3"`,
+		`name:"2" type:"-" mode:"0644" size:"31658" uid:"elf" gid:"root" wuid:"elf" path:"/2"`,
+	}
 )
 
 func Stats(t Fataler, fs zx.Fs) {
@@ -45,7 +44,8 @@ func Stats(t Fataler, fs zx.Fs) {
 	for i, d := range ds {
 		s := d.TestFmt()
 		Printf("`%s`,\n", s)
-		if !strings.HasPrefix(stats[i], s) {
+		if s != stats[i] && !strings.HasPrefix(s, stats[i]) {
+			Printf("not `%s`,\n", stats[i])
 			t.Fatalf("bad stat")
 		}
 	}
