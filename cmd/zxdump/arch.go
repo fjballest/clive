@@ -18,6 +18,14 @@ struct aFile {
 	D zx.Dir
 }
 
+func Path(names ...string) string {
+	p := fpath.Join(names...)
+	if p == "" {
+		return "/"
+	}
+	return p
+}
+
 func waitDumpTime(name string) {
 	t := time.Now()
 	dt := time.Date(t.Year(), t.Month(), t.Day(), 5, 0, 0, 0, time.Local)
@@ -29,7 +37,10 @@ func waitDumpTime(name string) {
 	time.Sleep(delta)
 }
 
-func dump(name, dir string, t zx.Getter, ec chan bool) {
+// dir is the dump dir, eg, "/dump"
+// name is the dump name, eg, "lsub"
+//
+func dump(dir, name string, t zx.Getter, ec chan bool) {
 	defer func() {
 		ec <- true
 	}()
@@ -100,8 +111,12 @@ func excluded(name string) bool {
 	return false
 }
 
-func dumpDir(name, dir string, rf aFile) (string, error) {
-	dprintf("dump dir %s %s %s\n", dir, name, rf.D["path"])
+// data is the data dir, eg. "/dump/data"
+// name is the dump name for the dir dumped, eg. "lsub/usr/nemo"
+// and rf is the zx.Fs/zx.Dir for that dir being dumped
+//
+func dumpDir(data, name string, rf aFile) (string, error) {
+	dprintf("dump dir %s %s %s...\n", data, name, rf.D["path"])
 	ds := []zx.Dir{}
 	istmp := rf.D["name"] == "tmp"
 	if !istmp {
@@ -112,7 +127,7 @@ func dumpDir(name, dir string, rf aFile) (string, error) {
 			return "", err
 		}
 	} else {
-		vprintf("%s: temp %s\n", os.Args[0], name)
+		vprintf("temp %s", name)
 	}
 	dhash := []string{}
 	nds := []zx.Dir{}
@@ -126,7 +141,7 @@ func dumpDir(name, dir string, rf aFile) (string, error) {
 			break
 		}
 		if d["name"] == "FROZEN" {
-			vprintf("%s: XXX frozen %s\n", os.Args[0], name)
+			vprintf("frozen %s", name)
 			/* dir is frozen and the FROZEN contains
 			 * the dump path for dir.
 			 */
@@ -138,7 +153,7 @@ func dumpDir(name, dir string, rf aFile) (string, error) {
 			if len(strings.Split(s, "/")) != 3 {
 				return "", fmt.Errorf("wrong contents in %s", d["path"])
 			}
-			vprintf("%s: frozen %s\n", os.Args[0], name)
+			vprintf("frozen %s", name)
 			return strings.TrimSpace(s), nil
 		}
 		if excluded(d["name"]) {
@@ -152,28 +167,28 @@ func dumpDir(name, dir string, rf aFile) (string, error) {
 		nds = append(nds, d)
 	}
 	ds = nds
-	for _, d := range ds {
-		dspath := fpath.Join(name, d["name"])
-		if dspath == name {
+	for _, cd := range ds {
+		cname := fpath.Join(name, cd["name"])
+		if cname == name {
 			panic("zx dump bug")
 		}
 		var s string
 		var err error
-		switch d["type"] {
+		switch cd["type"] {
 		case "d":
-			s, err = dumpDir(dir, dspath, aFile{rf.T, d})
+			s, err = dumpDir(data, cname, aFile{rf.T, cd})
 		case "-":
-			s, err = dumpFile(dir, dspath, aFile{rf.T, d})
+			s, err = dumpFile(data, cname, aFile{rf.T, cd})
 		default:
 			panic("dump dir type bug")
 		}
 		if err == nil {
-			dhash = append(dhash, d["name"])
+			dhash = append(dhash, cd["name"])
 			dhash = append(dhash, s)
 		} else {
 			dhash = append(dhash, "")
 			dhash = append(dhash, "")
-			cmd.Warn("%s: %s", d["path"], err)
+			cmd.Warn("%s: %s", cd["path"], err)
 		}
 	}
 	dval := strings.Join(dhash, "\n")
@@ -181,14 +196,14 @@ func dumpDir(name, dir string, rf aFile) (string, error) {
 	h.Write([]byte(dval))
 	sum := h.Sum(nil)
 	s := fmt.Sprintf("%02x/%02x/%036x", sum[0], sum[1], sum[2:])
-	dprintf("dump dir %s %s\n", name, s)
-	dfpath := fpath.Join(dir, s)
+	dprintf("dump dir %s %s %s -> %s\n", data, name, rf.D["path"], s)
+	dfpath := fpath.Join(data, s)
 	fi, _ := os.Stat(dfpath)
 	if fi != nil {
 		return s, nil
 	}
-	vprintf("%s: new %s\n", os.Args[0], name)
-	return s, newDumpDir(dir, dfpath, rf, ds, dhash)
+	vprintf("new %s", name)
+	return s, newDumpDir(data, dfpath, rf, ds, dhash)
 }
 
 // CAUTION: If the attributes file or its format is ever changed in zux, then
@@ -217,7 +232,10 @@ func saveAttrs(dpath string, d zx.Dir) {
 	fd.Write(d.Bytes())
 }
 
-func newDumpDir(dir, dfpath string, rf aFile, ds []zx.Dir, dhash []string) error {
+// data is the path to the data dir, eg /dump/data
+// dfpath is the full path in the data dir for the dumped dir
+// eg, /dump/data/1c/08/64c23...4b
+func newDumpDir(data, dfpath string, rf aFile, ds []zx.Dir, dhash []string) error {
 	if len(dhash) != 2*len(ds) {
 		panic("newDumpDir: dhash length bug")
 	}
@@ -234,7 +252,7 @@ func newDumpDir(dir, dfpath string, rf aFile, ds []zx.Dir, dhash []string) error
 		if cname != ds[i]["name"] {
 			panic("newDumpDir: bad entry")
 		}
-		cdfpath := fpath.Join(dir, dhash[2*i+1])
+		cdfpath := fpath.Join(data, dhash[2*i+1])
 		cpath := fpath.Join(dfpath, cname)
 		dprintf("link %s\t<- %s\n", cdfpath, cpath)
 		var e error
@@ -259,7 +277,12 @@ func newDumpDir(dir, dfpath string, rf aFile, ds []zx.Dir, dhash []string) error
 	return err
 }
 
-func dumpFile(dir, name string, f aFile) (string, error) {
+// data is the data dir, eg. "/dump/data"
+// name is the dump name for the file dumped, eg. "lsub/usr/nemo/guide"
+// and rf is the zx.Fs/zx.Dir for that file being dumped
+//
+func dumpFile(data, name string, f aFile) (string, error) {
+	dprintf("dump file %s %s %s...\n", data, name, f.D["path"])
 	dc := f.T.Get(f.D["path"], 0, zx.All)
 	h := sha1.New()
 	for dat := range dc {
@@ -272,16 +295,18 @@ func dumpFile(dir, name string, f aFile) (string, error) {
 	}
 	sum := h.Sum(nil)
 	s := fmt.Sprintf("%02x/%02x/%036x", sum[0], sum[1], sum[2:])
-	dfpath := fpath.Join(dir, s)
+	dfpath := fpath.Join(data, s)
 	fi, err := os.Stat(dfpath)
-	dprintf("dump file %s\t%s\n", name, s)
+	dprintf("dump file %s %s %s -> %s\n", data, name, f.D["path"], s)
 	if fi != nil {
 		return s, nil
 	}
-	vprintf("%s: new %s\n", os.Args[0], name)
+	vprintf("new %s", name)
 	return s, newDumpFile(dfpath, f)
 }
 
+// dfpath is the full path in the data dir for the file
+// eg, /dump/data/1c/08/64c23...4b
 func newDumpFile(dfpath string, f aFile) error {
 	dprintf("create %s\t%s\n", dfpath, f.D["path"])
 	d := fpath.Dir(dfpath)

@@ -3,6 +3,9 @@
 */
 package main
 
+// zxdump -Dv -1 -d /tmp/dump /Users/nemo/gosrc/src/clive/cmd
+// rm -rf /tmp/dump
+
 import (
 	"clive/cmd"
 	"clive/cmd/opt"
@@ -14,27 +17,27 @@ import (
 )
 
 var (
-	Debug, Verbose bool
 	Dump           string
 	Xcludes        []string
 	Once           bool
 	Skip           bool
 
 	opts    = opt.New("{file|name!file}")
-	vprintf = dbg.FlagPrintf(&Verbose)
-	dprintf = dbg.FlagPrintf(&Debug)
+	vprintf = cmd.VWarn
+	dprintf = cmd.Dprintf
 )
 
 func main() {	
 	cmd.UnixIO()
-	dfltdump := fpath.Join(u.Home, "dump")
+	c := cmd.AppCtx()
+	dfltdump := Path(u.Home, "dump")
 	opts.NewFlag("s", "don't dump right now, wait until next at 5am", &Skip)
 	opts.NewFlag("1", "dump once and exit", &Once)
-	opts.NewFlag("v", "verbose", &Verbose)
-	opts.NewFlag("D", "debug", &Debug)
+	opts.NewFlag("v", "verbose", &c.Verb)
+	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("x", "expr: files excluded (.*, tmp.* if none given); tmp always excluded.", &Xcludes)
 	Dump = dfltdump
-	opts.NewFlag("d", "dir: where to keep the dump, or empty if none", &Dump)
+	opts.NewFlag("d", "dir: where to keep the dump, ~/dump if none", &Dump)
 	args, err := opts.Parse()
 	if err != nil {
 		cmd.Warn("%s", err)
@@ -67,7 +70,7 @@ func main() {
 		t.Tag = al[0]
 		t.Flags.Set("rdonly", true)
 		nt++
-		go dump(t.Tag, Dump, t, ec)
+		go dump(Dump, t.Tag, t, ec)
 	}
 	if nt == 0 {
 		cmd.Fatal("no trees to dump")

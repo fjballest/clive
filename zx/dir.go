@@ -18,6 +18,7 @@ import (
 	"time"
 	"strings"
 	"errors"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -31,6 +32,9 @@ const (
 // A Dir, or directory entry, identifices a file or a resource in the system.
 // It is a set of attribute/value pairs, including some conventional attributes
 // like "name", "size", etc.
+//
+// Attributes starting with upper-case are considered as temporary and won't be updated
+// by any file system.
 //
 // Directory entries are self-describing in many cases, and include the address
 // and resource path as known by the server as extra attributes. Thus, programs can
@@ -91,6 +95,24 @@ func (d Dir) Dup() Dir {
 	nd := Dir{}
 	for k, v := range d {
 		nd[k] = v
+	}
+	return nd
+}
+
+// Is this the name of a temporary attribute (starts with upcase)
+func IsTemp(name string) bool {
+	r, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(r)
+}
+
+// Make a dup of the dir entry w/o temporary attributes
+func (d Dir) SysDup() Dir {
+
+	nd := Dir{}
+	for k, v := range d {
+		if !IsTemp(k) {
+			nd[k] = v
+		}
 	}
 	return nd
 }

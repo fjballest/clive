@@ -467,5 +467,11 @@ func (s *Server) loop() {
 
 // Terminate the server.
 func (s *Server) Close() {
-	close(s.endc, "closed by user")
+	close(s.endc)
+}
+
+// Wait until the server is done
+func (s *Server) Wait() error {
+	<-s.endc
+	return cerror(s.endc)
 }

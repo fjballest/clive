@@ -36,6 +36,7 @@ type Flags struct {
 	usage       string // usage string w/o program name
 	defs        map[string]*def
 	plus, minus *def // defs for +int -int
+	xtra string	// extra usage info
 }
 
 // Use Counter as the value for counting flags, which are bool flags
@@ -93,6 +94,10 @@ func New(usage string) *Flags {
 		defs:  map[string]*def{},
 		usage: usage,
 	}
+}
+
+func (f *Flags) AddUsage(xtra string) {
+	f.xtra += xtra
 }
 
 func (f *Flags) optUsage(order []string) string {
@@ -172,20 +177,20 @@ func (f *Flags) Usage() {
 	}
 	sort.Sort(sort.StringSlice(ks))
 	opts := f.optUsage(ks)
-	cmd.EPrintf("usage: %s %s %s\n", f.Argv0, opts, f.usage)
+	cmd.Eprintf("usage: %s %s %s\n", f.Argv0, opts, f.usage)
 	if f.plus != nil {
 		sep := ""
 		if !strings.Contains(f.plus.help, ":") {
 			sep = ":"
 		}
-		cmd.EPrintf("\t+%s%s %s\n", f.plus.name, sep, f.plus.help)
+		cmd.Eprintf("\t+%s%s %s\n", f.plus.name, sep, f.plus.help)
 	}
 	if f.minus != nil {
 		sep := ""
 		if !strings.Contains(f.minus.help, ":") {
 			sep = ":"
 		}
-		cmd.EPrintf("\t-%s %s\n", f.minus.name, sep, f.minus.help)
+		cmd.Eprintf("\t-%s %s\n", f.minus.name, sep, f.minus.help)
 	}
 	for _, k := range ks {
 		def := f.defs[k]
@@ -195,11 +200,14 @@ func (f *Flags) Usage() {
 		}
 		switch def.valp.(type) {
 		case *Counter:
-			cmd.EPrintf("\t-%s%s %s\n", def.name, sep, def.help)
-			cmd.EPrintf("\t\tcan be repeated\n")
+			cmd.Eprintf("\t-%s%s %s\n", def.name, sep, def.help)
+			cmd.Eprintf("\t\tcan be repeated\n")
 		default:
-			cmd.EPrintf("\t-%s%s %s\n", def.name, sep, def.help)
+			cmd.Eprintf("\t-%s%s %s\n", def.name, sep, def.help)
 		}
+	}
+	if f.xtra != "" {
+		cmd.Eprintf("%s", f.xtra)
 	}
 	cmd.Exit("usage")
 }

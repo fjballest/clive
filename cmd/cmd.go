@@ -60,6 +60,8 @@ type Ctx struct {
 	dot *cwd      // dot
 	env *envSet   // environment
 	io  *ioSet    // io chans
+
+	Debug, Verb bool
 }
 
 var (
@@ -94,10 +96,10 @@ func ctx() *Ctx {
 func (c *Ctx) close() {
 	if c != nil {
 		close(c.wc)
+		c.io.close()
 		ctxlk.Lock()
 		delete(ctxs, c.id)
 		ctxlk.Unlock()
-		c.io.close()
 	}
 }
 
@@ -219,6 +221,10 @@ func ForkIO() {
 	ctx().ForkIO()
 }
 
+func Args() []string {
+	return ctx().Args
+}
+
 func (c *Ctx) NS() *ns.NS {
 	c.lk.Lock()
 	defer c.lk.Unlock()
@@ -282,15 +288,16 @@ func (c *Ctx) inout(name string) chan interface{} {
 	return cc.c
 }
 
-func (c *Ctx) UnixIO() {
+// Set Unix IO for the named chans (all if none is given)
+func (c *Ctx) UnixIO(name ...string) {
 	c.lk.Lock()
 	io := c.io
 	c.lk.Unlock()
-	io.unixIO()
+	io.unixIO(name...)
 }
 
-func UnixIO() {
-	ctx().UnixIO()
+func UnixIO(name ...string) {
+	ctx().UnixIO(name...)
 }
 
 
@@ -352,12 +359,29 @@ func Printf(f string, args ...interface{}) (n int, err error) {
 	return ctx().cprintf("out", f, args...)
 }
 
-func EPrintf(f string, args ...interface{}) (n int, err error) {
+func Eprintf(f string, args ...interface{}) (n int, err error) {
 	return ctx().cprintf("err", f, args...)
 }
 
-func CPrintf(io, f string, args ...interface{}) (n int, err error) {
+func Cprintf(io, f string, args ...interface{}) (n int, err error) {
 	return ctx().cprintf(io, f, args...)
+}
+
+func Dprintf(f string, args ...interface{}) (n int, err error) {
+	c := ctx()
+	if c.Debug {
+		return c.cprintf("err", f, args...)
+	}
+	return 0, nil
+}
+
+// Warn if verbose flag is set
+func VWarn(f string, args ...interface{}) (n int, err error) {
+	c := ctx()
+	if c.Verb {
+		return c.cprintf("err", "%s: %s\n", c.Args[0], fmt.Sprintf(f, args...))
+	}
+	return 0, nil
 }
 
 func AddIO(name string, c chan interface{}) {
@@ -410,7 +434,8 @@ func Fatal(args ...interface{}) {
 
 // Printf to stderr, prefixed with app name and terminating with \n.
 // Each warn is atomic.
-func Warn(str string, args ...interface{}) (n int, err error)  {
+func Warn(f string, args ...interface{}) (n int, err error)  {
 	c := ctx()
-	return EPrintf("%s: %s\n", c.Args[0], fmt.Sprintf(str, args...))
+	return c.cprintf("err", "%s: %s\n", c.Args[0], fmt.Sprintf(f, args...))
 }
+

@@ -52,8 +52,8 @@ const (
 
 // byte[] messages ignored as data.
 struct Ign {
-	typ uint16
-	dat []byte
+	Typ uint16
+	Dat []byte
 }
 
 interface Byteser {
@@ -143,7 +143,7 @@ func WriteMsg(w io.Writer, tag uint32, m face{}) (int64, error) {
 	case []byte:
 		return writeBytes(w, tag, Tbytes, m)
 	case Ign:
-		return writeBytes(w, tag, m.typ, m.dat)
+		return writeBytes(w, tag, m.Typ, m.Dat)
 	case string:
 		return writeBytes(w, tag, Tstr, []byte(m))
 	case error:

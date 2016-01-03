@@ -373,7 +373,6 @@ func (fs *Fs) wstat(p string, nd zx.Dir) (zx.Dir, error) {
 		ai = nil
 	}
 	if nd["wuid"] != "" {
-		nd = nd.Dup()
 		delete(nd, "wuid")
 	}
 	if err := d.CanWstat(ai, nd); err != nil {
@@ -395,6 +394,7 @@ func (fs *Fs) wstat(p string, nd zx.Dir) (zx.Dir, error) {
 func (fs *Fs) Wstat(p string, nd zx.Dir) <-chan zx.Dir {
 	fs.Count(zx.Swstat)
 	c := make(chan zx.Dir, 1)
+	nd = nd.SysDup()
 	d, err := fs.wstat(p, nd)
 	if err == nil {
 		fs.Dprintf("wstat %s: %s\n\t-> %s\n", p, ddir(nd), ddir(d))
@@ -777,7 +777,6 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 		return nil, fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
 	}
 	els := zx.Elems(p)
-	d = d.Dup()
 	var f fsFile
 	typ := d["type"]
 	switch typ {
@@ -884,6 +883,7 @@ func (fs *Fs) Put(p string, d zx.Dir, off int64, c <-chan []byte) <-chan zx.Dir 
 	rc := make(chan zx.Dir)
 	go func() {
 		fs.Count(zx.Sput)
+		d = d.SysDup()
 		d, err := fs.put(p, d, off, c)
 		if err == nil {
 			rc <- d

@@ -13,6 +13,7 @@ import (
 type ioChan struct {
 	sync.Mutex	// for in, out, err
 	c  chan interface{}
+	donec chan bool
 	fd io.Closer // will go in the future
 	ref  int32     // <0 means it's never closed.
 	name string
@@ -44,8 +45,20 @@ func (cr *ioChan) close() {
 		} else {
 			close(cr.c)
 		}
+		if cr.donec != nil {
+			<-cr.donec
+		}
 	}
 }
+
+// TODO: We shouldn't be using "err" anymore.
+// Errors should be sent along the output stream.
+// The printer at the end of the pipe could print them in-line
+// to os.Stderr, after making a flush of os.Stdout so the error shows up
+// where it should.
+// The risk is that we miss error diags if the consumer eats them and
+// does not print them.
+// But It's worth considering.
 
 func (cr *ioChan) start() {
 	c := make(chan interface{})
@@ -62,6 +75,7 @@ func (cr *ioChan) start() {
 		}()
 	case "out", "err":
 		donec := make(chan bool)
+		cr.donec = donec
 		fd := os.Stdout
 		if cr.name == "err" {
 			fd = os.Stderr
@@ -160,9 +174,17 @@ func (io *ioSet) close() {
 	}
 }
 
-func (io *ioSet) unixIO() {
+func (io *ioSet) unixIO(name ...string) {
 	io.Lock()
 	defer io.Unlock()
+	if len(name) > 0 {
+		for _, n := range name {
+			if cf, ok := io.set[n]; ok {
+				cf.ux = true
+			}
+		}
+		return
+	}
 	for _, cr := range io.set {
 		cr.Lock()
 		cr.ux = true
@@ -178,12 +200,9 @@ func mkIO() *ioSet {
 		set: map[string]*ioChan{},
 	}
 	nc := io.add("in", nil)
-	nc.ref = -1
 	nc = io.add("out", nil)
-	nc.ref = -1
 	nc = io.add("err", nil)
-	nc.ref = -1
 	nc = io.add("null", nil)
-	nc.ref = -1
+	_ = nc
 	return io
 }

@@ -27,8 +27,10 @@ func TestCmd(t *testing.T) {
 		t.Fatalf("didn't setenv")
 	}
 	out := IO("out")
-	EPrintf("hi!\n")
-	EPrintf("There!\n")
-	EPrintf("There!\n")
+	Eprintf("hi!\n")
+	Eprintf("There!\n")
+	Eprintf("There!\n")
+	Warn("ho\n")
+	Warn("ho")
 	close(out)
 }

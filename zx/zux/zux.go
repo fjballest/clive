@@ -424,8 +424,8 @@ func (fs *Fs) Wstat(p string, d zx.Dir) <-chan zx.Dir {
 	rc := make(chan zx.Dir)
 	go func() {
 		fs.Count(zx.Swstat)
+		d = d.SysDup()
 		if d["wuid"] != "" || d["size"] != "" {
-			d = d.Dup()
 			d["wuid"] = u.Uid
 			if fs.attrs && fs.ai != nil {
 				d["wuid"] = fs.ai.Uid
@@ -653,7 +653,6 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 			mode = 0644
 		}
 	}
-	d = d.Dup()
 	if fs.attrs {
 		d["wuid"] = u.Uid
 		if fs.ai != nil {
@@ -739,6 +738,7 @@ func (fs *Fs) Put(p string, d zx.Dir, off int64, c <-chan []byte) <-chan zx.Dir 
 	rc := make(chan zx.Dir)
 	go func() {
 		fs.Count(zx.Sput)
+		d = d.SysDup()
 		err := fs.put(p, d, off, c)
 		if err != nil {
 			close(c, err)
