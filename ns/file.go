@@ -148,15 +148,18 @@ func (ns *NS) Get(path string, off, count int64) <-chan []byte {
 func (ns *NS) Put(path string, ud zx.Dir, off int64, dc <-chan []byte) <-chan zx.Dir {
 	_, ds, err := ns.Resolve(path)
 	if err != nil {
+		close(dc, err)
 		return derr(err)
 	}
 	d := ds[0]
 	fs, err := DirFs(d)
 	if err != nil {
+		close(dc, err)
 		return derr(err)
 	}
 	xfs, ok := fs.(zx.Putter)
 	if !ok {
+		close(dc, err)
 		return derr(fmt.Errorf("%s: tree is not a putter"))
 	}
 	return xfs.Put(d.SPath(), ud, off, dc)

@@ -66,7 +66,7 @@ func (c *clients) String() string {
 	if len(cls) == 0 {
 		return "none"
 	}
-	return "\n\tuser " + strings.Join(cls, "\n\tuser ")
+	return strings.Join(cls, "\nuser ")
 }
 
 func (s *Server) String() string {
@@ -99,6 +99,7 @@ func newServer(addr string, tc *tls.Config, ro bool) (*Server, error) {
 		fs:      map[string]zx.Fs{},
 		clients: &clients{set: map[string]string{}},
 	}
+	s.Tag = addr
 	go s.loop()
 	return s, nil
 }
@@ -143,7 +144,7 @@ func (s *Server) Serve(name string, fs zx.Fs) error {
 		ffs.AddRO("server rdonly", &s.rdonly)
 		ffs.AddRO("server noauth", &s.noauth)
 		ffs.AddRO("server addr", &s.addr)
-		ffs.AddRO("server clients", s.clients)
+		ffs.AddRO("user", s.clients)
 	}
 	dbg.Warn("%s: serving %s...", s, fs)
 	return nil
@@ -356,7 +357,7 @@ func (s *Server) req(c ch.Conn) {
 	}
 	switch m := dat.(type) {
 	case *Msg:
-		s.Dprintf("%s: %s: <- %s\n", s.addr, c.Tag, m)
+		s.Dprintf("%s: <- %s\n", c.Tag, m)
 		if m.Op == Ttrees {
 			rerr = s.trees(c, m, nil)
 			break
@@ -390,7 +391,7 @@ func (s *Server) req(c ch.Conn) {
 		rerr = fmt.Errorf("unknown msg type %T", m)
 	}
 	if rerr != nil {
-		s.Dprintf("%: %s: %s\n", s.addr, c.Tag, rerr)
+		s.Dprintf("%s: %s\n", c.Tag, rerr)
 	}
 	close(c.In, rerr)
 	close(c.Out, rerr)
@@ -418,8 +419,8 @@ func (s *Server) authFor(ai *auth.Info) *Server {
 }
 
 func (s *Server) client(mx *ch.Mux) {
-	s.Dprintf("%: new client %s\n", s.addr, mx.Tag)
-	defer s.Dprintf("%: gone client %s\n", s.addr, mx.Tag)
+	s.Dprintf("new client %s\n", mx.Tag)
+	defer s.Dprintf("gone client %s\n", mx.Tag)
 	var ai *auth.Info
 	var err error
 	for c := range mx.In {
@@ -441,7 +442,7 @@ func (s *Server) client(mx *ch.Mux) {
 		}
 		break
 	}
-	s.Dprintf("%: %s auth as %s\n", s.addr, mx.Tag, ai.Uid)
+	s.Dprintf("%s auth as %s\n", mx.Tag, ai.Uid)
 	s.clients.add(mx.Tag, ai.Uid)
 	ns := s.authFor(ai)
 	for c := range mx.In {

@@ -19,7 +19,8 @@ func MuxDial(addr string, tlscfg ...*tls.Config) (m *ch.Mux, err error) {
 	if len(tlscfg) > 0 {
 		cfg = tlscfg[0]
 	}
-	if nc, err := dial(addr, cfg) ; err == nil {
+	nc, err := dial(addr, cfg)
+	if err == nil {
 		m = ch.NewMux(nc, true)
 		m.Tag = addr
 		go func() {
@@ -102,6 +103,7 @@ func serveMux1(nw, host, port string, tlscfg *tls.Config) (c <-chan *ch.Mux, ec 
 	if nw == "unix" {
 		addr = port
 		tlscfg = nil
+		os.Remove(port)
 	}
 	dbg.Warn("listen at %s (%s:%s)", tag, nw, addr)
 	fd, err := net.Listen(nw, addr)
@@ -176,19 +178,21 @@ func MuxServe(addr string, tlscfg ...*tls.Config) (c <-chan *ch.Mux, ec chan boo
 	if !IsLocal(host) {
 		return nil, nil, ErrNotLocal
 	}
-	port := Port(nw, svc)
 	switch nw {
 	case "*":
+		port := Port("unix", svc)
 		uc, uec, uerr := serveMux1("unix", host, port, cfg)
 		if uerr != nil {
 			return serveMux1("tcp", host, port, cfg)
 		}
+		port = Port("tcp", svc)
 		tc, tec, terr := serveMux1("tcp", host, port, cfg)
 		if terr != nil {
 			return uc, uec, uerr
 		}
 		return serveMuxBoth(uc, uec, tc, tec)
 	case "unix", "tcp", "tls":
+		port := Port("unix", svc)
 		return serveMux1(nw, host, port, cfg)
 	default:
 		return nil, nil, ErrBadAddr

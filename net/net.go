@@ -272,6 +272,7 @@ func serve1(nw, host, port string, tlscfg *tls.Config) (c <-chan ch.Conn, ec cha
 	if nw == "unix" {
 		addr = port
 		tlscfg = nil
+		os.Remove(port)
 	}
 	dbg.Warn("listen at %s (%s:%s)", tag, nw, addr)
 	fd, err := net.Listen(nw, addr)
@@ -346,19 +347,21 @@ func Serve(addr string, tlscfg ...*tls.Config) (c <-chan ch.Conn, ec chan bool, 
 	if !IsLocal(host) {
 		return nil, nil, ErrNotLocal
 	}
-	port := Port(nw, svc)
 	switch nw {
 	case "*":
+		port := Port("unix", svc)
 		uc, uec, uerr := serve1("unix", host, port, cfg)
 		if uerr != nil {
 			return serve1("tcp", host, port, cfg)
 		}
+		port = Port("tcp", svc)
 		tc, tec, terr := serve1("tcp", host, port, cfg)
 		if terr != nil {
 			return uc, uec, uerr
 		}
 		return serveBoth(uc, uec, tc, tec)
 	case "unix", "tcp", "tls":
+		port := Port("unix", svc)
 		return serve1(nw, host, port, cfg)
 	default:
 		return nil, nil, ErrBadAddr

@@ -4,8 +4,44 @@ import (
 	"clive/zx"
 	fpath "path"
 	"strings"
+	"bytes"
+	"unicode/utf8"
 	"errors"
 )
+
+func Stat(path string) (zx.Dir, error) {
+	path = AbsPath(path)
+	rc := NS().Stat(path)
+	d := <-rc
+	return d, cerror(rc)
+}
+
+func Get(path string, off, count int64) <-chan []byte {
+	path = AbsPath(path)
+	return NS().Get(path, off, count)
+}
+
+func Put(path string, ud zx.Dir, off int64, dc <-chan []byte) <-chan zx.Dir {
+	path = AbsPath(path)
+	return NS().Put(path, ud, off, dc)
+}
+
+func Wstat(path string, ud zx.Dir) (zx.Dir, error) {
+	path = AbsPath(path)
+	rc := NS().Wstat(path, ud)
+	d := <-rc
+	return d, cerror(rc)
+}
+
+func Remove(path string) error {
+	path = AbsPath(path)
+	return <-NS().Remove(path)
+}
+
+func RemoveAll(path string) error {
+	path = AbsPath(path)
+	return <-NS().RemoveAll(path)
+}
 
 // Issue a find for these names ("filename,predicate")
 // If no predicate is given, then "depth<1" is used.
@@ -136,6 +172,102 @@ func Files(names ...string) chan interface{} {
 			}
 		}
 		close(rc, err)
+	}()
+	return rc
+}
+
+// Process a stream of input []byte data and send one line at a time
+func ByteLines(c <-chan []byte) <-chan []byte {
+	sep := '\n'
+	rc := make(chan []byte)
+	go func() {
+		var buf bytes.Buffer
+		saved := []byte{}
+		for d := range c {
+			if len(saved) > 0 {
+				nb := []byte{}
+				nb = append(nb, saved...)
+				nb = append(nb, d...)
+				d = nb
+				saved = nil
+			}
+			for len(d) > 0 && utf8.FullRune(d) {
+				r, n := utf8.DecodeRune(d)
+				d = d[n:]
+				buf.WriteRune(r)
+				if r == sep {
+					nb := make([]byte, buf.Len())
+					copy(nb, buf.Bytes())
+					if ok := rc <- nb; !ok {
+						close(c, cerror(rc))
+						return
+					}
+					buf.Reset()
+				}
+			}
+			saved = d
+		}
+		if len(saved) > 0 {
+			buf.Write(saved)
+		}
+		if buf.Len() > 0 {
+			rc <- buf.Bytes()
+		}
+		close(rc, cerror(c))
+	}()
+	return rc
+}
+
+// Process a stream of input file data and send one line at a time.
+func Lines(c <-chan interface{}) <-chan interface{} {
+	sep := '\n'
+	rc := make(chan interface{})
+	go func() {
+		var buf bytes.Buffer
+		saved := []byte{}
+		for m := range c {
+			d, ok := m.([]byte)
+			if !ok {
+				if len(saved) > 0 {
+					rc <- saved
+					saved = nil
+				}
+				if ok := rc <- m; !ok {
+					close(c, cerror(rc))
+					return
+				}
+				continue
+			}
+			if len(saved) > 0 {
+				nb := []byte{}
+				nb = append(nb, saved...)
+				nb = append(nb, d...)
+				d = nb
+				saved = nil
+			}
+			for len(d) > 0 && utf8.FullRune(d) {
+				r, n := utf8.DecodeRune(d)
+				d = d[n:]
+				buf.WriteRune(r)
+				if r == sep {
+					nb := make([]byte, buf.Len())
+					copy(nb, buf.Bytes())
+					if ok := rc <- nb; !ok {
+						close(c, cerror(rc))
+						return
+					}
+					buf.Reset()
+				}
+			}
+			saved = d
+		}
+		if len(saved) > 0 {
+			buf.Write(saved)
+		}
+		if buf.Len() > 0 {
+			rc <- buf.Bytes()
+		}
+		close(rc, cerror(c))
 	}()
 	return rc
 }

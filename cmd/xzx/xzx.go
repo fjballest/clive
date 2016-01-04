@@ -58,6 +58,7 @@ func main() {
 	ros := map[bool]string{false: "rw", true: "ro"}
 	cs := map[bool]string{false: "uncached", true: "cached"}
 
+	var mainfs zx.Fs
 	for i := 0; i < len(args); i++ {
 		al := strings.Split(args[i], "!")
 		if len(al) == 1 {
@@ -97,13 +98,23 @@ func main() {
 				dbg.Warn("%s: zxc: %s", al[0], err)
 				continue
 			}
+			if Zdebug {
+				x.(*zxc.Fs).Debug = true
+			}
+		} else if Zdebug {
+			x.(*zux.Fs).Debug = true
 		}
 		trs[t.Tag] = x
+		if i == 0 {
+			mainfs = x
+		}
 	}
 	if len(trs) == 0 {
 		cmd.Fatal("no trees to serve")
 	}
-
+	if _, ok := trs["main"]; !ok {
+		trs["main"] = mainfs
+	}
 	vprintf("serve %s...", addr)
 	srv, err := rzx.NewServer(addr, auth.TLSserver)
 	if err != nil {
@@ -112,7 +123,17 @@ func main() {
 	if noauth {
 		srv.NoAuth()
 	}
+	if c.Debug {
+		srv.Debug = true
+	}
 	for nm, fs := range trs {
+		if cfs, ok := fs.(*zxc.Fs); ok {
+			cfs.Flags.Add("debug", &srv.Debug)
+			cfs.Flags.Add("zdebug", &cfs.Debug)
+		} else if lfs, ok := fs.(*zux.Fs); ok {
+			lfs.Flags.Add("debug", &srv.Debug)
+			lfs.Flags.Add("zdebug", &cfs.Debug)
+		}
 		if err := srv.Serve(nm, fs); err != nil {
 			cmd.Fatal("serve: %s: %s", nm, err)
 		}

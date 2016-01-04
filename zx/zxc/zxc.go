@@ -900,13 +900,15 @@ func (fs *Fs) Put(p string, d zx.Dir, off int64, c <-chan []byte) <-chan zx.Dir 
 // its data is valid at the time of the call
 func (fs *Fs) findr(f fsFile, d zx.Dir, fp *pred.Pred, p, spref, dpref string, lvl int, c chan<- zx.Dir) error {
 	match, pruned, err := fp.EvalAt(d, lvl)
-//	fs.Dprintf("findr at %v\n\t%v\n\t%v %v %v\n\n", d.LongFmt(), p, match, pruned, err)
+	fs.Dprintf("findr at %v\n\t%v\n\t%v %v %v\n\n", d.LongFmt(), p, match, pruned, err)
 	if pruned {
 		f.Unlock()
 		if !match {
 			d["err"] = "pruned"
+			fs.Dprintf("find <-! %s\n", ddir(d))
+		} else {
+			fs.Dprintf("find <- %s\n", ddir(d))
 		}
-		fs.Dprintf("find <-! %s\n", ddir(d))
 		c <- d
 		return nil
 	}
@@ -979,11 +981,19 @@ func (fs *Fs) find(p, fpred, spref, dpref string, depth int, c chan<- zx.Dir) er
 	if err != nil {
 		return err
 	}
-	f, err := fs.walk(forGet, zx.Elems(p)...)
-	if err != nil {
-		return err
+	var f fsFile
+	var d zx.Dir
+	if p == "/Ctl" {
+		f = ctlfile
+		ctlfile.Lock()
+		d = ctldir.Dup()
+	} else {
+		f, err = fs.walk(forGet, zx.Elems(p)...)
+		if err != nil {
+			return err
+		}
+		d = f.dir().Dup()
 	}
-	d := f.dir().Dup()
 	if spref != "" || dpref != "" {
 		spref, err = zx.UseAbsPath(spref)
 		if err != nil {
@@ -1048,7 +1058,7 @@ func (fs *Fs) FindGet(path, fpred, spref, dpref string, depth0 int) <-chan face{
 				close(dc, cerror(c))
 				return
 			}
-			if d["err"] != "" || d["type"] != "-" {
+			if d["err"] != "" || d["type"] == "d" {
 				continue
 			}
 			p := fs.dpath(d)

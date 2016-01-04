@@ -868,7 +868,7 @@ func (fs *Fs) FindGet(path, fpred, spref, dpref string, depth0 int) <-chan face{
 				close(dc, cerror(c))
 				return
 			}
-			if d["err"] != "" || d["type"] != "-" {
+			if d["err"] != "" || d["type"] == "d" {
 				continue
 			}
 			p := fs.dpath(d)

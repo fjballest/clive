@@ -210,6 +210,7 @@ func Parse(s string) (*NS, error) {
 	lns := strings.SplitN(s, "\n", -1)
 	ns := New()
 	for _, ln := range lns {
+		ln = strings.TrimSpace(ln)
 		if len(ln) == 0 || ln[0] == '#' {
 			continue
 		}

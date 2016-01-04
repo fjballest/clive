@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<head>
+	<link rel="stylesheet" type="text/css" href="http://lsub.org/ls/class.css" />
+	<title>
+		Clive User's Manual
+	</title>
+</head>
+<body>
+<div id="container" class="Container">
+
+	<div id="header" class="Header">
+		<a href="http://lsub.org/ls/index.html">
+		<img src="http://lsub.org/ls/figs/lsub-peq.png" height="50px" width="50px"> 
+		</a>
+		<div style="position: absolute; top: 25px; left: 70px">
+			Laboratorio de Sistemas // Systems Lab
+		</div>
+	</div>
+
+	<div id="menu" class="Menu">
+		<a class="MenuText" href="http://lsub.org/ls/index.html">Welcome</a><br> 
+		<a class="MenuText" href="http://lsub.org/ls/research.html">Research &amp; innovation</a><br> 
+		<a class="MenuText" href="http://lsub.org/ls/training.html">Courses &amp; training</a><br> 
+		<a class="MenuText" href="http://lsub.org/ls/software.html">Software &amp; consulting</a><br> 
+		<a class="MenuText" href="http://lsub.org/ls/projects.html">Systems we made</a>
+		<a class="MenuText" href="http://lsub.org/ls/contact.html">Contact</a>
+	</div>
+
+	<div id="content" class="Content">
+<b><a href="http://lsub.org/sys/man">User's manual</a>.</b>
+<b><a href="http://lsub.org/sys/man/1">Section 1</a>.</b>
+<h2>title perhaps continued here with <code>verb
+\</code> text</h2>
+<b>author info</b><br>
+<b>more author info with <code>tt text</code></b><br>
+<hr>
+<p>
+
+<a name="sec"></a><h2>ABSTRACT</h2>
+A section perhaps with the abstract if it&#39;s titled &#34;Abstract&#34;.
+<p>
+<a name="sec1"></a><h2>A SECT</h2>
+<a name="sec1x1"></a><h3>A SUBSECT</h3>
+Use <a href="#sec1">1</a>, or any keys, to refer to the section
+with the title containing all the words.
+<p>
+<a name="sec1x1x1"></a><h3>A SUB-SUB SECT</h3>
+.abc escaped
+<p>
+&#39;abc escaped _
+<p>
+&#34;cd escaped&#34;
+<p>
+%tex comment scaped
+<p>
+some text making one paragraph<br>
+with a forced line break
+<p>
+<code>verb</code> at the start of a par.
+<p>
+another paragraph
+<p>
+<p><ul style="list-style:none;">
+    To relatively indent a paragraph, use the tab.
+<p>
+</ul><p>
+This executes a command and takes its output as verbatim text:
+<p><ul style="list-style:none;">
+    <code><pre>
+    Mon Jun  8 17:29:44 CEST 2015
+    Mon Jun  8 17:29:44 CEST 2015
+    </pre></code>
+<p>
+</ul><p>
+This is the same but uses rc as a shell
+<p><ul style="list-style:none;">
+    <code><pre>
+    /usr/local/go/bin /Users/nemo/bin /opt/local/bin /opt/local/sbin /Library/Frameworks/Python.framework/Versions/2.6/bin /Library/Frameworks/Python.framework/Versions/2.7/bin /Library/Frameworks/Python.framework/Versions/Current/bin . /usr/local/go/bin /usr/bin /bin /usr/sbin /sbin /usr/local/bin . /usr/texbin /plan9/bin /usr/local/bin /Users/nemo/bin /plan9/bin /zx/bin/rc /zx/bin/darwin_amd64 /zx/usr/nemo/bin/rc
+    </pre></code>
+<p>
+</ul><p>
+For rc and ql as shells we can just say
+<p><ul style="list-style:none;">
+    <code><pre>
+
+    </pre></code>
+<p>
+</ul><p>
+yet another paragraph
+<p><ul style="list-style:none;">
+    with closely indented par
+</ul><p>
+within other text
+<p>
+this paragraph includes a list of items
+<ul>
+    <li>item 1 starts here and continues with more text
+<p>
+    another paragrah within the same item, starting a new itemize
+    <ul>
+        <li>2nd level 1st item
+        <li>2nd level 2nd item
+    </ul>
+    <li>item 2 text continued here
+    <li>item 3 text using multiple lines
+<p>
+</ul>
+after this paragraph comes some indented text with a list<br>
+of numbered items and another list of items.
+<p>
+<p><ul style="list-style:none;">
+    some indented text
+</ul><p>
+<ol>
+    <li>first numbered item
+    <li>another
+    <li>yet another
+</ol>
+<ul>
+    <li>first item
+    <li>last item
+<p>
+</ul>
+A description list is a list of items where each item ends within the
+first line and is followed by indented paragraphs describing the item.
+It is ok if the entire description name (item) is marked with a font
+indicator, but items should be simple names and cannot have font
+switches or other markups in the middle.
+<dl>
+    <dt><em>first description</em></dt><dd>
+for this and
+        that
+<p>
+        with a second paragraph.
+<p>
+    </dd>
+    <dt><code>/a/b/c</code></dt><dd>
+for this other thing
+    </dd>
+    <dt>-f</dt><dd>
+for another thing
+<p>
+    </dd>
+</dl>
+this text has some <b>text set in bold face</b> and some
+in <em>italic</em>, and some in <code>teletype
+font</code>.
+<p>
+Within teletype font <code>no character is special, including _
+and *</code>. This is good for things like
+<code>/a/b/c</code>.
+<p>
+You can repeat the * to scape it, or _ or |.
+<p>
+you can use<big>(or + any other number) to increase to a bigger font
+size and</big>to return to the normal size, and you can use
+<em>
+to italize a set of lines
+</em>
+or start an
+<p><ul style="list-style:none;">
+    indented paragraph and then
+<b>
+    make a set of lines bold
+</b>
+</ul><p>
+or
+<code>
+make a set of lines fixed font
+</code>
+<p>
+this paragraph has
+<p><ul style="list-style:none;">
+    <code><pre>
+    .text starting with dot
+    some indented verbatim text, including [&#39;s and ]&#39;s and \n
+    nb = 0
+    [
+        pf = pf.Close()
+    ]
+    wrelems(out, e.Child, lvl+1)
+    </pre></code>
+</ul><p>
+but the verbatim text could be unindented as well.
+<p>
+this other paragraph has a cite [for this] and a url for
+<a href="http://lsub.org">the lsub page</a> within the rest
+of the text you could also place a link to
+<a href="http://google.com">http://google.com</a>. Imprecise
+citations like
+[<a href="#bib1">1</a>,<a href="#bib2">2</a>,<a href="#bib2">2</a>]
+can also be made. Cites like
+<a href="http://lsub.org/sys/man/1/intro.html">intro(1)</a> refer to
+the manual.
+<p>
+    <p>
+    <hr>
+<center>
+    <a name="fig1"></a>
+    <img src=logols.pdf></img>
+    </center>
+<b>Figure 1:</b> <em>    Caption goes here and perhaps continues here. </em>
+    <hr><p>
+<p>
+or write pic directly in place
+<p>
+<p>
+<hr>
+<center>
+<a name="fig2"></a>
+<img src="/zx/sys/src/clive/app/wr/example_pic2.pdf"></img></center>
+<b>Figure 2:</b> <em>the caption starts without indentation and may span several lines.
+</em>
+<hr><p>
+<p>
+Fig is number <a href="#fig2">2</a>.
+<p>
+Use <a href="#tbl1">1</a> for tables,
+<a href="#eqn1">1</a> for eqns, and
+<a href="#lstkey">key</a> for listings. Do not use these
+references at the start of text in a line or they may be understood as
+an actual table, etc.
+<p>
+for tables and equations we can use
+<p>
+<hr>
+<center>
+<a name="tbl1"></a>
+<table border="1">
+<tr>
+<td><b></b></td>
+<td><b>col2</b></td>
+<td><b>col3</b></td>
+</tr>
+<tr>
+<td><b>row1</b></td>
+<td>11</td>
+<td>12</td>
+</tr>
+<tr>
+<td><b>row2</b></td>
+<td>21</td>
+<td>22</td>
+</tr>
+</table>
+</center>
+<b>Table 1:</b> <em>    tables may have captions. The first line of items always describes
+    column formats, the second line always describes columns, and the
+    first column always describes rows. No other table formats are
+    supported. </em>
+<hr><p>
+<p>
+<p>
+<hr>
+<center>
+<a name="eqn1"></a>
+<img src="/zx/sys/src/clive/app/wr/example_eqn1.pdf"></img></center>
+<b>Eqn. 1:</b> <em>eqns may have captions </em>
+<hr><p>
+<p>
+<p>
+<hr>
+
+<a name="lst1"></a>
+<code><pre>
+{
+    some prog or code
+    taken verbatim to be printed
+}
+</pre></code>
+<b>Listing 1:</b> <em>it may have caption, the word after [code is used as a tag in the
+listing. the default is program. but all code listings share the same
+code counter despite the tag used. You can use
+<code>marks</code> and [cites] here. </em>
+<hr><p>
+<p>
+and $so on...
+<p>
+<a name="sec2"></a><h2>SEE ALSO</h2>
+<ul>
+    <li><a href="http://lsub.org/sys/man/1/intro.html">intro(1)</a>
+    for so and so.
+</ul>
+<p>
+<p><h3>External references</h3>
+
+<p><ol>
+    <li> <a name="bib1"></a>The Organization of Networks in Plan 9. Dave
+    Presotto,Phil Winterbottom. Plan 9 User&#39;s Manual. Vol. 2.</li><p> 
+    <li> <a name="bib2"></a>Plan B User&#39;s Manual. Second edition.
+    Laboratorio de Systemas, URJC. GSYC-TR-2004-04. 2004.</li><p> 
+<p></ol>
+<hr><p>
+<p>
+<hr><p>
+
+<b><a href="http://lsub.org/sys/man">User's manual</a>.</b>
+<b><a href="http://lsub.org/sys/man/1">Section 1</a>.</b>
+
+	</div>
+</div>
+
+<div id="footer" class="Footer">
+	Copyright © LSUB 2014-2015
+	<br><br>
+	<a href="https://twitter.com/lsub_org"><img src="http://lsub.org/ls/figs/twitter.png" height="25px" width="25px"> </a>
+</div>
+
+</body>
+</html>
+

@@ -254,7 +254,11 @@ func (c *Ctx) Cd(to string) error {
 }
 
 func Cd(to string) error {
-	return ctx().Cd(to)
+	d, err := Stat(to)
+	if err != nil {
+		return fmt.Errorf("cd: %s", err)
+	}
+	return ctx().Cd(d["path"])
 }
 
 func (c *Ctx) GetEnv(name string) string {
@@ -277,6 +281,20 @@ func SetEnv(name, value string) {
 	ctx().SetEnv(name, value)
 }
 
+// Return a copy of the environment in the format expected by go os.
+func OSEnv() []string {
+	var env []string
+	c := ctx()
+	c.lk.Lock()
+	e := c.env
+	c.lk.Unlock()
+	e.Lock()
+	defer e.Unlock()
+	for k, v := range e.vars {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+	return env
+}
 func (c *Ctx) inout(name string) chan interface{} {
 	c.lk.Lock()
 	io := c.io
@@ -331,7 +349,7 @@ func CloseIO(name string) {
 	ctx().CloseIO(name)
 }
 
-func (c *Ctx) AddIO(name string, ioc chan interface{}) {
+func (c *Ctx) SetIO(name string, ioc chan interface{}) {
 	if ioc == nil {
 		ioc = make(chan interface{})
 		close(ioc)
@@ -384,8 +402,8 @@ func VWarn(f string, args ...interface{}) (n int, err error) {
 	return 0, nil
 }
 
-func AddIO(name string, c chan interface{}) {
-	ctx().AddIO(name, c)
+func SetIO(name string, c chan interface{}) {
+	ctx().SetIO(name, c)
 }
 
 func init() {
