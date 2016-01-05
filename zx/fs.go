@@ -58,6 +58,7 @@ interface Putter {
 	// found in d and the data sent through dc.
 	// If d is nil or d["type"] is not defined, the file is not
 	// created if it does not exist; otherwise it is used as it is.
+	// "-" is the type for files, and "d" for directories.
 	// If d["size"] is defined, the file is truncated to that size before
 	// writing the data.
 	// If extra attributes are included in d, they are also updated.
@@ -67,6 +68,10 @@ interface Putter {
 	// through the returned channel.
 	// If d["type"] is "d", then dc is ignored and a directory is created
 	// (unless it already exists, in which case it's ok)
+	// If d["type"] is "F", it means "-" but parent directories are
+	// created if they do not exist.
+	// If d["type"] is "D", it means "d" but parent directories are created
+	// if they do not exist.
 	Put(path string, d Dir, off int64, dc <-chan []byte) <-chan Dir
 }
 

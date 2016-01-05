@@ -138,7 +138,7 @@ func Finds(t Fataler, xfs zx.Fs) {
 }
 
 func chklast(t Fataler, last string, data []byte) {
-	if last != "" && bytes.Compare(FileData[last], data) != 0 {
+	if last != "" && last != "/Ctl" && bytes.Compare(FileData[last], data) != 0 {
 		Printf("%d bytes vs %d bytes\n", len(FileData[last]), len(data))
 		t.Fatalf("bad file content for %s", last)
 	}

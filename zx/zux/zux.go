@@ -188,7 +188,7 @@ func (fs *Fs) stat(p string, chk bool) (zx.Dir, error) {
 		return nil, err
 	}
 	if fs.zxperms && chk {
-		if err := fs.chkWalk(p); err != nil {
+		if err := fs.chkWalk(p, false); err != nil {
 			return nil, err
 		}
 	}
@@ -460,7 +460,7 @@ func (fs *Fs) remove(p string, all bool) error {
 		return fmt.Errorf("remove %s: %s", p, zx.ErrPerm)
 	}
 	if fs.zxperms {
-		if err := fs.chkPut(fpath.Dir(p)); err != nil {
+		if err := fs.chkPut(fpath.Dir(p), false); err != nil {
 			return err
 		}
 	}
@@ -536,10 +536,10 @@ func (fs *Fs) move(from, to string) error {
 		return fmt.Errorf("move %s: %s", pto, zx.ErrPerm)
 	}
 	if fs.zxperms {
-		if err := fs.chkPut(fpath.Dir(pfrom)); err != nil {
+		if err := fs.chkPut(fpath.Dir(pfrom), false); err != nil {
 			return err
 		}
-		if err := fs.chkPut(fpath.Dir(pto)); err != nil {
+		if err := fs.chkPut(fpath.Dir(pto), false); err != nil {
 			return err
 		}
 	}
@@ -601,7 +601,7 @@ func (fs *Fs) link(oldp, newp string) error {
 		return fmt.Errorf("link %s: %s", newp, zx.ErrPerm)
 	}
 	if fs.zxperms {
-		if err := fs.chkPut(fpath.Dir(newp)); err != nil {
+		if err := fs.chkPut(fpath.Dir(newp), false); err != nil {
 			return err
 		}
 	}
@@ -643,8 +643,16 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 	if fs.rdonly {
 		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
 	}
+	mkall := false
 	path := fpath.Join(fs.root, p)
 	flg := os.O_RDWR // in case we resize it
+	if d["type"] == "F" {
+		d["type"] = "-"
+		mkall = true
+	} else if d["type"] == "D" {
+		d["type"] = "d"
+		mkall = true
+	}
 	mode := d.Mode()
 	if d["mode"] == "" {
 		if d["type"] == "d" {
@@ -662,8 +670,13 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 	if d["type"] != "" {
 		// create or recreate
 		if fs.zxperms {
-			if err := fs.chkPut(fpath.Dir(p)); err != nil {
+			if err := fs.chkPut(fpath.Dir(p), mkall); err != nil {
 				return err
+			}
+		} else if mkall {
+			dpath := fpath.Dir(path)
+			if _, err := os.Stat(dpath); zx.IsNotExist(err) {
+				os.MkdirAll(dpath, 0755)
 			}
 		}
 		if d["type"] == "d" {
@@ -684,7 +697,7 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 		// create or truncate file
 		flg |= os.O_CREATE
 	} else if fs.zxperms {
-		if err := fs.chkPut(p); err != nil {
+		if err := fs.chkPut(p, false); err != nil {
 			return err
 		}
 	}
@@ -706,7 +719,7 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 	}
 	fd, err := os.OpenFile(path, flg, os.FileMode(mode))
 	if err != nil {
-		return err
+		return fmt.Errorf("put: %s", err)
 	}
 	defer fd.Close()
 	if sz != -1 {

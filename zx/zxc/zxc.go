@@ -28,6 +28,7 @@ const (
 	forDel		// walk to remove()
 	forCreat		// walk to create a new file/dir
 	forLink		// walk to create a new link
+	forCreatAll		// walk to create a new file/dir (and its ancestors)
 )
 
 // A caching fs
@@ -207,7 +208,7 @@ func (fs *Fs) getData(f fsFile) error {
 }
 
 // If the walk works, f is returned locked
-func (fs *Fs) walk(why walkFor, els ...string) (f fsFile, err error) {
+func (fs *Fs) walk(why walkFor, nd zx.Dir, els ...string) (f fsFile, err error) {
 	f = fs.c.root()
 	for {
 		fs.Dprintf("walk %s...\n", f)
@@ -262,7 +263,7 @@ func (fs *Fs) walk(why walkFor, els ...string) (f fsFile, err error) {
 						return f, fmt.Errorf("%s: %s", f, err)
 					}
 				}
-			case forCreat:
+			case forCreat, forCreatAll:
 				if false && d["type"] == "d" {
 					defer f.Unlock()
 					return f, fmt.Errorf("%s: %s", f, zx.ErrExists)
@@ -294,7 +295,7 @@ func (fs *Fs) walk(why walkFor, els ...string) (f fsFile, err error) {
 					defer f.Unlock()
 					return f, fmt.Errorf("%s: %s", f, zx.ErrPerm)
 				}
-			case forDel, forCreat, forLink:
+			case forDel, forCreat, forCreatAll, forLink:
 				if fs.perms && !d.CanPut(fs.ai) {
 					defer f.Unlock()
 					return f, fmt.Errorf("%s: %s", f, zx.ErrPerm)
@@ -302,9 +303,33 @@ func (fs *Fs) walk(why walkFor, els ...string) (f fsFile, err error) {
 			}
 		}
 		cf, err := f.walk1(els[0])
+		isnotexist := zx.IsNotExist(err)
+		if why == forCreatAll && isnotexist && len(els) > 1{
+			dd := nd.Dup()
+			od := f.dir()
+			dd["type"] = "d"
+			dd["name"] = els[0]
+			dd["path"] = fpath.Join(od["path"], els[0])
+			dd["addr"] = "zxc!" + dd["path"]
+			uid := od["uid"]
+			gid := od["gid"]
+			if fs.ai != nil {
+				uid = fs.ai.Uid
+			}
+			dd["uid"] = uid
+			dd["gid"] = gid
+			dd["mode"] = od["mode"]
+			dd.SetTime("mtime", time.Now())
+			dd["wuid"] = uid
+			nf, nerr := f.newFile(dd, fs.rfs)
+			if nerr == nil {
+				err = nil
+				cf = nf
+			}
+		}
 		if err != nil {
-			if (why == forCreat || why == forLink) &&
-				len(els) == 1 && zx.IsNotExist(err) {
+			if (why == forCreat || why == forCreatAll || why == forLink) &&
+				len(els) == 1 && isnotexist {
 				return f, nil
 			}
 			defer f.Unlock()
@@ -324,7 +349,7 @@ func (fs *Fs) stat(p string) (zx.Dir, error) {
 	if p == "/Ctl" {
 		return ctldir.Dup(), nil
 	}
-	f, err := fs.walk(forStat, zx.Elems(p)...)
+	f, err := fs.walk(forStat, nil, zx.Elems(p)...)
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +388,7 @@ func (fs *Fs) wstat(p string, nd zx.Dir) (zx.Dir, error) {
 	if ndsz != 0 {
 		why = forPut
 	}
-	f, err := fs.walk(why, zx.Elems(p)...)
+	f, err := fs.walk(why, nil, zx.Elems(p)...)
 	if err != nil {
 		return nil, err
 	}
@@ -440,7 +465,7 @@ func (fs *Fs) get(p string, off, count int64, c chan<- []byte) error {
 	if p == "/Ctl" {
 		return fs.getCtl(off, count, c)
 	}
-	f, err := fs.walk(forGet, zx.Elems(p)...)
+	f, err := fs.walk(forGet, nil, zx.Elems(p)...)
 	if err != nil {
 		return err
 	}
@@ -518,7 +543,7 @@ func (fs *Fs) remove(p string, all bool) error {
 		return fmt.Errorf("remove %s: %s", p, zx.ErrPerm)
 	}
 	els := zx.Elems(p)
-	f, err := fs.walk(forDel, els...)
+	f, err := fs.walk(forDel, nil, els...)
 	if err != nil {
 		return err
 	}
@@ -593,14 +618,14 @@ func (fs *Fs) move(from, to string) error {
 	}
 	fs.c.sync(fs.rfs)
 	fromels := zx.Elems(from)
-	ffrom, err := fs.walk(forDel, fromels...)
+	ffrom, err := fs.walk(forDel, nil, fromels...)
 	if err != nil {
 		return err
 	}
 	ffrom.inval()
 	ffrom.Unlock()
 	toels := zx.Elems(to)
-	fto, err := fs.walk(forCreat, toels...)
+	fto, err := fs.walk(forCreat, nil, toels...)
 	if err != nil {
 		return err
 	}
@@ -619,29 +644,29 @@ func (fs *Fs) move(from, to string) error {
 	// the inner path first, if one is a prefix of another
 	switch {
 	case pfrom > pto:
-		ffrom, err = fs.walk(forStat, fromels[:len(fromels)-1]...)
+		ffrom, err = fs.walk(forStat, nil, fromels[:len(fromels)-1]...)
 		if err != nil {
 			return err
 		}
 		defer ffrom.Unlock()
-		fto, err = fs.walk(forStat, toels[:len(toels)-1]...)
+		fto, err = fs.walk(forStat, nil, toels[:len(toels)-1]...)
 		if err != nil {
 			return err
 		}
 		defer fto.Unlock()
 	case pfrom == pto:
-		ffrom, err = fs.walk(forStat, fromels[:len(fromels)-1]...)
+		ffrom, err = fs.walk(forStat, nil, fromels[:len(fromels)-1]...)
 		if err != nil {
 			return err
 		}
 		defer ffrom.Unlock()
 	case pfrom < pto:
-		fto, err = fs.walk(forStat, toels[:len(toels)-1]...)
+		fto, err = fs.walk(forStat, nil, toels[:len(toels)-1]...)
 		if err != nil {
 			return err
 		}
 		defer fto.Unlock()
-		ffrom, err = fs.walk(forStat, fromels[:len(fromels)-1]...)
+		ffrom, err = fs.walk(forStat, nil, fromels[:len(fromels)-1]...)
 		if err != nil {
 			return err
 		}
@@ -707,13 +732,13 @@ func (fs *Fs) link(to, from string) error {
 	}
 	fs.c.sync(fs.rfs)
 	toels := zx.Elems(from)
-	fto, err := fs.walk(forStat, toels...)
+	fto, err := fs.walk(forStat, nil, toels...)
 	if err != nil {
 		return err
 	}
 	fto.Unlock()
 	fromels := zx.Elems(from)
-	ffrom, err := fs.walk(forLink, fromels...)
+	ffrom, err := fs.walk(forLink, nil, fromels...)
 	if err != nil {
 		return err
 	}
@@ -781,9 +806,17 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 	typ := d["type"]
 	switch typ {
 	case "":
-		f, err = fs.walk(forPut, els...)
+		f, err = fs.walk(forPut, nil, els...)
 	case "d", "-":
-		f, err = fs.walk(forCreat, els...)
+		f, err = fs.walk(forCreat, nil, els...)
+	case "D":
+		d["type"] = "d"
+		typ = "d"
+		f, err = fs.walk(forCreatAll, d, els...)
+	case "F":	
+		d["type"] = "-"
+		typ = "-"
+		f, err = fs.walk(forCreatAll, d, els...)
 	default:
 		return nil, fmt.Errorf("%s: bad file type '%s'", p, typ)
 	}
@@ -800,7 +833,12 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 	gid := wd["gid"]
 	if uid == "" {
 		uid = u.Uid
-		gid = u.Uid
+		if fs.ai != nil && fs.ai.Uid != "" {
+			uid = fs.ai.Uid
+		}
+	}
+	if gid == "" {
+		gid = uid
 	}
 	if wd["path"] != p {
 		wd = zx.Dir{"type": typ, "mode": wd["mode"], "uid": uid, "gid": gid}
@@ -988,7 +1026,7 @@ func (fs *Fs) find(p, fpred, spref, dpref string, depth int, c chan<- zx.Dir) er
 		ctlfile.Lock()
 		d = ctldir.Dup()
 	} else {
-		f, err = fs.walk(forGet, zx.Elems(p)...)
+		f, err = fs.walk(forGet, nil, zx.Elems(p)...)
 		if err != nil {
 			return err
 		}

@@ -67,6 +67,10 @@ var puts = []putTest{
 		Off:  -1,
 		Dir:  zx.Dir{"type": "-", "size": "50000", "mode": "0640"},
 	},
+	{
+		Path:  "/nd1/nd2/nd3/nd4/nf1",
+		Dir:   zx.Dir{"type": "F", "size": "0", "mode": "0640"},
+	},
 }
 
 func Puts(t Fataler, xfs zx.Fs) {
