@@ -405,6 +405,9 @@ func (a Addr) TypeId() uint16 {
 }
 
 func (a Addr) String() string {
+	if a.Name == "" {
+		a.Name = "in"
+	}
 	switch {
 	case a.Ln0 != 0 && a.Ln0 == a.Ln1:
 		return fmt.Sprintf("%s:%d", a.Name, a.Ln0)

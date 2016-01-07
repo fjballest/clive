@@ -37,7 +37,6 @@ struct Fs {
 	*zx.Flags
 	*zx.Stats
 	ai     *auth.Info
-	rdonly bool
 	perms bool
 	sync bool		// write-through
 	rfs zx.Getter
@@ -80,7 +79,7 @@ func (fs *Fs) Auth(ai *auth.Info) (zx.Fs, error) {
 	return nfs, nil
 }
 
-func new(rfs zx.Getter, ro bool) (*Fs, error) {
+func New(rfs zx.Getter) (*Fs, error) {
 	rd, err := zx.Stat(rfs, "/")
 	if err != nil {
 		return nil, err
@@ -91,7 +90,6 @@ func new(rfs zx.Getter, ro bool) (*Fs, error) {
 		Flags:  &zx.Flags{},
 		Stats: &zx.Stats{},
 		rfs: rfs,
-		rdonly: ro,
 		perms: true,
 		syncc: make(chan bool),
 	}
@@ -99,7 +97,6 @@ func new(rfs zx.Getter, ro bool) (*Fs, error) {
 	fs.Flags.Add("writesync", &fs.sync)	// sync after changes
 	// TODO: The user u.Uid should be able to change fs.noperms
 	fs.Flags.AddRO("perms", &fs.perms)
-	fs.Flags.AddRO("rdonly", &fs.rdonly)
 	fs.Flags.Add("clear", func(...string) error {
 		fs.Stats.Clear()
 		return nil
@@ -133,14 +130,6 @@ func new(rfs zx.Getter, ro bool) (*Fs, error) {
 	fs.c = c
 	go fs.syncer()
 	return fs, nil
-}
-
-func New(origfs zx.Getter) (*Fs, error) {
-	return new(origfs, false)
-}
-
-func NewRO(origfs zx.Getter) (*Fs, error) {
-	return new(origfs, true)
 }
 
 func (fs *Fs) Sync() error {
@@ -372,9 +361,6 @@ func (fs *Fs) Stat(p string) <-chan zx.Dir {
 }
 
 func (fs *Fs) wstat(p string, nd zx.Dir) (zx.Dir, error) {
-	if fs.rdonly {
-		return nil, fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
-	}
 	p, err := zx.UseAbsPath(p)
 	if err != nil {
 		return nil, err
@@ -532,9 +518,6 @@ func (fs *Fs) Get(p string, off, count int64) <-chan []byte {
 
 func (fs *Fs) remove(p string, all bool) error {
 	fs.Count(zx.Sremove)
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
-	}
 	p, err := zx.UseAbsPath(p)
 	if err != nil {
 		return err
@@ -589,9 +572,6 @@ func inconsistentMove(from, to string) bool {
 }
 
 func (fs *Fs) move(from, to string) error {
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
-	}
 	rfs, ok := fs.rfs.(zx.Mover)
 	if !ok {
 		return fmt.Errorf("%s: move not supported", fs.Tag)
@@ -703,9 +683,6 @@ func inconsistentLink(oldp, newp string) bool {
 // Instead, we just forward the call and our cache will just see
 // more files than it would see if links did not exist.
 func (fs *Fs) link(to, from string) error {
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
-	}
 	rfs, ok := fs.rfs.(zx.Linker)
 	if !ok {
 		return fmt.Errorf("%s: link not supported", fs.Tag)
@@ -797,9 +774,6 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 	}
 	if p == "/Ctl" {
 		return ctldir.Dup(), fs.putCtl(c)
-	}
-	if fs.rdonly {
-		return nil, fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
 	}
 	els := zx.Elems(p)
 	var f fsFile
@@ -1092,7 +1066,7 @@ func (fs *Fs) FindGet(path, fpred, spref, dpref string, depth0 int) <-chan face{
 	go func() {
 		dc := fs.Find(path, fpred, spref, dpref, depth0)
 		for d := range dc {
-			if ok := c <- d; !ok {
+			if ok := c <- d.Dup(); !ok {
 				close(dc, cerror(c))
 				return
 			}

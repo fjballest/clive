@@ -30,7 +30,6 @@ struct Fs {
 	*zx.Stats
 	ai      *auth.Info
 	root    string
-	rdonly  bool
 	attrs   bool
 	zxperms bool
 }
@@ -83,10 +82,7 @@ func (fs *Fs) Sync() error {
 	return nil
 }
 
-func new(root string, rdonly, attrs bool) (*Fs, error) {
-	if rdonly && attrs {
-		panic("can't both rdonly and attrs")
-	}
+func new(root string, attrs bool) (*Fs, error) {
 	p, err := filepath.Abs(root)
 	if err != nil {
 		return nil, err
@@ -102,10 +98,8 @@ func new(root string, rdonly, attrs bool) (*Fs, error) {
 		Flag:   &dbg.Flag{Tag: tag},
 		Flags:  &zx.Flags{},
 		Stats:  &zx.Stats{},
-		rdonly: rdonly,
 	}
 	fs.Flags.Add("debug", &fs.Debug)
-	fs.Flags.AddRO("rdonly", &fs.rdonly)
 	fs.Flags.AddRO("attrs", &fs.attrs)
 	fs.Flags.Add("clear", func(...string) error {
 		fs.Stats.Clear()
@@ -117,17 +111,13 @@ func new(root string, rdonly, attrs bool) (*Fs, error) {
 // Return a new Fs rooted at the given unix dir
 // handling zx attrs
 func NewZX(root string) (*Fs, error) {
-	return new(root, false, true)
+	return new(root, true)
 }
 
 // Return a new Fs rooted at the given unix dir
 // without handling zx attrs
 func New(root string) (*Fs, error) {
-	return new(root, false, false)
-}
-
-func NewRO(root string) (*Fs, error) {
-	return new(root, true, false)
+	return new(root, false)
 }
 
 func uidName(uid uint32) string {
@@ -387,9 +377,6 @@ func (fs *Fs) putCtl(c <-chan []byte) error {
 }
 
 func (fs *Fs) wstat(p string, d zx.Dir, chk bool) error {
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
-	}
 	p, err := zx.UseAbsPath(p)
 	if err != nil {
 		return err
@@ -446,9 +433,6 @@ func (fs *Fs) Wstat(p string, d zx.Dir) <-chan zx.Dir {
 
 func (fs *Fs) remove(p string, all bool) error {
 	fs.Count(zx.Sremove)
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
-	}
 	if fs.attrs {
 		ac.sync()
 	}
@@ -512,9 +496,6 @@ func inconsistentMove(from, to string) bool {
 }
 
 func (fs *Fs) move(from, to string) error {
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
-	}
 	if fs.attrs {
 		ac.sync()
 	}
@@ -577,9 +558,6 @@ func inconsistentLink(oldp, newp string) bool {
 }
 
 func (fs *Fs) link(oldp, newp string) error {
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
-	}
 	if fs.attrs {
 		ac.sync()
 	}
@@ -639,9 +617,6 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 	}
 	if p == "/Ctl" {
 		return fs.putCtl(c)
-	}
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
 	}
 	mkall := false
 	path := fpath.Join(fs.root, p)
@@ -877,7 +852,7 @@ func (fs *Fs) FindGet(path, fpred, spref, dpref string, depth0 int) <-chan face{
 	go func() {
 		dc := fs.Find(path, fpred, spref, dpref, depth0)
 		for d := range dc {
-			if ok := c <- d; !ok {
+			if ok := c <- d.Dup(); !ok {
 				close(dc, cerror(c))
 				return
 			}

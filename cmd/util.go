@@ -271,3 +271,42 @@ func Lines(c <-chan interface{}) <-chan interface{} {
 	}()
 	return rc
 }
+
+// pipe an input chan and make sure the output
+// issues one message per file in the input containing all data.
+// non []byte messages forwarded as-is.
+func FullFiles(c <-chan interface{}) <-chan interface{} {
+	rc := make(chan interface{})
+	go func() {
+		var b *bytes.Buffer
+		for m := range c {
+			switch d := m.(type) {
+			case []byte:
+				if b == nil {
+					b = &bytes.Buffer{}
+				}
+				b.Write(d)
+			default:
+				if b != nil {
+					if ok := rc <- b.Bytes(); !ok {
+						close(c, cerror(rc))
+						break
+					}
+					b = nil
+				}
+				if ok := rc <- m; !ok {
+					close(c, cerror(rc))
+					break
+				}
+			}
+		}
+		if b != nil {
+			if ok := rc <- b.Bytes(); !ok {
+				close(c, cerror(rc))
+			}
+		}
+		close(rc, cerror(c))
+	}()
+	return rc
+}
+

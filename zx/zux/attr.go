@@ -149,7 +149,11 @@ func (ac *aCache) set(path string, d zx.Dir) error {
 
 	if od := da.ents[nm]; od != nil {
 		for k, v := range d {
-			od[k] = v
+			if v == "" {
+				delete(od, k)
+			} else {
+				od[k] = v
+			}
 		}
 		d = od
 	} else {

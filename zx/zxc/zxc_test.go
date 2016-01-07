@@ -41,7 +41,7 @@ func runTest(t *testing.T, fn fstest.TestFunc) {
 	}
 	defer lfs.Sync()
 
-	cfs, err := New(lfs)
+	cfs, err := New(lfs, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestSync(t *testing.T) {
 	}
 	defer lfs.Sync()
 
-	cfs, err := New(lfs)
+	cfs, err := New(lfs, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,7 +198,7 @@ func TestExtChanges(t *testing.T) {
 	}
 	defer lfs.Sync()
 
-	cfs, err := New(lfs)
+	cfs, err := New(lfs, false)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -124,6 +124,8 @@ func main() {
 	var w wFile
 	for m := range in {
 		cmd.Dprintf("got %T\n", m)
+		ok := true
+		var err error
 		switch m := m.(type) {
 		case error:
 			if wflag {
@@ -152,17 +154,21 @@ func main() {
 			}
 			switch {
 			case notux:
-				if ok := out <- m; !ok {
+				if ok = out <- m; !ok {
 					close(in, cerror(out))
+					continue
 				}
 			case nflag:
-				printf("%s\n", m["Upath"])
+				_, err = printf("%s\n", m["Upath"])
 			case pflag:
-				printf("%s\n", m["path"])
+				_, err = printf("%s\n", m["path"])
 			case lflag:
-				printf("%s\n", m.LongFmt())
+				_, err = printf("%s\n", m.LongFmt())
 			default:
-				printf("%s\n", m.Fmt())
+				_, err = printf("%s\n", m.Fmt())
+			}
+			if err != nil {
+				ok = false
 			}
 		case []byte:
 			if wflag {
@@ -173,22 +179,28 @@ func main() {
 			if dflag {
 				continue
 			}
-			if ok := out <- m; !ok {
-				close(in, cerror(out))
-			}
+			ok = out <- m
 		case ch.Ign:
-			if dflag {
+			if dflag || !iflag {
 				continue
 			}
 			b := m.Dat
-			if ok := out <- b; !ok {
-				close(in, cerror(out))
+			ok = out <- b
+		case string:
+			if dflag || !iflag {
+				continue
 			}
+			ok = out <- []byte(m)
 		case zx.Addr:
 			if !aflag {
 				continue
 			}
-			printf("%s\n", m)
+			if _, err := printf("%s\n", m); err != nil {
+				ok = false
+			}
+		}
+		if !ok {
+			close(in, cerror(out))
 		}
 	}
 	if wflag {

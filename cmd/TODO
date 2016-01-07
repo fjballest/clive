@@ -1,7 +1,8 @@
-In wr, we shouldn't use OS to run external commands.
-Use a wrapper for that, and use Put to create files even for external
-commands, or we won't be able to run them through zx connections
-and will require sshfs
+/Users/nemo/gosrc/src/clive.v1/app/mvm -> mvf
+/Users/nemo/gosrc/src/clive.v1/app/xcmd ???
+/Users/nemo/gosrc/src/clive.v1/app/pwd
+	-> env var for clive dot?
+	-> plus change in cmd to honor it?
 
-Even better, make wr produce all the output in stdout, even if it's multiple files,
-and then let pf write them back to disk
+Perhaps $NS can include a dot?
+

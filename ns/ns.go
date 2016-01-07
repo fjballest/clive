@@ -174,7 +174,7 @@ func (ns *NS) String() string {
 }
 
 // If ln is "path addr" and addr is of the form
-// net ! addr ! proto ! tree ! path
+// proto ! ... ! path
 // or
 // /one/path
 // then return a Dir for that entry

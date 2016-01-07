@@ -48,14 +48,46 @@ func dialed(addr string) (*Fs, bool) {
 	return fs, ok
 }
 
+// return network!host!port!tree from addr.
+// 	host -> tcp!host!zx!main
+//	host!port -> tcp!host!port!main
+//	net!host!port -> net!host!port!main
+func FillAddr(addr string) string {
+	toks := strings.Split(addr, "!")
+	switch len(toks) {
+	case 1:
+		return fmt.Sprintf("tcp!%s!zx!main", toks[0])
+	case 2:
+		return fmt.Sprintf("tcp!%s!%s!main", toks[0], toks[1])
+	case 3:
+		return fmt.Sprintf("%s!main", addr)
+	default:
+		return addr
+	}
+}
+
+func splitaddr(addr string) (string, string) {
+	n := strings.LastIndexByte(addr, '!')
+	if n < 0 {
+		panic("bad address")
+	}
+	return addr[:n], addr[n+1:]
+}
+
+// addr is completed if needed using FillAddr()
+// The previously dialed addresses are cached and the
+// old connections are returned.
+// Different fsys names are considered different dials.
 func Dial(addr string, tlscfg ...*tls.Config) (*Fs, error) {
 	var tc *tls.Config
 	if len(tlscfg) > 0 {
 		tc = tlscfg[0]
 	}
+	addr = FillAddr(addr)
 	if fs, ok := dialed(addr); ok {
 		return fs, nil
 	}
+	addr, fsys := splitaddr(addr)
 	m, err := net.MuxDial(addr, tc)
 	if err != nil {
 		return nil, err
@@ -66,7 +98,7 @@ func Dial(addr string, tlscfg ...*tls.Config) (*Fs, error) {
 		addr:  addr,
 		m:     m,
 		trees: map[string]bool{},
-		fsys:  "main",
+		fsys:  fsys,
 	}
 	fs.Tag = "rfs"
 	fs.Flags.Add("debug", &fs.Debug)
@@ -85,6 +117,10 @@ func Dial(addr string, tlscfg ...*tls.Config) (*Fs, error) {
 	if err != nil {
 		m.Close()
 		return nil, err
+	}
+	if !fs.trees[fsys] {
+		m.Close()
+		return nil, fmt.Errorf("no fsys '%s' found in server", fsys)
 	}
 	dialslk.Lock()
 	dials[addr] = fs
@@ -123,6 +159,7 @@ func (fs *Fs) getTrees() error {
 			fs.trees[s] = true
 		}
 	}
+	fs.trees["main"] = true	// by convention
 	return cerror(c.In)
 }
 

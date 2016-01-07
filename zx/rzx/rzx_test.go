@@ -10,7 +10,6 @@ import (
 	"clive/zx/zux"
 	"io"
 	"os"
-	"os/exec"
 	"testing"
 )
 
@@ -129,7 +128,7 @@ func runTest(t *testing.T, fn fstest.TestFunc) {
 	rfs.Debug = testing.Verbose()
 	ts := rfs.Trees()
 	t.Logf("trees: %v", ts)
-	if len(ts) != 1 || ts[0] != "tree" {
+	if len(ts) != 2 || ts[1] != "tree" {
 		t.Fatal("bad tree")
 	}
 	if rfs, err = rfs.Fsys("tree"); err != nil {

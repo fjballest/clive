@@ -57,7 +57,7 @@ func main() {
 	trs := map[string]zx.Fs{}
 	ros := map[bool]string{false: "rw", true: "ro"}
 	cs := map[bool]string{false: "uncached", true: "cached"}
-
+	rotrs := map[string]bool{}
 	var mainfs zx.Fs
 	for i := 0; i < len(args); i++ {
 		al := strings.Split(args[i], "!")
@@ -84,16 +84,10 @@ func main() {
 			continue
 		}
 		t.Tag = al[0]
-		ro := ronly && !caching
-		t.Flags.Set("rdonly", ro)
 		cmd.Warn("%s %s %s", al[0], ros[ronly], cs[caching])
 		var x zx.Fs = t
 		if caching {
-			if ronly {
-				x, err = zxc.NewRO(t)
-			} else {
-				x, err = zxc.New(t)
-			}
+			x, err = zxc.New(t)
 			if err != nil {
 				dbg.Warn("%s: zxc: %s", al[0], err)
 				continue
@@ -108,6 +102,7 @@ func main() {
 		if i == 0 {
 			mainfs = x
 		}
+		rotrs[t.Tag] = ronly
 	}
 	if len(trs) == 0 {
 		cmd.Fatal("no trees to serve")
@@ -133,6 +128,10 @@ func main() {
 		} else if lfs, ok := fs.(*zux.Fs); ok {
 			lfs.Flags.Add("debug", &srv.Debug)
 			lfs.Flags.Add("zdebug", &cfs.Debug)
+		}
+		if rotrs[nm] {
+			fs = zx.MakeRO(fs)
+			trs[nm] = fs
 		}
 		if err := srv.Serve(nm, fs); err != nil {
 			cmd.Fatal("serve: %s: %s", nm, err)
