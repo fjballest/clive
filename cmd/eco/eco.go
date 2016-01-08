@@ -17,8 +17,8 @@ var (
 
 // Run echo in the current app context.
 func main() {
-	c := cmd.AppCtx()
 	cmd.UnixIO("err")
+	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("n", "don't add a final newline", &nflag)
 	opts.NewFlag("u", "use unix out", &ux)

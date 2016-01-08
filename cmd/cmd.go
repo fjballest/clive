@@ -393,6 +393,17 @@ func Dprintf(f string, args ...interface{}) (n int, err error) {
 	return 0, nil
 }
 
+// Return a function that calls Eprintf but only when flag is set.
+func FlagPrintf(flag *bool) dbg.PrintFunc {
+	return func(fmts string, arg ...interface{}) (int, error) {
+		if *flag {
+			return Eprintf(fmts, arg...)
+		}
+		return 0, nil
+	}
+}
+
+
 // Warn if verbose flag is set
 func VWarn(f string, args ...interface{}) (n int, err error) {
 	c := ctx()
