@@ -6,22 +6,22 @@ state 0
 
 	$end  reduce 2 (src line 31)
 	error  shift 7
-	FOR  reduce 16 (src line 102)
-	WHILE  reduce 16 (src line 102)
+	FOR  reduce 16 (src line 104)
+	WHILE  reduce 16 (src line 104)
 	FUNC  shift 10
 	NL  shift 11
-	LEN  reduce 16 (src line 102)
-	SINGLE  reduce 16 (src line 102)
-	COND  reduce 16 (src line 102)
+	LEN  reduce 16 (src line 104)
+	SINGLE  reduce 16 (src line 104)
+	COND  reduce 16 (src line 104)
 	PIPE  shift 14
 	IREDIR  shift 9
-	NAME  reduce 16 (src line 102)
-	INBLK  reduce 16 (src line 102)
-	OUTBLK  reduce 16 (src line 102)
-	'{'  reduce 16 (src line 102)
-	'('  reduce 16 (src line 102)
+	NAME  reduce 16 (src line 104)
+	INBLK  reduce 16 (src line 104)
+	OUTBLK  reduce 16 (src line 104)
+	'{'  reduce 16 (src line 104)
+	'('  reduce 16 (src line 104)
 	';'  shift 12
-	'$'  reduce 16 (src line 102)
+	'$'  reduce 16 (src line 104)
 	.  error
 
 	bgpipe  goto 4
@@ -47,22 +47,22 @@ state 2
 
 	$end  reduce 1 (src line 29)
 	error  shift 7
-	FOR  reduce 16 (src line 102)
-	WHILE  reduce 16 (src line 102)
+	FOR  reduce 16 (src line 104)
+	WHILE  reduce 16 (src line 104)
 	FUNC  shift 10
 	NL  shift 11
-	LEN  reduce 16 (src line 102)
-	SINGLE  reduce 16 (src line 102)
-	COND  reduce 16 (src line 102)
+	LEN  reduce 16 (src line 104)
+	SINGLE  reduce 16 (src line 104)
+	COND  reduce 16 (src line 104)
 	PIPE  shift 14
 	IREDIR  shift 9
-	NAME  reduce 16 (src line 102)
-	INBLK  reduce 16 (src line 102)
-	OUTBLK  reduce 16 (src line 102)
-	'{'  reduce 16 (src line 102)
-	'('  reduce 16 (src line 102)
+	NAME  reduce 16 (src line 104)
+	INBLK  reduce 16 (src line 104)
+	OUTBLK  reduce 16 (src line 104)
+	'{'  reduce 16 (src line 104)
+	'('  reduce 16 (src line 104)
 	';'  shift 12
-	'$'  reduce 16 (src line 102)
+	'$'  reduce 16 (src line 104)
 	.  error
 
 	bgpipe  goto 4
@@ -139,13 +139,13 @@ state 10
 state 11
 	sep:  NL.    (41)
 
-	.  reduce 41 (src line 224)
+	.  reduce 41 (src line 226)
 
 
 state 12
 	sep:  ';'.    (42)
 
-	.  reduce 42 (src line 226)
+	.  reduce 42 (src line 228)
 
 
 state 13
@@ -176,7 +176,7 @@ state 13
 state 14
 	optin:  PIPE.    (15)
 
-	.  reduce 15 (src line 97)
+	.  reduce 15 (src line 99)
 
 
 state 15
@@ -224,7 +224,7 @@ state 21
 state 22
 	name:  NAME.    (59)
 
-	.  reduce 59 (src line 309)
+	.  reduce 59 (src line 311)
 
 
 state 23
@@ -268,7 +268,7 @@ state 27
 state 28
 	spipe:  cmd.    (18)
 
-	.  reduce 18 (src line 114)
+	.  reduce 18 (src line 116)
 
 
 state 29
@@ -286,7 +286,7 @@ state 29
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 35 (src line 193)
+	.  reduce 35 (src line 195)
 
 	name  goto 38
 	list  goto 39
@@ -301,7 +301,7 @@ state 30
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 56
 	optsep  goto 55
@@ -328,7 +328,7 @@ state 32
 	optin: .    (16)
 
 	PIPE  shift 14
-	.  reduce 16 (src line 102)
+	.  reduce 16 (src line 104)
 
 	pipe  goto 58
 	optin  goto 13
@@ -342,7 +342,7 @@ state 33
 	IREDIR  shift 52
 	OREDIR  shift 53
 	APP  shift 54
-	.  reduce 35 (src line 193)
+	.  reduce 35 (src line 195)
 
 	redir  goto 51
 	redirs  goto 50
@@ -351,13 +351,13 @@ state 33
 state 34
 	cmd:  setvar.    (24)
 
-	.  reduce 24 (src line 143)
+	.  reduce 24 (src line 145)
 
 
 state 35
 	names:  nameel.    (46)
 
-	.  reduce 46 (src line 239)
+	.  reduce 46 (src line 241)
 
 
 state 36
@@ -376,7 +376,7 @@ state 37
 	'['  shift 63
 	'='  shift 64
 	'←'  shift 65
-	.  reduce 59 (src line 309)
+	.  reduce 59 (src line 311)
 
 	as  goto 62
 
@@ -385,7 +385,7 @@ state 38
 	list:  name.'^' list 
 
 	'^'  shift 66
-	.  reduce 47 (src line 245)
+	.  reduce 47 (src line 247)
 
 
 state 39
@@ -394,7 +394,7 @@ state 39
 	list:  list.'^' list 
 
 	'^'  shift 67
-	.  reduce 48 (src line 247)
+	.  reduce 48 (src line 249)
 
 
 state 40
@@ -408,7 +408,7 @@ state 40
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 58 (src line 304)
+	.  reduce 58 (src line 306)
 
 	name  goto 38
 	names  goto 69
@@ -422,7 +422,7 @@ state 41
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 56
 	optsep  goto 70
@@ -433,7 +433,7 @@ state 42
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 56
 	optsep  goto 71
@@ -443,7 +443,7 @@ state 43
 	name:  '$' NAME.'[' name ']' 
 
 	'['  shift 72
-	.  reduce 60 (src line 314)
+	.  reduce 60 (src line 316)
 
 
 state 44
@@ -451,13 +451,13 @@ state 44
 	name:  SINGLE NAME.'[' name ']' 
 
 	'['  shift 73
-	.  reduce 61 (src line 318)
+	.  reduce 61 (src line 320)
 
 
 state 45
 	name:  LEN NAME.    (64)
 
-	.  reduce 64 (src line 330)
+	.  reduce 64 (src line 332)
 
 
 state 46
@@ -466,7 +466,7 @@ state 46
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 56
 	optsep  goto 74
@@ -498,13 +498,13 @@ state 47
 state 48
 	cmd:  names optredirs.    (19)
 
-	.  reduce 19 (src line 120)
+	.  reduce 19 (src line 122)
 
 
 state 49
 	names:  names nameel.    (45)
 
-	.  reduce 45 (src line 234)
+	.  reduce 45 (src line 236)
 
 
 state 50
@@ -514,14 +514,14 @@ state 50
 	IREDIR  shift 52
 	OREDIR  shift 53
 	APP  shift 54
-	.  reduce 34 (src line 191)
+	.  reduce 34 (src line 193)
 
 	redir  goto 76
 
 state 51
 	redirs:  redir.    (37)
 
-	.  reduce 37 (src line 204)
+	.  reduce 37 (src line 206)
 
 
 state 52
@@ -563,7 +563,7 @@ state 55
 
 	PIPE  shift 14
 	IREDIR  shift 9
-	.  reduce 16 (src line 102)
+	.  reduce 16 (src line 104)
 
 	bgpipe  goto 81
 	pipe  goto 8
@@ -573,7 +573,7 @@ state 55
 state 56
 	optsep:  sep.    (43)
 
-	.  reduce 43 (src line 229)
+	.  reduce 43 (src line 231)
 
 
 state 57
@@ -604,7 +604,7 @@ state 58
 state 59
 	cmd:  cond optredirs.    (23)
 
-	.  reduce 23 (src line 139)
+	.  reduce 23 (src line 141)
 
 
 state 60
@@ -620,7 +620,7 @@ state 61
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 56
 	optsep  goto 85
@@ -657,13 +657,13 @@ state 63
 state 64
 	as:  '='.    (28)
 
-	.  reduce 28 (src line 161)
+	.  reduce 28 (src line 163)
 
 
 state 65
 	as:  '←'.    (29)
 
-	.  reduce 29 (src line 163)
+	.  reduce 29 (src line 165)
 
 
 state 66
@@ -715,7 +715,7 @@ state 69
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 57 (src line 302)
+	.  reduce 57 (src line 304)
 
 	name  goto 38
 	list  goto 39
@@ -727,7 +727,7 @@ state 70
 
 	PIPE  shift 14
 	IREDIR  shift 9
-	.  reduce 16 (src line 102)
+	.  reduce 16 (src line 104)
 
 	bgpipe  goto 81
 	pipe  goto 8
@@ -740,7 +740,7 @@ state 71
 
 	PIPE  shift 14
 	IREDIR  shift 9
-	.  reduce 16 (src line 102)
+	.  reduce 16 (src line 104)
 
 	bgpipe  goto 81
 	pipe  goto 8
@@ -775,7 +775,7 @@ state 74
 
 	PIPE  shift 14
 	IREDIR  shift 9
-	.  reduce 16 (src line 102)
+	.  reduce 16 (src line 104)
 
 	bgpipe  goto 81
 	pipe  goto 8
@@ -785,31 +785,31 @@ state 74
 state 75
 	spipe:  spipe PIPE cmd.    (17)
 
-	.  reduce 17 (src line 108)
+	.  reduce 17 (src line 110)
 
 
 state 76
 	redirs:  redirs redir.    (36)
 
-	.  reduce 36 (src line 199)
+	.  reduce 36 (src line 201)
 
 
 state 77
 	redir:  IREDIR name.    (38)
 
-	.  reduce 38 (src line 210)
+	.  reduce 38 (src line 212)
 
 
 state 78
 	redir:  OREDIR name.    (39)
 
-	.  reduce 39 (src line 215)
+	.  reduce 39 (src line 217)
 
 
 state 79
 	redir:  APP name.    (40)
 
-	.  reduce 40 (src line 219)
+	.  reduce 40 (src line 221)
 
 
 state 80
@@ -819,7 +819,7 @@ state 80
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 100
 	optsep  goto 99
@@ -827,7 +827,7 @@ state 80
 state 81
 	blkcmds:  bgpipe.    (33)
 
-	.  reduce 33 (src line 185)
+	.  reduce 33 (src line 187)
 
 
 state 82
@@ -836,7 +836,7 @@ state 82
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 56
 	optsep  goto 101
@@ -847,7 +847,7 @@ state 83
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 56
 	optsep  goto 102
@@ -858,7 +858,7 @@ state 84
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 56
 	optsep  goto 103
@@ -869,7 +869,7 @@ state 85
 
 	PIPE  shift 14
 	IREDIR  shift 9
-	.  reduce 16 (src line 102)
+	.  reduce 16 (src line 104)
 
 	bgpipe  goto 81
 	pipe  goto 8
@@ -887,7 +887,7 @@ state 86
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 25 (src line 146)
+	.  reduce 25 (src line 148)
 
 	name  goto 38
 	list  goto 39
@@ -906,7 +906,7 @@ state 87
 	'('  shift 40
 	'['  shift 106
 	'$'  shift 23
-	.  reduce 58 (src line 304)
+	.  reduce 58 (src line 306)
 
 	name  goto 38
 	names  goto 69
@@ -927,7 +927,7 @@ state 89
 	list:  list.'^' name 
 	list:  list.'^' list 
 
-	.  reduce 50 (src line 254)
+	.  reduce 50 (src line 256)
 
 
 state 90
@@ -941,7 +941,7 @@ state 91
 	list:  name.'^' list 
 	list:  list '^' name.    (51)
 
-	.  reduce 51 (src line 259)
+	.  reduce 51 (src line 261)
 
 
 state 92
@@ -949,13 +949,13 @@ state 92
 	list:  list.'^' list 
 	list:  list '^' list.    (52)
 
-	.  reduce 52 (src line 264)
+	.  reduce 52 (src line 266)
 
 
 state 93
 	list:  '(' optnames ')'.    (49)
 
-	.  reduce 49 (src line 249)
+	.  reduce 49 (src line 251)
 
 
 state 94
@@ -965,7 +965,7 @@ state 94
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 100
 	optsep  goto 108
@@ -977,7 +977,7 @@ state 95
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 100
 	optsep  goto 109
@@ -1003,7 +1003,7 @@ state 98
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 100
 	optsep  goto 112
@@ -1022,8 +1022,8 @@ state 100
 
 	PIPE  shift 14
 	IREDIR  shift 9
-	'}'  reduce 43 (src line 229)
-	.  reduce 16 (src line 102)
+	'}'  reduce 43 (src line 231)
+	.  reduce 16 (src line 104)
 
 	bgpipe  goto 114
 	pipe  goto 8
@@ -1035,7 +1035,7 @@ state 101
 
 	PIPE  shift 14
 	IREDIR  shift 9
-	.  reduce 16 (src line 102)
+	.  reduce 16 (src line 104)
 
 	bgpipe  goto 81
 	pipe  goto 8
@@ -1048,7 +1048,7 @@ state 102
 
 	PIPE  shift 14
 	IREDIR  shift 9
-	.  reduce 16 (src line 102)
+	.  reduce 16 (src line 104)
 
 	bgpipe  goto 81
 	pipe  goto 8
@@ -1061,7 +1061,7 @@ state 103
 
 	PIPE  shift 14
 	IREDIR  shift 9
-	.  reduce 16 (src line 102)
+	.  reduce 16 (src line 104)
 
 	bgpipe  goto 81
 	pipe  goto 8
@@ -1075,7 +1075,7 @@ state 104
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 100
 	optsep  goto 118
@@ -1132,13 +1132,13 @@ state 109
 state 110
 	name:  '$' NAME '[' name ']'.    (62)
 
-	.  reduce 62 (src line 322)
+	.  reduce 62 (src line 324)
 
 
 state 111
 	name:  SINGLE NAME '[' name ']'.    (63)
 
-	.  reduce 63 (src line 326)
+	.  reduce 63 (src line 328)
 
 
 state 112
@@ -1155,7 +1155,7 @@ state 113
 	IREDIR  shift 52
 	OREDIR  shift 53
 	APP  shift 54
-	.  reduce 35 (src line 193)
+	.  reduce 35 (src line 195)
 
 	redir  goto 51
 	redirs  goto 50
@@ -1164,7 +1164,7 @@ state 113
 state 114
 	blkcmds:  blkcmds sep bgpipe.    (32)
 
-	.  reduce 32 (src line 180)
+	.  reduce 32 (src line 182)
 
 
 state 115
@@ -1174,7 +1174,7 @@ state 115
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 100
 	optsep  goto 127
@@ -1186,7 +1186,7 @@ state 116
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 100
 	optsep  goto 128
@@ -1198,7 +1198,7 @@ state 117
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 231)
+	.  reduce 44 (src line 233)
 
 	sep  goto 100
 	optsep  goto 129
@@ -1213,7 +1213,7 @@ state 118
 state 119
 	setvar:  NAME as '(' mapels ')'.    (26)
 
-	.  reduce 26 (src line 151)
+	.  reduce 26 (src line 153)
 
 
 state 120
@@ -1271,13 +1271,13 @@ state 122
 state 123
 	list:  INBLK optsep blkcmds optsep '}'.    (53)
 
-	.  reduce 53 (src line 268)
+	.  reduce 53 (src line 270)
 
 
 state 124
 	list:  OUTBLK optsep blkcmds optsep '}'.    (54)
 
-	.  reduce 54 (src line 278)
+	.  reduce 54 (src line 280)
 
 
 state 125
@@ -1289,7 +1289,7 @@ state 125
 state 126
 	cmd:  '{' optsep blkcmds optsep '}' optredirs.    (20)
 
-	.  reduce 20 (src line 125)
+	.  reduce 20 (src line 127)
 
 
 state 127
@@ -1316,7 +1316,7 @@ state 129
 state 130
 	cond:  COND '{' optsep blkcmds optsep '}'.    (30)
 
-	.  reduce 30 (src line 166)
+	.  reduce 30 (src line 168)
 
 
 state 131
@@ -1340,7 +1340,7 @@ state 131
 state 132
 	mapels:  '[' names ']'.    (56)
 
-	.  reduce 56 (src line 295)
+	.  reduce 56 (src line 297)
 
 
 state 133
@@ -1354,7 +1354,7 @@ state 133
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 27 (src line 156)
+	.  reduce 27 (src line 158)
 
 	name  goto 38
 	list  goto 39
@@ -1367,7 +1367,7 @@ state 134
 	IREDIR  shift 52
 	OREDIR  shift 53
 	APP  shift 54
-	.  reduce 35 (src line 193)
+	.  reduce 35 (src line 195)
 
 	redir  goto 51
 	redirs  goto 50
@@ -1380,7 +1380,7 @@ state 135
 	IREDIR  shift 52
 	OREDIR  shift 53
 	APP  shift 54
-	.  reduce 35 (src line 193)
+	.  reduce 35 (src line 195)
 
 	redir  goto 51
 	redirs  goto 50
@@ -1389,25 +1389,25 @@ state 135
 state 136
 	cond:  cond OR '{' optsep blkcmds optsep '}'.    (31)
 
-	.  reduce 31 (src line 173)
+	.  reduce 31 (src line 175)
 
 
 state 137
 	mapels:  mapels '[' names ']'.    (55)
 
-	.  reduce 55 (src line 290)
+	.  reduce 55 (src line 292)
 
 
 state 138
 	cmd:  FOR names '{' optsep blkcmds optsep '}' optredirs.    (21)
 
-	.  reduce 21 (src line 129)
+	.  reduce 21 (src line 131)
 
 
 state 139
 	cmd:  WHILE pipe '{' optsep blkcmds optsep '}' optredirs.    (22)
 
-	.  reduce 22 (src line 134)
+	.  reduce 22 (src line 136)
 
 
 32 terminals, 26 nonterminals

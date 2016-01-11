@@ -68,7 +68,7 @@ bgpipe
 	: pipe optbg
 	{
 		$$ = $1
-		$$.Args = append([]string{$2}, $$.Args...)
+		$$.Args[0] = $2
 	}
 	| IREDIR name
 	{
@@ -88,6 +88,7 @@ pipe
 	: optin spipe
 	{
 		$$ = $2
+		$$.Args = append([]string{""}, $$.Args...)
 		if $1 {
 			$2.addInRedir()
 		}

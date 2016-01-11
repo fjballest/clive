@@ -131,7 +131,7 @@ func (nd *Nd) addInRedir() {
 // the left name corresponds to the names on the right
 // A single name,...,name list means in: ... or out .... depending
 // on the I/O nature of the redir
-func parseRedir(rdr string, isin bool) map{string}[]string {
+func parseRedir(rdr string, isin bool) map[string][]string {
 	rdr = strings.TrimSpace(rdr)
 	if len(rdr) == 0 {
 		return nil
@@ -143,7 +143,7 @@ func parseRedir(rdr string, isin bool) map{string}[]string {
 			tag = "in"
 		}
 		return map[string][]string {
-			tag: strings.Fields(rdrs),
+			tag: strings.Fields(rdrs[0]),
 		}
 	}
 	if len(rdrs)%2 != 0 {
@@ -163,7 +163,7 @@ func (nd *Nd) addPipeRedirs() {
 	nd.chk(Npipe)
 	nc := len(nd.Child)-1	// last is a Nredirs
 	if len(nd.Args) != nc + 1 {
-		panic("addPipeRedirs: bad pipe Args
+		panic("addPipeRedirs: bad pipe Args")
 	}
 	if nc == 1 {
 		// single command, not really a pipe
@@ -171,8 +171,8 @@ func (nd *Nd) addPipeRedirs() {
 	}
 	rdrs := nd.Args[1:]	// 0 is the bg name
 	for i, rdr := range rdrs {
-		r := parseRedir(rdr)
-		XXX: Now take the map and apply the
+		r := parseRedir(rdr, false)
+	/*	XXX: Now take the map and apply the
 		keys are the inputs for nd.Child[i+1]
 		and the values as the outputs for nd.Child[i]
 		We should save the map to run the pipe later on.
@@ -186,7 +186,9 @@ func (nd *Nd) addPipeRedirs() {
 		checks that there are no dups
 
 		Once redirs are checked and parsed, we'll just
-		look at the map and never at the nodes.
+		look at the map and never at the nodes.*/
+		_ = r
+		_ = i
 	}
 }
 
@@ -198,7 +200,7 @@ func (nd *Nd) chkRedirs() {
 	if nc == 0 {
 		panic("chkredirs: no children")
 	}
-	rdr := nc.Child[nc-1]
+	rdr := nd.Child[nc-1]
 	if rdr.typ != Nredirs {
 		panic("chkredirs: not a redirs node")
 	}
