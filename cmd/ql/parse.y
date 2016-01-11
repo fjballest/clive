@@ -89,9 +89,7 @@ pipe
 	{
 		$$ = $2
 		$$.Args = append([]string{""}, $$.Args...)
-		if $1 {
-			$2.addInRedir()
-		}
+		$2.addInRedir($1)
 		$2.addPipeRedirs()
 	}
 	;
@@ -212,14 +210,14 @@ redirs
 redir
 	: IREDIR name
 	{
-		$$ = newNd(Nredir, "<", $1).Add($2)
+		$$ = newRedir("<", $1, $2)
 	}
 	| OREDIR name
 	{
-		$$ = newNd(Nredir, ">", $1).Add($2)
+		$$ = newRedir(">", $1, $2)
 	}
 	| APP name {
-		$$ = newNd(Nredir, ">>", $1).Add($2)
+		$$ = newRedir(">>", $1, $2)
 	}
 	;
 

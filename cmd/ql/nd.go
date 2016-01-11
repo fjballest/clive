@@ -82,6 +82,7 @@ struct Nd {
 	Args  []string
 	Child []*Nd
 	NdAddr
+	Redirs map[string][]string
 }
 
 func newNd(typ NdType, args ...string) *Nd {
@@ -107,7 +108,7 @@ func (nd *Nd) Add(child ...*Nd) *Nd {
 }
 
 // Called to add a redir to stdin in | ... pipes
-func (nd *Nd) addInRedir() {
+func (nd *Nd) addInRedir(stdin bool) {
 	nd.chk(Npipe)
 	if len(nd.Child) == 0 {
 		cmd.Dprintf("addinrdr: no command 0\n")
@@ -123,39 +124,13 @@ func (nd *Nd) addInRedir() {
 		cmd.Dprintf("addinrdr: child without redirs\n")
 		panic(parseErr)	// recovered at top-level
 	}
-	in := newNd(Nredir, "<")
+	var in *Nd
+	if stdin {
+		in = newRedir("<", "in", nil)
+	} else {
+		in = newRedir("<", "in", newNd(Nname, "/dev/null"))
+	}
 	rdr.Child = append(rdr.Child, in)
-}
-
-// A redir is a series of name: name,...,name that indicates that
-// the left name corresponds to the names on the right
-// A single name,...,name list means in: ... or out .... depending
-// on the I/O nature of the redir
-func parseRedir(rdr string, isin bool) map[string][]string {
-	rdr = strings.TrimSpace(rdr)
-	if len(rdr) == 0 {
-		return nil
-	}
-	rdrs := strings.Split(rdr, ":")
-	if len(rdrs) == 1 {
-		tag := "out"
-		if isin {
-			tag = "in"
-		}
-		return map[string][]string {
-			tag: strings.Fields(rdrs[0]),
-		}
-	}
-	if len(rdrs)%2 != 0 {
-		yylex.Errs("bad redirection '%s'", rdr)
-		panic(parseErr)
-	}
-	m := map[string][]string {}
-	for i := 0; i < len(rdrs); i += 2 {
-		k := strings.TrimSpace(rdrs[i])
-		m[k] = strings.Fields(rdrs[i+1])
-	}
-	return m
 }
 
 // Called to add the redirs implied by a pipe
@@ -169,10 +144,10 @@ func (nd *Nd) addPipeRedirs() {
 		// single command, not really a pipe
 		return
 	}
-	rdrs := nd.Args[1:]	// 0 is the bg name
+/*	rdrs := nd.Args[1:]	// 0 is the bg name
 	for i, rdr := range rdrs {
 		r := parseRedir(rdr, false)
-	/*	XXX: Now take the map and apply the
+		XXX: Now take the map and apply the
 		keys are the inputs for nd.Child[i+1]
 		and the values as the outputs for nd.Child[i]
 		We should save the map to run the pipe later on.
@@ -186,10 +161,10 @@ func (nd *Nd) addPipeRedirs() {
 		checks that there are no dups
 
 		Once redirs are checked and parsed, we'll just
-		look at the map and never at the nodes.*/
+		look at the map and never at the nodes.
 		_ = r
 		_ = i
-	}
+	}*/
 }
 
 // Redirs are the last child at Ncmd, Nblock, Nfor, Nwhile, Ncond,
