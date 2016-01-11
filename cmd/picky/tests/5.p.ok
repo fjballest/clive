@@ -1,6 +1,0 @@
-5.p:7: at 'procedure': syntax error
-5.p:7: ';' missing after program name
-5.p:9: no variable or constant with name 'zz'
-5.p:9: no variable or constant with name 'bbbb'
-5.p:9: no variable or constant with name 'dddd'
-5.p:9: too many arguments in call to 'writeln'

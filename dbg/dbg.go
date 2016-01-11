@@ -63,9 +63,7 @@ func fatal(warn bool, args ...interface{}) {
 // Printf with d.Tag if d.Debug is set
 func (d Flag) Dprintf(str string, args ...interface{}) (n int, err error) {
 	if d.Debug {
-		lk.Lock()
-		defer lk.Unlock()
-		return fmt.Printf("%s: %s", d.Tag, fmt.Sprintf(str, args...))
+		return Printf("%s: %s", d.Tag, fmt.Sprintf(str, args...))
 	}
 	return 0, nil
 }

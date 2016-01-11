@@ -18,7 +18,7 @@ func Removes(t Fataler, xfs zx.Fs) {
 		Printf("rm #%d %s\n", i, p)
 		rc := fs.Remove(p)
 		err := <-rc
-		if err  != nil || cerror(rc) != nil {
+		if err != nil || cerror(rc) != nil {
 			t.Fatalf("did fail")
 		}
 	}
@@ -27,7 +27,7 @@ func Removes(t Fataler, xfs zx.Fs) {
 		rc := fs.Remove(p)
 		err := <-rc
 		Printf("sts %v\n", err)
-		if err  == nil {
+		if err == nil {
 			t.Fatalf("didn't fail")
 		}
 	}

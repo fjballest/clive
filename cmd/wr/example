@@ -1,0 +1,200 @@
+_ title
+perhaps continued here with |verb \| text
+_ author info
+_ more author info with |tt text|
+
+* Abstract
+
+A section perhaps with the abstract if it's titled "Abstract".
+Tildes: Axéáñññ
+
+* A sect
+
+** A subsect
+
+Use [sect: A sect], or any keys, to refer to the section with the title containing all the words.
+
+*** A sub-sub sect
+
+.abc escaped
+
+'abc escaped __
+
+"cd escaped"
+
+%tex comment scaped
+
+some
+text making one paragraph
+-
+with a forced line break
+
+|verb| at the start of a par.
+
+another paragraph
+
+	To relatively indent a paragraph, use the tab.
+
+This executes a command and takes its output as verbatim text:
+	[sh
+		date ; date
+	]
+
+This is the same but uses rc as a shell
+	[sh rc
+		echo $path
+	]
+
+For rc and ql as shells we can just say
+	[ql
+		echo $argv0
+	]
+
+yet another paragraph
+	with closely indented par
+within other text
+
+this paragraph includes a list of items
+	- item 1 starts here and
+	continues with more text
+
+	another paragrah within the same item, starting a new itemize
+		- 2nd level 1st item
+		- 2nd level 2nd item
+	- item 2 text
+	continued here
+	- item 3 text
+	using
+	multiple lines
+
+after this paragraph comes some indented text with a list
+-
+of numbered items and another list of items.
+
+	some indented text
+	# first numbered item
+	# another
+	# yet another
+	- first item
+	- last item
+
+A description list is a list of items where each item ends within the first line and
+is followed by indented paragraphs describing the item. It is ok if the entire
+description name (item) is marked with a font indicator, but items should be simple
+names and cannot have font switches or other markups in the middle.
+	- _first description_
+		for this and that
+
+		with a second paragraph.
+
+	- |/a/b/c|
+		for this other thing
+	- -f
+		for another thing
+
+
+this text has some *text set in bold face*
+and some in _italic_, and some in |teletype font|.
+
+Within teletype font |no character is special, including _ and *|.
+This is good for things like |/a/b/c|.
+
+You can repeat the ** to scape it, or __ or ||.
+
+you can use
++2
+(or + any other number) to increase to a bigger font size and
+-2
+to return to the normal size, and you can use
+_
+to italize a set of
+lines
+_
+or start an
+	indented paragraph and then
+	*
+	make a set of lines bold
+	*
+or
+|
+make a set of lines fixed font
+|
+
+this paragraph has
+	[verb
+		.text starting with dot
+		some indented verbatim text, including ['s and ]'s and \n
+		nb = 0
+		[
+			pf = pf.Close()
+		]
+		wrelems(out, e.Child, lvl+1)
+	]
+but the verbatim text could be unindented as well.
+
+this other paragraph has a cite
+[cite: for this] and a url for [url: the lsub page|http://lsub.org] within the rest of the text
+you could also place a link to [url: http://google.com].
+Imprecise citations like [bib: plan 9 networks, plan b manual, plan b manual] can also be made.
+Cites like [cite: intro(1)] refer to the manual.
+
+# NB: You can only use .eps pics (or pic pics).
+# if you want any other pic format, just use "convert" from
+# imagemagick
+#	 convert foo.tiff foo.eps
+# or the same for any other format
+	[fig key
+		logols.eps
+	Caption goes here
+	and perhaps continues here. 
+	]
+
+
+or write pic directly in place
+
+[pic label
+	circle "hola"
+	arrow
+	circle "caracola"
+the caption starts without indentation and
+may span several lines. 
+]
+
+Fig is number [fig: label].
+
+Use [tbl: key] for tables, [eqn: key] for eqns, and [code: key] for listings.
+Do not use these references at the start of text in a line or they may be understood as
+an actual table, etc.
+
+for tables and equations we can use
+[tbl key
+	unused	c	r
+	unused	col2	col3
+	row1	11	12
+	row2	21	22
+tables may have captions. The first line of items
+always describes column formats, the second line
+always describes columns, and the first column always
+describes rows. No other table formats are supported.
+]
+
+[eqn key
+	a sub 3 sup 5
+eqns may have captions
+]
+
+[code Listing
+	{
+		some prog or code
+		taken verbatim to be printed
+	}
+it may have caption, the word after [code is used as a tag in the listing.
+the default is program. but all code listings share the same code counter
+despite the tag used. You can use |marks| and [cite: cites] here.
+]
+
+and $so on...
+
+* See also
+
+	- [cite: intro(1)] for so and so.

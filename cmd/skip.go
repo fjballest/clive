@@ -1,3 +1,0 @@
-// +build !clive 
-
-package cmd

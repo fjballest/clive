@@ -37,6 +37,7 @@ const (
 	Terr          // error string
 	Taddr         // file address (name, ln, ch)
 	Tdir          // map[string]string, directory entry
+	Tzx	// zx protocol msg
 	Tusr          // first user defined type value
 )
 
@@ -50,36 +51,24 @@ const (
 )
 
 // byte[] messages ignored as data.
-type Ign []byte
-
-// addresses
-struct Addr {
-	Name     string // file or resource name
-	Ln0, Ln1 int    // line range or zero
-	P0, P1   int    // point (rune) range or zero
+struct Ign {
+	Typ uint16
+	Dat []byte
 }
 
-// directory entry
-type Dir map[string]string
-
-interface byteser {
+interface Byteser {
 	Bytes() []byte
 }
 
-interface typer {
+interface Typer {
 	TypeId() uint16
-}
-
-interface writerTo {
-	Len() int
-	WriteTo(w io.Writer) (int64, error)
 }
 
 // For user defined types, implementors of this interface
 // use their own make function to make values of the message type
 // upon reception.
 interface Unpacker {
-	TypeId() uint16
+	Typer
 	Unpack([]byte) (face{}, error)
 }
 
@@ -94,117 +83,39 @@ var (
 
 	empty = []byte{} // it must be a slice
 
-	unpackers = map[uint16]Unpacker{
-		Taddr: Addr{},
-		Tdir:  Dir{},
-	}
+	unpackers = map[uint16]Unpacker{}
 )
 
 // Define a user type to be sent through chans
-func DefType(x Unpacker) error {
-	id := x.TypeId()
-	if id < Tusr || unpackers[id] != nil {
-		return ErrAlready
+// Should be used only at init time.
+func DefType(x Unpacker) {
+	unpackers[x.TypeId()] = x
+}
+
+func WriteStringTo(w io.Writer, s string) (n int64, err error) {
+	if err := binary.Write(w, binary.LittleEndian, uint32(len(s))); err != nil {
+		return 0, err
 	}
-	unpackers[id] = x
-	return nil
-}
-
-func (a Addr) TypeId() uint16 {
-	return Taddr
-}
-
-func (a Addr) Bytes() []byte {
-	var buf bytes.Buffer
-
-	binary.Write(&buf, binary.LittleEndian, uint32(a.Ln0))
-	binary.Write(&buf, binary.LittleEndian, uint32(a.Ln1))
-	binary.Write(&buf, binary.LittleEndian, uint32(a.P0))
-	binary.Write(&buf, binary.LittleEndian, uint32(a.P1))
-	buf.WriteString(a.Name)
-	return buf.Bytes()
-}
-
-func parseAddr(b []byte) (Addr, error) {
-	var a Addr
-
-	if len(b) < 16 {
-		return a, ErrTooSmall
-	}
-	a.Ln0 = int(binary.LittleEndian.Uint32(b[0:]))
-	a.Ln1 = int(binary.LittleEndian.Uint32(b[4:]))
-	a.P0 = int(binary.LittleEndian.Uint32(b[8:]))
-	a.P1 = int(binary.LittleEndian.Uint32(b[12:]))
-	a.Name = string(b[16:])
-	return a, nil
-}
-
-func (a Addr) Unpack(b []byte) (face{}, error) {
-	a, err := parseAddr(b)
-	return a, err
-}
-
-func (d Dir) Bytes() []byte {
-	var buf bytes.Buffer
-
-	binary.Write(&buf, binary.LittleEndian, uint32(len(d)))
-	for k, v := range d {
-		binary.Write(&buf, binary.LittleEndian, uint16(len(k)))
-		buf.WriteString(k)
-		binary.Write(&buf, binary.LittleEndian, uint16(len(v)))
-		buf.WriteString(v)
-	}
-	return buf.Bytes()
-}
-
-func (d Dir) TypeId() uint16 {
-	return Tdir
+	n = 4
+	nw, err := io.WriteString(w, s)
+	n += int64(nw)
+	return n, err
 }
 
 func UnpackString(b []byte) ([]byte, string, error) {
-	if len(b) < 2 {
+	if len(b) < 4 {
 		return nil, "", ErrTooSmall
 	}
-	sz := int(binary.LittleEndian.Uint16(b[0:]))
-	b = b[2:]
+	sz := int(binary.LittleEndian.Uint32(b[0:]))
+	b = b[4:]
 	if len(b) < sz {
 		return nil, "", ErrTooSmall
 	}
 	return b[sz:], string(b[:sz]), nil
 }
 
-func parseDir(b []byte) (Dir, error) {
-	if len(b) < 4 {
-		return nil, ErrTooSmall
-	}
-	d := map[string]string{}
-	n := int(binary.LittleEndian.Uint32(b[0:]))
-	if n < 0 || n > MaxDirSz {
-		return nil, ErrTooLarge
-	}
-	b = b[4:]
-	var err error
-	var k, v string
-	for i := 0; i < n; i++ {
-		b, k, err = UnpackString(b)
-		if err != nil {
-			return nil, err
-		}
-		b, v, err = UnpackString(b)
-		if err != nil {
-			return nil, err
-		}
-		d[k] = v
-	}
-	return d, nil
-}
 
-func (d Dir) Unpack(b []byte) (face{}, error) {
-	d, err := parseDir(b)
-	return d, err
-}
-
-func writeBytes(w io.Writer, tag uint32, typ uint16, b []byte) (int, error) {
+func writeBytes(w io.Writer, tag uint32, typ uint16, b []byte) (int64, error) {
 	var hdr [hdrSz]byte
 
 	if b == nil {
@@ -216,23 +127,23 @@ func writeBytes(w io.Writer, tag uint32, typ uint16, b []byte) (int, error) {
 	binary.LittleEndian.PutUint16(hdr[8:], typ)
 	tot, err := w.Write(hdr[:])
 	if err != nil || n == 0 {
-		return tot, err
+		return int64(tot), err
 	}
 	tot, err = w.Write(b)
 	if err != nil {
 		tot += len(hdr)
 	}
-	return tot, err
+	return int64(tot), err
 }
 
 // Write []byte, or Ign, string, error, Stringer, Byteser or discard the write.
 // If the write is discarded, ErrDiscarded is returned.
-func WriteMsg(w io.Writer, tag uint32, m face{}) (int, error) {
+func WriteMsg(w io.Writer, tag uint32, m face{}) (int64, error) {
 	switch m := m.(type) {
 	case []byte:
 		return writeBytes(w, tag, Tbytes, m)
 	case Ign:
-		return writeBytes(w, tag, Tign, []byte(m))
+		return writeBytes(w, tag, m.Typ, m.Dat)
 	case string:
 		return writeBytes(w, tag, Tstr, []byte(m))
 	case error:
@@ -240,18 +151,23 @@ func WriteMsg(w io.Writer, tag uint32, m face{}) (int, error) {
 			return writeBytes(w, tag, Terr, nil)
 		}
 		return writeBytes(w, tag, Terr, []byte(m.Error()))
+	case io.WriterTo:
+		var buf bytes.Buffer
+		n, err := m.WriteTo(&buf)
+		if err != nil {
+			return n, err
+		}
+		typ := Tign
+		if ti, ok := m.(Typer); ok {
+			typ = ti.TypeId()
+		}
+		return writeBytes(w, tag, typ, buf.Bytes())
 	case fmt.Stringer:
 		typ := Tign
-		if ti, ok := m.(typer); ok {
+		if ti, ok := m.(Typer); ok {
 			typ = ti.TypeId()
 		}
 		return writeBytes(w, tag, typ, []byte(m.String()))
-	case byteser:
-		typ := Tign
-		if ti, ok := m.(typer); ok {
-			typ = ti.TypeId()
-		}
-		return writeBytes(w, tag, typ, m.Bytes())
 	}
 	return 0, ErrDiscarded
 }
@@ -299,8 +215,6 @@ func ReadMsg(r io.Reader) (n int, tag uint32, m face{}, err error) {
 	switch typ {
 	case Tbytes:
 		return sz, tag, b, nil
-	case Tign:
-		return sz, tag, Ign(b), nil
 	case Tstr:
 		return sz, tag, string(b), nil
 	case Terr:
@@ -311,7 +225,7 @@ func ReadMsg(r io.Reader) (n int, tag uint32, m face{}, err error) {
 			m, err = mk.Unpack(b)
 			return sz, tag, m, err
 		}
-		return sz, tag, Ign(b), nil
+		return sz, tag, Ign{typ, b}, nil
 	}
 }
 

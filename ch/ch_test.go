@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -19,12 +18,33 @@ func (f foo) String() string {
 	return "foo"
 }
 
-var out = []byte{0xc, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x1, 0x0, 0x61, 0x20, 0x62, 0x79, 0x74, 0x65, 0x20, 0x61, 0x72, 0x72, 0x61, 0x79, 0x12, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x2, 0x0, 0x61, 0x6e, 0x6f, 0x74, 0x68, 0x65, 0x72, 0x20, 0x62, 0x79, 0x74, 0x65, 0x20, 0x61, 0x72, 0x72, 0x61, 0x79, 0x8, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x3, 0x0, 0x61, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xe, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x3, 0x0, 0x61, 0x6e, 0x6f, 0x74, 0x68, 0x65, 0x72, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x3, 0x0, 0x4, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x4, 0x0, 0x6f, 0x6f, 0x70, 0x73, 0x3, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x2, 0x0, 0x66, 0x6f, 0x6f, 0x10, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x5, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x16, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x5, 0x0, 0x1, 0x0, 0x0, 0x0, 0x2, 0x0, 0x0, 0x0, 0x3, 0x0, 0x0, 0x0, 0x4, 0x0, 0x0, 0x0, 0x61, 0x20, 0x66, 0x69, 0x6c, 0x65}
+struct tb {
+	r io.ReadCloser
+	w io.WriteCloser
+}
+
+func (b *tb) Write(dat []byte) (int, error) {
+	return b.w.Write(dat)
+}
+
+func (b *tb) Read(dat []byte) (int, error) {
+	return b.r.Read(dat)
+}
+
+func (b *tb) CloseWrite() error {
+	return b.w.Close()
+}
+
+func (b *tb) CloseRead() error {
+	return b.r.Close()
+}
+
+var out = []byte{0xc, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x1, 0x0, 0x61, 0x20, 0x62, 0x79, 0x74, 0x65, 0x20, 0x61, 0x72, 0x72, 0x61, 0x79, 0x12, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x9a, 0x2, 0x61, 0x6e, 0x6f, 0x74, 0x68, 0x65, 0x72, 0x20, 0x62, 0x79, 0x74, 0x65, 0x20, 0x61, 0x72, 0x72, 0x61, 0x79, 0x8, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x3, 0x0, 0x61, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xe, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x3, 0x0, 0x61, 0x6e, 0x6f, 0x74, 0x68, 0x65, 0x72, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x3, 0x0, 0x4, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x4, 0x0, 0x6f, 0x6f, 0x70, 0x73, 0x3, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x2, 0x0, 0x66, 0x6f, 0x6f}
 
 func TestMsgs(t *testing.T) {
 	var buf bytes.Buffer
 	b1 := []byte("a byte array")
-	b2 := Ign([]byte("another byte array"))
+	b2 := Ign{666,[]byte("another byte array")}
 	s1 := "a string"
 	s2 := "another string"
 	var b3 []byte
@@ -33,10 +53,6 @@ func TestMsgs(t *testing.T) {
 	var f foo
 	var b bar
 	e2 := errors.New("oops")
-	var a1 Addr
-	a2 := Addr{"a file", 1, 2, 3, 4}
-	var d1 Dir
-	d2 := Dir{"key1": "val1", "Key2": ""}
 	n, err := WriteMsg(&buf, 1, b1)
 	if err != nil {
 		t.Fatal(err)
@@ -82,16 +98,6 @@ func TestMsgs(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("+%d\tsz = %d\n", n, buf.Len())
-	n, err = WriteMsg(&buf, 1, a1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("+%d\tsz = %d\n", n, buf.Len())
-	n, err = WriteMsg(&buf, 1, a2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("+%d\tsz = %d\n", n, buf.Len())
 	n, err = WriteMsg(&buf, 1, b)
 	if err != ErrDiscarded {
 		t.Fatal(err)
@@ -101,30 +107,16 @@ func TestMsgs(t *testing.T) {
 		t.Logf("var out = %#v", bout)
 		t.Fatalf("bad encoding")
 	}
-	n, err = WriteMsg(&buf, 1, d1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("+%d\tsz = %d\n", n, buf.Len())
-	n, err = WriteMsg(&buf, 1, d2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("+%d\tsz = %d\n", n, buf.Len())
 
 	outs := []string{
 		"22 1 []uint8 [97 32 98 121 116 101 32 97 114 114 97 121] <nil>",
-		"28 1 ch.Ign [97 110 111 116 104 101 114 32 98 121 116 101 32 97 114 114 97 121] <nil>",
+		"28 1 ch.Ign {666 [97 110 111 116 104 101 114 32 98 121 116 101 32 97 114 114 97 121]} <nil>",
 		"18 1 string a string <nil>",
 		"24 1 string another string <nil>",
 		"10 1 []uint8 [] <nil>",
 		"10 1 string  <nil>",
 		"14 1 *errors.errorString oops <nil>",
-		"13 1 ch.Ign [102 111 111] <nil>",
-		"26 1 ch.Addr { 0 0 0 0} <nil>",
-		"32 1 ch.Addr {a file 1 2 3 4} <nil>",
-		"14 1 ch.Dir map[] <nil>",
-		"",
+		"13 1 ch.Ign {2 [102 111 111]} <nil>",
 		"0 0 <nil> <nil> EOF",
 	}
 
@@ -309,27 +301,6 @@ func TestPipePairHalfClose(t *testing.T) {
 	}
 }
 
-struct tb {
-	r io.ReadCloser
-	w io.WriteCloser
-}
-
-func (b *tb) Write(dat []byte) (int, error) {
-	return b.w.Write(dat)
-}
-
-func (b *tb) Read(dat []byte) (int, error) {
-	return b.r.Read(dat)
-}
-
-func (b *tb) CloseWrite() error {
-	return b.w.Close()
-}
-
-func (b *tb) CloseRead() error {
-	return b.r.Close()
-}
-
 func TestConnErr(t *testing.T) {
 	MsgSz = 15
 
@@ -386,29 +357,27 @@ func TestConn(t *testing.T) {
 }
 
 func TestMuxOut(t *testing.T) {
-	fd1 := &tb{}
-	fd2 := &tb{}
-	fd1.r, fd2.w = io.Pipe()
-	fd2.r, fd1.w = io.Pipe()
-	m1 := NewMux(fd1, false)
+	m1, m2, _ := NewMuxPair()
 	m1.Tag = "m1"
 	m1.Debug = testing.Verbose()
 	printf := m1.Dprintf
-	m2 := NewMux(fd2, true)
 	m2.Tag = "m2"
 	m2.Debug = testing.Verbose()
+
 	var wg, wg2 sync.WaitGroup
 	wg.Add(4)
 	wg2.Add(1)
 
 	reqs := [...]string{"hi there", "again", "and again"}
 	failed := false
-	nCalls := 5
+	nCalls := 15
 	msrv := func(m *Mux) {
 		nc := 0
 		for c := range m.In {
 			printf("%s call\n", m.Tag)
 			n := 0
+			// NB: the user should not do this,
+			// it should be always receiving from m.In
 			for d := range c.In {
 				printf("%s req %v\n", m.Tag, d)
 				s, ok := d.(string)
@@ -467,15 +436,10 @@ func TestMuxOut(t *testing.T) {
 }
 
 func TestMuxRpc(t *testing.T) {
-	fd1 := &tb{}
-	fd2 := &tb{}
-	fd1.r, fd2.w = io.Pipe()
-	fd2.r, fd1.w = io.Pipe()
-	m1 := NewMux(fd1, false)
+	m1, m2, _ := NewMuxPair()
 	m1.Tag = "m1"
 	m1.Debug = testing.Verbose()
 	printf := m1.Dprintf
-	m2 := NewMux(fd2, true)
 	m2.Tag = "m2"
 	m2.Debug = testing.Verbose()
 
@@ -486,7 +450,7 @@ func TestMuxRpc(t *testing.T) {
 	reqs := [...]string{"hi there", "again", "and again"}
 	repls := [...]string{"hi there.repl", "again.repl", "and again.repl"}
 	failed := false
-	nCalls := 5
+	nCalls := 15
 
 	msrv := func(m *Mux) {
 		nc := 0
@@ -578,19 +542,13 @@ func TestMuxRpc(t *testing.T) {
 
 func TestMuxFlow(t *testing.T) {
 	nbuf = 10
-	fd1 := &tb{}
-	fd2 := &tb{}
-	// io.Pipe is synchronous and may lead to a deadlock
-	// if readers don't read, despite flow control
-	fd1.r, fd2.w, _ = os.Pipe()
-	fd2.r, fd1.w, _ = os.Pipe()
-	m1 := NewMux(fd1, false)
+	m1, m2, _ := NewMuxPair()
 	m1.Tag = "m1"
 	m1.Debug = testing.Verbose()
 	printf := m1.Dprintf
-	m2 := NewMux(fd2, true)
 	m2.Tag = "m2"
 	m2.Debug = testing.Verbose()
+
 	var wg, wg2 sync.WaitGroup
 	wg.Add(4)
 	nCalls := 50 // at least 2
@@ -692,9 +650,3 @@ func TestMuxFlow(t *testing.T) {
 	m2.Close()
 	wg.Wait()
 }
-
-// XXX: Now test mux proc leaks, perhaps adding a proc counter to the mux
-// to make sure all of them are done, for by adding a waitgroup for all the procs
-// so we may call m.Wait() in testing scenarios
-// -> When a Conn is gone, there should be no proc/entry for the Conn.
-// -> When the mux is gone, there should be no proc/entry at all.

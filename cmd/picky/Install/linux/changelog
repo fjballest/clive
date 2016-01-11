@@ -1,7 +1,0 @@
-picky (1.1.0001-VERS) stable; urgency=low
-
-  * Non-maintainer release
-  * New upstream release
-  * Compile with libc6
-
- -- Laboratorio Sistemas Ubicuos <lsub@lsub.org>  DATE

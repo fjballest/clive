@@ -1,8 +1,8 @@
 package fstest
 
 import (
-	"clive/zx"
 	"bytes"
+	"clive/zx"
 )
 
 struct findTest {
@@ -19,19 +19,19 @@ var finds = []findTest{
 		Path: "/",
 		Pred: "",
 		Res: []string{
-			`d rwxr-xr-x      0 / lfs!local!/tmp/zx_test`,
-			`c rw-r--r--      0 /Ctl lfs!local!/Ctl`,
-			`- rw-r--r--      0 /1 lfs!local!/tmp/zx_test/1`,
-			`- rw-r--r--  30.9k /2 lfs!local!/tmp/zx_test/2`,
-			`d rwxr-xr-x      0 /a lfs!local!/tmp/zx_test/a`,
-			`- rw-r--r--   9.9k /a/a1 lfs!local!/tmp/zx_test/a/a1`,
-			`- rw-r--r--  20.9k /a/a2 lfs!local!/tmp/zx_test/a/a2`,
-			`d rwxr-xr-x      0 /a/b lfs!local!/tmp/zx_test/a/b`,
-			`d rwxr-xr-x      0 /a/b/c lfs!local!/tmp/zx_test/a/b/c`,
-			`- rw-r--r--  43.9k /a/b/c/c3 lfs!local!/tmp/zx_test/a/b/c/c3`,
-			`d rwxr-xr-x      0 /d lfs!local!/tmp/zx_test/d`,
-			`d rwxr-xr-x      0 /e lfs!local!/tmp/zx_test/e`,
-			`d rwxr-xr-x      0 /e/f lfs!local!/tmp/zx_test/e/f`,
+			`d rwxr-xr-x      0 /`,
+			`c rw-r--r--      0 /Ctl`,
+			`- rw-r--r--      0 /1`,
+			`- rw-r--r--  30.9k /2`,
+			`d rwxr-xr-x      0 /a`,
+			`- rw-r--r--   9.9k /a/a1`,
+			`- rw-r--r--  20.9k /a/a2`,
+			`d rwxr-xr-x      0 /a/b`,
+			`d rwxr-xr-x      0 /a/b/c`,
+			`- rw-r--r--  43.9k /a/b/c/c3`,
+			`d rwxr-xr-x      0 /d`,
+			`d rwxr-xr-x      0 /e`,
+			`d rwxr-xr-x      0 /e/f`,
 		},
 	},
 
@@ -39,9 +39,9 @@ var finds = []findTest{
 		Path: "/",
 		Pred: "type=d&depth>1",
 		Res: []string{
-			`d rwxr-xr-x      0 /a/b lfs!local!/tmp/zx_test/a/b`,
-			`d rwxr-xr-x      0 /a/b/c lfs!local!/tmp/zx_test/a/b/c`,
-			`d rwxr-xr-x      0 /e/f lfs!local!/tmp/zx_test/e/f`,
+			`d rwxr-xr-x      0 /a/b`,
+			`d rwxr-xr-x      0 /a/b/c`,
+			`d rwxr-xr-x      0 /e/f`,
 		},
 	},
 
@@ -65,8 +65,8 @@ var finds = []findTest{
 		Dpref: "/x/y",
 		Pred:  "depth<=1",
 		Res: []string{
-			`d rwxr-xr-x      0 /x/y/b lfs!local!/tmp/zx_test/a/b`,
-			`d rwxr-xr-x      0 /x/y/b/c lfs!local!/tmp/zx_test/a/b/c`,
+			`d rwxr-xr-x      0 /x/y/b`,
+			`d rwxr-xr-x      0 /x/y/b/c`,
 		},
 	},
 
@@ -78,8 +78,8 @@ var finds = []findTest{
 		Depth: 1,
 		Pred:  "depth<=2",
 		Res: []string{
-			`d rwxr-xr-x      0 /x/y/b lfs!local!/tmp/zx_test/a/b`,
-			`d rwxr-xr-x      0 /x/y/b/c lfs!local!/tmp/zx_test/a/b/c`,
+			`d rwxr-xr-x      0 /x/y/b`,
+			`d rwxr-xr-x      0 /x/y/b/c`,
 		},
 	},
 
@@ -91,8 +91,8 @@ var finds = []findTest{
 		Depth: 0,
 		Pred:  "depth<=1",
 		Res: []string{
-			`d rwxr-xr-x      0 /c lfs!local!/tmp/zx_test/a/b`,
-			`d rwxr-xr-x      0 /c/c lfs!local!/tmp/zx_test/a/b/c`,
+			`d rwxr-xr-x      0 /c`,
+			`d rwxr-xr-x      0 /c/c`,
 		},
 	},
 
@@ -102,8 +102,8 @@ var finds = []findTest{
 		Spref: "/",
 		Dpref: "/",
 		Pred:  `(path = "/a/b" | path = "/d") & prune | type = d`,
-		Res:   []string{
-			`d rwxr-xr-x      0 /a/b pruned lfs!local!/tmp/zx_test/a/b`,
+		Res: []string{
+			`d rwxr-xr-x      0 /a/b pruned`,
 		},
 	},
 }
@@ -119,7 +119,7 @@ func Finds(t Fataler, xfs zx.Fs) {
 		dc := fs.Find(ft.Path, ft.Pred, ft.Spref, ft.Dpref, ft.Depth)
 		n := 0
 		for d := range dc {
-			ds := d.Fmt() + " " + d["addr"]
+			ds := d.Fmt()
 			Printf("\t`%s`,\n", ds)
 			out += ds + "\n"
 			if n >= len(ft.Res) || ft.Res[n] != ds {
@@ -138,7 +138,7 @@ func Finds(t Fataler, xfs zx.Fs) {
 }
 
 func chklast(t Fataler, last string, data []byte) {
-	if last != "" && bytes.Compare(FileData[last], data) != 0 {
+	if last != "" && last != "/Ctl" && bytes.Compare(FileData[last], data) != 0 {
 		Printf("%d bytes vs %d bytes\n", len(FileData[last]), len(data))
 		t.Fatalf("bad file content for %s", last)
 	}
@@ -164,7 +164,7 @@ func FindGets(t Fataler, xfs zx.Fs) {
 				}
 				data = data[:0]
 				last = d["path"]
-				ds := d.Fmt() + " " + d["addr"]
+				ds := d.Fmt()
 				Printf("\t`%s`,\n", ds)
 				out += ds + "\n"
 				if n >= len(ft.Res) || ft.Res[n] != ds {

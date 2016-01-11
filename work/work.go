@@ -6,7 +6,6 @@ package work
 
 import (
 	"clive/dbg"
-	"os"
 	"sync"
 )
 
@@ -24,7 +23,7 @@ type Pool struct {
 
 var (
 	Debug   bool
-	dprintf = dbg.FlagPrintf(os.Stderr, &Debug)
+	dprintf = dbg.FlagPrintf(&Debug)
 )
 
 // create a pool of workers with up to n concurrent works.

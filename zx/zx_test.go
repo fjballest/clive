@@ -1,21 +1,27 @@
 package zx
 
 import (
-	"testing"
+	"bytes"
+	"clive/ch"
 	"clive/dbg"
+	"fmt"
+	"io"
+	"os"
+	"testing"
+	fpath "path"
 )
 
 var (
-	debug bool
+	debug  bool
 	printf = dbg.FlagPrintf(&debug)
 )
 
 func TestPaths(t *testing.T) {
 	debug = testing.Verbose()
 
-	prefs := [...]string {"", "/", "/a", "/b", "/a/b", "..", "z", "/c/d", "", "/a/b/..", "/a/b/../..", "/a/b/../../.."}
+	prefs := [...]string{"", "/", "/a", "/b", "/a/b", "..", "z", "/c/d", "", "/a/b/..", "/a/b/../..", "/a/b/../../.."}
 	suffs := [...]string{"", "", "/", "", "/b", "", "", "", "", "/", "", ""}
-	rsuffs := [...]string {"", "/", "/a", "/b", "/a/b", "", "", "/c/d", "", "/a", "/", "/"}
+	rsuffs := [...]string{"", "/", "/a", "/b", "/a/b", "", "", "/c/d", "", "/a", "/", "/"}
 
 	r := Suffix("/a/b", "/a")
 	printf("suff /a/b /a %q\n", r)
@@ -24,19 +30,169 @@ func TestPaths(t *testing.T) {
 	}
 	for i, p := range prefs {
 		r := Suffix(p, "/a")
-		printf("suff %q %q ->  %q\n", "/a", p, r)
+		printf("suff %q %q ->  %q\n", p, "/a", r)
 		if suffs[i] != r {
-			t.Fatalf("bad suffix")
+			t.Fatalf("bad /a suffix")
 		}
 		r = Suffix(p, "/")
-		printf("suff %q %q ->  %q\n", "/", p, r)
+		printf("suff %q %q ->  %q\n", p, "/", r)
 		if rsuffs[i] != r {
-			t.Fatalf("bad suffix")
+			t.Fatalf("bad / suffix")
 		}
 		r = Suffix(p, "")
-		printf("suff '' %q ->  %q\n", p, r)
-		if r != "" {
-			t.Fatalf("bad suffix")
+		printf("suff%q ''  ->  %q\n", p, r)
+		if p == "" {
+			if r != "" {
+				t.Fatalf("bad '' suffix")
+			}
+			continue
+		}
+		if r != fpath.Clean(p) {
+			t.Fatalf("bad '' suffix")
 		}
 	}
 }
+
+func TestPack(t *testing.T) {
+	var buf bytes.Buffer
+	var a1 Addr
+	a2 := Addr{"a file", 1, 2, 3, 4}
+	var d1 Dir
+	d2 := Dir{"key1": "val1", "Key2": ""}
+	n, err := ch.WriteMsg(&buf, 1, a1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("+%d\tsz = %d\n", n, buf.Len())
+	n, err = ch.WriteMsg(&buf, 1, a2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("+%d\tsz = %d\n", n, buf.Len())
+	n, err = ch.WriteMsg(&buf, 1, d1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("+%d\tsz = %d\n", n, buf.Len())
+	n, err = ch.WriteMsg(&buf, 1, d2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("+%d\tsz = %d\n", n, buf.Len())
+
+	outs := []string{
+		"30 1 zx.Addr :0,0 <nil>",
+		"36 1 zx.Addr a file:1,2 <nil>",
+		"14 1 zx.Dir  <nil>",
+		`42 1 zx.Dir Key2:"" key1:"val1" <nil>`,
+	}
+
+	for _, s := range outs {
+		n, tag, m, err := ch.ReadMsg(&buf)
+		t.Logf("%d %d %T %v %v\n", n, tag, m, m, err)
+		if s != "" && s != fmt.Sprintf("%d %d %T %v %v", n, tag, m, m, err) {
+			t.Fatal("bad msg")
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+struct tb {
+	r io.ReadCloser
+	w io.WriteCloser
+}
+
+func (b *tb) Write(dat []byte) (int, error) {
+	return b.w.Write(dat)
+}
+
+func (b *tb) Read(dat []byte) (int, error) {
+	return b.r.Read(dat)
+}
+
+func (b *tb) CloseWrite() error {
+	return b.w.Close()
+}
+
+func (b *tb) CloseRead() error {
+	return b.r.Close()
+}
+
+func TestConn(t *testing.T) {
+	fd := &tb{}
+	fd.r, fd.w, _ = os.Pipe()
+	p := ch.NewConn(fd, 300, nil)
+	d1 := Dir{}
+	d2 := Dir{"key1": "val1", "key2": ""}
+	d3 := Dir{"Key1": "val1", "Key2": ""}
+	a1 := Addr{}
+	a2 := Addr{"a file", 1, 2, 3, 4}
+	p.Out <- d1
+	p.Out <- d2
+	p.Out <- d3
+	p.Out <- a1
+	p.Out <- ErrBug
+	p.Out <- a2
+	close(p.Out)
+	outs := []string{
+		`zx.Dir, `,
+		`zx.Dir, key1:"val1" key2:""`,
+		`zx.Dir, Key1:"val1" Key2:""`,
+		`zx.Addr, :0,0`,
+		`*errors.errorString, buggered or not implemented`,
+		`zx.Addr, a file:1,2`,
+	}
+	for o := range p.In {
+		out := fmt.Sprintf("%T, %s", o, o)
+		t.Logf("\t`%s`,\n", out)
+		if len(outs) == 0 || outs[0] != out {
+			t.Fatalf("bad output")
+		}
+		outs = outs[1:]
+	}
+	t.Logf("sts %v", cerror(p.In))
+}
+
+func TestDir(t *testing.T) {
+	d := Dir {
+		"name": "f3",
+		"type": "-",
+		"mode": "0644",
+		"size": "23",
+		"mtime": "4000000000",
+		"foo": `quoted "bar"`,
+		"foo 2": "quoted` `bar2",
+	}
+	ds := d.String()
+	printf("dir is:\n%s\n", ds)
+	nd, err := ParseDir(ds)
+	if err != nil {
+		t.Fatalf("parse %s", err)
+	}
+	printf("parsed: %s\n", nd)
+	if nd.String() != ds {
+		t.Fatal("unexpected parsed dir string")
+	}
+	ds = ds + `"`
+	if _, err := ParseDir(ds); err == nil {
+		t.Fatalf("parse didn't fail")
+	}
+	d2 := Dir{}
+	ds = d2.String()
+	printf("dir is:\n%s\n", ds)
+	nd, err = ParseDir(ds)
+	if err != nil {
+		t.Fatalf("parse %s", err)
+	}
+	printf("parsed: %s\n", d2)
+	if d2.String() != ds {
+		t.Fatalf("unexpected parsed dir string")
+	}
+
+}
+

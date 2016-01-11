@@ -30,18 +30,17 @@ import (
 */
 
 // Usually testing.T or testing.B
-type Fataler interface {
-	Fatalf(format string, args ...interface{})
-	Logf(format string, args ...interface{})
+interface Fataler {
+	Fatalf(format string, args ...face{})
+	Logf(format string, args ...face{})
 	Fail()
 }
 
 type TestFunc func(t Fataler, fs zx.Fs)
 
-const tdir = "/tmp/zx_test"
 
 var (
-	Verb bool
+	Verb   bool
 	Printf = dbg.FlagPrintf(&Verb)
 	xt     int64
 
@@ -155,3 +154,76 @@ func Touch(path string) {
 	xt += 1e9
 }
 
+// set a fake mtime that can be predicted.
+func TouchZX(fs zx.Wstater, path string) error {
+	d := zx.Dir{}
+	d.SetTime("mtime", time.Unix(xt/1e9, xt%1e9))
+	xt += 1e9
+	rc := fs.Wstat(path, d)
+	<-rc
+	return cerror(rc)
+}
+
+// Make some changes in the test zx tree.
+//	- Touch /a/a1
+//	- Chmod /a/a2
+//	- Remove /a/b/c /a/b/c/c3
+//	- Create /a/n /a/n/m /a/n/m/m1
+func MkZXChgs(t Fataler, xfs zx.Fs) {
+	fs, ok := xfs.(testTree)
+	if !ok {
+		t.Fatalf("not a full rw tree")
+	}
+	TouchZX(fs, "/a/a1")
+	rc := fs.Wstat("/a/a2", zx.Dir{"mode": "0750"})
+	<-rc
+	if err := cerror(rc); err != nil {
+		t.Fatalf("chmod: %s", err)
+	}
+	if err := <-fs.RemoveAll("/a/b/c"); err != nil {
+		t.Fatalf("rm: %s", err)
+	}
+	<-fs.Put("/a", zx.Dir{"type": "d", "mode": "0750"}, 0, nil)
+	<-fs.Put("/a/n", zx.Dir{"type": "d", "mode": "0750"}, 0, nil)
+	rc = fs.Put("/a/n/m", zx.Dir{"type": "d", "mode": "0750"}, 0, nil)
+	<-rc
+	if err := cerror(rc); err != nil {
+		t.Fatalf("mkdir: %s", err)
+	}
+	err := zx.PutAll(fs, "/a/n/m/m1", []byte("a new file\n"), "0640")
+	if err != nil {
+		t.Fatalf("new file: %s", err)
+	}
+	TouchZX(fs, "/a/n/m/m1")
+	TouchZX(fs, "/a/n/m")
+	TouchZX(fs, "/a/n")
+	TouchZX(fs, "/a")
+}
+
+// Make some changes in the test zx tree, another version.
+//	- Remove /2
+//	- Create /2/n2
+//	- Truncate /1
+func MkZXChgs2(t Fataler, xfs zx.Fs) {
+	fs, ok := xfs.(testTree)
+	if !ok {
+		t.Fatalf("not a full rw tree")
+	}
+	if err := <-fs.Remove("/2"); err != nil {
+		t.Fatalf("rm: %s", err)
+	}
+	<-fs.Put("/2", zx.Dir{"type": "d", "mode": "0750"}, 0, nil)
+	rc := fs.Put("/2/n2", zx.Dir{"type": "d", "mode": "0750"}, 0, nil)
+	<-rc
+	if err := cerror(rc); err != nil {
+		t.Fatalf("mkdir: %s", err)
+	}
+	TouchZX(fs, "/2/n2")
+	TouchZX(fs, "/2")
+	rc = fs.Wstat("/1", zx.Dir{"size": "50"})
+	<-rc
+	if err := cerror(rc); err != nil {
+		t.Fatalf("truncate: %s", err)
+	}
+	TouchZX(fs, "/1")
+}

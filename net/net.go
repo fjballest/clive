@@ -15,6 +15,7 @@ import (
 	"time"
 	"crypto/tls"
 	"fmt"
+	"io"
 )
 
 var (
@@ -187,6 +188,7 @@ func dial(addr string, tlscfg *tls.Config) (c net.Conn, err error) {
 
 // Dial the given address and return a point to point connection.
 // The connection is secured if tlscfg is not nil.
+// Using MuxDial is preferred because muxes provide flow control.
 func Dial(addr string, tlscfg ...*tls.Config) (c ch.Conn, err error) {
 	var cfg *tls.Config
 	if len(tlscfg) > 0 {
@@ -200,74 +202,59 @@ func Dial(addr string, tlscfg ...*tls.Config) (c ch.Conn, err error) {
 	return c, err
 }
 
-// Dial the given address and return a muxed connection
-// The connection is secured if tlscfg is not nil.
-func MuxDial(addr string, tlscfg ...*tls.Config) (m *ch.Mux, err error) {
-	var cfg *tls.Config
-	if len(tlscfg) > 0 {
-		cfg = tlscfg[0]
-	}
-	if nc, err := dial(addr, cfg) ; err == nil {
-		m = ch.NewMux(nc, true)
-		m.Tag = addr
-		return m, nil
-	}
-	return nil, err
-}
-
 func serveLoop(l net.Listener, rc chan ch.Conn, ec chan bool,
-		addr, tag string, tlscfg *tls.Config, ismux bool) {
-	go func() {
-		<-ec
-		l.Close()
-	}()
+		addr, tag string, tlscfg *tls.Config) {
 	if strings.HasPrefix(addr, "/tmp/") {
 		defer os.Remove(addr)
 	}
+	closes := map[io.Closer] bool{}
+	var closeslk sync.Mutex
+	go func() {
+		<-ec
+		l.Close()
+		closeslk.Lock()
+		for c := range closes {
+			c.Close()
+		}
+		closeslk.Unlock()
+	}()
 	var err error
+	ncli := 0
 	for {
 		fd, e := l.Accept()
 		if e != nil {
 			err = e
 			break
 		}
+		closeslk.Lock()
+		var cfd io.Closer = fd
+		closes[cfd] = true
+		closeslk.Unlock()
 		raddr := fd.RemoteAddr().String()
-		if n := strings.LastIndex(raddr, ":"); n > 0 {
-			raddr = raddr[:n] + "!" + raddr[n+1:]
+		if raddr == "" {
+			// unix sockets do not provide raddr
+			raddr = fmt.Sprintf("local!%d", ncli)
+			ncli++
+		} else {
+			if n := strings.LastIndex(raddr, ":"); n > 0 {
+				raddr = raddr[:n] + "!" + raddr[n+1:]
+			}
 		}
 		if tlscfg != nil {
 			fd = tls.Server(fd, tlscfg)
 		}		
-		if !ismux {
-			cn := ch.NewConn(fd, 0, nil)
-			if ok := rc <- cn; !ok {
-				err = cerror(rc)
-				break
-			}
-			continue
+		cn := ch.NewConn(fd, 0, nil)
+		cn.Tag = raddr
+		if ok := rc <- cn; !ok {
+			err = cerror(rc)
+			break
 		}
-		mux := ch.NewMux(fd, false)
-		mux.Tag = raddr
-		go func() {
-			<-ec
-			mux.Close()
-		}()
-		go func() {
-			for cn := range mux.In {
-				if ok := rc <- cn; !ok {
-					close(mux.In, cerror(rc))
-					close(ec, cerror(rc))
-					break
-				}
-			}
-		}()
 	}
-	l.Close()
 	close(rc, err)
 	close(ec, err)
 }
 
-func serve1(nw, host, port string, tlscfg *tls.Config, ismux bool) (c <-chan ch.Conn, ec chan bool, err error) {
+func serve1(nw, host, port string, tlscfg *tls.Config) (c <-chan ch.Conn, ec chan bool, err error) {
 	tag := fmt.Sprintf("%s!%s!%s", nw, host, port)
 	if nw == "tls" {
 		nw = "tcp"
@@ -285,6 +272,7 @@ func serve1(nw, host, port string, tlscfg *tls.Config, ismux bool) (c <-chan ch.
 	if nw == "unix" {
 		addr = port
 		tlscfg = nil
+		os.Remove(port)
 	}
 	dbg.Warn("listen at %s (%s:%s)", tag, nw, addr)
 	fd, err := net.Listen(nw, addr)
@@ -293,12 +281,12 @@ func serve1(nw, host, port string, tlscfg *tls.Config, ismux bool) (c <-chan ch.
 	}
 	rc := make(chan ch.Conn)
 	rec := make(chan bool)
-	go serveLoop(fd, rc, rec, addr, tag, tlscfg, ismux)
+	go serveLoop(fd, rc, rec, addr, tag, tlscfg)
 	return rc, rec, nil
 }
 
-func serveBoth(c1 <-chan ch.Conn, ec1 chan<-bool, c2 <-chan ch.Conn, ec2 chan bool) (
-	c <-chan ch.Conn, ec chan bool, err error) {
+func serveBoth(c1 <-chan ch.Conn, ec1 chan<-bool,
+		c2 <-chan ch.Conn, ec2 chan bool) (c <-chan ch.Conn, ec chan bool, err error) {
 	xc := make(chan ch.Conn)
 	xec := make(chan bool)
 	go func() {
@@ -342,30 +330,6 @@ func serveBoth(c1 <-chan ch.Conn, ec1 chan<-bool, c2 <-chan ch.Conn, ec2 chan bo
 	return xc, xec, nil
 }
 
-func serve(addr string, tlscfg *tls.Config, ismux bool) (c <-chan ch.Conn, ec chan bool, err error) {
-	nw, host, svc := ParseAddr(addr)
-	if !IsLocal(host) {
-		return nil, nil, ErrNotLocal
-	}
-	port := Port(nw, svc)
-	switch nw {
-	case "*":
-		uc, uec, uerr := serve1("unix", host, port, tlscfg, ismux)
-		if uerr != nil {
-			return serve1("tcp", host, port, tlscfg, ismux)
-		}
-		tc, tec, terr := serve1("tcp", host, port, tlscfg, ismux)
-		if terr != nil {
-			return uc, uec, uerr
-		}
-		return serveBoth(uc, uec, tc, tec)
-	case "unix", "tcp", "tls":
-		return serve1(nw, host, port, tlscfg, ismux)
-	default:
-		return nil, nil, ErrBadAddr
-	}
-}
-
 // Serve the given address and return a chan to receive connections from new clients
 // and atermination channel. The termination channel can be closed by the caller
 // to stop the service, and will be closed if the underlying
@@ -379,23 +343,29 @@ func Serve(addr string, tlscfg ...*tls.Config) (c <-chan ch.Conn, ec chan bool, 
 	if len(tlscfg) > 0 {
 		cfg = tlscfg[0]
 	}
-	return serve(addr, cfg, false)
-}
-
-// Serve the given address and return a chan to receive muxed connections from new clients
-// and a termination channel. The termination channel can be closed by the caller
-// to stop the service, and will be closed if the underlying
-// transport fails and the service can't continue.
-// If the requested service name is already being served or any
-// other error happens, the error is returned (along with two nil channels).
-// If the network is "*", the service will be started on all networks.
-// The connections are secured if tlscfg is not nil.
-func MuxServe(addr string, tlscfg ...*tls.Config) (c <-chan ch.Conn, ec chan bool, err error) {
-	var cfg *tls.Config
-	if len(tlscfg) > 0 {
-		cfg = tlscfg[0]
+	nw, host, svc := ParseAddr(addr)
+	if !IsLocal(host) {
+		return nil, nil, ErrNotLocal
 	}
-	return serve(addr, cfg, true)
+	switch nw {
+	case "*":
+		port := Port("unix", svc)
+		uc, uec, uerr := serve1("unix", host, port, cfg)
+		if uerr != nil {
+			return serve1("tcp", host, port, cfg)
+		}
+		port = Port("tcp", svc)
+		tc, tec, terr := serve1("tcp", host, port, cfg)
+		if terr != nil {
+			return uc, uec, uerr
+		}
+		return serveBoth(uc, uec, tc, tec)
+	case "unix", "tcp", "tls":
+		port := Port("unix", svc)
+		return serve1(nw, host, port, cfg)
+	default:
+		return nil, nil, ErrBadAddr
+	}
 }
 
 // Build a TLS config for use with dialing functions provided by others.

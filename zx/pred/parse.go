@@ -212,7 +212,7 @@ func (t tok) String() string {
 	return fmt.Sprintf("%c", t)
 }
 
-type lex struct {
+struct lex {
 	t     []rune
 	debug bool
 }

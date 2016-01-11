@@ -7,14 +7,19 @@
 package zx
 
 import (
+	"bytes"
+	"clive/ch"
+	"clive/u"
+	"encoding/binary"
+	"fmt"
+	"io"
+	"sort"
 	"strconv"
 	"time"
-	"sort"
-	"bytes"
-	"fmt"
-	"encoding/binary"
-	"clive/u"
-	"clive/ch"
+	"strings"
+	"errors"
+	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -27,6 +32,9 @@ const (
 // A Dir, or directory entry, identifices a file or a resource in the system.
 // It is a set of attribute/value pairs, including some conventional attributes
 // like "name", "size", etc.
+//
+// Attributes starting with upper-case are considered as temporary and won't be updated
+// by any file system.
 //
 // Directory entries are self-describing in many cases, and include the address
 // and resource path as known by the server as extra attributes. Thus, programs can
@@ -46,9 +54,9 @@ struct Addr {
 
 var (
 	// Standard attributes present in most dirs.
-	stdAttr = map[string]bool {}
+	stdAttr = map[string]bool{}
 	// Preferred order for prints of std attributes
-	StdAttrOrder = [...]string {
+	StdAttrOrder = [...]string{
 		"name",
 		"type",
 		"mode",
@@ -61,7 +69,7 @@ var (
 		"addr",
 		"err",
 	}
-	stdShortOrder = [...] string {
+	stdShortOrder = [...]string{
 		"type",
 		"mode",
 		"size",
@@ -71,6 +79,8 @@ var (
 )
 
 func init() {
+	ch.DefType(Dir{})
+	ch.DefType(Addr{})
 	for _, a := range StdAttrOrder {
 		stdAttr[a] = true
 	}
@@ -85,6 +95,24 @@ func (d Dir) Dup() Dir {
 	nd := Dir{}
 	for k, v := range d {
 		nd[k] = v
+	}
+	return nd
+}
+
+// Is this the name of a temporary attribute (starts with upcase)
+func IsTemp(name string) bool {
+	r, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(r)
+}
+
+// Make a dup of the dir entry w/o temporary attributes
+func (d Dir) SysDup() Dir {
+
+	nd := Dir{}
+	for k, v := range d {
+		if !IsTemp(k) {
+			nd[k] = v
+		}
 	}
 	return nd
 }
@@ -162,12 +190,13 @@ func (d Dir) Inherit(parent uint64) {
 }
 
 // Return true if both directory entries have exactly the same attributes and values.
-func Equals(d1, d2 Dir) bool {
+// the addr attribute is ignored.
+func EqualDirs(d1, d2 Dir) bool {
 	if len(d1) != len(d2) {
 		return false
 	}
 	for k, v := range d1 {
-		if d2[k] != v {
+		if k != "addr" && d2[k] != v {
 			return false
 		}
 	}
@@ -209,7 +238,7 @@ func szstr(sz uint64) string {
 func modeString(m uint64) string {
 	var buf [32]byte // Mode is uint32.
 	const rwx = "rwxrwxrwx"
-	m &=0777
+	m &= 0777
 	w := 0
 	for i, c := range rwx {
 		if m&(1<<uint(9-1-i)) != 0 {
@@ -278,7 +307,7 @@ func (d Dir) Attrs() []string {
 	}
 	sort.Sort(sort.StringSlice(us))
 	return append(ss, us...)
-	
+
 }
 
 // Print d in test format.
@@ -310,27 +339,40 @@ func (d Dir) String() string {
 	return d.fmt(d.Attrs(), true)
 }
 
+func (d Dir) WriteTo(w io.Writer) (n int64, err error) {
+	if err := binary.Write(w, binary.LittleEndian, uint32(len(d))); err != nil {
+		return 0, err
+	}
+	n = 4
+	for k, v := range d {
+		nw, err := ch.WriteStringTo(w, k)
+		n += nw
+		if err != nil {
+			return n, err
+		}
+		nw, err = ch.WriteStringTo(w, v)
+		n += nw
+		if err != nil {
+			return n, err
+		}
+	}
+	return n, err
+}
+
 func (d Dir) Bytes() []byte {
 	var buf bytes.Buffer
-
-	binary.Write(&buf, binary.LittleEndian, uint32(len(d)))
-	for k, v := range d {
-		binary.Write(&buf, binary.LittleEndian, uint16(len(k)))
-		buf.WriteString(k)
-		binary.Write(&buf, binary.LittleEndian, uint16(len(v)))
-		buf.WriteString(v)
-	}
+	d.WriteTo(&buf)
 	return buf.Bytes()
 }
 
-func UnpackDir(b []byte) (Dir, []byte, error) {
+func UnpackDir(b []byte) ([]byte, Dir, error) {
 	if len(b) < 4 {
-		return nil, b, ch.ErrTooSmall
+		return b, nil, ch.ErrTooSmall
 	}
 	d := map[string]string{}
 	n := int(binary.LittleEndian.Uint32(b[0:]))
 	if n < 0 || n > ch.MaxMsgSz {
-		return nil, b, ch.ErrTooLarge
+		return b, nil, ch.ErrTooLarge
 	}
 	b = b[4:]
 	var err error
@@ -338,22 +380,90 @@ func UnpackDir(b []byte) (Dir, []byte, error) {
 	for i := 0; i < n; i++ {
 		b, k, err = ch.UnpackString(b)
 		if err != nil {
-			return nil, b, err
+			return b, nil, err
 		}
 		b, v, err = ch.UnpackString(b)
 		if err != nil {
-			return nil, b, err
+			return b, nil, err
 		}
 		d[k] = v
 	}
-	return d, b, nil
+	return b, d, nil
+}
+
+func (d Dir) TypeId() uint16 {
+	return ch.Tdir
 }
 
 func (d Dir) Unpack(b []byte) (face{}, error) {
-	d, _, err := UnpackDir(b)
+	_, d, err := UnpackDir(b)
 	return d, err
 }
 
+func (a Addr) TypeId() uint16 {
+	return ch.Taddr
+}
+
+func (a Addr) String() string {
+	if a.Name == "" {
+		a.Name = "in"
+	}
+	switch {
+	case a.Ln0 != 0 && a.Ln0 == a.Ln1:
+		return fmt.Sprintf("%s:%d", a.Name, a.Ln0)
+	case a.Ln0 != 0 || a.Ln1 != 0:
+		return fmt.Sprintf("%s:%d,%d", a.Name, a.Ln0, a.Ln1)
+	default:
+		return fmt.Sprintf("%s:%#d,%#d", a.Name, a.P0, a.P1)
+	}
+}
+
+func UnpackAddr(b []byte) ([]byte, Addr, error) {
+	var a Addr
+	var err error
+	b, a.Name, err = ch.UnpackString(b)
+	if err != nil {
+		return b, a, err
+	}
+	if len(b) < 4*4 {
+		return b, a, ch.ErrTooSmall
+	}
+	a.Ln0 = int(binary.LittleEndian.Uint32(b[0:]))
+	a.Ln1 = int(binary.LittleEndian.Uint32(b[4:]))
+	a.P0 = int(binary.LittleEndian.Uint32(b[8:]))
+	a.P1 = int(binary.LittleEndian.Uint32(b[12:]))
+	b = b[16:]
+	return b, a, nil
+}
+
+func (a Addr) Unpack(b []byte) (face{}, error) {
+	_, a, err := UnpackAddr(b)
+	return a, err
+}
+
+func (a Addr) WriteTo(w io.Writer) (n int64, err error) {
+	n, err = ch.WriteStringTo(w, a.Name)
+	if err != nil {
+		return n, err
+	}
+	if err := binary.Write(w, binary.LittleEndian, uint32(a.Ln0)); err != nil {
+		return n, err
+	}
+	n += 4
+	if err := binary.Write(w, binary.LittleEndian, uint32(a.Ln1)); err != nil {
+		return n, err
+	}
+	n += 4
+	if err := binary.Write(w, binary.LittleEndian, uint32(a.P0)); err != nil {
+		return n, err
+	}
+	n += 4
+	if err := binary.Write(w, binary.LittleEndian, uint32(a.P1)); err != nil {
+		return n, err
+	}
+	n += 4
+	return n, nil
+}
 
 // Does e match the attributes in d? Attributes match if their
 // values match. The special value "*" matches any defined
@@ -374,4 +484,118 @@ func (e Dir) Matches(d Dir) bool {
 		}
 	}
 	return true
+}
+
+// Parse a string as produced by Dir.String() and return the dir
+func ParseDir(s string) (Dir, error) {
+	d := make(Dir, 10)
+	tot := 0
+	for {
+		for len(s) > 0 && (s[0] == ' ' || s[0] == '\t' || s[0] == '\n') {
+			s = s[1:]
+			tot++
+		}
+		if len(s) == 0 {
+			return d, nil
+		}
+		nv := strings.SplitN(s, ":", 2)
+		if len(nv) != 2 {
+			return d, errors.New("missing ':' in dir string")
+		}
+		n := nv[0]
+		s = nv[1]
+		for len(s) > 0 && (s[0] == ' ' || s[0] == '\t' || s[0] == '\n') {
+			tot++
+			s = s[1:]
+		}
+		if len(s) == 0 {
+			return d, nil
+		}
+		quoted := s[0] == '"'
+		p0 := 0
+		i := 1
+		for i < len(s) {
+			r, n := utf8.DecodeRuneInString(s[i:])
+			if !quoted {
+				if r == ' ' || r == '\t' || r == '\n' {
+					i++
+					break
+				}
+				i += n
+				continue
+			}
+			if r == '\\' {
+				if i+1 < len(s) && s[i+1] == '"' {
+					i += 2
+					continue
+				}
+			} else if r == '"' {
+				i++
+				break
+			}
+			i += n
+		}
+		if !quoted {
+			v := s[p0:i]
+			if i < len(s) {
+				v = s[p0 : i-1] // remove blank
+			}
+			d[n] = v
+			tot += len(n) + 1 + i
+			s = s[i:]
+			continue
+		}
+		v, err := strconv.Unquote(s[p0:i])
+		if err != nil {
+			return d, err
+		}
+		d[n] = v
+		tot += len(n) + 1 + i // +1 for ':'
+		s = s[i:]
+	}
+}
+
+// Return the server path for the resource
+// Returns the path if there's no server path
+func (d Dir) SPath() string {
+	a := d["addr"]
+	n := strings.LastIndexByte(a, '!')
+	if n < 0 {
+		return d["path"]
+	}
+	return a[n+1:]
+}
+
+// Return the address for the resource server, including the protocol.
+// Returns "" if no address is set.
+func (d Dir) SAddr() string {
+	a := d["addr"]
+	n := strings.LastIndexByte(a, '!')
+	if n < 0 {
+		return ""
+	}
+	return a[:n]
+}
+
+// Return the protocol to reach the resource,
+// return "" if no address is set.
+func (d Dir) Proto() string {
+	a := d["addr"]
+	n := strings.IndexByte(a, '!')
+	if n < 0 {
+		return ""
+	}
+	return a[:n]
+}
+
+// Return true if this entry refers to a server supporting the
+// finder protocol
+func (d Dir) IsFinder() bool {
+	p := d.Proto()
+	switch p {
+	case "lfs", "zxc", "zx", "finder":
+		return true
+	default:
+		return false
+	}
 }

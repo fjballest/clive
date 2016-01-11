@@ -1,3 +1,0 @@
-// +build none
-
-package main

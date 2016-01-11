@@ -1,3 +1,0 @@
-lenbug.p:7: 'TipoNums' is not a type name
-lenbug.p:10: argument 'nums' of len is undefined
-lenbug.p:11: using '[]' requires an array

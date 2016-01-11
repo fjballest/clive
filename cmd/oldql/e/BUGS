@@ -1,6 +1,0 @@
-The command must honor intrc or we wont be able to use it as
-a builtin. 
-
-s/a/b/ replaces everything with b if a matches, it's likely it
-does not set dot, or the sre does not set a subrange correctly.
-x/a/c/b works as expected though.

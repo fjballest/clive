@@ -4,36 +4,40 @@
 package zux
 
 import (
-	"sync"
-	"os/user"
-	"strings"
-	"strconv"
-	"syscall"
 	"bytes"
+	"clive/ch"
+	"clive/dbg"
+	"clive/net/auth"
+	"clive/u"
+	"clive/zx"
+	"clive/zx/pred"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"os/user"
 	fpath "path"
 	"path/filepath"
-	"clive/ch"
-	"clive/dbg"
-	"clive/u"
-	"clive/zx"
-	"clive/zx/pred"
+	"strconv"
+	"strings"
+	"sync"
+	"syscall"
 )
 
-type Fs struct {
+struct Fs {
 	*dbg.Flag
 	*zx.Flags
-	root	string
-	rdonly	bool
+	*zx.Stats
+	ai      *auth.Info
+	root    string
+	attrs   bool
+	zxperms bool
 }
 
-var ctldir = zx.Dir {
+var ctldir = zx.Dir{
 	"name":  "Ctl",
 	"path":  "/Ctl",
-	"addr": "lfs!local!/Ctl",
+	"addr":  "lfs!/!/Ctl",
 	"mode":  "0644",
 	"size":  "0",
 	"mtime": "0",
@@ -43,7 +47,42 @@ var ctldir = zx.Dir {
 	"wuid":  u.Uid,
 }
 
-func new(root string, rdonly bool) (*Fs, error) {
+var (
+	uids   = map[uint32]string{}
+	uidslk sync.Mutex
+
+	dontremove bool      // set during testing to prevent removes
+	_fs        zx.FullFs = &Fs{}
+
+	paranoia = true	// if true, would panic if removing outside /tmp/...
+)
+
+func (fs *Fs) String() string {
+	return fs.Tag
+}
+
+// Return a new view for fs, authenticated for ai
+func (fs *Fs) Auth(ai *auth.Info) (zx.Fs, error) {
+	if !fs.attrs {
+		return fs, nil
+	}
+	nfs := &Fs{}
+	*nfs = *fs
+	if ai != nil {
+		dbg.Warn("%s: auth for %s %v\n", fs.Tag, ai.Uid, ai.Gids)
+	}
+	nfs.ai = ai
+	return nfs, nil
+}
+
+func (fs *Fs) Sync() error {
+	if fs.attrs {
+		ac.sync()
+	}
+	return nil
+}
+
+func new(root string, attrs bool) (*Fs, error) {
 	p, err := filepath.Abs(root)
 	if err != nil {
 		return nil, err
@@ -55,30 +94,31 @@ func new(root string, rdonly bool) (*Fs, error) {
 	tag := fpath.Base(root)
 	fs := &Fs{
 		root:   p,
-		rdonly: rdonly,
+		attrs:  attrs,
 		Flag:   &dbg.Flag{Tag: tag},
 		Flags:  &zx.Flags{},
+		Stats:  &zx.Stats{},
 	}
 	fs.Flags.Add("debug", &fs.Debug)
-	fs.Flags.AddRO("rdonly", &fs.rdonly)
+	fs.Flags.AddRO("attrs", &fs.attrs)
+	fs.Flags.Add("clear", func(...string) error {
+		fs.Stats.Clear()
+		return nil
+	})
 	return fs, nil
 }
 
 // Return a new Fs rooted at the given unix dir
-func New(root string) (*Fs, error) {
-	return new(root, false)
-}
-
-func NewRO(root string) (*Fs, error) {
+// handling zx attrs
+func NewZX(root string) (*Fs, error) {
 	return new(root, true)
 }
 
-var (
-	uids = map[uint32] string{}
-	uidslk sync.Mutex
-
-	dontremove bool	// set during testing to prevent removes
-)
+// Return a new Fs rooted at the given unix dir
+// without handling zx attrs
+func New(root string) (*Fs, error) {
+	return new(root, false)
+}
 
 func uidName(uid uint32) string {
 	uidslk.Lock()
@@ -127,13 +167,25 @@ func newDir(fi os.FileInfo) zx.Dir {
 	return d
 }
 
-func (fs *Fs) stat(p string) (zx.Dir, error) {
+// Check ZX perms (besides the underlying unix ones)
+func (fs *Fs) CheckZXPerms() {
+	fs.zxperms = true
+}
+
+func (fs *Fs) stat(p string, chk bool) (zx.Dir, error) {
 	p, err := zx.UseAbsPath(p)
 	if err != nil {
 		return nil, err
 	}
+	if fs.zxperms && chk {
+		if err := fs.chkWalk(p, false); err != nil {
+			return nil, err
+		}
+	}
 	if p == "/Ctl" {
-		return ctldir.Dup(), nil
+		d := ctldir.Dup()
+		d["addr"] = fmt.Sprintf("lfs!%s!/Ctl", fs.root)
+		return d, nil
 	}
 	path := fpath.Join(fs.root, p)
 	st, err := os.Stat(path)
@@ -142,16 +194,20 @@ func (fs *Fs) stat(p string) (zx.Dir, error) {
 	}
 	d := newDir(st)
 	d["path"] = p
-	d["addr"] = "lfs!local!" + path
+	d["addr"] = fmt.Sprintf("lfs!%s!%s", fs.root, p)
 	if p == "/" {
 		d["name"] = "/"
+	}
+	if fs.attrs || fs.zxperms {
+		ac.get(path, d)
 	}
 	return d, nil
 }
 
-func (fs *Fs) Stat(p string) chan zx.Dir {
+func (fs *Fs) Stat(p string) <-chan zx.Dir {
+	fs.Count(zx.Sstat)
 	c := make(chan zx.Dir, 1)
-	d, err := fs.stat(p)
+	d, err := fs.stat(p, false)
 	if err == nil {
 		c <- d
 	}
@@ -163,6 +219,7 @@ func (fs *Fs) getCtl(off, count int64, dc chan<- []byte) error {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, "lfs %s:\n", fs.Tag)
 	fmt.Fprintf(&buf, "%s", fs.Flags)
+	fmt.Fprintf(&buf, "%s", fs.Stats)
 
 	resp := buf.Bytes()
 	o := int(off)
@@ -212,6 +269,11 @@ func (fs *Fs) get(p string, off, count int64, dc chan<- []byte) error {
 	if p == "/Ctl" {
 		return fs.getCtl(off, count, dc)
 	}
+	if fs.zxperms {
+		if err := fs.chkGet(p); err != nil {
+			return err
+		}
+	}
 	path := fpath.Join(fs.root, p)
 	fd, err := os.Open(path)
 	if err != nil {
@@ -230,9 +292,10 @@ func (fs *Fs) get(p string, off, count int64, dc chan<- []byte) error {
 		}
 		if count == zx.All {
 			return readBytes(fd, dc)
+		} else {
+			rr := io.LimitReader(fd, count)
+			return readBytes(rr, dc)
 		}
-		rr := io.LimitReader(fd, count)
-		return readBytes(rr, dc)
 	}
 
 	ds, err := ioutil.ReadDir(path)
@@ -258,7 +321,9 @@ Dloop:
 		}
 		if !ctlsent && p == "/" {
 			ctlsent = true
-			if ok := dc <- ctldir.Bytes(); !ok {
+			cd := ctldir.Dup()
+			cd["addr"] = fmt.Sprintf("lfs!%s!/Ctl", fs.root)
+			if ok := dc <- cd.Bytes(); !ok {
 				return cerror(dc)
 			}
 			// but not i++
@@ -273,10 +338,13 @@ Dloop:
 			fi = ds[i]
 		}
 		d := newDir(fi)
-		cp :=fpath.Join(p, fi.Name())
-		cpath :=fpath.Join(path, fi.Name())
+		cp := fpath.Join(p, fi.Name())
+		cpath := fpath.Join(path, fi.Name())
 		d["path"] = cp
-		d["addr"] = "lfs!local!" + cpath
+		d["addr"] = fmt.Sprintf("lfs!%s!%s", fs.root, cp)
+		if fs.attrs || fs.zxperms {
+			ac.get(cpath, d)
+		}
 		if ok := dc <- d.Bytes(); !ok {
 			return cerror(dc)
 		}
@@ -288,6 +356,7 @@ Dloop:
 func (fs *Fs) Get(path string, off, count int64) <-chan []byte {
 	c := make(chan []byte)
 	go func() {
+		fs.Count(zx.Sget)
 		err := fs.get(path, off, count, c)
 		close(c, err)
 	}()
@@ -307,13 +376,15 @@ func (fs *Fs) putCtl(c <-chan []byte) error {
 
 }
 
-func (fs *Fs) wstat(p string, d zx.Dir) error {
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
-	}
+func (fs *Fs) wstat(p string, d zx.Dir, chk bool) error {
 	p, err := zx.UseAbsPath(p)
 	if err != nil {
 		return err
+	}
+	if fs.zxperms && chk {
+		if err := fs.chkWstat(p, d); err != nil {
+			return err
+		}
 	}
 	path := fpath.Join(fs.root, p)
 	if _, ok := d["size"]; ok {
@@ -330,16 +401,27 @@ func (fs *Fs) wstat(p string, d zx.Dir) error {
 			err = nerr
 		}
 	}
+	if fs.attrs {
+		ac.set(path, d)
+	}
 	return err
 }
 
-func (fs *Fs) Wstat(p string, d zx.Dir) chan zx.Dir {
+func (fs *Fs) Wstat(p string, d zx.Dir) <-chan zx.Dir {
 	rc := make(chan zx.Dir)
 	go func() {
-		err := fs.wstat(p, d)
+		fs.Count(zx.Swstat)
+		d = d.SysDup()
+		if d["wuid"] != "" || d["size"] != "" {
+			d["wuid"] = u.Uid
+			if fs.attrs && fs.ai != nil {
+				d["wuid"] = fs.ai.Uid
+			}
+		}
+		err := fs.wstat(p, d, true)
 		if err == nil {
 			var d zx.Dir
-			d, err = fs.stat(p)
+			d, err = fs.stat(p, false)
 			if err == nil {
 				rc <- d
 			}
@@ -350,8 +432,9 @@ func (fs *Fs) Wstat(p string, d zx.Dir) chan zx.Dir {
 }
 
 func (fs *Fs) remove(p string, all bool) error {
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
+	fs.Count(zx.Sremove)
+	if fs.attrs {
+		ac.sync()
 	}
 	p, err := zx.UseAbsPath(p)
 	if err != nil {
@@ -360,10 +443,18 @@ func (fs *Fs) remove(p string, all bool) error {
 	if p == "/Ctl" || p == "/" {
 		return fmt.Errorf("remove %s: %s", p, zx.ErrPerm)
 	}
+	if fs.zxperms {
+		if err := fs.chkPut(fpath.Dir(p), false); err != nil {
+			return err
+		}
+	}
 	path := fpath.Join(fs.root, p)
 	if dontremove {
 		dbg.Warn("%s: dontremove: rm %s", fs.Tag, path)
 		return nil
+	}
+	if paranoia && !strings.HasPrefix(path, "/tmp/") {
+		panic("zux: trying to remove outside /tmp")
 	}
 	if all {
 		if path == "/" || p == "/" || !strings.HasPrefix(path, fs.root) {
@@ -371,10 +462,15 @@ func (fs *Fs) remove(p string, all bool) error {
 		}
 		return os.RemoveAll(path)
 	}
-	return os.Remove(path)
+	err = os.Remove(path)
+	if err != nil && zx.IsNotEmpty(err) {
+		os.Remove(fpath.Join(path, AttrFile))
+		err = os.Remove(path)
+	}
+	return err
 }
 
-func (fs *Fs) Remove(p string) chan error {
+func (fs *Fs) Remove(p string) <-chan error {
 	c := make(chan error, 1)
 	err := fs.remove(p, false)
 	c <- err
@@ -382,7 +478,7 @@ func (fs *Fs) Remove(p string) chan error {
 	return c
 }
 
-func (fs *Fs) RemoveAll(p string) chan error {
+func (fs *Fs) RemoveAll(p string) <-chan error {
 	c := make(chan error, 1)
 	err := fs.remove(p, true)
 	c <- err
@@ -390,9 +486,18 @@ func (fs *Fs) RemoveAll(p string) chan error {
 	return c
 }
 
+func inconsistentMove(from, to string) bool {
+	if from == to {
+		return false
+	}
+	// moves from inside itself?
+	// i.e. is from a prefix of to
+	return zx.HasPrefix(to, from)
+}
+
 func (fs *Fs) move(from, to string) error {
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
+	if fs.attrs {
+		ac.sync()
 	}
 	pfrom, err := zx.UseAbsPath(from)
 	if err != nil {
@@ -411,14 +516,85 @@ func (fs *Fs) move(from, to string) error {
 	if pto == "/Ctl" || pto == "/" {
 		return fmt.Errorf("move %s: %s", pto, zx.ErrPerm)
 	}
+	if fs.zxperms {
+		if err := fs.chkPut(fpath.Dir(pfrom), false); err != nil {
+			return err
+		}
+		if err := fs.chkPut(fpath.Dir(pto), false); err != nil {
+			return err
+		}
+	}
+	if inconsistentMove(from, to) {
+		return fmt.Errorf("move %s: inconsistent move", from)
+	}
 	pathfrom := fpath.Join(fs.root, pfrom)
 	pathto := fpath.Join(fs.root, pto)
-	return os.Rename(pathfrom, pathto)
+
+	var d zx.Dir
+	if fs.attrs {
+		// we must move zx attributes to the new dir
+		d, _ = fs.stat(from, false)
+	}
+	err = os.Rename(pathfrom, pathto)
+	if err == nil && d != nil {
+		ac.set(pathto, d)
+	}
+	return err
 }
 
-func (fs *Fs) Move(from, to string) chan error {
+func (fs *Fs) Move(from, to string) <-chan error {
 	c := make(chan error, 1)
+	fs.Count(zx.Smove)
 	err := fs.move(from, to)
+	c <- err
+	close(c, err)
+	return c
+}
+
+func inconsistentLink(oldp, newp string) bool {
+	// links back to a parent?
+	// i.e. is oldp a prefix of newp
+	return zx.HasPrefix(newp, oldp)
+}
+
+func (fs *Fs) link(oldp, newp string) error {
+	if fs.attrs {
+		ac.sync()
+	}
+	oldp, err := zx.UseAbsPath(oldp)
+	if err != nil {
+		return err
+	}
+	newp, err = zx.UseAbsPath(newp)
+	if err != nil {
+		return err
+	}
+	if oldp == newp {
+		return fmt.Errorf("link %s: would link to self", oldp)
+	}
+	if oldp == "/Ctl" || oldp == "/" {
+		return fmt.Errorf("link %s: %s", oldp, zx.ErrPerm)
+	}
+	if newp == "/Ctl" || newp == "/" {
+		return fmt.Errorf("link %s: %s", newp, zx.ErrPerm)
+	}
+	if fs.zxperms {
+		if err := fs.chkPut(fpath.Dir(newp), false); err != nil {
+			return err
+		}
+	}
+	if inconsistentLink(oldp, newp) {
+		return fmt.Errorf("link %s: inconsistent link", oldp)
+	}
+	pathold := fpath.Join(fs.root, oldp)
+	pathnew := fpath.Join(fs.root, newp)
+	return os.Link(pathold, pathnew)
+}
+
+func (fs *Fs) Link(oldp, newp string) <-chan error {
+	c := make(chan error, 1)
+	fs.Count(zx.Slink)
+	err := fs.link(oldp, newp)
 	c <- err
 	close(c, err)
 	return c
@@ -435,9 +611,6 @@ func writeBytes(w io.Writer, c <-chan []byte) error {
 }
 
 func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
-	if fs.rdonly {
-		return fmt.Errorf("%s: %s", fs.Tag, zx.ErrRO)
-	}
 	p, err := zx.UseAbsPath(p)
 	if err != nil {
 		return err
@@ -445,8 +618,16 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 	if p == "/Ctl" {
 		return fs.putCtl(c)
 	}
+	mkall := false
 	path := fpath.Join(fs.root, p)
 	flg := os.O_RDWR // in case we resize it
+	if d["type"] == "F" {
+		d["type"] = "-"
+		mkall = true
+	} else if d["type"] == "D" {
+		d["type"] = "d"
+		mkall = true
+	}
 	mode := d.Mode()
 	if d["mode"] == "" {
 		if d["type"] == "d" {
@@ -455,17 +636,33 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 			mode = 0644
 		}
 	}
+	if fs.attrs {
+		d["wuid"] = u.Uid
+		if fs.ai != nil {
+			d["wuid"] = fs.ai.Uid
+		}
+	}
 	if d["type"] != "" {
-		// create or truncate dir
+		// create or recreate
+		if fs.zxperms {
+			if err := fs.chkPut(fpath.Dir(p), mkall); err != nil {
+				return err
+			}
+		} else if mkall {
+			dpath := fpath.Dir(path)
+			if _, err := os.Stat(dpath); zx.IsNotExist(err) {
+				os.MkdirAll(dpath, 0755)
+			}
+		}
 		if d["type"] == "d" {
-			if err := os.MkdirAll(path, os.FileMode(mode)); err != nil {
-				if !zx.IsExists(err) {
+			if err := os.Mkdir(path, os.FileMode(mode)); err != nil {
+				if fi, nerr := os.Stat(path); nerr != nil || !fi.IsDir() {
 					return err
 				}
 			}
 			close(c, zx.ErrIsDir)
 			if len(d) > 2 {
-				fs.wstat(p, d)
+				fs.wstat(p, d, false)
 			}
 			return nil
 		}
@@ -474,6 +671,10 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 		}
 		// create or truncate file
 		flg |= os.O_CREATE
+	} else if fs.zxperms {
+		if err := fs.chkPut(p, false); err != nil {
+			return err
+		}
 	}
 	if c == nil {
 		c = make(chan []byte)
@@ -493,7 +694,7 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 	}
 	fd, err := os.OpenFile(path, flg, os.FileMode(mode))
 	if err != nil {
-		return err
+		return fmt.Errorf("put: %s", err)
 	}
 	defer fd.Close()
 	if sz != -1 {
@@ -501,38 +702,38 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 			return err
 		}
 	}
+	delete(d, "mode")
+	delete(d, "size")
+	fs.wstat(p, d, false)
 	if off != 0 || whence != 0 {
 		if _, err := fd.Seek(off, whence); err != nil {
 			return err
 		}
 	}
 	if c != nil {
+		if _, ok := d["mtime"]; ok {
+			mt := d.Time("mtime")
+			defer os.Chtimes(path, mt, mt)
+		}
 		if err := writeBytes(fd, c); err != nil {
 			return err
 		}
 	}
-	// BUG: should also update other attributes (besides size, mode, mtime)
-	if _, ok := d["mode"]; ok {
-		mode := d.Mode()
-		os.Chmod(path, os.FileMode(mode))
-	}
-	if _, ok := d["mtime"]; ok {
-		mt := d.Time("mtime")
-		os.Chtimes(path, mt, mt)
-	}
 	return nil
 }
 
-func (fs *Fs) Put(p string, d zx.Dir, off int64, c <-chan []byte) chan zx.Dir {
+func (fs *Fs) Put(p string, d zx.Dir, off int64, c <-chan []byte) <-chan zx.Dir {
 	rc := make(chan zx.Dir)
 	go func() {
+		fs.Count(zx.Sput)
+		d = d.SysDup()
 		err := fs.put(p, d, off, c)
 		if err != nil {
 			close(c, err)
 		}
 		if err == nil {
 			var d zx.Dir
-			d, err = fs.stat(p)
+			d, err = fs.stat(p, false)
 			if err == nil {
 				rc <- d
 			}
@@ -545,7 +746,8 @@ func (fs *Fs) Put(p string, d zx.Dir, off int64, c <-chan []byte) chan zx.Dir {
 // d is a dup and can be changed.
 func (fs *Fs) findr(d zx.Dir, fp *pred.Pred, p, spref, dpref string, lvl int, c chan<- zx.Dir) error {
 	match, pruned, err := fp.EvalAt(d, lvl)
-	fs.Dprintf("findr at %v\n\t%v\n\t%v %v %v\n\n", d.LongFmt(), p, match, pruned, err)
+	// fs.Dprintf("findr at %v\n\t%v\n\t%v %v %v\n\n",
+	//	d.LongFmt(), p, match, pruned, err)
 	if pruned {
 		if !match {
 			d["proto"] = "lfs"
@@ -562,6 +764,7 @@ func (fs *Fs) findr(d zx.Dir, fp *pred.Pred, p, spref, dpref string, lvl int, c 
 	}
 	var ds []zx.Dir
 	if d["type"] == "d" {
+		// GetDir will call Get and that will checkout perms
 		ds, err = zx.GetDir(fs, p)
 		if err != nil {
 			d["err"] = err.Error()
@@ -594,7 +797,7 @@ func (fs *Fs) findr(d zx.Dir, fp *pred.Pred, p, spref, dpref string, lvl int, c 
 }
 
 func (fs *Fs) find(p, fpred, spref, dpref string, depth int, c chan<- zx.Dir) error {
-	d, err := fs.stat(p)
+	d, err := fs.stat(p, true)
 	if err != nil {
 		return err
 	}
@@ -626,29 +829,37 @@ func (fs *Fs) find(p, fpred, spref, dpref string, depth int, c chan<- zx.Dir) er
 func (fs *Fs) Find(path, fpred, spref, dpref string, depth0 int) <-chan zx.Dir {
 	c := make(chan zx.Dir)
 	go func() {
+		fs.Count(zx.Sfind)
 		err := fs.find(path, fpred, spref, dpref, depth0, c)
 		close(c, err)
 	}()
 	return c
 }
 
-func (fs *Fs) FindGet(path, fpred, spref, dpref string, depth0 int) <-chan interface{} {
-	c := make(chan interface{})
+func (fs *Fs) dpath(d zx.Dir) string {
+	old := d["addr"]
+	p := strings.LastIndexByte(old, '!')
+	if p < 0 {
+		p = 0
+	} else {
+		p++
+	}
+	return old[p:]
+}
+
+func (fs *Fs) FindGet(path, fpred, spref, dpref string, depth0 int) <-chan face{} {
+	c := make(chan face{})
 	go func() {
 		dc := fs.Find(path, fpred, spref, dpref, depth0)
 		for d := range dc {
-			if ok := c <- d; !ok {
+			if ok := c <- d.Dup(); !ok {
 				close(dc, cerror(c))
 				return
 			}
-			if d["err"] != "" || d["type"] != "-" {
+			if d["err"] != "" || d["type"] == "d" {
 				continue
 			}
-			toks := strings.Split(d["addr"], "!")
-			if len(toks) < 3 {
-				panic("zux: bad dir addr")
-			}
-			p := zx.Suffix(toks[2], fs.root)
+			p := fs.dpath(d)
 			if p == "" {
 				panic("zux: bad dir addr path")
 			}

@@ -1,10 +1,14 @@
 package zx
 
+import (
+	"clive/net/auth"
+)
+
 // A zx file system.
 // It must provide at least Stats.
 interface Fs {
 	// Return the directory entry for the file at path.
-	Stat(p string) chan Dir 
+	Stat(p string) <-chan Dir
 }
 
 const All = -1
@@ -45,7 +49,7 @@ interface FindGetter {
 	// This is like Find(), but streams through the returned channel the file
 	// data after each matching Dir.
 	// errors during Get()s are also streamed.
-	FindGet(path, pred string, spref, dpref string, depth0 int) <-chan interface{}
+	FindGet(path, pred string, spref, dpref string, depth0 int) <-chan face{}
 }
 
 // File systems able to put files
@@ -54,6 +58,7 @@ interface Putter {
 	// found in d and the data sent through dc.
 	// If d is nil or d["type"] is not defined, the file is not
 	// created if it does not exist; otherwise it is used as it is.
+	// "-" is the type for files, and "d" for directories.
 	// If d["size"] is defined, the file is truncated to that size before
 	// writing the data.
 	// If extra attributes are included in d, they are also updated.
@@ -63,23 +68,27 @@ interface Putter {
 	// through the returned channel.
 	// If d["type"] is "d", then dc is ignored and a directory is created
 	// (unless it already exists, in which case it's ok)
-	Put(path string, d Dir, off int64, dc <-chan []byte) chan Dir
+	// If d["type"] is "F", it means "-" but parent directories are
+	// created if they do not exist.
+	// If d["type"] is "D", it means "d" but parent directories are created
+	// if they do not exist.
+	Put(path string, d Dir, off int64, dc <-chan []byte) <-chan Dir
 }
 
 // File systems able to wstat files
 interface Wstater {
 	// Update attributes for the file at path with those from d
 	// and return the resulting directory entry
-	Wstat(path string, d Dir) chan Dir
+	Wstat(path string, d Dir) <-chan Dir
 }
 
 // File systems able to remove files
 // Removing "/" always fails
 interface Remover {
 	// Delete the file or empty directory found at path.
-	Remove(path string) chan error
+	Remove(path string) <-chan error
 	// Delete the file or directory found at path.
-	RemoveAll(path string) chan error
+	RemoveAll(path string) <-chan error
 }
 
 // File systems able to move files
@@ -87,7 +96,44 @@ interface Mover {
 	// Move file src to be at dst
 	// If from is to, the op is a nop.
 	// Otherwise, it is an error to mv to or from / and /Ctl.
-	Move(from, to string) chan error
+	Move(from, to string) <-chan error
+}
+
+// File systems able to link files
+interface Linker {
+	// Link new to refer to old
+	Link(oldp, newp string) <-chan error
+}
+
+// File systems that can authenticate a user
+interface Auther {
+	// returns a new view of the Fs authenticated for ai
+	Auth(ai *auth.Info) (Fs, error)
+}
+
+// File systems that need/have sync()
+interface Syncer {
+	Sync() error
+}
+
+// Typical file systems with usual read/write ops,
+interface RWFs {
+	Getter
+	Putter
+	Wstater
+	Remover
+}
+
+// Full file systems including find and link
+interface FullFs {
+	Getter
+	Putter
+	Wstater
+	Remover
+	Mover
+	Linker
+	Finder
+	FindGetter
 }
 
 // Do a Stat on fs and return the reply now
@@ -107,13 +153,28 @@ func GetAll(fs Getter, p string) ([]byte, error) {
 	return data, cerror(gc)
 }
 
+// Put all contents for a file, creating it.
+func PutAll(fs Putter, path string, data []byte, mode ...string) error {
+	m := "0644"
+	if len(mode) > 0 {
+		m = mode[0]
+	}
+	c := make(chan []byte, 1)
+	c <- data
+	close(c)
+	d := Dir{"type": "-", "mode": m}
+	gc := fs.Put(path, d, 0, c)
+	<-gc
+	return cerror(gc)
+}
+
 // Get all dir entries
 func GetDir(fs Getter, p string) ([]Dir, error) {
 	ds := make([]Dir, 0, 16)
 	var c <-chan []byte
 	c = fs.Get(p, 0, All)
 	for b := range c {
-		d, _, err := UnpackDir(b)
+		_, d, err := UnpackDir(b)
 		if err != nil {
 			return nil, err
 		}

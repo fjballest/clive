@@ -1,9 +1,32 @@
+<<<<<<< HEAD
 git status | sed 's/modified:/git add/' | sed 's/deleted:/git rm -f/' 
 git checkout master
 git checkout -b 2e
 git add files
 git commit -m 'doselect break and continue'
 git push origin 2e
+=======
+9 diff -nr ch ../clive.new/ch
+
+
+To see where you are
+	git branch
+	git status 
+	git status | sed 's/modified:/git add/' | sed 's/deleted:/git rm -f/'
+To see branches and tags at git.lsub.org
+	git branch -r
+To make sure you are up to date
+	git pull -v
+	git checkout 2e
+	git pull -v origin 2e
+	git checkout 2e
+If you have a change that's going to take a long time you might want
+to work in a new branch (eg, doselect)
+	git checkout -b doselect
+	git add files
+	git commit -m 'doselect break and continue'
+	git push origin doselect
+>>>>>>> 0a966aee10e7c9ab90e82386d10525b4a20f14b5
 
 Go install -v ./...
 go test -v -short ./...

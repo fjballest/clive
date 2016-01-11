@@ -1,0 +1,215 @@
+# this is a comment
+#
+# The prompt is %
+# %'s at the start of line are discarded
+
+# quoting
+echo	' quoted ` 
+quoted '
+echo	`quoted ' 
+quoted `
+
+# a syntax error is recovered only at top-level at the next new line
+# if it's a script, no further commands are executed
+# scripts are fully read before running any command (so they can be written)
+# if it's interactive, it continues reading commands
+{
+
+]	# syntax error
+
+# stdin for commands is from dev null by default
+cmd arg ...
+
+# This pipes stdin to the cmd
+| cmd arg ...
+
+# cmds in a single line
+cmd1 ; cmd2
+
+# set vars (which are lists)
+x = a b c
+x = (a b c)
+
+# use vars
+echo $x $x[1] $#x
+
+# append
+echo (a b c)^$x
+
+# join names
+echo $^x
+
+# define a map
+z = ([a b] [c] [d e f])
+# use a map
+echo $z[a]
+z[a] = (a b c)
+
+# predefined
+echo $argv0 $args $#args $sts
+
+# pipes
+a | b | c
+| a | b |c
+# set in to a's out and err, and c's in to b's err
+a |[in:out,err;xx:yy] b |[err] c
+
+# redirs (may name chans)
+a < b
+a > b
+a >> b
+a <[in2] b
+a >[out, err] b
+a >>b
+a >>[out, err] b
+
+# source a file
+< name
+
+# blocks
+{ a ; b }
+{
+	a
+	b
+} 
+
+# x is sent twice, to a and b.
+# a and b outs are joined and sent to y
+{ a ; b } <x >y
+
+# piped blocks:
+# a tee that dups a's out and sends to both b a c
+# b and c outs are joined and sent to d
+a | { b ; c } | d
+
+# bg
+a &
+a &x
+wait x
+wait
+
+# loop
+# sets x to each msg in input for each iteration
+cmd | words  | for x { ... }
+cmd | lines  | for x { ... }
+# conventional loop (sets x to a b c)
+for x a b c { ... }
+for x a b c { ... } <x
+
+
+# while
+while a b c { ... }
+while a b c { ... } >y
+
+# functions
+func x { ... }
+
+# conditional
+# Runs commands within each or branch
+# and stops as soon as the last command in a branch runs
+# Each or branch runs commands in order until one
+# fails or the last is run.
+# if no branch runs the last command, the sts is "false"
+cond {
+	cmd1.1
+	...
+	cmd1.n
+} or {
+	cmd2.1
+	...
+	cmd2.n
+} or {
+	cmdn.1
+	...
+	cmdn.n
+}
+
+# builtins
+cd
+exit
+exit sts
+sleep 5
+flag
+flag +x -yz
+type sleep
+
+# interpolation, each msg is taken as a word
+echo <{a b c}
+echo <{a b c|lines}
+echo <{a b c|words}
+echo <{a b c|full}
+
+# here-pipes (replaced by names for chans)
+diff <[in]{lf /a,} <[in2:out,err]{lf /b,}
+split a >[out]{cmd1} >[out2]{cmd2}
+
+
+#### more examples, for testing, mostly. #### 
+
+
+# this is a comment
+#
+a b c ; x y c
+# a b c ( d e f)	-> syntax error
+a ^ (d e f)
+d e g^(a b)
+$a^(d $e $#g)
+$a[$e]
+# map
+([a b] [c d w] [x])
+# ([a b] [c d w] [x]) ^ c is a syntax error
+
+a b c < a >[d] b
+a &x
+a | b<2 |[x] c &z
+
+{a ; b } <x &
+{
+	a
+	b
+}
+
+# %'s are discarded
+ %% % no prompts
+
+{ { a } 
+b ;c }
+
+for x y c {
+	a ; b
+}
+while a b c {
+	d e f
+}
+func x {
+	d e f
+}
+
+cond {
+	a b c
+	d e
+} or {
+	a d c
+	x y
+} < a &x
+
+# this is an input pipe name
+diff <[x]{b ; c}
+
+# an output pipe name
+diff >[a]{x} >[b]{y}
+
+# this is substitution
+echo <{b ; c}
+
+| a
+
+a[$x] = 5
+x = (a b c)^c
+
+$^a[3]
+
+< name
+
+{  true }
+

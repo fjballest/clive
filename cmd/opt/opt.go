@@ -3,7 +3,7 @@
 	argv[] array.
 
 	The functions that define new flags operate in the same way:
-	They define a new flag and, if a pointer is given, the value pointed
+	They define a new flag and, if a pointer is given, the value pointed to
 	is set when the flag is present in the command line.
 	They call Fatal if a flag is defined twice.
 
@@ -13,10 +13,9 @@ package opt
 
 import (
 	"bytes"
-	"clive/dbg"
+	"clive/cmd"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"sort"
 	"strconv"
@@ -37,6 +36,7 @@ type Flags struct {
 	usage       string // usage string w/o program name
 	defs        map[string]*def
 	plus, minus *def // defs for +int -int
+	xtra string	// extra usage info
 }
 
 // Use Counter as the value for counting flags, which are bool flags
@@ -48,6 +48,16 @@ type Octal int
 
 // Use Hexa as the value for an int flag expressed in hexa.
 type Hexa int
+
+// A range: items are counted starting from 1
+// and neg. values are used to count backwards from the end:
+// 1,1 means everything.
+type Range struct {
+	P0, P1 int
+}
+
+// Preferred default time format for commands.
+const TimeFormat = "2006/0102 15:04"
 
 // time formats for option arguments
 var tfmts = []string{
@@ -84,6 +94,10 @@ func New(usage string) *Flags {
 		defs:  map[string]*def{},
 		usage: usage,
 	}
+}
+
+func (f *Flags) AddUsage(xtra string) {
+	f.xtra += xtra
 }
 
 func (f *Flags) optUsage(order []string) string {
@@ -128,6 +142,7 @@ func (f *Flags) optUsage(order []string) string {
 				continue
 			}
 		}
+		arg := "arg"
 		switch k.valp.(type) {
 		case *bool:
 			fmt.Fprintf(&buf, " [-%s]", k.name)
@@ -135,8 +150,9 @@ func (f *Flags) optUsage(order []string) string {
 		case *Counter:
 			fmt.Fprintf(&buf, " {-%s}", k.name)
 			continue
+		case *Range:
+			arg = "range"
 		}
-		arg := "arg"
 		if i := strings.Index(k.help, ":"); i >= 0 {
 			arg = k.help[:i]
 		}
@@ -150,8 +166,8 @@ func (f *Flags) optUsage(order []string) string {
 	return buf.String()
 }
 
-// Print to stderr a description of the usage.
-func (f *Flags) Usage(w io.Writer) {
+// Print to stderr a description of the usage and exit.
+func (f *Flags) Usage() {
 	if f.Argv0 == "" {
 		f.Argv0 = os.Args[0]
 	}
@@ -161,20 +177,20 @@ func (f *Flags) Usage(w io.Writer) {
 	}
 	sort.Sort(sort.StringSlice(ks))
 	opts := f.optUsage(ks)
-	fmt.Fprintf(w, "usage: %s %s %s\n", f.Argv0, opts, f.usage)
+	cmd.Eprintf("usage: %s %s %s\n", f.Argv0, opts, f.usage)
 	if f.plus != nil {
 		sep := ""
 		if !strings.Contains(f.plus.help, ":") {
 			sep = ":"
 		}
-		fmt.Fprintf(w, "\t+%s%s %s\n", f.plus.name, sep, f.plus.help)
+		cmd.Eprintf("\t+%s%s %s\n", f.plus.name, sep, f.plus.help)
 	}
 	if f.minus != nil {
 		sep := ""
 		if !strings.Contains(f.minus.help, ":") {
 			sep = ":"
 		}
-		fmt.Fprintf(w, "\t-%s %s\n", f.minus.name, sep, f.minus.help)
+		cmd.Eprintf("\t-%s %s\n", f.minus.name, sep, f.minus.help)
 	}
 	for _, k := range ks {
 		def := f.defs[k]
@@ -184,12 +200,16 @@ func (f *Flags) Usage(w io.Writer) {
 		}
 		switch def.valp.(type) {
 		case *Counter:
-			fmt.Fprintf(w, "\t-%s%s %s\n", def.name, sep, def.help)
-			fmt.Fprintf(w, "\t\tcan be repeated\n")
+			cmd.Eprintf("\t-%s%s %s\n", def.name, sep, def.help)
+			cmd.Eprintf("\t\tcan be repeated\n")
 		default:
-			fmt.Fprintf(w, "\t-%s%s %s\n", def.name, sep, def.help)
+			cmd.Eprintf("\t-%s%s %s\n", def.name, sep, def.help)
 		}
 	}
+	if f.xtra != "" {
+		cmd.Eprintf("%s", f.xtra)
+	}
+	cmd.Exit("usage")
 }
 
 // Define a new flag with the given name and usage.
@@ -221,13 +241,13 @@ func (f *Flags) Usage(w io.Writer) {
 // a good usage diagnostic.
 func (f *Flags) NewFlag(name, help string, vp interface{}) {
 	if vp == nil {
-		dbg.Fatal("flag %s: nil value", name)
+		cmd.Fatal("flag %s: nil value", name)
 	}
 	if len(name) == 0 {
-		dbg.Fatal("empty flag name")
+		cmd.Fatal("empty flag name")
 	}
 	if f.defs[name] != nil {
-		dbg.Fatal("flag %s redefined", name)
+		cmd.Fatal("flag %s redefined", name)
 	}
 	aname := ""
 	if i := strings.Index(help, ":"); i > 0 {
@@ -242,14 +262,14 @@ func (f *Flags) NewFlag(name, help string, vp interface{}) {
 		}
 		if name[0] == '+' {
 			if f.plus != nil {
-				dbg.Fatal("flag +number redefined")
+				cmd.Fatal("flag +number redefined")
 			}
 			f.plus = &def{name: name, help: help, valp: vp, argname: aname}
 			return
 		}
 		if name[0] == '-' {
 			if f.minus != nil {
-				dbg.Fatal("flag -number redefined")
+				cmd.Fatal("flag -number redefined")
 			}
 			f.minus = &def{name: name, help: help, valp: vp, argname: aname}
 			return
@@ -271,11 +291,15 @@ func (f *Flags) NewFlag(name, help string, vp interface{}) {
 		if aname == "" {
 			aname = "time"
 		}
+	case *Range:
+		if aname == "" {
+			aname = "range"
+		}
 	default:
-		dbg.Fatal("flag %s: unknown flag type", name)
+		cmd.Fatal("flag %s: unknown flag type", name)
 	}
 	if name[0] == '+' || name[0] == '-' {
-		dbg.Fatal("name '±...' is only for *int")
+		cmd.Fatal("name '±...' is only for *int")
 	}
 	f.defs[name] = &def{name: name, help: help, valp: vp, argname: aname}
 }
@@ -284,10 +308,12 @@ func (f *Flags) NewFlag(name, help string, vp interface{}) {
 // The first entry in argv is the program name.
 // A "--" argument terminates the options.
 // A "-?" argument fails with a "usage" error
-func (f *Flags) Parse(argv []string) ([]string, error) {
+// If argv is nil, it is taken from the current cmd context.
+func (f *Flags) Parse(argv ...string) ([]string, error) {
 	var err error
 	if len(argv) == 0 {
-		return nil, errors.New("short argv")
+		c := cmd.AppCtx()
+		argv = c.Args
 	}
 	f.Argv0 = argv[0]
 	argv = argv[1:]
@@ -517,6 +543,16 @@ func (d *def) parse(argv []string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("option '%s': %s", d.name)
 		}
+	case *Range:
+		nargv, arg, err := optArg(argv)
+		if err != nil {
+			return nil, fmt.Errorf("option '%s': %s", d.name, err)
+		}
+		argv = nargv
+		*vp, err = ParseRange(arg)
+		if err != nil {
+			return nil, fmt.Errorf("option '%s': %s", d.name)
+		}
 	default:
 		return nil, fmt.Errorf("unknown option type '%s'", d.name)
 	}
@@ -532,4 +568,66 @@ func ParseTime(arg string) (time.Time, error) {
 		}
 	}
 	return t, fmt.Errorf("wrong time format '%s'", arg)
+}
+
+// Parse a range: "n," means "n,-1" (-1 indicates "last thing counting from the end backwards");
+// in "a,b", a defaults to 1 and b defaults to -1 (-1 means all).
+func ParseRange(arg string) (Range, error) {
+	toks := strings.SplitN(arg, ",", 2)
+	if len(toks) == 1 {
+		toks = append(toks, toks[0])
+	}
+	if len(toks[0]) == 0 {
+		toks[0] = "1"
+	}
+	if len(toks[1]) == 0 {
+		toks[1] = "-1"
+	}
+	p0, err := strconv.Atoi(toks[0])
+	if err != nil {
+		return Range{}, fmt.Errorf("range p0: %s", err)
+	}
+	p1, err := strconv.Atoi(toks[1])
+	if err != nil {
+		return Range{}, fmt.Errorf("range p1: %s", err)
+	}
+	return Range{p0, p1}, nil
+}
+
+func (r Range) String() string {
+	if r.P0 == r.P1 {
+		return strconv.Itoa(r.P0)
+	}
+	p0 := ""
+	if r.P0 != 1 {
+		p0 = strconv.Itoa(r.P0)
+	}
+	p1 := ""
+	if r.P1 != -1 {
+		p1 = strconv.Itoa(r.P1)
+	}
+	return p0 + "," + p1
+}
+
+// True when the range matches the i-th item out of n items
+// (n may be 0 if we don't know the number of items).
+// Provided here so the range semantics are preserved in commands.
+func (a Range) Matches(i, n int) bool {
+	if n == 0 && (a.P0 < 0 || a.P1 < 0) { // need to wait for nlines
+		return false
+	}
+	if a.P0 > 0 && i < a.P0 {
+		return false
+	}
+	if a.P1 > 0 && i > a.P1 {
+		return false
+	}
+	negi := n - i + 1
+	if a.P0 < 0 && negi > -a.P0 {
+		return false
+	}
+	if a.P1 < 0 && negi < -a.P1 {
+		return false
+	}
+	return true
 }
