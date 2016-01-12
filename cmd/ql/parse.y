@@ -1,4 +1,5 @@
 /* 
+	Go tool yacc parse.y ; Go install
 	Lgo tool yacc parse.y ; Lgo install
 	other toks: = { } ; [ ] ^ = $ ( )
 */
@@ -189,6 +190,10 @@ blkcmds
 
 optredirs
 	: redirs
+	{
+		$$ = $1
+		$$.parseRedirs()
+	}
 	|
 	{
 		$$ = newList(Nredirs)

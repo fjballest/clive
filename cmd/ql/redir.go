@@ -4,85 +4,63 @@ import (
 	"strings"
 )
 
-// A redir is a series of name: name,...,name that indicates that
-// the left name corresponds to the names on the right
-// A single name,...,name list means in: ... or out .... depending
-// on the I/O nature of the redir
-func (nd *Nd) parseRedir() map[string][]string {
+func fields(s, sep string) []string {
+	toks := strings.Split(s, sep)
+	for i := 0; i < len(toks); i++ {
+		toks[i] = strings.TrimSpace(toks[i])
+	}
+	return toks
+}
+
+// Args[0] is "<", ">", ">>"
+// tag is Args[1] and can be "" or "in", "out", "in,out,foo,..."
+func (nd *Nd) setRedir(set map[string]*Nd) {
 	nd.chk(Nredir)
 	if len(nd.Args) != 2 {
 		panic("parseRedir: bad redir Args")
 	}
-	tag := strings.TrimSpace(nd.Args[1])
-	if len(tag) == 0 {
-		return nil
+	what, tag := nd.Args[0], nd.Args[1]
+	bad := ":"
+	if what == "<" {
+		bad = ":,"
 	}
-	rdrs := strings.Split(tag, ":")
-	for i := 0; i < len(rdrs); i++ {
-		rdrs[i] = strings.TrimSpace(rdrs[i])
-		if rdrs[i] == "" {
-			yylex.Errs("empty redirection '%s'", tag)
-			panic(parseErr)
-		}
-	}
-	redir := map[string][]string {}
-	if len(tag) == 1 {
-		redir[tag] = strings.Fields(rdrs[0])
-		return redir
-	}
-	if len(rdrs)%2 != 0 {
-		yylex.Errs("bad redirection '%s'", tag)
+	if strings.ContainsAny(tag, bad) {
+		yylex.Errs("bad %s redirection '%s'", what, tag)
 		panic(parseErr)
 	}
-	for i := 0; i < len(rdrs); i += 2 {
-		k := rdrs[i]
-		if redir != nil {
-			yylex.Errs("double redirection for '%s'", k)
+	rdrs := fields(tag, ",")
+	for _, r := range fields(tag, ",") {
+		if set[r] != nil {
+			yylex.Errs("double redirection for '%s'", r)
 			panic(parseErr)
 		}
-		dsts := strings.Split(rdrs[i+1], ",")
-		for _, dst := range dsts {
-			dst = strings.TrimSpace(dst)
-			if dst == "" {
-				yylex.Errs("empty redirection '%s'", tag)
-				panic(parseErr)
-			}
-			redir[k] = append(redir[k], dst)
-		}
+		set[r] = nd
 	}
-	return redir
 }
 
 func (nd *Nd) parseRedirs() {
-return
 	nd.chk(Nredirs)
 	nd.Redirs = map[string]*Nd{}
 	for _, c := range nd.Child {
-		c.chk(Nredir)
-		for r := range c.Redir {
-			if nd.Redirs[r] != nil {
-				yylex.Errs("double redirection '%s'", r)
-				panic(parseErr)
-			}
-			nd.Redirs[r] = c
-		}
+		c.setRedir(nd.Redirs)
 	}
 }
 
-func (nd *Nd) addRedir(what, tag string, name *Nd) {
+// Add the pipe redir implied by tag to the child of a pipe
+func (nd *Nd) addPipeRedir(tag string) {
 	nc := len(nd.Child)
 	if nc == 0 {
-		panic("addRedir: no redirs\n")
+		panic("addPipeRedir: no redirs nd\n")
 	}
-	rc := nd.Child[nc-1]
-	rc.chk(Nredirs)
-	r := newRedir(what, tag, name)
-	rc.Child = append(rc.Child, r)
+	rnd := nd.Child[nc-1]
+	rnd.chk(Nredirs)
+	if len(rdrs) == 1 {
+		rdrs = 
+	}
 }
 
 // Called to add the redirs implied by a pipe
 func (nd *Nd) addPipeRedirs(stdin bool) {
-
 	nd.chk(Npipe)
 	nc := len(nd.Child)
 	if nc == 0 {
@@ -101,13 +79,19 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 	}
 	tags := nd.Args[1:]	// 1st arg is the bg tag
 	for i, tag := range tags {
-		// XXX: parse the pipe redir tag
-		_ = tag
-		nd.Child[i].addRedir(">", "out", newNd(Nname, "|"))
-		nd.Child[i+1].addRedir("<", "in", newNd(Nname, "|"))
+		rdrs := fields(tag, ":")
+		if len(rdrs) == 1 {
+			rdrs = append([]string{"in", rdrs)
+		}
+		if len(rdrs)%2
+		nd.Child[i].addPipeRedir(">", tag)
+		nd.Child[i+1].addPipeRedir("<", tag)
 	}
 }
 
+// what is "<", ">", ">>"
+// tag can be "" or "in", "out", "in,out,foo,..."
+// nd is the target of the redir
 func newRedir(what, tag string, name *Nd) *Nd {
 	tag = strings.TrimSpace(tag)
 	if tag == "" {
@@ -115,20 +99,6 @@ func newRedir(what, tag string, name *Nd) *Nd {
 			tag = "in"
 		} else {
 			tag = "out"
-		}
-	}
-	if what == ">" || what == ">>" {
-		if strings.Contains(tag, ":") {
-			yylex.Errs("invalid redirection for >, >> '%s'", tag)
-			panic(parseErr)
-		}
-		// XXX: the tag here may be a,b,c to redirect more than one chan to
-		// the given file
-	}
-	if what == "<" {
-		if strings.ContainsAny(tag, ":,") {
-			yylex.Errs("invalid redirection for < '%s'", tag)
-			panic(parseErr)
 		}
 	}
 	nd := newNd(Nredir, what, tag).Add(name)
