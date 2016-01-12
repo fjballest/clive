@@ -79,7 +79,7 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 				panic(parseErr)
 			}
 			for n := 0; n < len(rdrs); n += 2 {
-				name := newNd(Nname, fmt.Sprintf("|%d", i))
+				name := newNd(Nname, fmt.Sprintf("|@%d", i))
 				r := newRedir("|<", rdrs[n], name)
 				r.addRedirTo(nd.Child[i+1].Redirs)
 				r = newRedir("|>", rdrs[n+1], name)
