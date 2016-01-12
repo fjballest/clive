@@ -1,15 +1,7 @@
-<<<<<<< HEAD
-git status | sed 's/modified:/git add/' | sed 's/deleted:/git rm -f/' 
-git checkout master
-git checkout -b 2e
-git add files
-git commit -m 'doselect break and continue'
-git push origin 2e
-=======
 9 diff -nr ch ../clive.new/ch
 
 
-To see where you are
+To see where you are 
 	git branch
 	git status 
 	git status | sed 's/modified:/git add/' | sed 's/deleted:/git rm -f/'
@@ -26,12 +18,11 @@ to work in a new branch (eg, doselect)
 	git add files
 	git commit -m 'doselect break and continue'
 	git push origin doselect
->>>>>>> 0a966aee10e7c9ab90e82386d10525b4a20f14b5
 
 Go install -v ./...
-go test -v -short ./...
-go test -v -short -bench . ./... |[2=1] grep '^Bench'
-go install -v ./...
+go test -short ./...
+go test -short -bench . ./... |[2=1] grep '^Bench'
+go install ./...
 go fmt ./... ; 
 go clean ./...
 git status
