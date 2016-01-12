@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+	"fmt"
 )
 
 func fields(s, sep string) []string {
@@ -13,49 +14,36 @@ func fields(s, sep string) []string {
 }
 
 // Args[0] is "<", ">", ">>"
-// tag is Args[1] and can be "" or "in", "out", "in,out,foo,..."
-func (nd *Nd) setRedir(set map[string]*Nd) {
+// tag is Args[1] and can what's within [] in:
+// >[out,err]
+// <[in]
+// |[in:out,err;in2:out2]
+func (nd *Nd) addRedirTo(set map[string]*Nd) {
 	nd.chk(Nredir)
 	if len(nd.Args) != 2 {
-		panic("parseRedir: bad redir Args")
+		panic("addRedirTo: bad redir Args")
+	}
+	if len(nd.Child) != 1 {
+		panic("addRedirTo: bad redir children")
 	}
 	what, tag := nd.Args[0], nd.Args[1]
-	bad := ":"
-	if what == "<" {
-		bad = ":,"
+	bad := ":;,$"
+	switch what {
+	case ">", ">>" :
+		bad = ":;$"
+	case  "|<", "|>":
+		bad = "$"
 	}
 	if strings.ContainsAny(tag, bad) {
-		yylex.Errs("bad %s redirection '%s'", what, tag)
+		yylex.Errs("bad %s redirection syntax '%s'", what, tag)
 		panic(parseErr)
 	}
-	rdrs := fields(tag, ",")
 	for _, r := range fields(tag, ",") {
 		if set[r] != nil {
-			yylex.Errs("double redirection for '%s'", r)
+			yylex.Errs("double redirection for '%s' in '%s' ", r, tag)
 			panic(parseErr)
 		}
-		set[r] = nd
-	}
-}
-
-func (nd *Nd) parseRedirs() {
-	nd.chk(Nredirs)
-	nd.Redirs = map[string]*Nd{}
-	for _, c := range nd.Child {
-		c.setRedir(nd.Redirs)
-	}
-}
-
-// Add the pipe redir implied by tag to the child of a pipe
-func (nd *Nd) addPipeRedir(tag string) {
-	nc := len(nd.Child)
-	if nc == 0 {
-		panic("addPipeRedir: no redirs nd\n")
-	}
-	rnd := nd.Child[nc-1]
-	rnd.chk(Nredirs)
-	if len(rdrs) == 1 {
-		rdrs = 
+		set[r] = nd.Child[0]
 	}
 }
 
@@ -71,7 +59,8 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 	}
 	c0 := nd.Child[0]
 	if stdin {
-		c0.addRedir("<", "in", newNd(Nname, "<"))
+		r := newRedir("<", "in", newNd(Nname, "<"))
+		r.addRedirTo(c0.Redirs)
 	}
 	if nc == 1 {
 		// single command, not really a pipe
@@ -79,13 +68,24 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 	}
 	tags := nd.Args[1:]	// 1st arg is the bg tag
 	for i, tag := range tags {
-		rdrs := fields(tag, ":")
-		if len(rdrs) == 1 {
-			rdrs = append([]string{"in", rdrs)
+		tags := fields(tag, ";")
+		for _, tag := range tags {
+			rdrs := fields(tag, ":")
+			if len(rdrs) == 1 {
+				rdrs = append([]string{"in"}, rdrs[0])
+			}
+			if len(rdrs)%2 != 0 {
+				yylex.Errs("syntax error in redir '%s'", tag)
+				panic(parseErr)
+			}
+			for n := 0; n < len(rdrs); n += 2 {
+				name := newNd(Nname, fmt.Sprintf("|%d", i))
+				r := newRedir("|<", rdrs[n], name)
+				r.addRedirTo(nd.Child[i+1].Redirs)
+				r = newRedir("|>", rdrs[n+1], name)
+				r.addRedirTo(nd.Child[i].Redirs)
+			}
 		}
-		if len(rdrs)%2
-		nd.Child[i].addPipeRedir(">", tag)
-		nd.Child[i+1].addPipeRedir("<", tag)
 	}
 }
 
@@ -95,7 +95,7 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 func newRedir(what, tag string, name *Nd) *Nd {
 	tag = strings.TrimSpace(tag)
 	if tag == "" {
-		if what == "<" {
+		if what == "<" || what == "|<" {
 			tag = "in"
 		} else {
 			tag = "out"

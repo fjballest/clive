@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sort"
 )
 
 // We could have used a series of 
@@ -35,7 +36,8 @@ type NdType int
 // Nnames{name|app|len|single|val|ioblk| ....}	a b c
 // Nredir["<|>|>>" NAME]{name}		<[a,x] b
 // Nredir["<"]				| a ...
-// Nredirs{redir...}
+//				Nredir nodes are added to the redirs map
+//				during parsing and deleted.
 //
 // Ncmd{names, redirs}		a b c <d >e ...
 // Npipe[bg,pipe0,pipe1...]{cmd|set|cond|while|for|block,...}
@@ -58,7 +60,6 @@ const (
 	Nnames
 	Nsetmap
 	Nredir
-	Nredirs
 	Ncmd
 	Npipe
 	Nblock
@@ -81,7 +82,7 @@ struct Nd {
 	Args  []string
 	Child []*Nd
 	NdAddr
-	Redirs map[string]*Nd	// Nredirs
+	Redirs map[string]*Nd
 }
 
 func newNd(typ NdType, args ...string) *Nd {
@@ -106,23 +107,6 @@ func (nd *Nd) Add(child ...*Nd) *Nd {
 	return nd
 }
 
-// Redirs are the last child at Ncmd, Nblock, Nfor, Nwhile, Ncond,
-// empty Redirs are the the last child of Nioblk, for/while child Nblocks
-func (nd *Nd) chkRedirs() {
-	nd.chk(Ncmd, Nblock, Nfor, Nwhile, Ncond, Nioblk)
-	nc := len(nd.Child)
-	if nc == 0 {
-		panic("chkredirs: no children")
-	}
-	rdr := nd.Child[nc-1]
-	if rdr.typ != Nredirs {
-		panic("chkredirs: not a redirs node")
-	}
-	if len(rdr.Child) == 0 {
-		return
-	}
-}
-
 func (t NdType) String() string {
 	switch t {
 	case Nnone:
@@ -145,8 +129,6 @@ func (t NdType) String() string {
 		return "setmap"
 	case Nredir:
 		return "redir"
-	case Nredirs:
-		return "redirs"
 	case Ncmd:
 		return "cmd"
 	case Npipe:
@@ -197,13 +179,22 @@ func (n *Nd) writeTo(w io.Writer, lvl int) {
 		}
 		fmt.Fprintf(w, ")")
 	}
-	if len(n.Child) == 0 {
+	if len(n.Child) == 0 && len(n.Redirs) == 0 {
 		fmt.Fprintf(w, "\n")
 		return
 	}
 	fmt.Fprintf(w, " {\n")
 	for _, c := range n.Child {
 		c.writeTo(w, lvl+1)
+	}
+	nms := []string{}
+	for k := range n.Redirs {
+		nms = append(nms, k)
+	}
+	sort.Sort(sort.StringSlice(nms))
+	for _, k := range nms {
+		fmt.Fprintf(w, "%s%s:\n", pref+"  ", k)
+		n.Redirs[k].writeTo(w, lvl+1)
 	}
 
 	fmt.Fprintf(w, "%s}\n", pref)

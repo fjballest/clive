@@ -49,7 +49,7 @@ z[a] = (a b c)
 echo $argv0 $args $#args $sts
 
 # pipes
-a | b | c
+firstcmd | b | c
 | a | b |c
 # set in to a's out and err, and c's in to b's err
 a |[in:out,err;xx:yy] b |[err] c
@@ -161,7 +161,7 @@ $a[$e]
 
 a b c < a >[d] b
 a &x
-a | b<2 |[x] c &z
+a<2 | b |[x] c &z
 
 {a ; b } <x &
 {
