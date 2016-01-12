@@ -89,8 +89,7 @@ pipe
 	{
 		$$ = $2
 		$$.Args = append([]string{""}, $$.Args...)
-		$2.addInRedir($1)
-		$2.addPipeRedirs()
+		$$.addPipeRedirs($1)
 	}
 	;
 

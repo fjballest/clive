@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"clive/cmd"
 )
 
 // We could have used a series of 
@@ -82,7 +81,7 @@ struct Nd {
 	Args  []string
 	Child []*Nd
 	NdAddr
-	Redirs map[string][]string
+	Redirs map[string]*Nd	// Nredirs
 }
 
 func newNd(typ NdType, args ...string) *Nd {
@@ -105,66 +104,6 @@ func newList(typ NdType, child ...*Nd) *Nd {
 func (nd *Nd) Add(child ...*Nd) *Nd {
 	nd.Child = append(nd.Child, child...)
 	return nd
-}
-
-// Called to add a redir to stdin in | ... pipes
-func (nd *Nd) addInRedir(stdin bool) {
-	nd.chk(Npipe)
-	if len(nd.Child) == 0 {
-		cmd.Dprintf("addinrdr: no command 0\n")
-		panic(parseErr)	// recovered at top-level
-	}
-	c := nd.Child[0]
-	if len(c.Child) == 0 {
-		cmd.Dprintf("addinrdr: child without children\n")
-		panic(parseErr)	// recovered at top-level
-	}
-	rdr := c.Child[len(c.Child)-1]
-	if rdr.typ != Nredirs {
-		cmd.Dprintf("addinrdr: child without redirs\n")
-		panic(parseErr)	// recovered at top-level
-	}
-	var in *Nd
-	if stdin {
-		in = newRedir("<", "in", nil)
-	} else {
-		in = newRedir("<", "in", newNd(Nname, "/dev/null"))
-	}
-	rdr.Child = append(rdr.Child, in)
-}
-
-// Called to add the redirs implied by a pipe
-func (nd *Nd) addPipeRedirs() {
-	nd.chk(Npipe)
-	nc := len(nd.Child)-1	// last is a Nredirs
-	if len(nd.Args) != nc + 1 {
-		panic("addPipeRedirs: bad pipe Args")
-	}
-	if nc == 1 {
-		// single command, not really a pipe
-		return
-	}
-/*	rdrs := nd.Args[1:]	// 0 is the bg name
-	for i, rdr := range rdrs {
-		r := parseRedir(rdr, false)
-		XXX: Now take the map and apply the
-		keys are the inputs for nd.Child[i+1]
-		and the values as the outputs for nd.Child[i]
-		We should save the map to run the pipe later on.
-
-		Also, think when to parse the Nredir's, perhaps
-		when they are created, chk can 
-
-		The map can be saved a NRedir for each redir
-		when parsed and Nredirs may have a map created
-		by chkRedirs that is the union of the redirs and
-		checks that there are no dups
-
-		Once redirs are checked and parsed, we'll just
-		look at the map and never at the nodes.
-		_ = r
-		_ = i
-	}*/
 }
 
 // Redirs are the last child at Ncmd, Nblock, Nfor, Nwhile, Ncond,
