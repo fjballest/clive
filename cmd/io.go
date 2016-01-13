@@ -204,5 +204,10 @@ func mkIO() *ioSet {
 	nc = io.add("err", nil)
 	nc = io.add("null", nil)
 	_ = nc
+	// XXX: TODO: must define chans for ql unix fds
+	// look for env varrs io#name=nb
+	// and then use the open fd #nb to get/send msgs.
+	// But that requires our io to know which chans are for input
+	// and which ones are for output.
 	return io
 }

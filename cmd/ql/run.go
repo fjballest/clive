@@ -660,6 +660,7 @@ func (nd *Nd) runCmd(x *xEnv) error {
 		case "err":
 			xc.Stderr = cfd.fd
 		default:
+			// XXX: TODO: set vars for In or out, not just for io
 			no := 3+len(xc.ExtraFiles)
 			ev := fmt.Sprintf("io#%s=%d", cname, no)
 			xc.Env = append(xc.Env, ev)
