@@ -43,7 +43,7 @@ func (nd *Nd) addRedirTo(set map[string]*Nd) {
 			yylex.Errs("double redirection for '%s' in '%s' ", r, tag)
 			panic(parseErr)
 		}
-		set[r] = nd.Child[0]
+		set[r] = nd
 	}
 }
 
@@ -79,10 +79,10 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 				panic(parseErr)
 			}
 			for n := 0; n < len(rdrs); n += 2 {
-				name := newNd(Nname, fmt.Sprintf("|@%d", i))
-				r := newRedir("|<", rdrs[n], name)
+				name := newNd(Nname, fmt.Sprintf("|%d", i))
+				r := newRedir("<|", rdrs[n], name)
 				r.addRedirTo(nd.Child[i+1].Redirs)
-				r = newRedir("|>", rdrs[n+1], name)
+				r = newRedir(">|", rdrs[n+1], name)
 				r.addRedirTo(nd.Child[i].Redirs)
 			}
 		}

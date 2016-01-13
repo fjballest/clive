@@ -12,7 +12,11 @@ import (
 
 struct xFd {
 	fd *os.File
-	io, name string
+	io, path string
+}
+
+struct pFd {
+	r, w *os.File
 }
 
 // Execution environment for nodes.
@@ -29,9 +33,9 @@ struct xEnv {
 func newEnv() *xEnv {
 	return &xEnv{
 		fds: []xFd{
-			xFd{fd: os.Stdin, io: "in", name: "in"},
-			xFd{fd: os.Stdout, io: "out", name: "out"},
-			xFd{fd: os.Stderr, io: "err", name: "err"},
+			xFd{fd: os.Stdin, io: "in", path: "in"},
+			xFd{fd: os.Stdout, io: "out", path: "out"},
+			xFd{fd: os.Stderr, io: "err", path: "err"},
 		},
 	}
 }
@@ -96,58 +100,114 @@ func (nd *Nd) runFunc(x *xEnv) error {
 	return nil
 }
 
+// make xEnvs for pipe children
+func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, pcloses []*os.File, err error) {
+	nc := len(nd.Child)
+	cxs = make([]*xEnv, nc)
+	pipes := map[string]pFd{}
+	defer func() {
+		if err != nil {
+			for _, fd := range pcloses {
+				fd.Close()
+			}
+			pcloses = nil
+			return
+		}
+	}()
+	for i, c := range nd.Child {
+		cx := x.dup()
+		cxs[i] = cx
+		for _, r := range c.Redirs {
+			paths, err := r.Child[0].expand1(x)
+			if err != nil {
+				cmd.Warn("expand: %s", err)
+				return nil, pcloses, err
+			}
+			path := paths[0]
+			kind, cname := r.Args[0], r.Args[1]
+			var fd xFd
+			var osfd *os.File
+			// TODO: Use zx to rely files
+			//	pro: we can avoid using sshfs
+			//	con: we'd read the file before the command reads it.
+			//	just use a pipe and be careful not to die because of
+			//	writes in closed pipes.
+			switch kind {
+			case "<":
+				osfd, err = os.Open(path)
+				if err != nil {
+					cmd.Warn("redir: %s", err)
+					return nil, pcloses, err
+				}
+			case ">":
+				osfd, err = os.Create(path)
+				if err != nil {
+					cmd.Warn("redir: %s", err)
+					return nil, pcloses, err
+				}
+			case ">>":
+				osfd, err = os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0644)
+				if err != nil {
+					cmd.Warn("redir: %s", err)
+					return nil, pcloses, err
+				}
+			case "<|", ">|":
+				p, ok := pipes[path]
+				if !ok {
+					p.r, p.w, err = os.Pipe()
+					if err != nil {
+						cmd.Warn("pipe: %s", err)
+						return nil, pcloses, err
+					}
+					pipes[path] = p
+				}
+				if kind[0] == '>' {
+					osfd = p.w
+				} else {
+					osfd = p.r
+				}
+			}
+			fd = xFd{osfd, cname, path}
+			cx.fds = append(cx.fds, fd)
+			cx.closes = append(cx.closes, fd.fd)
+			pcloses = append(pcloses, fd.fd)
+		}
+	}
+	return cxs, pcloses, nil
+}
+
 // children may be cmd, block, for, while, cond, set
 func (nd *Nd) runPipe(x *xEnv) error {
 	nd.chk(Npipe)
-	var err error
-/*	nc := len(nd.Child)
-	cx := make([]*xEnv, nc)
-	var last os.File
-	for i, c := range nd.Child {
-		for r, nd := range c.Redirs {
-			names, err := r.nd.expand1()
-			if err != nil {
-				cmd.Warn("expand: %s", err)
-				return err
-			}
-			name := names[0]
-			if name[0] == '|' {
-				XXX: create the named pipes if not
-				created yet,
-				add them to x.closes in that case
-				change the fds in the child env
-				pname := name[1:]
-			}
-			
-		}
-		If there are errors during this process, we must
-		close all. So we should defer closing everyting in x.
-		cx[i] = x.dup()
-		if last != nil {
-			cx[i]		
+	cxs, pcloses, err := nd.mkChildEnvs(x)
+	if err != nil {
+		return err
 	}
-*/	for _, c := range nd.Child {
+	for i, c := range nd.Child {
 		switch c.typ {
 		case Ncmd:
-			err = c.runCmd(x)
+			err = c.runCmd(cxs[i])
 		case Nblock:
-			err = c.runBlock(x)
+			err = c.runBlock(cxs[i])
 		case Nfor:
-			err = c.runFor(x)
+			err = c.runFor(cxs[i])
 		case Nwhile:
-			err = c.runWhile(x)
+			err = c.runWhile(cxs[i])
 		case Ncond:
-			err = c.runCond(x)
+			err = c.runCond(cxs[i])
 		case Nset:
-			err = c.runSet(x)
+			err = c.runSet(cxs[i])
 		case Nsetmap:
-			err = c.runSet(x)
+			err = c.runSet(cxs[i])
 		default:
 			panic(fmt.Errorf("run: bad pipe child type %s", c.typ))
 		}
 		if err != nil {
 			break
 		}
+	}
+	for _, fd := range pcloses {
+		fd.Close()
 	}
 	return err
 }
