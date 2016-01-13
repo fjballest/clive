@@ -1,0 +1,1861 @@
+ql: debug yacc
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            name( quoted ` 
+quoted )
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            name(quoted ' 
+quoted )
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+ql: in:18: syntax error
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(cmd)
+            name(arg)
+            name(...)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk redir...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(cmd)
+            name(arg)
+            name(...)
+        }
+      in:
+        redir(<, in) {
+            name(<)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(cmd1)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(cmd2)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    set(x) {
+        names {
+            name(a)
+            name(b)
+            name(c)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    set(x) {
+        names {
+            names {
+                name(a)
+                name(b)
+                name(c)
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            val(x)
+            val(x) {
+                name(1)
+            }
+            len(x)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            app {
+                names {
+                    name(a)
+                    name(b)
+                    name(c)
+                }
+                names {
+                    val(x)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            single(x)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    setmap(z) {
+        names {
+            name(a)
+            name(b)
+        }
+        names {
+            name(c)
+        }
+        names {
+            name(d)
+            name(e)
+            name(f)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            val(z) {
+                name(a)
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    set(z) {
+        name(a)
+        names {
+            names {
+                name(a)
+                name(b)
+                name(c)
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            val(argv0)
+            val(args)
+            len(args)
+            val(sts)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk redir...
+chk redir...
+chk redir...
+chk redir...
+cmd:
+pipe(, , ) {
+    cmd {
+        names {
+            name(firstcmd)
+        }
+      out:
+        redir(>|, out) {
+            name(|0)
+        }
+    }
+    cmd {
+        names {
+            name(b)
+        }
+      in:
+        redir(<|, in) {
+            name(|0)
+        }
+      out:
+        redir(>|, out) {
+            name(|1)
+        }
+    }
+    cmd {
+        names {
+            name(c)
+        }
+      in:
+        redir(<|, in) {
+            name(|1)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk redir...
+chk redir...
+chk redir...
+chk redir...
+chk redir...
+cmd:
+pipe(, , ) {
+    cmd {
+        names {
+            name(a)
+        }
+      in:
+        redir(<, in) {
+            name(<)
+        }
+      out:
+        redir(>|, out) {
+            name(|0)
+        }
+    }
+    cmd {
+        names {
+            name(b)
+        }
+      in:
+        redir(<|, in) {
+            name(|0)
+        }
+      out:
+        redir(>|, out) {
+            name(|1)
+        }
+    }
+    cmd {
+        names {
+            name(c)
+        }
+      in:
+        redir(<|, in) {
+            name(|1)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk redir...
+chk redir...
+chk redir...
+chk redir...
+chk redir...
+chk redir...
+cmd:
+pipe(, in:out,err;xx:yy, err) {
+    cmd {
+        names {
+            name(a)
+        }
+      err:
+        redir(>|, out,err) {
+            name(|0)
+        }
+      out:
+        redir(>|, out,err) {
+            name(|0)
+        }
+      yy:
+        redir(>|, yy) {
+            name(|0)
+        }
+    }
+    cmd {
+        names {
+            name(b)
+        }
+      err:
+        redir(>|, err) {
+            name(|1)
+        }
+      in:
+        redir(<|, in) {
+            name(|0)
+        }
+      xx:
+        redir(<|, xx) {
+            name(|0)
+        }
+    }
+    cmd {
+        names {
+            name(c)
+        }
+      in:
+        redir(<|, in) {
+            name(|1)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(a)
+        }
+      in:
+        redir(<, in) {
+            name(b)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(a)
+        }
+      out:
+        redir(>, out) {
+            name(b)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(a)
+        }
+      out:
+        redir(>>, out) {
+            name(b)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(a)
+        }
+      in2:
+        redir(<, in2) {
+            name(b)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(a)
+        }
+      err:
+        redir(>, out, err) {
+            name(b)
+        }
+      out:
+        redir(>, out, err) {
+            name(b)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(a)
+        }
+      out:
+        redir(>>, out) {
+            name(b)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(a)
+        }
+      err:
+        redir(>>, out, err) {
+            name(b)
+        }
+      out:
+        redir(>>, out, err) {
+            name(b)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+cmd:
+source {
+    name(name)
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    block {
+        pipe() {
+            cmd {
+                names {
+                    name(a)
+                }
+            }
+        }
+        pipe() {
+            cmd {
+                names {
+                    name(b)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    block {
+        pipe() {
+            cmd {
+                names {
+                    name(a)
+                }
+            }
+        }
+        pipe() {
+            cmd {
+                names {
+                    name(b)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk redir...
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    block {
+        pipe() {
+            cmd {
+                names {
+                    name(a)
+                }
+            }
+        }
+        pipe() {
+            cmd {
+                names {
+                    name(b)
+                }
+            }
+        }
+      in:
+        redir(<, in) {
+            name(x)
+        }
+      out:
+        redir(>, out) {
+            name(y)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+chk redir...
+chk redir...
+chk redir...
+chk redir...
+cmd:
+pipe(, , ) {
+    cmd {
+        names {
+            name(a)
+        }
+      out:
+        redir(>|, out) {
+            name(|0)
+        }
+    }
+    block {
+        pipe() {
+            cmd {
+                names {
+                    name(b)
+                }
+            }
+        }
+        pipe() {
+            cmd {
+                names {
+                    name(c)
+                }
+            }
+        }
+      in:
+        redir(<|, in) {
+            name(|0)
+        }
+      out:
+        redir(>|, out) {
+            name(|1)
+        }
+    }
+    cmd {
+        names {
+            name(d)
+        }
+      in:
+        redir(<|, in) {
+            name(|1)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe(&) {
+    cmd {
+        names {
+            name(a)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe(x) {
+    cmd {
+        names {
+            name(a)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(wait)
+            name(x)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(wait)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk redir...
+chk redir...
+chk redir...
+chk redir...
+cmd:
+pipe(, , ) {
+    cmd {
+        names {
+            name(cmd)
+        }
+      out:
+        redir(>|, out) {
+            name(|0)
+        }
+    }
+    cmd {
+        names {
+            name(words)
+        }
+      in:
+        redir(<|, in) {
+            name(|0)
+        }
+      out:
+        redir(>|, out) {
+            name(|1)
+        }
+    }
+    for {
+        names {
+            name(x)
+        }
+        block {
+            pipe() {
+                cmd {
+                    names {
+                        name(...)
+                    }
+                }
+            }
+        }
+      in:
+        redir(<|, in) {
+            name(|1)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk redir...
+chk redir...
+chk redir...
+chk redir...
+cmd:
+pipe(, , ) {
+    cmd {
+        names {
+            name(cmd)
+        }
+      out:
+        redir(>|, out) {
+            name(|0)
+        }
+    }
+    cmd {
+        names {
+            name(lines)
+        }
+      in:
+        redir(<|, in) {
+            name(|0)
+        }
+      out:
+        redir(>|, out) {
+            name(|1)
+        }
+    }
+    for {
+        names {
+            name(x)
+        }
+        block {
+            pipe() {
+                cmd {
+                    names {
+                        name(...)
+                    }
+                }
+            }
+        }
+      in:
+        redir(<|, in) {
+            name(|1)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    for {
+        names {
+            name(x)
+            name(a)
+            name(b)
+            name(c)
+        }
+        block {
+            pipe() {
+                cmd {
+                    names {
+                        name(...)
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    for {
+        names {
+            name(x)
+            name(a)
+            name(b)
+            name(c)
+        }
+        block {
+            pipe() {
+                cmd {
+                    names {
+                        name(...)
+                    }
+                }
+            }
+        }
+      in:
+        redir(<, in) {
+            name(x)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    while {
+        pipe() {
+            cmd {
+                names {
+                    name(a)
+                    name(b)
+                    name(c)
+                }
+            }
+        }
+        block {
+            pipe() {
+                cmd {
+                    names {
+                        name(...)
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    while {
+        pipe() {
+            cmd {
+                names {
+                    name(a)
+                    name(b)
+                    name(c)
+                }
+            }
+        }
+        block {
+            pipe() {
+                cmd {
+                    names {
+                        name(...)
+                    }
+                }
+            }
+        }
+      out:
+        redir(>, out) {
+            name(y)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+func(x) {
+    block {
+        pipe() {
+            cmd {
+                names {
+                    name(...)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+chk pipe...
+chk pipe...
+chk pipe...
+chk pipe...
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    cond {
+        or {
+            pipe() {
+                cmd {
+                    names {
+                        name(cmd1.1)
+                    }
+                }
+            }
+            pipe() {
+                cmd {
+                    names {
+                        name(...)
+                    }
+                }
+            }
+            pipe() {
+                cmd {
+                    names {
+                        name(cmd1.n)
+                    }
+                }
+            }
+        }
+        or {
+            pipe() {
+                cmd {
+                    names {
+                        name(cmd2.1)
+                    }
+                }
+            }
+            pipe() {
+                cmd {
+                    names {
+                        name(...)
+                    }
+                }
+            }
+            pipe() {
+                cmd {
+                    names {
+                        name(cmd2.n)
+                    }
+                }
+            }
+        }
+        or {
+            pipe() {
+                cmd {
+                    names {
+                        name(cmdn.1)
+                    }
+                }
+            }
+            pipe() {
+                cmd {
+                    names {
+                        name(...)
+                    }
+                }
+            }
+            pipe() {
+                cmd {
+                    names {
+                        name(cmdn.n)
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(cd)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(exit)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(exit)
+            name(sts)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(sleep)
+            name(5)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(flag)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(flag)
+            name(+x)
+            name(-yz)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(type)
+            name(sleep)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            ioblk(<) {
+                pipe() {
+                    cmd {
+                        names {
+                            name(a)
+                            name(b)
+                            name(c)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk redir...
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            ioblk(<) {
+                pipe(, ) {
+                    cmd {
+                        names {
+                            name(a)
+                            name(b)
+                            name(c)
+                        }
+                      out:
+                        redir(>|, out) {
+                            name(|0)
+                        }
+                    }
+                    cmd {
+                        names {
+                            name(lines)
+                        }
+                      in:
+                        redir(<|, in) {
+                            name(|0)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk redir...
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            ioblk(<) {
+                pipe(, ) {
+                    cmd {
+                        names {
+                            name(a)
+                            name(b)
+                            name(c)
+                        }
+                      out:
+                        redir(>|, out) {
+                            name(|0)
+                        }
+                    }
+                    cmd {
+                        names {
+                            name(words)
+                        }
+                      in:
+                        redir(<|, in) {
+                            name(|0)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk redir...
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            ioblk(<) {
+                pipe(, ) {
+                    cmd {
+                        names {
+                            name(a)
+                            name(b)
+                            name(c)
+                        }
+                      out:
+                        redir(>|, out) {
+                            name(|0)
+                        }
+                    }
+                    cmd {
+                        names {
+                            name(full)
+                        }
+                      in:
+                        redir(<|, in) {
+                            name(|0)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(diff)
+            ioblk(<, in) {
+                pipe() {
+                    cmd {
+                        names {
+                            name(lf)
+                            name(/a,)
+                        }
+                    }
+                }
+            }
+            ioblk(<, in2:out,err) {
+                pipe() {
+                    cmd {
+                        names {
+                            name(lf)
+                            name(/b,)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(split)
+            name(a)
+            ioblk(>, out) {
+                pipe() {
+                    cmd {
+                        names {
+                            name(cmd1)
+                        }
+                    }
+                }
+            }
+            ioblk(>, out2) {
+                pipe() {
+                    cmd {
+                        names {
+                            name(cmd2)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(a)
+            name(b)
+            name(c)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(x)
+            name(y)
+            name(c)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            app {
+                names {
+                    name(a)
+                }
+                names {
+                    name(d)
+                    name(e)
+                    name(f)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(d)
+            name(e)
+            app {
+                names {
+                    name(g)
+                }
+                names {
+                    name(a)
+                    name(b)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            app {
+                names {
+                    val(a)
+                }
+                names {
+                    name(d)
+                    val(e)
+                    len(g)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            val(a) {
+                val(e)
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+ql: in:159: syntax error
+chk redir...
+chk redir...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(a)
+            name(b)
+            name(c)
+        }
+      d:
+        redir(>, d) {
+            name(b)
+        }
+      in:
+        redir(<, in) {
+            name(a)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe(x) {
+    cmd {
+        names {
+            name(a)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk redir...
+chk pipe...
+chk redir...
+chk redir...
+chk redir...
+chk redir...
+cmd:
+pipe(z, , x) {
+    cmd {
+        names {
+            name(a)
+        }
+      in:
+        redir(<, in) {
+            name(2)
+        }
+      out:
+        redir(>|, out) {
+            name(|0)
+        }
+    }
+    cmd {
+        names {
+            name(b)
+        }
+      in:
+        redir(<|, in) {
+            name(|0)
+        }
+      x:
+        redir(>|, x) {
+            name(|1)
+        }
+    }
+    cmd {
+        names {
+            name(c)
+        }
+      in:
+        redir(<|, in) {
+            name(|1)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk redir...
+chk pipe...
+cmd:
+pipe(&) {
+    block {
+        pipe() {
+            cmd {
+                names {
+                    name(a)
+                }
+            }
+        }
+        pipe() {
+            cmd {
+                names {
+                    name(b)
+                }
+            }
+        }
+      in:
+        redir(<, in) {
+            name(x)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    block {
+        pipe() {
+            cmd {
+                names {
+                    name(a)
+                }
+            }
+        }
+        pipe() {
+            cmd {
+                names {
+                    name(b)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(no)
+            name(prompts)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    block {
+        pipe() {
+            block {
+                pipe() {
+                    cmd {
+                        names {
+                            name(a)
+                        }
+                    }
+                }
+            }
+        }
+        pipe() {
+            cmd {
+                names {
+                    name(b)
+                }
+            }
+        }
+        pipe() {
+            cmd {
+                names {
+                    name(c)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    for {
+        names {
+            name(x)
+            name(y)
+            name(c)
+        }
+        block {
+            pipe() {
+                cmd {
+                    names {
+                        name(a)
+                    }
+                }
+            }
+            pipe() {
+                cmd {
+                    names {
+                        name(b)
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    while {
+        pipe() {
+            cmd {
+                names {
+                    name(a)
+                    name(b)
+                    name(c)
+                }
+            }
+        }
+        block {
+            pipe() {
+                cmd {
+                    names {
+                        name(d)
+                        name(e)
+                        name(f)
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+func(x) {
+    block {
+        pipe() {
+            cmd {
+                names {
+                    name(d)
+                    name(e)
+                    name(f)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+chk pipe...
+chk redir...
+chk pipe...
+cmd:
+pipe(x) {
+    cond {
+        or {
+            pipe() {
+                cmd {
+                    names {
+                        name(a)
+                        name(b)
+                        name(c)
+                    }
+                }
+            }
+            pipe() {
+                cmd {
+                    names {
+                        name(d)
+                        name(e)
+                    }
+                }
+            }
+        }
+        or {
+            pipe() {
+                cmd {
+                    names {
+                        name(a)
+                        name(d)
+                        name(c)
+                    }
+                }
+            }
+            pipe() {
+                cmd {
+                    names {
+                        name(x)
+                        name(y)
+                    }
+                }
+            }
+        }
+      in:
+        redir(<, in) {
+            name(a)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(diff)
+            ioblk(<, x) {
+                pipe() {
+                    cmd {
+                        names {
+                            name(b)
+                        }
+                    }
+                }
+                pipe() {
+                    cmd {
+                        names {
+                            name(c)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(diff)
+            ioblk(>, a) {
+                pipe() {
+                    cmd {
+                        names {
+                            name(x)
+                        }
+                    }
+                }
+            }
+            ioblk(>, b) {
+                pipe() {
+                    cmd {
+                        names {
+                            name(y)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(echo)
+            ioblk(<) {
+                pipe() {
+                    cmd {
+                        names {
+                            name(b)
+                        }
+                    }
+                }
+                pipe() {
+                    cmd {
+                        names {
+                            name(c)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk redir...
+cmd:
+pipe() {
+    cmd {
+        names {
+            name(a)
+        }
+      in:
+        redir(<, in) {
+            name(<)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    set(a) {
+        val(x)
+        names {
+            name(5)
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    set(x) {
+        names {
+            app {
+                names {
+                    name(a)
+                    name(b)
+                    name(c)
+                }
+                names {
+                    name(c)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+cmd:
+pipe() {
+    cmd {
+        names {
+            single(a) {
+                name(3)
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done
+cmd:
+source {
+    name(name)
+}
+
+skip cmd run (dry|error)cmd done
+chk pipe...
+chk pipe...
+cmd:
+pipe() {
+    block {
+        pipe() {
+            cmd {
+                names {
+                    name(true)
+                }
+            }
+        }
+    }
+}
+
+skip cmd run (dry|error)cmd done

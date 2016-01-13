@@ -10,6 +10,7 @@ import (
 	"clive/cmd"
 	"clive/cmd/opt"
 	"errors"
+	"strings"
 )
 
 type inRdr struct {
@@ -21,7 +22,7 @@ type inRdr struct {
 
 var (
 	yylex *lex
-	ldebug, ydebug, nddebug, dry bool
+	ldebug, ydebug, nddebug, dry, cflag bool
 
 	yprintf = cmd.FlagPrintf(&ydebug)
 	nprintf = cmd.FlagPrintf(&nddebug)
@@ -101,11 +102,26 @@ func main() {
 	opts.NewFlag("Y", "debug yacc", &ydebug)
 	opts.NewFlag("N", "debug nodes", &nddebug)
 	opts.NewFlag("n", "dry run", &dry)
+	opts.NewFlag("c", "run args as a command", &cflag)
 	args, err := opts.Parse()
 	if err != nil {
 		opts.Usage()
 	}
-	if len(args) != 0 {
+	if cflag {
+		if len(args) == 0 {
+			cmd.Warn("no args and flag -c")
+			opts.Usage()
+		}
+		c := strings.Join(args, " ")
+		if c[len(c)-1] != '\n' {
+			c += "\n"
+		}
+		in := make(chan interface{}, 2)
+		in <- zx.Dir{"path": "-c", "Upath": "-c", "type": "c"}
+		in <- []byte(c)
+		close(in)
+		cmd.SetIO("in", in)
+	} else if len(args) != 0 {
 		cmd.SetIO("in", cmd.Files(args...))
 	}
 	c.Debug = c.Debug || ldebug || ydebug || nddebug

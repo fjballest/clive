@@ -7,7 +7,9 @@ import (
 	"strconv"
 	"errors"
 	"os"
+	"os/exec"
 	"io"
+	"sync"
 )
 
 struct xFd {
@@ -19,6 +21,11 @@ struct pFd {
 	r, w *os.File
 }
 
+struct bgCmds {
+	sync.Mutex
+	cmds map[*xEnv]bool
+}
+
 // Execution environment for nodes.
 // We use unix processes to run clive commands, so for now we
 // use actual file descriptors for cmd IO.
@@ -28,6 +35,34 @@ struct pFd {
 struct xEnv {
 	fds []xFd
 	closes []io.Closer
+	path []string
+	bgtag string
+	xctx *cmd.Ctx
+}
+
+var bgcmds = bgCmds {
+	cmds: map[*xEnv]bool{},
+}
+
+// Functions runXXX() run the command and wait for it to complete.
+// The pipe creates a cmd ctx for each command in the pipe and perhaps waits for the last.
+// Each run/start function receives a environment that can be changed
+// by the function. If it creates children commands it should dup the environment
+// for them, so they can change their own env.
+// The errors returned by the functions indicate errors that lead to stop
+// in the execution of commands
+// The error returned by wait matches the exit status of the command.
+
+func (b *bgCmds) add(x *xEnv) {
+	b.Lock()
+	defer b.Unlock()
+	b.cmds[x] = true
+}
+
+func (b *bgCmds) del(x *xEnv) {
+	b.Lock()
+	defer b.Unlock()
+	delete(b.cmds, x)
 }
 
 func newEnv() *xEnv {
@@ -58,7 +93,7 @@ func (nd *Nd) run() error {
 	nprintf("cmd:\n%s\n", dnd{nd})
 	defer nprintf("cmd done\n")
 	if dry || yylex.nerrors > 0 {
-		cmd.Dprintf("cmd not run, errors\n")
+		cmd.Dprintf("skip cmd run (dry|error)")
 		yylex.nerrors = 0
 		return nil
 	}
@@ -117,6 +152,9 @@ func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, pcloses []*os.File, err error) 
 	for i, c := range nd.Child {
 		cx := x.dup()
 		cxs[i] = cx
+		if dry {
+			continue
+		}
 		for _, r := range c.Redirs {
 			paths, err := r.Child[0].expand1(x)
 			if err != nil {
@@ -184,32 +222,65 @@ func (nd *Nd) runPipe(x *xEnv) error {
 		return err
 	}
 	for i, c := range nd.Child {
-		switch c.typ {
-		case Ncmd:
-			err = c.runCmd(cxs[i])
-		case Nblock:
-			err = c.runBlock(cxs[i])
-		case Nfor:
-			err = c.runFor(cxs[i])
-		case Nwhile:
-			err = c.runWhile(cxs[i])
-		case Ncond:
-			err = c.runCond(cxs[i])
-		case Nset:
-			err = c.runSet(cxs[i])
-		case Nsetmap:
-			err = c.runSet(cxs[i])
-		default:
-			panic(fmt.Errorf("run: bad pipe child type %s", c.typ))
-		}
-		if err != nil {
-			break
-		}
+		i, c := i, c
+		cxs[i].xctx = cmd.New(func() {
+			cmd.ForkEnv()
+			// XXX: now all the start foo will be run foo
+			// and they must set their sts env var
+			// the run cmd MUST wait for the cmd and set the
+			// var as well
+			switch c.typ {
+			case Ncmd:
+				err = c.runCmd(cxs[i])
+			case Nblock:
+				err = c.startBlock(cxs[i])
+			case Nfor:
+				err = c.startFor(cxs[i])
+			case Nwhile:
+				err = c.startWhile(cxs[i])
+			case Ncond:
+				err = c.startCond(cxs[i])
+			case Nset:
+				err = c.runSet(cxs[i])
+			case Nsetmap:
+				err = c.runSet(cxs[i])
+			default:
+				panic(fmt.Errorf("run: bad pipe child type %s", c.typ))
+			}
+			if err != nil {
+				cmd.Exit(err)
+			}
+			sts := cmd.GetEnv("sts")
+			if sts != "" {
+				cmd.Exit(sts)
+			}
+		})
 	}
 	for _, fd := range pcloses {
 		fd.Close()
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	bg := nd.Args[0]
+	cx := cxs[len(nd.Child)-1]
+	wc := cx.xctx.Waitc()
+	if bg != "" {
+		cx.bgtag = bg
+		bgcmds.add(cx)
+		go func() {
+			<-wc
+			bgcmds.del(cx)
+		}()
+	} else {
+		<-wc
+		if sts := cerror(wc); sts == nil {
+			cmd.SetEnv("sts", "")
+		} else {
+			cmd.SetEnv("sts", sts.Error())
+		}
+	}
+	return nil
 }
 
 func (nd *Nd) varLen() (int, error) {
@@ -308,7 +379,7 @@ func (nd *Nd) expandIO(x *xEnv) ([]string, error) {
 	if len(nd.Args) == 1 {
 		// XXX: run and read all the output and
 		// then collect the names
-		nd.runBlock(x) // but for i/o
+		// nd.startBlock(x.dup()) // but for i/o
 		return nil, fmt.Errorf("<{} not yet implemented")
 	}
 	switch nd.Args[0] {
@@ -316,12 +387,12 @@ func (nd *Nd) expandIO(x *xEnv) ([]string, error) {
 		// XXX start the cmd setting up an out chan into it
 		// and return its name
 		
-		nd.runBlock(x) // but for i/o
+		// nd.startBlock(x.dup()) // but for i/o
 		return nil, fmt.Errorf("<{} not yet implemented")
 	case "<":
 		// XXX start the cmd setting up an in chan from it
 		// and return its name
-		nd.runBlock(x) // but for i/o
+		// nd.startBlock(x.dup()) // but for i/o
 		return nil, fmt.Errorf(">{} not yet implemented")
 	default:
 		panic("bad ioblk arg")
@@ -378,33 +449,77 @@ func (nd *Nd) runCmd(x *xEnv) error {
 		return err
 	}
 	cmd.VWarn("run: %s", dnames(args))
+	if len(args) == 0 || len(args[0]) == 0 {
+		err := errors.New("empty command name")
+		cmd.Warn("run cmd: %s", err)
+		return err
+	}
+	if dry {
+		return nil
+	}
+	xc := exec.Command(args[0], args[1:]...)
+	if p := x.lookCmd(args[0]); p != "" {
+		xc.Path = p
+	}
+	xc.Dir = cmd.Dot()
+	xc.Env = cmd.OSEnv()
+	for _, cfd := range x.fds {
+		switch cfd.io {
+		case "in":
+			xc.Stdin = cfd.fd
+		case "out":
+			xc.Stdout = cfd.fd
+		case "err":
+			xc.Stderr = cfd.fd
+		default:
+			no := 3+len(xc.ExtraFiles)
+			ev := fmt.Sprintf("io#%s=%d", cfd.io, no)
+			xc.Env = append(xc.Env, ev)
+			xc.ExtraFiles = append(xc.ExtraFiles, cfd.fd)
+		}
+	}
+	if err := xc.Start(); err != nil {
+		return err
+	}
+	x.xcmd = xc
 	return nil
 }
 
 // block cmds are pipes or sources
-func (nd *Nd) runBlock(x *xEnv) error {
+func (nd *Nd) startBlock(x *xEnv) error {
 	nd.chk(Nblock, Nioblk)
 	if len(nd.Child) < 1 {
 		panic("bad block children")
 	}
-	for _, c := range nd.Child {
+	x.waitc = make(chan bool)
+	go func() {
 		var err error
-		switch c.typ {
-		case Npipe:
-			err = c.runPipe(x)
-		case Nsrc:
-			err = c.runSrc(x)
-		default:
-			panic(fmt.Errorf("runblock: bad child type %s", c.typ))
+		for _, c := range nd.Child {
+			cx := x.dup()
+			switch c.typ {
+			case Npipe:
+				err = c.runPipe(cx)
+			case Nsrc:
+				err = c.runSrc(cx)
+			default:
+				panic(fmt.Errorf("runblock: bad child type %s", c.typ))
+			}
+			if err != nil {
+				break
+			}
 		}
-		if err != nil {
-			return err
+		if err == nil {
+			sts := cmd.GetEnv("sts")
+			if sts != "" {
+				err = errors.New(sts)
+			}
 		}
-	}
+		close(x.waitc, err)
+	}()
 	return nil
 }
 
-func (nd *Nd) runFor(x *xEnv) error {
+func (nd *Nd) startFor(x *xEnv) error {
 	nd.chk(Nfor)
 	if len(nd.Child) != 2 {
 		panic("bad for children")
@@ -418,40 +533,59 @@ func (nd *Nd) runFor(x *xEnv) error {
 		cmd.Warn("missing for variable name")
 		return fmt.Errorf("no variable name")
 	}
-	name := names[0]
-	values := names[1:]
-	if len(values) == 0 {
-		// XXX: collect names from the input
-	}
-	for _, v := range values {
-		// XXX: set variable $name to $v
-		_, _ = name, v
-		err = blk.runBlock(x)
-	}
-	return err
+	x.waitc = make(chan bool)
+	go func() {
+		var err error
+		name := names[0]
+		values := names[1:]
+		if len(values) == 0 {
+			// XXX: collect names from the input
+			err = errors.New("for: input names not yet implemented")
+			cmd.Warn("%s", err)
+			cmd.SetEnv("sts", err.Error())
+		}
+		for _, v := range values {
+			// XXX: set variable $name to $v
+			cmd.SetEnv(name, v)
+			cx := x.dup()
+			err = blk.startBlock(cx)
+			if err != nil {
+				break
+			}
+			cx.wait()
+		}
+		close(x.waitc, err)
+	}()
+	return nil
 }
 
-func (nd *Nd) runWhile(x *xEnv) error {
+func (nd *Nd) startWhile(x *xEnv) error {
 	nd.chk(Nwhile)
 	if len(nd.Child) != 2 {
 		panic("bad for children")
 	}
 	pipe, blk := nd.Child[0], nd.Child[1]
-	// XXX: for now we run the block once
-	i := 0
-	for {
-		if err := pipe.runPipe(x); err != nil {
-			return err
+	x.waitc = make(chan bool)
+	go func() {
+		var err error
+		for {
+			if err = pipe.runPipe(x); err != nil {
+				break
+			}
+			// XXX: if status is not ok
+			if true {
+				break
+			}
+			cx := x.dup()
+			if err = blk.startBlock(cx); err != nil {
+				break
+			}
+			if err = cx.wait(); err != nil {
+				break
+			}
 		}
-		// XXX: if status is not ok
-		if i++; i > 1 {
-			break
-		}
-		break
-		if err := blk.runBlock(x); err != nil {
-			return err
-		}
-	}
+		close(x.waitc, err)
+	}()
 	return nil
 }
 
@@ -460,7 +594,7 @@ var orSuccess = errors.New("or sucessful")
 // like a block w/o redirs
 // As soon as a child is not sucessful, we stop and return nil
 // if the last child does run, we must return orSuccess
-// so runCond() knows it has to stop
+// so startCond() knows it has to stop
 func (nd *Nd) runOr(x *xEnv) error {
 	nd.chk(Nor)
 	if len(nd.Child) == 0 {
@@ -468,11 +602,12 @@ func (nd *Nd) runOr(x *xEnv) error {
 	}
 	for i, c := range nd.Child {
 		var err error
+		cx := x.dup()
 		switch c.typ {
 		case Npipe:
-			err = c.runPipe(x)
+			err = c.runPipe(cx)
 		case Nsrc:
-			err = c.runSrc(x)
+			err = c.runSrc(cx)
 		default:
 			panic(fmt.Errorf("runor: bad child type %s", c.typ))
 		}
@@ -489,20 +624,26 @@ func (nd *Nd) runOr(x *xEnv) error {
 
 // children are or nodes that are like blocks (w/o redirs)
 // and the nd has a final redir child
-func (nd *Nd) runCond(x *xEnv) error {
+func (nd *Nd) startCond(x *xEnv) error {
 	nd.chk(Ncond)
 	if len(nd.Child) == 0 {
 		// at least an or
 		panic("bad cond children")
 	}
-	for _, or1 := range nd.Child {
-		if err := or1.runOr(x); err != nil {
-			if err == orSuccess {
-				err = nil
+	x.waitc = make(chan bool)
+	go func() {
+		var err error
+		for _, or1 := range nd.Child {
+			cx := x.dup()
+			if err = or1.runOr(cx); err != nil {
+				if err == orSuccess {
+					err = nil
+				}
+				break
 			}
-			return err
 		}
-	}
+		close(x.waitc, err)
+	}()
 	return nil
 }
 

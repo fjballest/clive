@@ -44,6 +44,7 @@ import (
 	"fmt"
 	"errors"
 	fpath "path"
+	"strings"
 )
 
 // Command context.
@@ -93,9 +94,13 @@ func ctx() *Ctx {
 	return c
 }
 
-func (c *Ctx) close() {
+func (c *Ctx) close(sts string) {
 	if c != nil {
-		close(c.wc)
+		if sts != "" {
+			close(c.wc, sts)
+		} else {
+			close(c.wc)
+		}
 		c.io.close()
 		ctxlk.Lock()
 		delete(ctxs, c.id)
@@ -128,8 +133,15 @@ func mkCtx() *Ctx {
 }
 
 // Run the given function in a new process on a new context and return its context.
-func New(fun func(), args ...string) *Ctx {
+// If wc is supplied, the new function won't run until wc is closed and the caller has
+// time to adjust the new context for the function to run, eg. to set the Args, etc.
+// The new conext shares everything with the parent, but for io, which is a dup.
+func New(fun func(), wc ...chan bool) *Ctx {
 	ctxc := make(chan *Ctx, 1)
+	var w chan bool
+	if wc != nil {
+		w = wc[0]
+	}
 	go func() {
 		if runtime.GoId() == runtime.AppId() {
 			panic("cmd.New() already called on this proc")
@@ -140,13 +152,14 @@ func New(fun func(), args ...string) *Ctx {
 		ns := old.ns
 		dot := old.dot
 		io := old.io.dup()
+		args := make([]string, len(old.Args))
+		for i := range old.Args {
+			args[i] = old.Args[i]
+		}
 		old.lk.Unlock()
 		wc := make(chan error)
-		if len(args) == 0 {
-			args = old.Args
-		}
 		c := &Ctx{
-			Args: args,
+			Args:  args,
 			wc: wc,
 			env: env,
 			io: io,
@@ -158,18 +171,23 @@ func New(fun func(), args ...string) *Ctx {
 		ctxs[c.id] = c
 		ctxlk.Unlock()
 		ctxc <-c
-
+		if w != nil {
+			<-w
+		}
 		defer func() {
-			c.close()
 			if r := recover(); r != nil {
-				if r == "appexit" {
+				if s, ok := r.(string); ok && strings.HasPrefix(s, "appexit") {
+					c.close(s[7:])
 					return
 				}
+				c.close("")
 				// We could decide that an app panic
 				// is not a panic for others not in the main app.
 				// In that case, this should go.
 				panic(r)
 				return
+			} else {
+				c.close("")
 			}
 		}()
 		fun()
@@ -421,44 +439,54 @@ func init() {
 	mainctx = mkCtx()
 }
 
-func appexit(rc int) {
+func appexit(sts string) {
 	if ctx() == mainctx {
-		mainctx.close()
-		os.Exit(rc)
+		mainctx.close(sts)
+		if sts != "" {
+			os.Exit(1)
+		}
+		os.Exit(0)
 	}
-	panic("appexit")
+	panic("appexit" + sts)
 }
 
 func Exit(sts ...interface{}) {
 	if len(sts) == 0 || sts[0] == nil {
-		appexit(0)
-	} else if s, ok := sts[0].(string); ok && s == "" {
-		appexit(0)
-	} else if s, ok := sts[0].(error); ok && s == nil {
-		appexit(0)
+		appexit("")
 	}
-	appexit(1)
+	if s, ok := sts[0].(string); ok {
+		appexit(s)
+	}
+	if err, ok := sts[0].(error); ok {
+		if err == nil {
+			appexit("")
+		}
+		appexit(err.Error())
+	}
+	appexit("failure")
 }
 
 // Warn and exit
 func Fatal(args ...interface{}) {
 	if len(args) == 0 || args[0] == nil {
-		appexit(0)
+		appexit("")
 	}
 	if s, ok := args[0].(string); ok {
 		if s == "" {
-			appexit(0)
+			appexit("failure")
 		}
 		Warn(s, args[1:]...)
+		appexit(fmt.Sprintf(s, args[1:]...))
 	} else if e, ok := args[0].(error); ok {
 		if e == nil {
-			appexit(0)
+			appexit("failure")
 		}
 		Warn("%s", e)
+		appexit(e.Error())
 	} else {
 		Warn("fatal")
 	}
-	appexit(1)
+	appexit("failure")
 }
 
 // Printf to stderr, prefixed with app name and terminating with \n.

@@ -31,7 +31,7 @@ func (nd *Nd) addRedirTo(set map[string]*Nd) {
 	switch what {
 	case ">", ">>" :
 		bad = ":;$"
-	case  "|<", "|>":
+	case  "<|", ">|":
 		bad = "$"
 	}
 	if strings.ContainsAny(tag, bad) {
@@ -95,7 +95,7 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 func newRedir(what, tag string, name *Nd) *Nd {
 	tag = strings.TrimSpace(tag)
 	if tag == "" {
-		if what == "<" || what == "|<" {
+		if what == "<" || what == "<|" {
 			tag = "in"
 		} else {
 			tag = "out"
