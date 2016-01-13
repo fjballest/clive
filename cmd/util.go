@@ -52,13 +52,17 @@ func RemoveAll(path string) error {
 // in the names.
 // The Rpath attribute in the dir entries provide a path relative to the one
 // specified by the user.
+// If one argument is "|...", it names an IO chan and a fake dir entry is sent
+// for it. The name is "|<..." for input chans and "|>..." for output chans.
+// The caller should get that chan by name (removing the '|' from the path) and
+// then receive or send or whatever it wants to do with the chan.
 func Dirs(names ...string) chan interface{} {
 	ns := NS()
 	rc := make(chan interface{})
 	go func() {
 		var err error
 		for _, name := range names {
-			if len(name) > 0 && name[0] == '#' {
+			if len(name) > 0 && name[0] == '|' {
 				d := zx.Dir{"path": name, "name": name,
 					"Upath": name, "type": "c"}
 				rc <- d
@@ -118,7 +122,7 @@ func Files(names ...string) chan interface{} {
 	go func() {
 		var err error
 		for _, name := range names {
-			if len(name) > 0 && name[0] == '#' {
+			if len(name) > 0 && name[0] == '|' {
 				d := zx.Dir{"path": name, "name": name,
 					"Upath": name, "type": "c"}
 				rc <- d

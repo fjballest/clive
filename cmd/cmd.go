@@ -151,6 +151,7 @@ func New(fun func(), wc ...chan bool) *Ctx {
 		env := old.env
 		ns := old.ns
 		dot := old.dot
+		dbg, verb := old.Debug, old.Verb
 		io := old.io.dup()
 		args := make([]string, len(old.Args))
 		for i := range old.Args {
@@ -166,6 +167,7 @@ func New(fun func(), wc ...chan bool) *Ctx {
 			dot: dot,
 			ns: ns,
 		}
+		c.Debug, c.Verb = dbg, verb
 		c.id = runtime.NewApp()
 		ctxlk.Lock()
 		ctxs[c.id] = c

@@ -33,6 +33,7 @@ struct lex {
 	in            []inText
 	saddr         []Addr
 	eofmet, wasnl bool
+	notfirst bool
 	saved         rune
 	val           []rune
 	Addr
@@ -208,6 +209,9 @@ func (l *lex) lex(lval *yySymType) int {
 		}
 		l.val = l.val[:0]
 	}
+	if l.wasnl {
+		l.notfirst = false
+	}
 	l.wasnl = false
 	switch c {
 	case '\'', '`':
@@ -237,6 +241,9 @@ func (l *lex) lex(lval *yySymType) int {
 		}
 		return BG
 	case '{', '}', ';', '[', ']', '^', '=', '(', ')':
+		if c == ';' || c == '{' {
+			l.notfirst = false
+		}
 		return int(c)
 	case '$':
 		switch c = l.get(); c {
@@ -315,12 +322,13 @@ func isPunct(c rune) bool {
 	return unicode.IsSpace(c) || strings.ContainsRune("'←`<>{}&;[]|#^()", c)
 }
 
-func (l *lex) scanName(lval *yySymType) int {
+func (l *lex) scanName(lval *yySymType,) int {
 	for {
 		c := l.get()
-		if isPunct(c) {
+		if isPunct(c) || !l.notfirst && c == '=' {
 			l.unget()
 			lval.sval = l.getval()
+			l.notfirst = true
 			if tok, ok := builtins[lval.sval]; ok {
 				return tok
 			}

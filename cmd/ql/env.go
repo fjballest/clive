@@ -3,14 +3,37 @@ package main
 import (
 	fpath "path"
 	"clive/cmd"
-	"fmt"
 	"strconv"
 	"strings"
 	"sort"
 	"os"
 )
 
-func mapNames(m map[string]string) []string {
+// Vars are lists separated by \b
+// Maps are lists with of key-value lists preceded by \a
+// the first item in each list is the key.
+
+func isMap(env string) bool {
+	return strings.ContainsRune(env, '\a')
+}
+
+func envMap(env string) map[string][]string {
+	toks := strings.Split(env, "\a")
+	if len(toks) > 0 {
+		toks = toks[1:]
+	}
+	m := map[string][]string{}
+	for _, t := range toks {
+		lst := envList(t)
+		if len(lst) == 0 {
+			continue
+		}
+		m[lst[0]] = lst[1:]
+	}
+	return m
+}
+
+func mapKeys(m map[string][]string) []string {
 	s := []string{}
 	for k := range m {
 		s = append(s, k)
@@ -19,87 +42,43 @@ func mapNames(m map[string]string) []string {
 	return s
 }
 
-func envMap(v string) map[string]string {
-	toks := strings.SplitN(v, "\a", -1)
-	if len(toks)%2 == 1 {
-		toks = toks[:len(toks)-1]
-	}
-	if len(toks) == 0 {
-		return map[string]string{}
-	}
-	m := make(map[string]string)
-	for i := 0; i < len(toks)-1; i += 2 {
-		m[toks[i]] = toks[i+1]
-	}
-	return m
-}
-
-func SetEnvMap(n string, m map[string]string) {
+func mapEnv(m map[string][]string) string {
 	s := ""
 	for k, v := range m {
-		s += k + "\a" + v + "\a"
+		lst := append([]string{k}, v...)
+		s += "\a" + listEnv(lst)
 	}
-	cmd.SetEnv(n, s)
+	return s
 }
 
-func GetEnvMap(n string) map[string]string {
-	return envMap(cmd.GetEnv(n))
+func envList(env string) []string {
+	return strings.Split(env, "\b")
 }
 
-func idx(toks []string, idxs string) ([]string, error) {
-	if idxs == "" {
-		return toks, nil
-	}
+func listEnv(lst []string) string {
+	return strings.Join(lst, "\b")
+}
+
+func listEl(lst []string, idxs string) string {
 	n, err := strconv.ParseInt(idxs, 10, 32)
 	i := int(n)
-	if err != nil || i < 0 || i >= len(toks) {
-		return nil, fmt.Errorf("bad index '%s'", idxs)
+	if err != nil || i < 0 || i >= len(lst) {
+		return ""
 	}
-	return toks[i : i+1], nil
+	return lst[i]
 }
 
-func SetEnvList(name string, toks ...string) {
-	cmd.SetEnv(name, strings.Join(toks, "\b"))
-}
-
-func GetEnvAt(name, idxs string) ([]string, error) {
-	s := cmd.GetEnv(name)
-	if len(s) == 0 {
-		return nil, nil
-	}
-	if strings.Contains(s, "\a") {
-		m := envMap(s)
-		if idxs == "" {
-			return mapNames(m), nil
-		}
-		s := m[idxs]
-		return []string{s}, nil
-	}
-	toks := strings.SplitN(s, "\b", -1)
-	return idx(toks, idxs)
-}
-
-func SetEnvAt(name, idx string, val string) error {
-	s := cmd.GetEnv(name)
-	ismap := strings.Contains(s, "\a")
-	n, err := strconv.ParseInt(idx, 10, 32)
+func setListEl(lst []string, idxs, val string) []string {
+	n, err := strconv.ParseInt(idxs, 10, 32)
 	i := int(n)
-	if err == nil && !ismap {
-		toks := strings.SplitN(s, "\b", -1)
-		if i == len(toks) {
-			toks = append(toks, val)
-		} else if i < 0 || i > len(toks) {
-			return fmt.Errorf("bad index '%s' for '%s'", idx, name)
-		} else {
-			toks[i] = val
-		}
-		SetEnvList(name, toks...)
-		return nil
+	if err != nil || i < 0 || i > len(lst) {
+		return lst
 	}
-	m := envMap(name)
-	m[idx] = val
-	SetEnvMap(name, m)
-	return nil
+	if i == len(lst) {
+		return append(lst, val)
+	}
+	lst[i] = val
+	return lst
 }
 
 func (x *xEnv) setPath() {
@@ -111,12 +90,9 @@ func (x *xEnv) setPath() {
 		}
 		ps = strings.SplitN(p, ":", -1)
 	} else {
-		ps = strings.Fields(p)
+		ps = envList(p)
 	}
-	x.path = nil
-	for _, d := range ps {
-		x.path = append(x.path, strings.SplitN(d, "\b", -1)...)
-	}
+	x.path = ps
 }
 
 func (x *xEnv) lookCmd(name string) string {

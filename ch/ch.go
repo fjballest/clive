@@ -122,17 +122,14 @@ func writeBytes(w io.Writer, tag uint32, typ uint16, b []byte) (int64, error) {
 		b = empty[:]
 	}
 	n := len(b)
+	// do a single write, at the cost of an extra copy
+	var buf bytes.Buffer
 	binary.LittleEndian.PutUint32(hdr[0:], uint32(n))
 	binary.LittleEndian.PutUint32(hdr[4:], tag)
 	binary.LittleEndian.PutUint16(hdr[8:], typ)
-	tot, err := w.Write(hdr[:])
-	if err != nil || n == 0 {
-		return int64(tot), err
-	}
-	tot, err = w.Write(b)
-	if err != nil {
-		tot += len(hdr)
-	}
+	buf.Write(hdr[:])
+	buf.Write(b)
+	tot, err := w.Write(buf.Bytes())
 	return int64(tot), err
 }
 

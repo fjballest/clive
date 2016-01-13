@@ -10,11 +10,15 @@ import (
 	"os/exec"
 	"io"
 	"sync"
+	"clive/ch"
 )
 
 struct xFd {
+	sync.Mutex
+	ref int
 	fd *os.File
-	io, path string
+	path string
+	// XXX: need a ref count to close when the last goes
 }
 
 struct pFd {
@@ -33,8 +37,7 @@ struct bgCmds {
 // other names can be passed using environment variables that map
 // the name to the unix file descriptor.
 struct xEnv {
-	fds []xFd
-	closes []io.Closer
+	fds map[string]*xFd
 	path []string
 	bgtag string
 	xctx *cmd.Ctx
@@ -44,7 +47,34 @@ var bgcmds = bgCmds {
 	cmds: map[*xEnv]bool{},
 }
 
-// Functions runXXX() run the command and wait for it to complete.
+func (xfd *xFd) addref() {
+	xfd.Lock()
+	if xfd.ref > 0 {
+		xfd.ref++
+	}
+	xfd.Unlock()
+}
+
+func (xfd *xFd) Close() error {
+	xfd.Lock()
+	if xfd.ref > 0 {
+		xfd.ref--
+		if xfd.ref == 0 {
+			xfd.fd.Close()
+		}
+	}
+	xfd.Unlock()
+	return nil
+}
+
+func (x *xEnv) Close() error {
+	for _, fd := range x.fds {
+		fd.Close()
+	}
+	return nil
+}
+
+// Functions run...() run the command and wait for it to complete.
 // The pipe creates a cmd ctx for each command in the pipe and perhaps waits for the last.
 // Each run/start function receives a environment that can be changed
 // by the function. If it creates children commands it should dup the environment
@@ -67,20 +97,21 @@ func (b *bgCmds) del(x *xEnv) {
 
 func newEnv() *xEnv {
 	return &xEnv{
-		fds: []xFd{
-			xFd{fd: os.Stdin, io: "in", path: "in"},
-			xFd{fd: os.Stdout, io: "out", path: "out"},
-			xFd{fd: os.Stderr, io: "err", path: "err"},
+		fds: map[string]*xFd{
+			"in": &xFd{fd: os.Stdin, path: "in", ref: -1},
+			"out": &xFd{fd: os.Stdout, path: "out", ref: -1},
+			"err": &xFd{fd: os.Stderr, path: "err", ref: -1},
 		},
 	}
 }
 
 func (x *xEnv) dup() *xEnv {
 	ne := &xEnv{
-		fds: make([]xFd, len(x.fds)),
+		fds: map[string]*xFd{},
 	}
-	for i := range x.fds {
-		ne.fds[i] = x.fds[i]
+	for k, f := range x.fds {
+		f.addref()
+		ne.fds[k] = f
 	}
 	return ne
 }
@@ -136,21 +167,22 @@ func (nd *Nd) runFunc(x *xEnv) error {
 }
 
 // make xEnvs for pipe children
-func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, pcloses []*os.File, err error) {
+func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, err error) {
+	var pcloses []io.Closer
 	nc := len(nd.Child)
 	cxs = make([]*xEnv, nc)
 	pipes := map[string]pFd{}
 	defer func() {
 		if err != nil {
-			for _, fd := range pcloses {
-				fd.Close()
+			for _, x := range pcloses {
+				x.Close()
 			}
-			pcloses = nil
 			return
 		}
 	}()
 	for i, c := range nd.Child {
 		cx := x.dup()
+		pcloses = append(pcloses, cx)
 		cxs[i] = cx
 		if dry {
 			continue
@@ -159,11 +191,10 @@ func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, pcloses []*os.File, err error) 
 			paths, err := r.Child[0].expand1(x)
 			if err != nil {
 				cmd.Warn("expand: %s", err)
-				return nil, pcloses, err
+				return nil, err
 			}
 			path := paths[0]
 			kind, cname := r.Args[0], r.Args[1]
-			var fd xFd
 			var osfd *os.File
 			// TODO: Use zx to rely files
 			//	pro: we can avoid using sshfs
@@ -175,28 +206,32 @@ func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, pcloses []*os.File, err error) 
 				osfd, err = os.Open(path)
 				if err != nil {
 					cmd.Warn("redir: %s", err)
-					return nil, pcloses, err
+					return nil, err
 				}
+				pcloses = append(pcloses, osfd)
 			case ">":
 				osfd, err = os.Create(path)
 				if err != nil {
 					cmd.Warn("redir: %s", err)
-					return nil, pcloses, err
+					return nil, err
 				}
+				pcloses = append(pcloses, osfd)
 			case ">>":
 				osfd, err = os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0644)
 				if err != nil {
 					cmd.Warn("redir: %s", err)
-					return nil, pcloses, err
+					return nil, err
 				}
+				pcloses = append(pcloses, osfd)
 			case "<|", ">|":
 				p, ok := pipes[path]
 				if !ok {
 					p.r, p.w, err = os.Pipe()
 					if err != nil {
 						cmd.Warn("pipe: %s", err)
-						return nil, pcloses, err
+						return nil, err
 					}
+					pcloses = append(pcloses, p.r, p.w)
 					pipes[path] = p
 				}
 				if kind[0] == '>' {
@@ -205,45 +240,74 @@ func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, pcloses []*os.File, err error) 
 					osfd = p.r
 				}
 			}
-			fd = xFd{osfd, cname, path}
-			cx.fds = append(cx.fds, fd)
-			cx.closes = append(cx.closes, fd.fd)
-			pcloses = append(pcloses, fd.fd)
+			if fd, ok := cx.fds[cname]; ok {
+				fd.Close()
+			}
+			cx.fds[cname] = &xFd{fd: osfd, path: path, ref: 1}
 		}
 	}
-	return cxs, pcloses, nil
+	return cxs, nil
+}
+
+func (x *xEnv) wait() error {
+	if x == nil || x.xctx == nil {
+		return nil
+	}
+	wc := x.xctx.Waitc()
+	<-wc
+	err := cerror(wc)
+	if err == nil {
+		cmd.SetEnv("sts", "")
+	} else {
+		cmd.SetEnv("sts", err.Error())
+	}
+	return err
+}
+
+func (x *xEnv) bg(tag string) {
+	x.bgtag = tag
+	bgcmds.add(x)
+	if x.xctx != nil {
+		wc := x.xctx.Waitc()
+		go func() {
+			<-wc
+			bgcmds.del(x)
+		}()
+	}
+	cmd.SetEnv("sts", "")
 }
 
 // children may be cmd, block, for, while, cond, set
 func (nd *Nd) runPipe(x *xEnv) error {
 	nd.chk(Npipe)
-	cxs, pcloses, err := nd.mkChildEnvs(x)
+	cxs, err := nd.mkChildEnvs(x)
 	if err != nil {
 		return err
 	}
+	bg := nd.Args[0]
 	for i, c := range nd.Child {
-		i, c := i, c
-		cxs[i].xctx = cmd.New(func() {
-			cmd.ForkEnv()
-			// XXX: now all the start foo will be run foo
-			// and they must set their sts env var
-			// the run cmd MUST wait for the cmd and set the
-			// var as well
+		c := c
+		cx := cxs[i]
+		cx.xctx = cmd.New(func() {
+			defer cx.Close()
+			if bg != "" || i < len(nd.Child)-1 {
+				cmd.ForkEnv()
+			}
 			switch c.typ {
 			case Ncmd:
-				err = c.runCmd(cxs[i])
+				err = c.runCmd(cx)
 			case Nblock:
-				err = c.startBlock(cxs[i])
+				err = c.runBlock(cx)
 			case Nfor:
-				err = c.startFor(cxs[i])
+				err = c.runFor(cx)
 			case Nwhile:
-				err = c.startWhile(cxs[i])
+				err = c.runWhile(cx)
 			case Ncond:
-				err = c.startCond(cxs[i])
+				err = c.runCond(cx)
 			case Nset:
-				err = c.runSet(cxs[i])
+				err = c.runSet(cx)
 			case Nsetmap:
-				err = c.runSet(cxs[i])
+				err = c.runSetMap(cx)
 			default:
 				panic(fmt.Errorf("run: bad pipe child type %s", c.typ))
 			}
@@ -256,41 +320,31 @@ func (nd *Nd) runPipe(x *xEnv) error {
 			}
 		})
 	}
-	for _, fd := range pcloses {
-		fd.Close()
-	}
 	if err != nil {
 		return err
 	}
-	bg := nd.Args[0]
 	cx := cxs[len(nd.Child)-1]
-	wc := cx.xctx.Waitc()
 	if bg != "" {
-		cx.bgtag = bg
-		bgcmds.add(cx)
-		go func() {
-			<-wc
-			bgcmds.del(cx)
-		}()
+		cx.bg(bg)
 	} else {
-		<-wc
-		if sts := cerror(wc); sts == nil {
-			cmd.SetEnv("sts", "")
-		} else {
-			cmd.SetEnv("sts", sts.Error())
-		}
+		cx.wait()
 	}
 	return nil
 }
 
-func (nd *Nd) varLen() (int, error) {
+func (nd *Nd) varLen() int {
 	nd.chk(Nlen)
 	if len(nd.Args) != 1 {
 		panic("bad Nlen arg list")
 	}
-	// XXX: take a look to $nd.Args[0] and see if it's a list or a map or what
-	sz := 1
-	return sz, nil
+	v := cmd.GetEnv(nd.Args[0])
+	if v == "" {
+		return 0
+	}
+	if isMap(v) {
+		return len(envMap(v))
+	}
+	return len(envList(v))
 }
 
 func (nd *Nd) varValue(x *xEnv) (names []string) {
@@ -298,10 +352,14 @@ func (nd *Nd) varValue(x *xEnv) (names []string) {
 	if len(nd.Args) != 1 {
 		panic("bad var node args")
 	}
+	v := cmd.GetEnv(nd.Args[0])
 	switch len(nd.Child) {
 	case 0:	// $a
-		// XXX: get $a names
-		names = []string{"$" + nd.Args[0]}
+		if isMap(v) {
+			names = mapKeys(envMap(v))
+		} else {
+			names = envList(v)
+		}
 	case 1:	// $a[b]
 		c := nd.Child[0]
 		names, err := c.expand1(x)
@@ -313,9 +371,18 @@ func (nd *Nd) varValue(x *xEnv) (names []string) {
 			cmd.Warn("$%s[...]: not a single index name", nd.Args[0])
 			break
 		}
-		// XXX: get $a names
-		// XXX: get element with index c.Args[0] 
-		names = []string{"$" + nd.Args[0] + "[" + names[0] + "]" }
+		if isMap(v) {
+			m := envMap(v)
+			names = m[names[0]]
+		} else {
+			lst := envList(v)
+			el := listEl(lst, names[0])
+			if el == "" {
+				names = []string{}
+			} else {
+				names = []string{el}
+			}
+		}
 	default:
 		panic("bad Nvar children list")
 	}
@@ -369,6 +436,77 @@ func (nd *Nd) appNames(x *xEnv) (names []string) {
 	return left
 }
 
+func (nd *Nd) pipeFrom(x *xEnv, cname string) (*xFd, error) {
+	if cname == "" || cname == "in" {
+		return nil, errors.New("can't pipe from command's input")
+	}
+	r, w, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	cx := x.dup()
+	if fd, ok := cx.fds[cname]; ok {
+		fd.Close()
+	}
+	cx.fds[cname] = &xFd{fd: w, path: cname, ref: 1}
+	cx.xctx = cmd.New(func() {
+		defer cx.Close()
+		if err := nd.runBlock(cx); err != nil {
+			cmd.Exit(err)
+		}
+	})
+	return &xFd{fd: r, path: "pipe", ref: 1}, nil
+}
+
+func (nd *Nd) pipeTo(x *xEnv, cname string) (*xFd, error) {
+	if cname == "" || cname == "out" || cname == "err" {
+		return nil, errors.New("can't pipe to command's output")
+	}
+	r, w, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	cx := x.dup()
+	if fd, ok := cx.fds[cname]; ok {
+		fd.Close()
+	}
+	cx.fds[cname] = &xFd{fd: r, path: cname, ref: 1}
+	cx.xctx = cmd.New(func() {
+		defer cx.Close()
+		if err := nd.runBlock(cx); err != nil {
+			cmd.Exit(err)
+		}
+	})
+	return &xFd{fd: w, path: "pipe", ref: 1}, nil
+}
+
+func collectNames(xfd *xFd) ([]string, error) {
+	defer xfd.Close()
+	names := []string{}
+	for {
+		_, _, m, err := ch.ReadMsg(xfd.fd)
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+			return names, nil
+		}
+		switch m := m.(type) {
+		case []byte:
+			s := string(m)
+			if s != "" && s[len(s)-1] == '\n' {
+				s = s[:len(s)-1]
+			}
+			cmd.Dprintf("expand io: msg '%s'\n", s)
+			names = append(names, s)
+		default:
+			cmd.Dprintf("expand io: ignored %T\n", m)
+		case error:
+			cmd.Warn("expand: io: %s", m)
+		}
+	}
+}
+
 func (nd *Nd) expandIO(x *xEnv) ([]string, error) {
 	nd.chk(Nioblk)
 	// Either <{...} or <[names]{....} or >[name]{....}
@@ -377,23 +515,70 @@ func (nd *Nd) expandIO(x *xEnv) ([]string, error) {
 		panic("bad ioblk arg list")
 	}
 	if len(nd.Args) == 1 {
-		// XXX: run and read all the output and
-		// then collect the names
-		// nd.startBlock(x.dup()) // but for i/o
-		return nil, fmt.Errorf("<{} not yet implemented")
+		fd, err := nd.pipeFrom(x, "out")
+		if err != nil {
+			cmd.Warn("expand: io: %s", err)
+			return nil, nil
+		}
+		return collectNames(fd)
 	}
 	switch nd.Args[0] {
 	case ">":
-		// XXX start the cmd setting up an out chan into it
-		// and return its name
-		
-		// nd.startBlock(x.dup()) // but for i/o
-		return nil, fmt.Errorf("<{} not yet implemented")
+		tag := nd.Args[1]
+		if strings.ContainsAny(tag, ";,") {
+			return nil, fmt.Errorf("tag not implemented (only 'x' and 'x:y')")
+		}
+		tags := fields(tag, ":")
+		if len(tags) == 1 {
+			tags = []string{"in", tags[0]}
+		}
+		if len(tags) != 2 {
+			return nil, fmt.Errorf("bad >{} tag '%s'", tag)
+		}
+		// eg: in: err	(block's in is a new err stream and we get |err as an arg)
+		cname, nname := tags[0], tags[1]
+		if cname == "out" || cname == "err" {
+			return nil, errors.New("can't pipe to command's output")
+		}
+		if nname == "in" {
+			return nil, errors.New("can't pipe from command's input")
+		}
+		pfd, err := nd.pipeTo(x, cname)
+		if err != nil {
+			cmd.Warn("expand: io: %s", err)
+			return nil, nil
+		}
+		if fd, ok := x.fds[nname]; ok {
+			fd.Close()
+		}
+		x.fds[nname] = pfd
+		return []string{"|>"+nname}, nil
 	case "<":
-		// XXX start the cmd setting up an in chan from it
-		// and return its name
-		// nd.startBlock(x.dup()) // but for i/o
-		return nil, fmt.Errorf(">{} not yet implemented")
+		tag := nd.Args[1]
+		if strings.ContainsAny(tag, ";,") {
+			return nil, fmt.Errorf("tag not implemented (only 'x' and 'x:y')")
+		}
+		tags := fields(tag, ":")
+		if len(tags) == 1 {
+			tags = append(tags, "out")
+		}
+		if len(tags) != 2 {
+			return nil, fmt.Errorf("bad <{} tag '%s'", tag)
+		}
+		nname, cname := tags[0], tags[1]
+		if nname == "out" || nname == "err" {
+			return nil, errors.New("can't pipe to command's output")
+		}
+		pfd, err := nd.pipeFrom(x, cname)
+		if err != nil {
+			cmd.Warn("expand: io: %s", err)
+			return nil, nil
+		}
+		if fd, ok := x.fds[nname]; ok {
+			fd.Close()
+		}
+		x.fds[nname] = pfd
+		return []string{"|<"+nname}, nil
 	default:
 		panic("bad ioblk arg")
 	}
@@ -408,10 +593,7 @@ func (nd *Nd) expand1(x *xEnv) (nargs []string, err error) {
 	case Napp:
 		nargs = nd.appNames(x)
 	case Nlen:
-		n, err := nd.varLen()
-		if err != nil {
-			return nil, err
-		}
+		n := nd.varLen()
 		nargs = []string{strconv.Itoa(n)}
 	case Nval, Nsingle:
 		nargs = nd.varValue(x)
@@ -428,7 +610,13 @@ func (nd *Nd) expand(x *xEnv) ([]string, error) {
 	nd.chk(Nnames)
 	xs := []string{}
 	for _, c := range nd.Child {
-		nargs, err := c.expand1(x)
+		var nargs []string
+		var err error
+		if c.typ == Nnames {
+			nargs, err = c.expand(x)
+		} else {
+			nargs, err = c.expand1(x)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -463,8 +651,8 @@ func (nd *Nd) runCmd(x *xEnv) error {
 	}
 	xc.Dir = cmd.Dot()
 	xc.Env = cmd.OSEnv()
-	for _, cfd := range x.fds {
-		switch cfd.io {
+	for cname, cfd := range x.fds {
+		switch cname {
 		case "in":
 			xc.Stdin = cfd.fd
 		case "out":
@@ -473,53 +661,44 @@ func (nd *Nd) runCmd(x *xEnv) error {
 			xc.Stderr = cfd.fd
 		default:
 			no := 3+len(xc.ExtraFiles)
-			ev := fmt.Sprintf("io#%s=%d", cfd.io, no)
+			ev := fmt.Sprintf("io#%s=%d", cname, no)
 			xc.Env = append(xc.Env, ev)
 			xc.ExtraFiles = append(xc.ExtraFiles, cfd.fd)
 		}
 	}
-	if err := xc.Start(); err != nil {
-		return err
+	if err := xc.Run(); err != nil {
+		cmd.SetEnv("sts", err.Error())
+		return nil
 	}
-	x.xcmd = xc
 	return nil
 }
 
 // block cmds are pipes or sources
-func (nd *Nd) startBlock(x *xEnv) error {
+func (nd *Nd) runBlock(x *xEnv) error {
 	nd.chk(Nblock, Nioblk)
 	if len(nd.Child) < 1 {
 		panic("bad block children")
 	}
-	x.waitc = make(chan bool)
-	go func() {
-		var err error
-		for _, c := range nd.Child {
-			cx := x.dup()
-			switch c.typ {
-			case Npipe:
-				err = c.runPipe(cx)
-			case Nsrc:
-				err = c.runSrc(cx)
-			default:
-				panic(fmt.Errorf("runblock: bad child type %s", c.typ))
-			}
-			if err != nil {
-				break
-			}
+	var err error
+	for _, c := range nd.Child {
+		cx := x.dup()
+		defer cx.Close()
+		switch c.typ {
+		case Npipe:
+			err = c.runPipe(cx)
+		case Nsrc:
+			err = c.runSrc(cx)
+		default:
+			panic(fmt.Errorf("runblock: bad child type %s", c.typ))
 		}
-		if err == nil {
-			sts := cmd.GetEnv("sts")
-			if sts != "" {
-				err = errors.New(sts)
-			}
+		if err != nil {
+			break
 		}
-		close(x.waitc, err)
-	}()
+	}
 	return nil
 }
 
-func (nd *Nd) startFor(x *xEnv) error {
+func (nd *Nd) runFor(x *xEnv) error {
 	nd.chk(Nfor)
 	if len(nd.Child) != 2 {
 		panic("bad for children")
@@ -533,59 +712,49 @@ func (nd *Nd) startFor(x *xEnv) error {
 		cmd.Warn("missing for variable name")
 		return fmt.Errorf("no variable name")
 	}
-	x.waitc = make(chan bool)
-	go func() {
-		var err error
-		name := names[0]
-		values := names[1:]
-		if len(values) == 0 {
-			// XXX: collect names from the input
-			err = errors.New("for: input names not yet implemented")
-			cmd.Warn("%s", err)
-			cmd.SetEnv("sts", err.Error())
+	name, values := names[0], names[1:]
+	if len(values) == 0 {
+		// XXX: collect names from the input
+		err = errors.New("for: input names not yet implemented")
+		cmd.Warn("%s", err)
+		cmd.SetEnv("sts", err.Error())
+	}
+	for _, v := range values {
+		cmd.SetEnv(name, v)
+		cx := x.dup()
+		defer cx.Close()
+		err = blk.runBlock(cx)
+		if err != nil {
+			break
 		}
-		for _, v := range values {
-			// XXX: set variable $name to $v
-			cmd.SetEnv(name, v)
-			cx := x.dup()
-			err = blk.startBlock(cx)
-			if err != nil {
-				break
-			}
-			cx.wait()
-		}
-		close(x.waitc, err)
-	}()
+	}
+	cmd.SetEnv("sts", "")
 	return nil
 }
 
-func (nd *Nd) startWhile(x *xEnv) error {
+func (nd *Nd) runWhile(x *xEnv) error {
 	nd.chk(Nwhile)
 	if len(nd.Child) != 2 {
 		panic("bad for children")
 	}
 	pipe, blk := nd.Child[0], nd.Child[1]
-	x.waitc = make(chan bool)
-	go func() {
-		var err error
-		for {
-			if err = pipe.runPipe(x); err != nil {
-				break
-			}
-			// XXX: if status is not ok
-			if true {
-				break
-			}
-			cx := x.dup()
-			if err = blk.startBlock(cx); err != nil {
-				break
-			}
-			if err = cx.wait(); err != nil {
-				break
-			}
+	var err error
+	for {
+		cx := x.dup()
+		defer cx.Close()
+		if err = pipe.runPipe(cx); err != nil {
+			break
 		}
-		close(x.waitc, err)
-	}()
+		if sts := cmd.GetEnv("sts"); sts != "" {
+			break
+		}
+		cx2 := x.dup()
+		defer cx2.Close()
+		if err = blk.runBlock(cx2); err != nil {
+			break
+		}
+	}
+	cmd.SetEnv("sts", "")
 	return nil
 }
 
@@ -603,6 +772,7 @@ func (nd *Nd) runOr(x *xEnv) error {
 	for i, c := range nd.Child {
 		var err error
 		cx := x.dup()
+		defer cx.Close()
 		switch c.typ {
 		case Npipe:
 			err = c.runPipe(cx)
@@ -615,39 +785,93 @@ func (nd *Nd) runOr(x *xEnv) error {
 			return err
 		}
 		if i < len(nd.Child)-1 {
-			// XXX: if sts is failure: return nil
+			if sts := cmd.GetEnv("sts"); sts != "" {
+				return nil
+			}
 		}
 	}
+	cmd.SetEnv("sts", "")
 	return orSuccess
-
 }
 
 // children are or nodes that are like blocks (w/o redirs)
 // and the nd has a final redir child
-func (nd *Nd) startCond(x *xEnv) error {
+func (nd *Nd) runCond(x *xEnv) error {
 	nd.chk(Ncond)
 	if len(nd.Child) == 0 {
 		// at least an or
 		panic("bad cond children")
 	}
-	x.waitc = make(chan bool)
-	go func() {
-		var err error
-		for _, or1 := range nd.Child {
-			cx := x.dup()
-			if err = or1.runOr(cx); err != nil {
-				if err == orSuccess {
-					err = nil
-				}
-				break
+	var err error
+	for _, or1 := range nd.Child {
+		cx := x.dup()
+		defer cx.Close()
+		if err = or1.runOr(cx); err != nil {
+			if err == orSuccess {
+				err = nil
 			}
+			break
 		}
-		close(x.waitc, err)
-	}()
-	return nil
+	}
+	cmd.SetEnv("sts", "")
+	return err
 }
 
 func (nd *Nd) runSet(x *xEnv) error {
-	nd.chk(Nset, Nsetmap)
+	nd.chk(Nset)
+	if len(nd.Args) == 0 {
+		panic("bad set args")
+	}
+	if len(nd.Child) == 0 || len(nd.Child) > 2 {
+		panic("bad set children")
+	}
+	name := nd.Args[0]
+	switch len(nd.Child) {
+	case 1:	// $name = ...
+		c0 := nd.Child[0]
+		vals, err := c0.expand(x)
+		if err != nil {
+			return err
+		}
+		cmd.VWarn("set %s = %s", name, dnames(vals))
+		cmd.SetEnv(name, listEnv(vals))
+	case 2:	// $name[name] = ...
+		c0, c1 := nd.Child[0], nd.Child[1]
+		idxs, err := c0.expand1(x)
+		if err != nil {
+			return err
+		}
+		if len(idxs) == 0 {
+			cmd.Warn("set %s: empty index", name)
+			return nil
+		}
+		if len(idxs) > 1 {
+			cmd.Warn("set %s: multiple index", name)
+			return nil
+		}
+		idx := idxs[0]
+		vals, err := c1.expand(x)
+		if err != nil {
+			return err
+		}
+		e := cmd.GetEnv(name)
+		if isMap(e) {
+			m := envMap(e)
+			m[idx] = vals
+			cmd.VWarn("set %s[%s] = %s", name, idx, dnames(vals))
+			cmd.SetEnv(name, mapEnv(m))
+		} else {
+			lst := envList(e)
+			setListEl(lst, idx, strings.Join(vals, " "))
+			cmd.VWarn("set %s[%s] = %s", name, idx, dnames(vals))
+			cmd.SetEnv(name, listEnv(lst))
+		}
+	default:
+	}
+	return nil
+}
+
+func (nd *Nd) runSetMap(x *xEnv) error {
+	nd.chk(Nsetmap)
 	return nil
 }
