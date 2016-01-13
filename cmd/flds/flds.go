@@ -119,7 +119,7 @@ func main() {
 		cmd.UnixIO("out")
 	}
 	if len(args) != 0 {
-		cmd.SetIO("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args...))
 	}
 	if len(ranges) == 0 {
 		ranges = append(ranges, ",")
@@ -127,7 +127,7 @@ func main() {
 	if err := parseRanges(); err != nil {
 		cmd.Fatal(err)
 	}
-	in := cmd.Lines(cmd.IO("in"))
-	flds(in, cmd.IO("out"))
+	in := cmd.Lines(cmd.In("in"))
+	flds(in, cmd.Out("out"))
 	cmd.Exit(cerror(in))
 }

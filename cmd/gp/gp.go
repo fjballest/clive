@@ -18,7 +18,7 @@ var (
 	preds []*pred.Pred
 )
 
-func gp(in, out chan interface{}) error {
+func gp(in <-chan interface{}, out chan<- interface{}) error {
 	matched := true
 	some := false
 	ok := true
@@ -90,7 +90,7 @@ func main() {
 		}
 		preds = append(preds, p)
 	}
-	in := cmd.IO("in")
-	out := cmd.IO("out")
+	in := cmd.In("in")
+	out := cmd.Out("out")
 	cmd.Exit(gp(in, out))
 }

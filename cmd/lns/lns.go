@@ -145,8 +145,8 @@ func lns(nm string, in chan []byte, donec chan bool) {
 func runFiles(fn func(nm string, c chan []byte, dc chan bool)) {
 	var lnc chan []byte
 	var dc chan bool
-	in := cmd.Lines(cmd.IO("in"))
-	out := cmd.IO("out")
+	in := cmd.Lines(cmd.In("in"))
+	out := cmd.Out("out")
 	nm := "in"
 	for m := range in {
 		cmd.Dprintf("got %T\n", m)
@@ -217,7 +217,7 @@ func main() {
 		cmd.UnixIO("out")
 	}
 	if len(args) != 0 {
-		cmd.SetIO("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args...))
 	}
 	if len(ranges) == 0 {
 		ranges = append(ranges, ",")

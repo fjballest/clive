@@ -26,7 +26,7 @@ func TestCmd(t *testing.T) {
 	if GetEnv("foo") != "bar" {
 		t.Fatalf("didn't setenv")
 	}
-	out := IO("out")
+	out := Out("out")
 	Eprintf("hi!\n")
 	Eprintf("There!\n")
 	Eprintf("There!\n")

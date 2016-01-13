@@ -32,11 +32,11 @@ func main() {
 		cmd.UnixIO("out")
 	}
 	if len(args) != 0 {
-		cmd.SetIO("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args...))
 	}
 	buf := &bytes.Buffer{}
-	in := cmd.IO("in")
-	out := cmd.IO("out")
+	in := cmd.In("in")
+	out := cmd.Out("out")
 	for m := range in {
 		switch m := m.(type) {
 		case []byte:

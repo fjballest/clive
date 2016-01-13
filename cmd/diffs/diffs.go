@@ -131,7 +131,7 @@ func (x *xFiles) showreport() error {
 	a2 := zx.Addr{Name: f2.name}
 	var n1, n2 int
 	buf := &bytes.Buffer{}
-	out := cmd.IO("out")
+	out := cmd.Out("out")
 	var r rep
 	for r = range x.repc {
 		switch r.what {
@@ -390,7 +390,7 @@ func main() {
 	var i1, i2 <-chan interface{}
 	switch len(args) {
 	case 1:
-		i1 = cmd.IO("in")
+		i1 = cmd.In("in")
 		i2 = cmd.Files(args[0])
 	case 2:
 		i1 = cmd.Files(args[0])

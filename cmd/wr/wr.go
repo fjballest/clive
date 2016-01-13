@@ -98,7 +98,7 @@ func out(t *Text) error {
 	}
 	wr(t, max, &b, outfig)
 	cmd.Dprintf("output to %s\n", oname)
-	out := cmd.IO("out")
+	out := cmd.Out("out")
 	var fout chan []byte
 	var rc <-chan zx.Dir
 	if oname != "-" {
@@ -238,10 +238,10 @@ func main() {
 	cliveMan = sect != "" || mflag
 	if len(args) != 0 {
 		ns.AddLfsPath("/", nil)
-		cmd.SetIO("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args...))
 	}
 	oext = outExt()
-	sts := wr(cmd.Lines(cmd.IO("in")))
+	sts := wr(cmd.Lines(cmd.In("in")))
 	if sts != nil {
 		cmd.Fatal(sts)
 	}

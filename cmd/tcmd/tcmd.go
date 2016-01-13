@@ -11,7 +11,7 @@ func main() {
 		cmd.Printf("hi from here\n")
 		cmd.Fatal("oops!")
 		println("XXX")
-	}, "cmd")
+	})
 	wc := nc.Waitc()
 	cmd.Printf("Hi there!\n")
 	cmd.Printf("Hi there!\n")

@@ -66,7 +66,7 @@ func add(c *count) {
 	}
 }
 
-func cnt(in chan interface{}) {
+func cnt(in <-chan interface{}) {
 	var c *count
 	var saved []byte
 	inword := false
@@ -144,12 +144,12 @@ func main() {
 		opts.Usage()
 	}
 	if len(args) != 0 {
-		cmd.SetIO("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args...))
 	}
 	if ux {
 		cmd.UnixIO("out")
 	}
-	in := cmd.IO("in")
+	in := cmd.In("in")
 	cnt(in)
 
 	tot := &count{name: "total"}

@@ -40,7 +40,7 @@ func expr(s string) (result interface{}, err error) {
 }
 
 func xp(in <-chan interface{}) error {
-	out := cmd.IO("out")
+	out := cmd.Out("out")
 	d := zx.Dir{"uname": "stdin"}
 	var sts, err error
 	var res interface{}
@@ -127,9 +127,9 @@ func main() {
 		in := make(chan interface{}, 1)
 		in <- []byte(strings.Join(args, " ")+"\n")
 		close(in)
-		cmd.SetIO("in", in)
+		cmd.SetIn("in", in)
 	}
-	in := cmd.Lines(cmd.IO("in"))
+	in := cmd.Lines(cmd.In("in"))
 	if err := xp(in); err != nil {
 		cmd.Exit(err)
 	}

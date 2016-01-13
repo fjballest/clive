@@ -217,7 +217,7 @@ func main() {
 	}
 	keys = map[string]bool{}
 	setSep()
-	if err := getFiles(cmd.Lines(cmd.IO("in"))); err != nil {
+	if err := getFiles(cmd.Lines(cmd.In("in"))); err != nil {
 		cmd.Fatal(err)
 	}
 	if len(args) > 0 {

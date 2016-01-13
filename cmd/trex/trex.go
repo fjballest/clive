@@ -112,7 +112,7 @@ func trex(in <-chan interface{}) error {
 	if gflag {
 		nrepl = -1
 	}
-	out := cmd.IO("out")
+	out := cmd.Out("out")
 	doall := false
 	for m := range in {
 		ok := true
@@ -212,11 +212,11 @@ func main() {
 	var sts error
 	switch {
 	case xflag:
-		sts = trex(cmd.IO("in"))
+		sts = trex(cmd.In("in"))
 	case fflag:
-		sts = trex(cmd.FullFiles(cmd.IO("in")))
+		sts = trex(cmd.FullFiles(cmd.In("in")))
 	default:
-		sts = trex(cmd.Lines(cmd.IO("in")))
+		sts = trex(cmd.Lines(cmd.In("in")))
 	}
 	if sts != nil {
 		cmd.Fatal(sts)

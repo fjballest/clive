@@ -130,7 +130,7 @@ func report(dc chan zx.Dir, donec chan bool) {
 	close(donec, cerror(dc))
 }
 
-func hist(in chan interface{}) error {
+func hist(in <-chan interface{}) error {
 	dc := make(chan zx.Dir)
 	ec := make(chan bool)
 	go report(dc, ec)
@@ -214,9 +214,9 @@ func main() {
 		lastday = fmt.Sprintf("%02d%02d", m, d)
 	}
 	if len(args) != 0 {
-		cmd.SetIO("in", cmd.Dirs(args...))
+		cmd.SetIn("in", cmd.Dirs(args...))
 	}
-	in := cmd.IO("in")
+	in := cmd.In("in")
 	if err := hist(in); err != nil {
 		cmd.Fatal(err)
 	}

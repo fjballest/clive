@@ -35,7 +35,7 @@ type par struct {
 }
 
 func fmt(parc chan par) {
-	in := cmd.Lines(cmd.IO("in"))
+	in := cmd.Lines(cmd.In("in"))
 	var rawc chan<- string
 	var wordc <-chan []rune
 	ntabs := 0
@@ -104,7 +104,7 @@ func main() {
 		cmd.UnixIO("out")
 	}
 	if len(args) != 0 {
-		cmd.SetIO("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args...))
 	}
 
 	ts := cmd.GetEnv("tabstop")
@@ -115,7 +115,7 @@ func main() {
 		tabwid = 8
 	}
 	parc := make(chan par)
-	out := cmd.IO("out")
+	out := cmd.Out("out")
 	go fmt(parc)
 	for p := range parc {
 		if p.x != nil {

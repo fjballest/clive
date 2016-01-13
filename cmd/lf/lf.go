@@ -47,7 +47,7 @@ func main() {
 		dc = cmd.Files(args...)
 	}
 
-	out := cmd.IO("out")
+	out := cmd.Out("out")
 	for m := range dc {
 		cmd.Dprintf("got %T\n", m)
 		switch m := m.(type) {

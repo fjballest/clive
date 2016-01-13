@@ -120,13 +120,13 @@ func main() {
 		in <- zx.Dir{"path": "-c", "Upath": "-c", "type": "c"}
 		in <- []byte(c)
 		close(in)
-		cmd.SetIO("in", in)
+		cmd.SetIn("in", in)
 	} else if len(args) != 0 {
-		cmd.SetIO("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args...))
 	}
 	c.Debug = c.Debug || ldebug || ydebug || nddebug
 	nddebug = nddebug || ydebug
-	in := &inRdr{name: "in", inc: cmd.IO("in")}
+	in := &inRdr{name: "in", inc: cmd.In("in")}
 	yylex = newLex(in)
 	if ldebug {
 		cmd.Warn("debug lex")

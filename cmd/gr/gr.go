@@ -16,7 +16,7 @@ var (
 	opts = opt.New("rexp [rexp]")
 	found   bool
 	re, ere *sre.ReProg
-	out     chan interface{}
+	out     chan<- interface{}
 
 	sflag, aflag, mflag, vflag, fflag, lflag, xflag, eflag bool
 )
@@ -393,12 +393,12 @@ func main() {
 		}
 	}
 	var in <-chan interface{}
-	out = cmd.IO("out")
+	out = cmd.Out("out")
 	if !fflag {
-		in = cmd.Lines(cmd.IO("in"))
+		in = cmd.Lines(cmd.In("in"))
 		gr(in)
 	} else {
-		in = cmd.FullFiles(cmd.IO("in"))
+		in = cmd.FullFiles(cmd.In("in"))
 		fullgr(in)
 	}
 

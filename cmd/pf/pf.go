@@ -119,8 +119,8 @@ func main() {
 	wflag = wflag || wwflag
 	dflag = dflag || wflag
 
-	in := cmd.IO("in")
-	out := cmd.IO("out")
+	in := cmd.In("in")
+	out := cmd.Out("out")
 	var w wFile
 	for m := range in {
 		cmd.Dprintf("got %T\n", m)

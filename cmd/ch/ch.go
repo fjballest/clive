@@ -146,7 +146,7 @@ func main() {
 	}
 	nd := chd(args...)
 
-	in := cmd.IO("in")
+	in := cmd.In("in")
 	for m := range in {
 		switch d := m.(type) {
 		case zx.Dir:

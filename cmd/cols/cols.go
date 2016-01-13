@@ -51,7 +51,7 @@ func col() {
 	if len(words)%ncols != 0 {
 		fmt.Fprintf(&buf,"\n")
 	}
-	cmd.IO("out") <- buf.Bytes()
+	cmd.Out("out") <- buf.Bytes()
 }
 
 func add(ws ...string) {
@@ -80,9 +80,9 @@ func main() {
 		cmd.UnixIO("out")
 	}
 	if len(args) != 0 {
-		cmd.SetIO("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args...))
 	}
-	in := cmd.IO("in")
+	in := cmd.In("in")
 	for m := range in {
 		switch m := m.(type) {
 		default:

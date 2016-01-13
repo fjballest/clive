@@ -70,9 +70,9 @@ func main() {
 		cmd.UnixIO("out")
 	}
 	if len(args) != 0 {
-		cmd.SetIO("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args...))
 	}
-	in := cmd.Lines(cmd.IO("in")) // to make sure we don't break a word in recvs.
-	words(in, cmd.IO("out"))
+	in := cmd.Lines(cmd.In("in")) // to make sure we don't break a word in recvs.
+	words(in, cmd.Out("out"))
 	cmd.Exit(cerror(in))
 }

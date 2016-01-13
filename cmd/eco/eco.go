@@ -39,7 +39,7 @@ func main() {
 	if !nflag {
 		b.WriteString("\n")
 	}
-	out := cmd.IO("out")
+	out := cmd.Out("out")
 	ok := out <- b.Bytes()
 	if !ok {
 		cmd.Fatal("out: %s", cerror(out))

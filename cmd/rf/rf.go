@@ -22,10 +22,10 @@ func main() {
 	}
 	if len(args) != 0 {
 		in := cmd.Files(args...)
-		cmd.SetIO("in", in)
+		cmd.SetIn("in", in)
 	}
-	out := cmd.IO("out")
-	in := cmd.IO("in")
+	out := cmd.Out("out")
+	in := cmd.In("in")
 	for m := range in {
 		if ok := out <- m; !ok {
 			close(in, cerror(out))

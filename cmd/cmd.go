@@ -315,16 +315,6 @@ func OSEnv() []string {
 	}
 	return env
 }
-func (c *Ctx) inout(name string) chan interface{} {
-	c.lk.Lock()
-	io := c.io
-	c.lk.Unlock()
-	cc := io.get(name)
-	if cc == nil {
-		return nil
-	}
-	return cc.c
-}
 
 // Set Unix IO for the named chans (all if none is given)
 func (c *Ctx) UnixIO(name ...string) {
@@ -339,7 +329,7 @@ func UnixIO(name ...string) {
 }
 
 
-func (c *Ctx) IO(name string) chan interface{} {
+func (c *Ctx) In(name string) <-chan interface{} {
 	c.lk.Lock()
 	io := c.io
 	c.lk.Unlock()
@@ -347,11 +337,26 @@ func (c *Ctx) IO(name string) chan interface{} {
 	if cc == nil {
 		return nil
 	}
-	return cc.c
+	return cc.inc
 }
 
-func IO(name string) chan interface{} {
-	return ctx().IO(name)
+func (c *Ctx) Out(name string) chan<- interface{} {
+	c.lk.Lock()
+	io := c.io
+	c.lk.Unlock()
+	cc := io.get(name)
+	if cc == nil {
+		return nil
+	}
+	return cc.outc
+}
+
+func In(name string) <-chan interface{} {
+	return ctx().In(name)
+}
+
+func Out(name string) chan<- interface{} {
+	return ctx().Out(name)
 }
 
 func (c *Ctx) CloseIO(name string) {
@@ -369,7 +374,7 @@ func CloseIO(name string) {
 	ctx().CloseIO(name)
 }
 
-func (c *Ctx) SetIO(name string, ioc chan interface{}) {
+func (c *Ctx) SetIn(name string, ioc <-chan interface{}) {
 	if ioc == nil {
 		ioc = make(chan interface{})
 		close(ioc)
@@ -377,11 +382,22 @@ func (c *Ctx) SetIO(name string, ioc chan interface{}) {
 	c.lk.Lock()
 	io := c.io
 	c.lk.Unlock()
-	io.add(name, ioc)
+	io.addIn(name, ioc)
+}
+
+func (c *Ctx) SetOut(name string, ioc chan<- interface{}) {
+	if ioc == nil {
+		ioc = make(chan interface{})
+		close(ioc)
+	}
+	c.lk.Lock()
+	io := c.io
+	c.lk.Unlock()
+	io.addOut(name, ioc)
 }
 
 func (c *Ctx) cprintf(name, f string, args ...interface{}) (n int, err error) {
-	out := c.IO(name)
+	out := c.Out(name)
 	if out == nil {
 		return 0, ErrIO
 	}
@@ -433,8 +449,12 @@ func VWarn(f string, args ...interface{}) (n int, err error) {
 	return 0, nil
 }
 
-func SetIO(name string, c chan interface{}) {
-	ctx().SetIO(name, c)
+func SetIn(name string, c <-chan interface{}) {
+	ctx().SetIn(name, c)
+}
+
+func SetOut(name string, c chan<- interface{}) {
+	ctx().SetOut(name, c)
 }
 
 func init() {

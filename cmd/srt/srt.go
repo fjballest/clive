@@ -233,7 +233,7 @@ func (x *xSort) sort() error {
 }
 
 func sortFiles(in <-chan interface{}) error {
-	out := cmd.IO("out")
+	out := cmd.Out("out")
 	x := &xSort{}
 	for m := range in {
 		switch m := m.(type) {
@@ -296,7 +296,7 @@ func main() {
 		cmd.UnixIO("out")
 	}
 	if len(args) != 0 {
-		cmd.SetIO("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args...))
 	}
 	if len(kargs) == 0 {
 		kargs = append(kargs, ",")
@@ -305,7 +305,7 @@ func main() {
 		cmd.Fatal(err)
 	}
 	setSep()
-	err = sortFiles(cmd.Lines(cmd.IO("in")))
+	err = sortFiles(cmd.Lines(cmd.In("in")))
 	if err != nil {
 		cmd.Fatal(err)
 	}

@@ -11,8 +11,10 @@ import (
 )
 
 type ioChan struct {
-	sync.Mutex	// for in, out, err
-	c  chan interface{}
+	sync.Mutex
+	isIn bool
+	inc  <-chan interface{}
+	outc chan<- interface{}
 	donec chan bool
 	fd io.Closer // will go in the future
 	ref  int32     // <0 means it's never closed.
@@ -43,7 +45,8 @@ func (cr *ioChan) close() {
 		if cr.fd != nil {
 			cr.fd.Close()
 		} else {
-			close(cr.c)
+			close(cr.inc)
+			close(cr.outc)
 		}
 		if cr.donec != nil {
 			<-cr.donec
@@ -61,10 +64,10 @@ func (cr *ioChan) close() {
 // But It's worth considering.
 
 func (cr *ioChan) start() {
-	c := make(chan interface{})
-	cr.c = c
 	switch cr.name {
 	case "in":
+		c := make(chan interface{})
+		cr.inc = c
 		rfn := ch.ReadMsgs
 		if cr.ux {
 			rfn = ch.ReadBytes
@@ -74,6 +77,8 @@ func (cr *ioChan) start() {
 			close(c, err)
 		}()
 	case "out", "err":
+		c := make(chan interface{})
+		cr.outc = c
 		donec := make(chan bool)
 		cr.donec = donec
 		fd := os.Stdout
@@ -98,18 +103,41 @@ func (cr *ioChan) start() {
 			<-donec
 		})
 	default:
+		// XXX: TODO: bridge to OS fds from ql chans
+		c := make(chan interface{})
 		close(c)
+		if cr.isIn {
+			cr.inc = c
+		} else {
+			cr.outc = c
+		}
 	}
 }
 
-func (io *ioSet) add(name string, c chan interface{}) *ioChan {
+func (io *ioSet) addIn(name string, c <-chan interface{}) *ioChan {
 	io.Lock()
 	defer io.Unlock()
 	oc, ok := io.set[name]
 	if ok {
 		oc.close()
 	}
-	nc := &ioChan{name: name, ref: 1, c: c}
+	nc := &ioChan{name: name, ref: 1, inc: c, isIn: true}
+	nc.outc = make(chan interface{})
+	close(nc.outc, "not for output")
+	io.set[name] = nc
+	return nc
+}
+
+func (io *ioSet) addOut(name string, c chan<- interface{}) *ioChan {
+	io.Lock()
+	defer io.Unlock()
+	oc, ok := io.set[name]
+	if ok {
+		oc.close()
+	}
+	nc := &ioChan{name: name, ref: 1, outc: c, isIn: true}
+	nc.inc = make(chan interface{})
+	close(nc.inc, "not for input")
 	io.set[name] = nc
 	return nc
 }
@@ -130,12 +158,10 @@ func (io *ioSet) get(name string) *ioChan {
 	if !ok {
 		return nil
 	}
-	if c.c == nil {	// 1st time for in, out, err, null
-		c.Lock()
-		defer c.Unlock()
-		if c.c == nil {
-			c.start()
-		}
+	c.Lock()
+	defer c.Unlock()
+	if (c.isIn && c.inc == nil) || (!c.isIn && c.outc == nil) {
+		c.start()
 	}
 	return c
 }
@@ -199,11 +225,12 @@ func mkIO() *ioSet {
 		ref: 1,
 		set: map[string]*ioChan{},
 	}
-	nc := io.add("in", nil)
-	nc = io.add("out", nil)
-	nc = io.add("err", nil)
-	nc = io.add("null", nil)
-	_ = nc
+	nc := io.addIn("in", nil)
+	nc = io.addOut("out", nil)
+	nc = io.addOut("err", nil)
+	nc = io.addIn("null", nil)
+	nc.outc = make(chan interface{})
+	close(nc.outc)
 	// XXX: TODO: must define chans for ql unix fds
 	// look for env varrs io#name=nb
 	// and then use the open fd #nb to get/send msgs.

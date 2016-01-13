@@ -51,10 +51,10 @@ func main() {
 		opts.Usage()
 	}
 	if len(args) != 0 {
-		cmd.SetIO("in", cmd.Dirs(args...))
+		cmd.SetIn("in", cmd.Dirs(args...))
 	}
 	c.Verb = c.Verb || dry
-	in := cmd.IO("in")
+	in := cmd.In("in")
 	for m := range in {
 		switch d := m.(type) {
 		case zx.Dir:
