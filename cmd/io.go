@@ -8,6 +8,8 @@ import (
 	"clive/ch"
 	"runtime"
 	"os"
+	"strings"
+	"strconv"
 )
 
 type ioChan struct {
@@ -20,6 +22,7 @@ type ioChan struct {
 	ref  int32     // <0 means it's never closed.
 	name string
 	ux bool
+	uxfd int
 }
 
 type ioSet struct {
@@ -42,14 +45,13 @@ func (cr *ioChan) close() {
 		if old == 0 {
 			dbg.Warn("app: too many closes on chan refs")
 		}
-		if cr.fd != nil {
-			cr.fd.Close()
-		} else {
-			close(cr.inc)
-			close(cr.outc)
-		}
+		close(cr.inc)
+		close(cr.outc)
 		if cr.donec != nil {
 			<-cr.donec
+		}
+		if cr.fd != nil {
+			cr.fd.Close()
 		}
 	}
 }
@@ -64,27 +66,42 @@ func (cr *ioChan) close() {
 // But It's worth considering.
 
 func (cr *ioChan) start() {
-	switch cr.name {
-	case "in":
-		c := make(chan interface{})
+	c := make(chan interface{})
+	if cr.uxfd < 0 {
+		close(c)
+		if cr.isIn {
+			cr.inc = c
+		} else {
+			cr.outc = c
+		}
+		return
+	}
+	var fd *os.File
+	switch cr.uxfd {
+	case 0:
+		fd = os.Stdin
+	case 1:
+		fd = os.Stdout
+	case 2:
+		fd = os.Stderr
+	default:
+		fd = os.NewFile(uintptr(cr.uxfd), cr.name)
+		cr.fd = fd
+	}
+	if cr.isIn {
 		cr.inc = c
 		rfn := ch.ReadMsgs
 		if cr.ux {
 			rfn = ch.ReadBytes
 		}
 		go func() {
-			_, _, err := rfn(os.Stdin, c)
+			_, _, err := rfn(fd, c)
 			close(c, err)
 		}()
-	case "out", "err":
-		c := make(chan interface{})
+	} else {
 		cr.outc = c
 		donec := make(chan bool)
 		cr.donec = donec
-		fd := os.Stdout
-		if cr.name == "err" {
-			fd = os.Stderr
-		}
 		if cr.ux {
 			go func() {
 				_, _, err := ch.WriteBytes(fd, c)
@@ -102,15 +119,6 @@ func (cr *ioChan) start() {
 			close(c)
 			<-donec
 		})
-	default:
-		// XXX: TODO: bridge to OS fds from ql chans
-		c := make(chan interface{})
-		close(c)
-		if cr.isIn {
-			cr.inc = c
-		} else {
-			cr.outc = c
-		}
 	}
 }
 
@@ -121,7 +129,7 @@ func (io *ioSet) addIn(name string, c <-chan interface{}) *ioChan {
 	if ok {
 		oc.close()
 	}
-	nc := &ioChan{name: name, ref: 1, inc: c, isIn: true}
+	nc := &ioChan{name: name, ref: 1, inc: c, isIn: true, uxfd: -1}
 	nc.outc = make(chan interface{})
 	close(nc.outc, "not for output")
 	io.set[name] = nc
@@ -135,7 +143,36 @@ func (io *ioSet) addOut(name string, c chan<- interface{}) *ioChan {
 	if ok {
 		oc.close()
 	}
-	nc := &ioChan{name: name, ref: 1, outc: c, isIn: true}
+	nc := &ioChan{name: name, ref: 1, outc: c, isIn: false, uxfd: -1}
+	nc.inc = make(chan interface{})
+	close(nc.inc, "not for input")
+	io.set[name] = nc
+	return nc
+}
+
+func (io *ioSet) addUXIn(name string, fd int) *ioChan {
+	io.Lock()
+	defer io.Unlock()
+	oc, ok := io.set[name]
+	if ok {
+		oc.close()
+	}
+	nc := &ioChan{name: name, ref: 1, isIn: true, uxfd: fd}
+	nc.outc = make(chan interface{})
+	close(nc.outc, "not for output")
+	io.set[name] = nc
+	return nc
+
+}
+
+func (io *ioSet) addUXOut(name string, fd int) *ioChan {
+	io.Lock()
+	defer io.Unlock()
+	oc, ok := io.set[name]
+	if ok {
+		oc.close()
+	}
+	nc := &ioChan{name: name, ref: 1, isIn: false, uxfd: fd}
 	nc.inc = make(chan interface{})
 	close(nc.inc, "not for input")
 	io.set[name] = nc
@@ -219,22 +256,54 @@ func (io *ioSet) unixIO(name ...string) {
 	
 }
 
+func (io *ioSet) addUXio() {
+	env := os.Environ()
+	for _, v := range env {
+		if !strings.HasPrefix(v, "cliveio#") {
+			continue
+		}
+		toks := strings.Split(v, "=")
+		if len(toks) != 2 {
+			continue
+		}
+		cname := strings.TrimPrefix(toks[0], "cliveio#")
+		fdval := toks[1]
+		if len(fdval) < 2 {
+			continue
+		}
+		dir := fdval[0]
+		if dir != '<' && dir != '>' {
+			continue
+		}
+		fdname := fdval[1:]
+		n, err := strconv.Atoi(fdname)
+		if err != nil {
+			continue
+		}
+		if dir == '<' {
+			io.addUXIn(cname, n)
+		} else {
+			io.addUXOut(cname, n)
+		}
+	}
+}
+
 // Initialize a new io from the os
 func mkIO() *ioSet {
 	io := &ioSet{
 		ref: 1,
 		set: map[string]*ioChan{},
 	}
-	nc := io.addIn("in", nil)
-	nc = io.addOut("out", nil)
-	nc = io.addOut("err", nil)
-	nc = io.addIn("null", nil)
-	nc.outc = make(chan interface{})
-	close(nc.outc)
-	// XXX: TODO: must define chans for ql unix fds
-	// look for env varrs io#name=nb
-	// and then use the open fd #nb to get/send msgs.
-	// But that requires our io to know which chans are for input
-	// and which ones are for output.
+	nc := io.addUXIn("in", 0)
+	nc.ref = -1
+	nc = io.addUXOut("out", 1)
+	nc.ref = -1
+	nc = io.addUXOut("err", 2)
+	nc.ref = -1
+	c := make(chan interface{})
+	close(c)
+	nc = io.addIn("null", c)
+	nc.outc = c
+	io.addUXio()
 	return io
 }

@@ -18,7 +18,7 @@ struct xFd {
 	ref int
 	fd *os.File
 	path string
-	// XXX: need a ref count to close when the last goes
+	isIn bool
 }
 
 struct pFd {
@@ -98,9 +98,9 @@ func (b *bgCmds) del(x *xEnv) {
 func newEnv() *xEnv {
 	return &xEnv{
 		fds: map[string]*xFd{
-			"in": &xFd{fd: os.Stdin, path: "in", ref: -1},
-			"out": &xFd{fd: os.Stdout, path: "out", ref: -1},
-			"err": &xFd{fd: os.Stderr, path: "err", ref: -1},
+			"in": &xFd{fd: os.Stdin, path: "in", ref: -1, isIn: true},
+			"out": &xFd{fd: os.Stdout, path: "out", ref: -1, isIn: false},
+			"err": &xFd{fd: os.Stderr, path: "err", ref: -1, isIn: false},
 		},
 	}
 }
@@ -239,11 +239,14 @@ func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, err error) {
 				} else {
 					osfd = p.r
 				}
+			default:
+				panic("bad kind")
 			}
 			if fd, ok := cx.fds[cname]; ok {
 				fd.Close()
 			}
-			cx.fds[cname] = &xFd{fd: osfd, path: path, ref: 1}
+			isin := kind[0] == '<'
+			cx.fds[cname] = &xFd{fd: osfd, path: path, ref: 1, isIn: isin}
 		}
 	}
 	return cxs, nil
@@ -448,14 +451,14 @@ func (nd *Nd) pipeFrom(x *xEnv, cname string) (*xFd, error) {
 	if fd, ok := cx.fds[cname]; ok {
 		fd.Close()
 	}
-	cx.fds[cname] = &xFd{fd: w, path: cname, ref: 1}
+	cx.fds[cname] = &xFd{fd: w, path: cname, ref: 1, isIn: false}
 	cx.xctx = cmd.New(func() {
 		defer cx.Close()
 		if err := nd.runBlock(cx); err != nil {
 			cmd.Exit(err)
 		}
 	})
-	return &xFd{fd: r, path: "pipe", ref: 1}, nil
+	return &xFd{fd: r, path: "pipe", ref: 1, isIn: true}, nil
 }
 
 func (nd *Nd) pipeTo(x *xEnv, cname string) (*xFd, error) {
@@ -470,14 +473,14 @@ func (nd *Nd) pipeTo(x *xEnv, cname string) (*xFd, error) {
 	if fd, ok := cx.fds[cname]; ok {
 		fd.Close()
 	}
-	cx.fds[cname] = &xFd{fd: r, path: cname, ref: 1}
+	cx.fds[cname] = &xFd{fd: r, path: cname, ref: 1, isIn: true}
 	cx.xctx = cmd.New(func() {
 		defer cx.Close()
 		if err := nd.runBlock(cx); err != nil {
 			cmd.Exit(err)
 		}
 	})
-	return &xFd{fd: w, path: "pipe", ref: 1}, nil
+	return &xFd{fd: w, path: "pipe", ref: 1, isIn: false}, nil
 }
 
 func collectNames(xfd *xFd) ([]string, error) {
@@ -651,20 +654,24 @@ func (nd *Nd) runCmd(x *xEnv) error {
 	}
 	xc.Dir = cmd.Dot()
 	xc.Env = cmd.OSEnv()
-	for cname, cfd := range x.fds {
+	for cname, xfd := range x.fds {
 		switch cname {
 		case "in":
-			xc.Stdin = cfd.fd
+			xc.Stdin = xfd.fd
 		case "out":
-			xc.Stdout = cfd.fd
+			xc.Stdout = xfd.fd
 		case "err":
-			xc.Stderr = cfd.fd
+			xc.Stderr = xfd.fd
 		default:
 			// XXX: TODO: set vars for In or out, not just for io
+			dir := ">"
+			if xfd.isIn {
+				dir = "<"
+			}
 			no := 3+len(xc.ExtraFiles)
-			ev := fmt.Sprintf("io#%s=%d", cname, no)
+			ev := fmt.Sprintf("cliveio#%s=%s%d", cname, dir, no)
 			xc.Env = append(xc.Env, ev)
-			xc.ExtraFiles = append(xc.ExtraFiles, cfd.fd)
+			xc.ExtraFiles = append(xc.ExtraFiles, xfd.fd)
 		}
 	}
 	if err := xc.Run(); err != nil {

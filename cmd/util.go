@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"unicode/utf8"
 	"errors"
+	"fmt"
 )
 
 func Stat(path string) (zx.Dir, error) {
@@ -52,10 +53,8 @@ func RemoveAll(path string) error {
 // in the names.
 // The Rpath attribute in the dir entries provide a path relative to the one
 // specified by the user.
-// If one argument is "|...", it names an IO chan and a fake dir entry is sent
-// for it. The name is "|<..." for input chans and "|>..." for output chans.
-// The caller should get that chan by name (removing the '|' from the path) and
-// then receive or send or whatever it wants to do with the chan.
+// If one argument is "|...", it names an IO chan and a dir entry is sent for it, type "c",
+// With the path (and Upath/Rpath) set to the name
 func Dirs(names ...string) chan interface{} {
 	ns := NS()
 	rc := make(chan interface{})
@@ -64,7 +63,7 @@ func Dirs(names ...string) chan interface{} {
 		for _, name := range names {
 			if len(name) > 0 && name[0] == '|' {
 				d := zx.Dir{"path": name, "name": name,
-					"Upath": name, "type": "c"}
+					"Upath": name, "Rpath": name, "type": "c"}
 				rc <- d
 				continue
 			}
@@ -116,16 +115,33 @@ func Dirs(names ...string) chan interface{} {
 }
 
 // Like Dirs(), but sends also file contents
+// If one argument is "|...", it names an IO chan and a dir entry is sent for it, type "c",
+// With the path (and Upath/Rpath) set to the name, then its contents.
 func Files(names ...string) chan interface{} {
 	ns := NS()
 	rc := make(chan interface{})
 	go func() {
 		var err error
 		for _, name := range names {
-			if len(name) > 0 && name[0] == '|' {
+			if len(name) > 2 && name[0] == '|' {
 				d := zx.Dir{"path": name, "name": name,
 					"Upath": name, "type": "c"}
 				rc <- d
+				cc := In(name[2:])
+				if cc != nil {
+					for m := range cc {
+						if ok := rc <- m; !ok {
+							close(cc, cerror(rc))
+							return
+						}
+					}
+					err = cerror(cc)
+				} else {
+					err = fmt.Errorf("no I/O chan %s", name[1:])
+				}
+				if err != nil {
+					rc <- err
+				}
 				continue
 			}
 			toks := strings.SplitN(name, ",", 2)

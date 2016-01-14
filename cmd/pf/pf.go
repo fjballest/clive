@@ -10,6 +10,7 @@ import (
 	"clive/cmd/opt"
 	"clive/zx"
 	fpath "path"
+	"clive/ns"
 )
 
 struct wFile {
@@ -18,7 +19,7 @@ struct wFile {
 }
 
 var (
-	opts = opt.New("")
+	opts = opt.New("{file}")
 	printf = cmd.Printf
 	odir string
 
@@ -113,8 +114,9 @@ func main() {
 		cmd.Warn("%s", err)
 		opts.Usage()
 	}
+	ns.AddLfsPath("/", nil)
 	if len(args) != 0 {
-		opts.Usage()
+		cmd.SetIn("in", cmd.Files(args...))
 	}
 	wflag = wflag || wwflag
 	dflag = dflag || wflag
