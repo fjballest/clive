@@ -49,7 +49,7 @@ func main() {
 				}
 				buf = &bytes.Buffer{}
 			}
-			if !one {
+			if !one && !ux {
 				if ok := out <- m; !ok {
 					close(in, cerror(out))
 					break
@@ -59,6 +59,12 @@ func main() {
 			cmd.Warn("%s", m)
 		default:
 			cmd.Dprintf("ignored %T\n", m)
+			if !ux {
+				if ok := out <- m; !ok {
+					close(in, cerror(out))
+					break
+				}
+			}
 		}
 	}
 	if buf.Len() > 0 {

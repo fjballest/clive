@@ -4,7 +4,6 @@
 package main
 
 import (
-	"clive/ns"
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx"
@@ -371,7 +370,6 @@ func (x *xFiles) getDirs(i1, i2 <-chan interface{}) (zx.Dir, zx.Dir) {
 
 // Run diffs in the current app context.
 func main() {
-	ns.AddLfsPath("/", nil)
 	cmd.UnixIO("err")
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)

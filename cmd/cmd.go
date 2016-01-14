@@ -459,6 +459,7 @@ func SetOut(name string, c chan<- interface{}) {
 
 func init() {
 	mainctx = mkCtx()
+	ns.AddLfsPath("/", nil)
 }
 
 func appexit(sts string) {

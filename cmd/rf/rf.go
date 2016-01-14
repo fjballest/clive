@@ -6,13 +6,11 @@ package main
 import (
 	"clive/cmd"
 	"clive/cmd/opt"
-	"clive/ns"
 )
 
 var opts = opt.New("{file}")
 
 func main() {
-	ns.AddLfsPath("/", nil)
 	cmd.UnixIO("err")
 	cmd.UnixIO("in")
 	args, err := opts.Parse()

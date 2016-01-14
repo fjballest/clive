@@ -31,6 +31,7 @@ func (e *envSet) set(n, v string) {
 	} else {
 		e.vars[n] = v
 	}
+	os.Setenv(n, v)	// in case someone execs...
 }
 
 func (e *envSet) get(n string) string {

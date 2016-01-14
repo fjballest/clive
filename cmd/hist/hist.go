@@ -5,7 +5,6 @@
 package main
 
 import (
-	"clive/ns"
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx"
@@ -173,7 +172,6 @@ func hist(in <-chan interface{}) error {
 // Run cnt in the current app context.
 func main() {
 	c := cmd.AppCtx()
-	ns.AddLfsPath("/", nil)
 	cmd.UnixIO("err")
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("f", "force search past file removals", &force)

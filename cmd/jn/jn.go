@@ -4,7 +4,6 @@
 package main
 
 import (
-	"clive/ns"
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx"
@@ -198,7 +197,6 @@ func join() error {
 // Run print lines in the current app context.
 func main() {
 	cmd.UnixIO("err")
-	ns.AddLfsPath("/", nil)
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("u", "unix IO", &ux)

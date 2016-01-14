@@ -7,7 +7,6 @@ package main
 import (
 	"bytes"
 	"clive/cmd"
-	"clive/ns"
 	"clive/cmd/opt"
 	"clive/cmd/wr/refs"
 	"clive/zx"
@@ -237,7 +236,6 @@ func main() {
 	hflag = hflag || sect != ""
 	cliveMan = sect != "" || mflag
 	if len(args) != 0 {
-		ns.AddLfsPath("/", nil)
 		cmd.SetIn("in", cmd.Files(args...))
 	}
 	oext = outExt()

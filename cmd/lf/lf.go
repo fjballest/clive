@@ -7,7 +7,6 @@ import (
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx"
-	"clive/ns"
 	"fmt"
 )
 
@@ -38,7 +37,6 @@ func main() {
 	if len(args) == 0 {
 		args = append(args, ".,1")
 	}
-	ns.AddLfsPath("/", nil)
 
 	var dc <-chan interface{}
 	if !gflag {

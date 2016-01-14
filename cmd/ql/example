@@ -1,7 +1,7 @@
 # this is a comment
 #
-# The prompt is %
-# %'s at the start of line are discarded
+# The prompt is >
+# >'s at the start of line are discarded
 
 # quoting
 echo	' quoted ` 
@@ -73,13 +73,10 @@ a >>[out, err] b
 	b
 } 
 
-# x is sent twice, to a and b.
 # a and b outs are joined and sent to y
 { a ; b } <x >y
 
 # piped blocks:
-# a tee that dups a's out and sends to both b a c
-# b and c outs are joined and sent to d
 a | { b ; c } | d
 
 # bg

@@ -44,7 +44,7 @@ struct lex {
 
 var (
 	ErrIntr  = errors.New("interrupted")
-	builtins = map[string]int{
+	keywords = map[string]int{
 		"for":   FOR,
 		"while": WHILE,
 		"func":  FUNC,
@@ -68,6 +68,8 @@ func newLex(in inText) *lex {
 	return &lex{
 		in:   []inText{in},
 		Addr: Addr{in, 1},
+		prompt: "> ",
+		wasnl: true,
 	}
 }
 
@@ -201,7 +203,7 @@ func (l *lex) lex(lval *yySymType) int {
 			return NL
 		}
 		if !unicode.IsSpace(c) {
-			if l.wasnl && c == '%' {
+			if l.wasnl && c == '>' {
 				l.val = l.val[:0]
 				continue
 			}
@@ -329,7 +331,7 @@ func (l *lex) scanName(lval *yySymType,) int {
 			l.unget()
 			lval.sval = l.getval()
 			l.notfirst = true
-			if tok, ok := builtins[lval.sval]; ok {
+			if tok, ok := keywords[lval.sval]; ok {
 				return tok
 			}
 			return NAME

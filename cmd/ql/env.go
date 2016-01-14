@@ -1,13 +1,56 @@
 package main
 
 import (
-	fpath "path"
 	"clive/cmd"
 	"strconv"
 	"strings"
 	"sort"
-	"os"
+	"sync"
+	"os/exec"
 )
+
+var (
+	fnslk sync.Mutex
+	builtins = map[string]func(x*xEnv, args ...string)error{}
+	fns = map[string]*Nd{}
+	xpath []string
+
+)
+
+func newFunc(nd *Nd) {
+	fnslk.Lock()
+	fns[nd.Args[0]] = nd
+	cmd.VWarn("func %s defined", nd.Args[0])
+	fnslk.Unlock()
+}
+
+func getFunc(name string) *Nd {
+	fnslk.Lock()
+	defer fnslk.Unlock()
+	return fns[name]
+}
+
+func init() {
+	builtins["type"] = btype
+}
+
+func btype(x *xEnv, args ...string) error {
+	for _, a := range args[1:] {
+		if getFunc(a) != nil {
+			cmd.Printf("func %s\n", a)
+		}
+		if builtins[a] != nil {
+			cmd.Printf("builtin %s\n", a)
+		}
+		if p, err := exec.LookPath(a); err == nil {
+			cmd.Printf("%s\n", p)
+		} else {
+			cmd.Printf("unknown %s\n", a)
+		}
+	}
+	return nil
+}
+
 
 // Vars are lists separated by \b
 // Maps are lists with of key-value lists preceded by \a
@@ -60,16 +103,19 @@ func listEnv(lst []string) string {
 }
 
 func listEl(lst []string, idxs string) string {
-	n, err := strconv.ParseInt(idxs, 10, 32)
+	n, err := strconv.Atoi(idxs)
 	i := int(n)
-	if err != nil || i < 0 || i >= len(lst) {
+	if err != nil {
+		return ""
+	}
+	if i < 0 || i >= len(lst) {
 		return ""
 	}
 	return lst[i]
 }
 
 func setListEl(lst []string, idxs, val string) []string {
-	n, err := strconv.ParseInt(idxs, 10, 32)
+	n, err := strconv.Atoi(idxs)
 	i := int(n)
 	if err != nil || i < 0 || i > len(lst) {
 		return lst
@@ -81,33 +127,4 @@ func setListEl(lst []string, idxs, val string) []string {
 	return lst
 }
 
-func (x *xEnv) setPath() {
-	var ps []string
-	if p := cmd.GetEnv("path"); p == "" {
-		p = cmd.GetEnv("PATH")
-		if p == "" {
-			p = "/bin:/usr/bin"
-		}
-		ps = strings.SplitN(p, ":", -1)
-	} else {
-		ps = envList(p)
-	}
-	x.path = ps
-}
-
-func (x *xEnv) lookCmd(name string) string {
-	if strings.HasPrefix(name, "./") || strings.HasPrefix(name, "../") ||
-		strings.HasPrefix(name, "/") {
-		return name
-	}
-	for _, pd := range x.path {
-		nm := fpath.Join(pd, name)
-		if d, err := os.Stat(nm); err == nil {
-			if !d.IsDir() && d.Mode()&0111 != 0 {
-				return nm
-			}
-		}
-	}
-	return ""
-}
 

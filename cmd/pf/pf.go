@@ -10,7 +10,6 @@ import (
 	"clive/cmd/opt"
 	"clive/zx"
 	fpath "path"
-	"clive/ns"
 )
 
 struct wFile {
@@ -114,7 +113,6 @@ func main() {
 		cmd.Warn("%s", err)
 		opts.Usage()
 	}
-	ns.AddLfsPath("/", nil)
 	if len(args) != 0 {
 		cmd.SetIn("in", cmd.Files(args...))
 	}

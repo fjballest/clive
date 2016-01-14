@@ -38,7 +38,6 @@ struct bgCmds {
 // the name to the unix file descriptor.
 struct xEnv {
 	fds map[string]*xFd
-	path []string
 	bgtag string
 	xctx *cmd.Ctx
 }
@@ -163,6 +162,13 @@ func (nd *Nd) runSrc(x *xEnv) error {
 
 func (nd *Nd) runFunc(x *xEnv) error {
 	nd.chk(Nfunc)
+	if len(nd.Args) != 1 {
+		panic("runFunc: bad args")
+	}
+	if len(nd.Child) != 1 {
+		panic("runFunc: bad children")
+	}
+	newFunc(nd)
 	return nil
 }
 
@@ -194,13 +200,14 @@ func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, err error) {
 				return nil, err
 			}
 			path := paths[0]
-			kind, cname := r.Args[0], r.Args[1]
+			kind, tag := r.Args[0], r.Args[1]
 			var osfd *os.File
 			// TODO: Use zx to rely files
 			//	pro: we can avoid using sshfs
 			//	con: we'd read the file before the command reads it.
 			//	just use a pipe and be careful not to die because of
 			//	writes in closed pipes.
+			cnames := fields(tag, ",")
 			switch kind {
 			case "<":
 				osfd, err = os.Open(path)
@@ -242,11 +249,15 @@ func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, err error) {
 			default:
 				panic("bad kind")
 			}
-			if fd, ok := cx.fds[cname]; ok {
-				fd.Close()
-			}
 			isin := kind[0] == '<'
-			cx.fds[cname] = &xFd{fd: osfd, path: path, ref: 1, isIn: isin}
+			xfd := &xFd{fd: osfd, path: path, ref: 0, isIn: isin}
+			for _, cname := range cnames {
+				xfd.ref++
+				if fd, ok := cx.fds[cname]; ok {
+					fd.Close()
+				}
+				cx.fds[cname] = xfd
+			}
 		}
 	}
 	return cxs, nil
@@ -351,6 +362,7 @@ func (nd *Nd) varLen() int {
 }
 
 func (nd *Nd) varValue(x *xEnv) (names []string) {
+	var err error
 	nd.chk(Nval, Nsingle)
 	if len(nd.Args) != 1 {
 		panic("bad var node args")
@@ -365,7 +377,7 @@ func (nd *Nd) varValue(x *xEnv) (names []string) {
 		}
 	case 1:	// $a[b]
 		c := nd.Child[0]
-		names, err := c.expand1(x)
+		names, err = c.expand1(x)
 		if err != nil {
 			cmd.Warn("expand: %s", err)
 			break
@@ -376,9 +388,11 @@ func (nd *Nd) varValue(x *xEnv) (names []string) {
 		}
 		if isMap(v) {
 			m := envMap(v)
+			cmd.Dprintf("map value %v [ %s ] ...\n", m, names[0])
 			names = m[names[0]]
 		} else {
 			lst := envList(v)
+			cmd.Dprintf("lst value %v [ %s ] ...\n", lst, names[0])
 			el := listEl(lst, names[0])
 			if el == "" {
 				names = []string{}
@@ -629,6 +643,14 @@ func (nd *Nd) expand(x *xEnv) ([]string, error) {
 	return xs, nil
 }
 
+func (nd *Nd) eval(x *xEnv, argv ...string) error {
+	nd.chk(Nfunc)
+	cmd.SetEnv("argv0", argv[0])
+	e := listEnv(argv[1:])
+	cmd.SetEnv("argv", e)
+	return nd.Child[0].runBlock(x)
+}
+
 func (nd *Nd) runCmd(x *xEnv) error {
 	nd.chk(Ncmd)
 	if len(nd.Child) != 1 {
@@ -648,10 +670,17 @@ func (nd *Nd) runCmd(x *xEnv) error {
 	if dry {
 		return nil
 	}
-	xc := exec.Command(args[0], args[1:]...)
-	if p := x.lookCmd(args[0]); p != "" {
-		xc.Path = p
+	if args[0] == "builtin" {
+		args = args[1:]
+	} else {
+		if fnd := getFunc(args[0]); fnd != nil {
+			return fnd.eval(x, args...)
+		}
 	}
+	if bfn := builtins[args[0]]; bfn != nil {
+		return bfn(x, args...)
+	}
+	xc := exec.Command(args[0], args[1:]...)
 	xc.Dir = cmd.Dot()
 	xc.Env = cmd.OSEnv()
 	for cname, xfd := range x.fds {
@@ -681,7 +710,7 @@ func (nd *Nd) runCmd(x *xEnv) error {
 	return nil
 }
 
-// block cmds are pipes or sources
+// block cmds are pipes or sources, there're also io blocks
 func (nd *Nd) runBlock(x *xEnv) error {
 	nd.chk(Nblock, Nioblk)
 	if len(nd.Child) < 1 {
@@ -722,10 +751,14 @@ func (nd *Nd) runFor(x *xEnv) error {
 	}
 	name, values := names[0], names[1:]
 	if len(values) == 0 {
-		// XXX: collect names from the input
-		err = errors.New("for: input names not yet implemented")
-		cmd.Warn("%s", err)
-		cmd.SetEnv("sts", err.Error())
+		fd := x.fds["in"]
+		if fd != nil && fd.isIn {
+			values, err = collectNames(fd)
+			if err != nil {
+				cmd.Warn("%s", err)
+				cmd.SetEnv("sts", err.Error())
+			}
+		}
 	}
 	for _, v := range values {
 		cmd.SetEnv(name, v)
@@ -870,7 +903,7 @@ func (nd *Nd) runSet(x *xEnv) error {
 			cmd.SetEnv(name, mapEnv(m))
 		} else {
 			lst := envList(e)
-			setListEl(lst, idx, strings.Join(vals, " "))
+			lst = setListEl(lst, idx, strings.Join(vals, " "))
 			cmd.VWarn("set %s[%s] = %s", name, idx, dnames(vals))
 			cmd.SetEnv(name, listEnv(lst))
 		}
@@ -881,5 +914,22 @@ func (nd *Nd) runSet(x *xEnv) error {
 
 func (nd *Nd) runSetMap(x *xEnv) error {
 	nd.chk(Nsetmap)
+	if len(nd.Args) == 0 {
+		panic("bad set args")
+	}
+	name := nd.Args[0]
+	m := map[string][]string{}
+	for _, c := range nd.Child {
+		nms, err := c.expand(x)
+		if err != nil {
+			return err
+		}
+		if len(nms) == 0 {
+			continue
+		}
+		m[nms[0]] = nms[1:]
+	}
+	cmd.VWarn("set %s = %v", name, m)
+	cmd.SetEnv(name, mapEnv(m))
 	return nil
 }

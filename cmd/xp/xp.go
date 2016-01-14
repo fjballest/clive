@@ -4,7 +4,6 @@
 package main
 
 import (
-	"clive/ns"
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx"
@@ -93,7 +92,6 @@ func xp(in <-chan interface{}) error {
 }
 
 func main() {
-	ns.AddLfsPath("/", nil)
 	c := cmd.AppCtx()
 	cmd.UnixIO("err")
 	opts.NewFlag("D", "debug", &c.Debug)

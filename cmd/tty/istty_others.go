@@ -1,4 +1,4 @@
-// +build !bsd,!darwin,!linux,!freebsd,!openbsd,!cgo
+// +build !bsd, !darwin, !linux, !freebsd, !openbsd, !cgo
 
 package tty
 

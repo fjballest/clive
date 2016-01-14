@@ -89,7 +89,7 @@ func cnt(in <-chan interface{}) {
 		case []byte:
 			cmd.Dprintf("got %T\n", m)
 			if c == nil {
-				c = &count{name: "stdin"}
+				c = &count{name: "in"}
 			}
 			c.msgs++
 			c.bytes += int64(len(m))

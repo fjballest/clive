@@ -5,12 +5,13 @@ package main
 
 import (
 	"io"
-	"clive/ns"
+	"os"
 	"clive/zx"
 	"clive/cmd"
 	"clive/cmd/opt"
 	"errors"
 	"strings"
+	"clive/cmd/tty"
 )
 
 type inRdr struct {
@@ -22,13 +23,14 @@ type inRdr struct {
 
 var (
 	yylex *lex
-	ldebug, ydebug, nddebug, dry, cflag bool
+	ldebug, ydebug, nddebug, dry, cflag, iflag bool
 
 	yprintf = cmd.FlagPrintf(&ydebug)
 	nprintf = cmd.FlagPrintf(&nddebug)
 
 	opts = opt.New("")
 	parseErr = errors.New("parse error")
+
 )
 
 func (ir *inRdr) Name() string {
@@ -93,7 +95,6 @@ func parse() (err error) {
 }
 
 func main() {
-	ns.AddLfsPath("/", nil)
 	cmd.UnixIO()
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
@@ -103,6 +104,7 @@ func main() {
 	opts.NewFlag("N", "debug nodes", &nddebug)
 	opts.NewFlag("n", "dry run", &dry)
 	opts.NewFlag("c", "run args as a command", &cflag)
+	opts.NewFlag("i", "interactive", &iflag)
 	args, err := opts.Parse()
 	if err != nil {
 		opts.Usage()
@@ -123,11 +125,16 @@ func main() {
 		cmd.SetIn("in", in)
 	} else if len(args) != 0 {
 		cmd.SetIn("in", cmd.Files(args...))
+	} else {
+		iflag = tty.IsTTY(os.Stdin)
 	}
 	c.Debug = c.Debug || ldebug || ydebug || nddebug
 	nddebug = nddebug || ydebug
+	cmd.SetEnv("argv0", c.Args[0])
+	cmd.SetEnv("argv", listEnv(c.Args[1:]))
 	in := &inRdr{name: "in", inc: cmd.In("in")}
 	yylex = newLex(in)
+	yylex.interactive = iflag
 	if ldebug {
 		cmd.Warn("debug lex")
 		justLex()	// does not return
