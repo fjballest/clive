@@ -306,6 +306,8 @@ func (nd *Nd) runPipe(x *xEnv) error {
 			defer cx.Close()
 			if bg != "" || i < len(nd.Child)-1 {
 				cmd.ForkEnv()
+				cmd.ForkNS()
+				cmd.ForkDot()
 			}
 			switch c.typ {
 			case Ncmd:
@@ -651,6 +653,18 @@ func (nd *Nd) eval(x *xEnv, argv ...string) error {
 	return nd.Child[0].runBlock(x)
 }
 
+func cleanenv(env []string) []string {
+	for i := 0; i < len(env); {
+		if strings.HasPrefix(env[i], "dot=") || strings.HasPrefix(env[i], "cliveio#") {
+			copy(env[i:], env[i+1:])
+			env = env[:len(env)-1]
+		} else {
+			i++
+		}
+	}
+	return env
+}
+
 func (nd *Nd) runCmd(x *xEnv) error {
 	nd.chk(Ncmd)
 	if len(nd.Child) != 1 {
@@ -682,7 +696,7 @@ func (nd *Nd) runCmd(x *xEnv) error {
 	}
 	xc := exec.Command(args[0], args[1:]...)
 	xc.Dir = cmd.Dot()
-	xc.Env = cmd.OSEnv()
+	xc.Env = cleanenv(cmd.OSEnv())
 	for cname, xfd := range x.fds {
 		switch cname {
 		case "in":
@@ -703,9 +717,13 @@ func (nd *Nd) runCmd(x *xEnv) error {
 			xc.ExtraFiles = append(xc.ExtraFiles, xfd.fd)
 		}
 	}
+	ev := fmt.Sprintf("dot=%s", cmd.Dot())
+	xc.Env = append(xc.Env, ev)
 	if err := xc.Run(); err != nil {
 		cmd.SetEnv("sts", err.Error())
 		return nil
+	} else {
+		cmd.SetEnv("sts", "")
 	}
 	return nil
 }

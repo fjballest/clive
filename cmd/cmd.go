@@ -460,6 +460,10 @@ func SetOut(name string, c chan<- interface{}) {
 func init() {
 	mainctx = mkCtx()
 	ns.AddLfsPath("/", nil)
+	cdot := GetEnv("dot")
+	if cdot != "" {
+		Cd(cdot)
+	}
 }
 
 func appexit(sts string) {

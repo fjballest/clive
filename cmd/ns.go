@@ -6,6 +6,8 @@ import (
 	"sync"
 	"os"
 	fpath "path"
+	"fmt"
+	"clive/zx"
 )
 
 type cwd struct {
@@ -35,9 +37,17 @@ func mkDot() *cwd {
 
 func (c *cwd) set(d string) error {
 	d = AbsPath(d)
+	nd, err := Stat(d)
+	if err != nil {
+		return err
+	}
+	if nd["type"] != "d" {
+		return fmt.Errorf("%s: %s", d, zx.ErrNotDir)
+	}
 	c.Lock()
 	defer c.Unlock()
 	c.path = d
+	os.Chdir(d)	// in case it exists and we exec...
 	return nil
 }
 

@@ -7,6 +7,9 @@ import (
 	"sort"
 	"sync"
 	"os/exec"
+	"clive/u"
+	"errors"
+	"fmt"
 )
 
 var (
@@ -32,25 +35,80 @@ func getFunc(name string) *Nd {
 
 func init() {
 	builtins["type"] = btype
+	builtins["cd"] = bcd
+	builtins["pwd"] = bpwd
+	builtins["fork"] = bfork
 }
 
 func btype(x *xEnv, args ...string) error {
 	for _, a := range args[1:] {
 		if getFunc(a) != nil {
-			cmd.Printf("func %s\n", a)
+			cmd.Printf("%s: func\n", a)
 		}
 		if builtins[a] != nil {
-			cmd.Printf("builtin %s\n", a)
+			cmd.Printf("%s: builtin\n", a)
 		}
 		if p, err := exec.LookPath(a); err == nil {
-			cmd.Printf("%s\n", p)
+			cmd.Printf("%s: %s\n", a, p)
 		} else {
-			cmd.Printf("unknown %s\n", a)
+			cmd.Printf("%s: unknown\n", a)
 		}
 	}
 	return nil
 }
 
+func bcd(x *xEnv, args ...string) error {
+	var err error
+	switch len(args) {
+	case 1:
+		err = cmd.Cd(u.Home)
+	case 2:
+		err = cmd.Cd(args[1])
+	default:
+		err = errors.New("too many arguments");
+	}
+	if err != nil {
+		cmd.Eprintf("cd: %s", err)
+		cmd.SetEnv("sts", err.Error())
+	} else {
+		cmd.SetEnv("sts", "")
+	}
+	return nil
+}
+
+func bpwd(x *xEnv, args ...string) error {
+	var err error
+	if len(args) > 1 {
+		err = errors.New("too many arguments");
+		cmd.Eprintf("cd: %s", err)
+		cmd.SetEnv("sts", err.Error())
+	} else {
+		cmd.SetEnv("sts", "")
+	}
+	cmd.Printf("%s\n", cmd.Dot())
+	return nil
+}
+
+func bfork(x *xEnv, args ...string) error {
+	var err error
+	for _, a := range args[1:] {
+		switch a {
+		case "ns":
+			cmd.ForkNS()
+		case "env":
+			cmd.ForkEnv()
+		case "dot":
+			cmd.ForkDot()
+		default:
+			err = fmt.Errorf("%s unknown (not ns, env, dot)", a)
+			cmd.Eprintf("cd: %s", err)
+			cmd.SetEnv("sts", err.Error())
+			return nil
+		}
+	}
+	cmd.SetEnv("sts", "")
+	return nil
+}
 
 // Vars are lists separated by \b
 // Maps are lists with of key-value lists preceded by \a
