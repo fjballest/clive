@@ -38,6 +38,7 @@ func init() {
 	builtins["cd"] = bcd
 	builtins["pwd"] = bpwd
 	builtins["fork"] = bfork
+	builtins["wait"] = bwait
 }
 
 func btype(x *xEnv, args ...string) error {
@@ -105,6 +106,17 @@ func bfork(x *xEnv, args ...string) error {
 			cmd.SetEnv("sts", err.Error())
 			return nil
 		}
+	}
+	cmd.SetEnv("sts", "")
+	return nil
+}
+
+func bwait(x *xEnv, args ...string) error {
+	if len(args) == 1 {
+		args = append(args, "")
+	}
+	for _, a := range args[1:] {
+		bgcmds.wait(a)
 	}
 	cmd.SetEnv("sts", "")
 	return nil

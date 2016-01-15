@@ -10,7 +10,7 @@
 
 %type <nd> name names cmd optnames list nameel mapels
 %type <nd> bgpipe pipe cmd redir spipe
-%type <nd> blkcmds func cond setvar
+%type <nd> blkcmds func cond setvar optname
 %type <sval> optbg
 %type <bval> optin
 %type <redirs> redirs optredirs
@@ -23,7 +23,7 @@ package main
 	sval string
 	nd *Nd
 	bval bool
-	redirs map[string]*Nd
+	redirs []*Redir
 }
 
 %left '^'
@@ -138,13 +138,11 @@ cmd
 	}
 	| FOR names '{' optsep blkcmds optsep '}' optredirs
 	{
-		$5.Redirs = map[string]*Nd{}
 		$$ = newList(Nfor, $2, $5)
 		$$.Redirs = $8
 	}
 	| WHILE pipe '{' optsep blkcmds optsep '}' optredirs
 	{
-		$5.Redirs = map[string]*Nd{}
 		$$ = newList(Nwhile, $2, $5)
 		$$.Redirs = $8
 	}
@@ -208,7 +206,7 @@ optredirs
 	}
 	|
 	{
-		$$ = map[string]*Nd{}
+		$$ = nil
 	}
 	;
 
@@ -216,12 +214,12 @@ redirs
 	: redirs redir
 	{
 		$$ = $1
-		$2.addRedirTo($1)
+		$$ = $2.addRedirTo($$)
 	}
 	| redir
 	{
-		$$ = map[string]*Nd{}
-		$1.addRedirTo($$)
+		$$ = nil
+		$$ = $1.addRedirTo($$)
 	}
 	;
 
@@ -230,7 +228,7 @@ redir
 	{
 		$$ = newRedir("<", $1, $2)
 	}
-	| OREDIR name
+	| OREDIR optname
 	{
 		$$ = newRedir(">", $1, $2)
 	}
@@ -238,6 +236,13 @@ redir
 		$$ = newRedir(">>", $1, $2)
 	}
 	;
+
+optname
+	: name
+	|
+	{
+		$$ = nil
+	}
 
 sep
 	: NL
@@ -290,7 +295,6 @@ list
 		if $1 != "" {
 			$3.Args = append($3.Args, $1)
 		}
-		$3.Redirs = map[string]*Nd{}
 		$3.typ = Nioblk
 	}
 	| OUTBLK optsep blkcmds optsep '}' 
@@ -301,7 +305,6 @@ list
 		}
 		$3.Args = []string{">", $1}
 		$3.typ = Nioblk
-		$3.Redirs = map[string]*Nd{}
 	}
 	;
 

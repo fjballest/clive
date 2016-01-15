@@ -18,17 +18,19 @@ func fields(s, sep string) []string {
 // >[out,err]
 // <[in]
 // |[in:out,err;in2:out2]
-func (nd *Nd) addRedirTo(set map[string]*Nd) {
+func (nd *Nd) addRedirTo(set []*Redir) []*Redir {
 	nd.chk(Nredir)
 	if len(nd.Args) != 2 {
 		panic("addRedirTo: bad redir Args")
 	}
-	if len(nd.Child) != 1 {
+	if len(nd.Child) >1 {
 		panic("addRedirTo: bad redir children")
 	}
 	what, tag := nd.Args[0], nd.Args[1]
 	bad := ":;,$"
 	switch what {
+	case ">:":
+		bad = ";,$"
 	case ">", ">>" :
 		bad = ":;$"
 	case  "<|", ">|":
@@ -38,13 +40,29 @@ func (nd *Nd) addRedirTo(set map[string]*Nd) {
 		yylex.Errs("bad %s redirection syntax '%s'", what, tag)
 		panic(parseErr)
 	}
-	for _, r := range fields(tag, ",") {
-		if set[r] != nil {
-			yylex.Errs("double redirection for '%s' in '%s' ", r, tag)
+	if what == ">:" {
+		flds := fields(tag, ":")
+		if len(flds) == 1 {
+			flds = append(flds, "out")
+			nd.Args[0] += ":out"
+		}
+		if len(flds) != 2 {
+			yylex.Errs("bad > redirection syntax '%s'", tag)
 			panic(parseErr)
 		}
-		set[r] = nd
+		set = append(set, &Redir{name: strings.Join(flds, ":")})
+		return set
 	}
+	for _, r := range fields(tag, ",") {
+		for _, rd := range set {
+			if rd.name == r {
+				yylex.Errs("double redirection for '%s' in '%s' ", r, tag)
+				panic(parseErr)
+			}
+		}
+		set = append(set, &Redir{name: r, nd: nd})
+	}
+	return set
 }
 
 // Called to add the redirs implied by a pipe
@@ -60,7 +78,7 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 	c0 := nd.Child[0]
 	if stdin {
 		r := newRedir("<", "in", newNd(Nname, "<"))
-		r.addRedirTo(c0.Redirs)
+		c0.Redirs = r.addRedirTo(c0.Redirs)
 	}
 	if nc == 1 {
 		// single command, not really a pipe
@@ -81,9 +99,9 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 			for n := 0; n < len(rdrs); n += 2 {
 				name := newNd(Nname, fmt.Sprintf("|%d", i))
 				r := newRedir("<|", rdrs[n], name)
-				r.addRedirTo(nd.Child[i+1].Redirs)
+				nd.Child[i+1].Redirs = r.addRedirTo(nd.Child[i+1].Redirs)
 				r = newRedir(">|", rdrs[n+1], name)
-				r.addRedirTo(nd.Child[i].Redirs)
+				nd.Child[i].Redirs = r.addRedirTo(nd.Child[i].Redirs)
 			}
 		}
 	}
@@ -92,8 +110,16 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 // what is "<", ">", ">>"
 // tag can be "" or "in", "out", "in,out,foo,..."
 // nd is the target of the redir
+// name can be nil for >, in which case it's a dup.
 func newRedir(what, tag string, name *Nd) *Nd {
 	tag = strings.TrimSpace(tag)
+	if what == ">" && name == nil {
+		what = ">:"
+	}
+	if what != ">:" && name == nil {
+		yylex.Errs("missing name for '%s' ", what)
+		panic(parseErr)
+	}
 	if tag == "" {
 		if what == "<" || what == "<|" {
 			tag = "in"
@@ -101,6 +127,9 @@ func newRedir(what, tag string, name *Nd) *Nd {
 			tag = "out"
 		}
 	}
-	nd := newNd(Nredir, what, tag).Add(name)
+	nd := newNd(Nredir, what, tag);
+	if name != nil {
+		nd.Add(name)
+	}
 	return nd
 }

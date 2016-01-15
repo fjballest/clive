@@ -28,6 +28,8 @@ struct pFd {
 struct bgCmds {
 	sync.Mutex
 	cmds map[*xEnv]bool
+	waits map[string]chan bool
+	wall chan bool
 }
 
 // Execution environment for nodes.
@@ -44,6 +46,8 @@ struct xEnv {
 
 var bgcmds = bgCmds {
 	cmds: map[*xEnv]bool{},
+	waits: map[string]chan bool{},
+	wall: make(chan bool),
 }
 
 func (xfd *xFd) addref() {
@@ -86,12 +90,45 @@ func (b *bgCmds) add(x *xEnv) {
 	b.Lock()
 	defer b.Unlock()
 	b.cmds[x] = true
+	if x.bgtag != "&" && b.waits[x.bgtag] == nil {
+		b.waits[x.bgtag] = make(chan bool)
+	}
 }
 
 func (b *bgCmds) del(x *xEnv) {
 	b.Lock()
 	defer b.Unlock()
 	delete(b.cmds, x)
+	if x.bgtag != "&" {
+		wc := b.waits[x.bgtag]
+		delete(b.waits, x.bgtag)
+		if wc != nil {
+			close(wc)
+		}
+	}
+	if len(b.cmds) == 0 {
+		close(b.wall)
+		b.wall = make(chan bool)
+	}
+}
+
+func (b *bgCmds) wait(tag string) {
+	b.Lock()
+	if tag != "" {
+		wc := b.waits[tag]
+		b.Unlock()
+		if wc != nil {
+			<-wc
+		}
+		return
+	}
+	if len(b.cmds) == 0 {
+		b.Unlock()
+		return
+	}
+	wc := b.wall
+	b.Unlock()
+	<-wc
 }
 
 func newEnv() *xEnv {
@@ -157,6 +194,26 @@ func (nd *Nd) chk(k ...NdType) {
 
 func (nd *Nd) runSrc(x *xEnv) error {
 	nd.chk(Nsrc)
+	if len(nd.Child) != 1 {
+		panic("runSrc: bad children")
+	}
+	nms, err := nd.Child[0].expand1(x)
+	if err != nil {
+		cmd.Warn("source: %s", err)
+		cmd.SetEnv("sts", "source: expand")
+		return nil
+	}
+	if len(nms) != 1 {
+		cmd.Warn("source: more than one name given")
+		cmd.SetEnv("sts", "source: more than one name given")
+		return nil
+	}
+	cmd.VWarn("source %s\n", nms[0])
+	if err := yylex.source(nms[0]); err != nil {
+		cmd.SetEnv("sts", err.Error())
+	} else {
+		cmd.SetEnv("sts", "")
+	}
 	return nil
 }
 
@@ -193,7 +250,21 @@ func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, err error) {
 		if dry {
 			continue
 		}
-		for _, r := range c.Redirs {
+		for _, rd := range c.Redirs {
+			r := rd.nd
+			if r == nil {	// dup
+				flds := fields(rd.name, ":")
+				nfd, ofd := flds[0], flds[1]
+				xfd := cx.fds[ofd]
+				if xfd != nil {
+					xfd.ref++
+				}
+				if fd, ok := cx.fds[nfd]; ok {
+					fd.Close()
+				}
+				cx.fds[nfd] = xfd
+				continue
+			}
 			paths, err := r.Child[0].expand1(x)
 			if err != nil {
 				cmd.Warn("expand: %s", err)

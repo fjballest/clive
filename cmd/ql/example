@@ -3,6 +3,9 @@
 # The prompt is >
 # >'s at the start of line are discarded
 
+Missing: 2>&1 
+
+
 # quoting
 echo	' quoted ` 
 quoted '
@@ -62,6 +65,9 @@ a <[in2] b
 a >[out, err] b
 a >>b
 a >>[out, err] b
+
+# dup: fd[out] = fd[err]
+a >[out:err]
 
 # source a file
 < name

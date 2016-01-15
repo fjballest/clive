@@ -146,5 +146,8 @@ func main() {
 	if err := parse(); err != nil {
 		cmd.Fatal(err)
 	}
+	if sts := cmd.GetEnv("sts"); sts != "" {
+		cmd.Exit(sts)
+	}
 	cmd.Exit()
 }

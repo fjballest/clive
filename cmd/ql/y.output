@@ -137,15 +137,15 @@ state 10
 
 
 state 11
-	sep:  NL.    (41)
+	sep:  NL.    (43)
 
-	.  reduce 41 (src line 242)
+	.  reduce 43 (src line 247)
 
 
 state 12
-	sep:  ';'.    (42)
+	sep:  ';'.    (44)
 
-	.  reduce 42 (src line 244)
+	.  reduce 44 (src line 249)
 
 
 state 13
@@ -222,9 +222,9 @@ state 21
 
 
 state 22
-	name:  NAME.    (59)
+	name:  NAME.    (61)
 
-	.  reduce 59 (src line 327)
+	.  reduce 61 (src line 330)
 
 
 state 23
@@ -286,7 +286,7 @@ state 29
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 35 (src line 209)
+	.  reduce 35 (src line 207)
 
 	name  goto 38
 	list  goto 39
@@ -297,11 +297,11 @@ state 29
 
 state 30
 	cmd:  '{'.optsep blkcmds optsep '}' optredirs 
-	optsep: .    (44)
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
 	sep  goto 56
 	optsep  goto 55
@@ -342,7 +342,7 @@ state 33
 	IREDIR  shift 52
 	OREDIR  shift 53
 	APP  shift 54
-	.  reduce 35 (src line 209)
+	.  reduce 35 (src line 207)
 
 	redir  goto 51
 	redirs  goto 50
@@ -351,13 +351,13 @@ state 33
 state 34
 	cmd:  setvar.    (24)
 
-	.  reduce 24 (src line 156)
+	.  reduce 24 (src line 154)
 
 
 state 35
-	names:  nameel.    (46)
+	names:  nameel.    (48)
 
-	.  reduce 46 (src line 257)
+	.  reduce 48 (src line 262)
 
 
 state 36
@@ -371,35 +371,35 @@ state 37
 	setvar:  NAME.as names 
 	setvar:  NAME.as '(' mapels ')' 
 	setvar:  NAME.'[' name ']' as names 
-	name:  NAME.    (59)
+	name:  NAME.    (61)
 
 	'['  shift 63
 	'='  shift 64
 	'←'  shift 65
-	.  reduce 59 (src line 327)
+	.  reduce 61 (src line 330)
 
 	as  goto 62
 
 state 38
-	nameel:  name.    (47)
+	nameel:  name.    (49)
 	list:  name.'^' list 
 
 	'^'  shift 66
-	.  reduce 47 (src line 263)
+	.  reduce 49 (src line 268)
 
 
 state 39
-	nameel:  list.    (48)
+	nameel:  list.    (50)
 	list:  list.'^' name 
 	list:  list.'^' list 
 
 	'^'  shift 67
-	.  reduce 48 (src line 265)
+	.  reduce 50 (src line 270)
 
 
 state 40
 	list:  '('.optnames ')' 
-	optnames: .    (58)
+	optnames: .    (60)
 
 	LEN  shift 25
 	SINGLE  shift 24
@@ -408,7 +408,7 @@ state 40
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 58 (src line 322)
+	.  reduce 60 (src line 325)
 
 	name  goto 38
 	names  goto 69
@@ -418,55 +418,55 @@ state 40
 
 state 41
 	list:  INBLK.optsep blkcmds optsep '}' 
-	optsep: .    (44)
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
 	sep  goto 56
 	optsep  goto 70
 
 state 42
 	list:  OUTBLK.optsep blkcmds optsep '}' 
-	optsep: .    (44)
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
 	sep  goto 56
 	optsep  goto 71
 
 state 43
-	name:  '$' NAME.    (60)
+	name:  '$' NAME.    (62)
 	name:  '$' NAME.'[' name ']' 
 
 	'['  shift 72
-	.  reduce 60 (src line 332)
+	.  reduce 62 (src line 335)
 
 
 state 44
-	name:  SINGLE NAME.    (61)
+	name:  SINGLE NAME.    (63)
 	name:  SINGLE NAME.'[' name ']' 
 
 	'['  shift 73
-	.  reduce 61 (src line 336)
+	.  reduce 63 (src line 339)
 
 
 state 45
-	name:  LEN NAME.    (64)
+	name:  LEN NAME.    (66)
 
-	.  reduce 64 (src line 348)
+	.  reduce 66 (src line 351)
 
 
 state 46
 	func:  FUNC NAME '{'.optsep blkcmds optsep '}' 
-	optsep: .    (44)
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
 	sep  goto 56
 	optsep  goto 74
@@ -502,9 +502,9 @@ state 48
 
 
 state 49
-	names:  names nameel.    (45)
+	names:  names nameel.    (47)
 
-	.  reduce 45 (src line 252)
+	.  reduce 47 (src line 257)
 
 
 state 50
@@ -514,14 +514,14 @@ state 50
 	IREDIR  shift 52
 	OREDIR  shift 53
 	APP  shift 54
-	.  reduce 34 (src line 204)
+	.  reduce 34 (src line 202)
 
 	redir  goto 76
 
 state 51
 	redirs:  redir.    (37)
 
-	.  reduce 37 (src line 221)
+	.  reduce 37 (src line 219)
 
 
 state 52
@@ -536,15 +536,17 @@ state 52
 	name  goto 77
 
 state 53
-	redir:  OREDIR.name 
+	redir:  OREDIR.optname 
+	optname: .    (42)
 
 	LEN  shift 25
 	SINGLE  shift 24
 	NAME  shift 22
 	'$'  shift 23
-	.  error
+	.  reduce 42 (src line 242)
 
-	name  goto 78
+	name  goto 79
+	optname  goto 78
 
 state 54
 	redir:  APP.name 
@@ -555,7 +557,7 @@ state 54
 	'$'  shift 23
 	.  error
 
-	name  goto 79
+	name  goto 80
 
 state 55
 	cmd:  '{' optsep.blkcmds optsep '}' optredirs 
@@ -565,15 +567,15 @@ state 55
 	IREDIR  shift 9
 	.  reduce 16 (src line 110)
 
-	bgpipe  goto 81
+	bgpipe  goto 82
 	pipe  goto 8
-	blkcmds  goto 80
+	blkcmds  goto 81
 	optin  goto 13
 
 state 56
-	optsep:  sep.    (43)
+	optsep:  sep.    (45)
 
-	.  reduce 43 (src line 247)
+	.  reduce 45 (src line 252)
 
 
 state 57
@@ -585,7 +587,7 @@ state 57
 	NAME  shift 22
 	INBLK  shift 41
 	OUTBLK  shift 42
-	'{'  shift 82
+	'{'  shift 83
 	'('  shift 40
 	'$'  shift 23
 	.  error
@@ -597,33 +599,33 @@ state 57
 state 58
 	cmd:  WHILE pipe.'{' optsep blkcmds optsep '}' optredirs 
 
-	'{'  shift 83
+	'{'  shift 84
 	.  error
 
 
 state 59
 	cmd:  cond optredirs.    (23)
 
-	.  reduce 23 (src line 151)
+	.  reduce 23 (src line 149)
 
 
 state 60
 	cond:  cond OR.'{' optsep blkcmds optsep '}' 
 
-	'{'  shift 84
+	'{'  shift 85
 	.  error
 
 
 state 61
 	cond:  COND '{'.optsep blkcmds optsep '}' 
-	optsep: .    (44)
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
 	sep  goto 56
-	optsep  goto 85
+	optsep  goto 86
 
 state 62
 	setvar:  NAME as.names 
@@ -634,12 +636,12 @@ state 62
 	NAME  shift 22
 	INBLK  shift 41
 	OUTBLK  shift 42
-	'('  shift 87
+	'('  shift 88
 	'$'  shift 23
 	.  error
 
 	name  goto 38
-	names  goto 86
+	names  goto 87
 	list  goto 39
 	nameel  goto 35
 
@@ -652,18 +654,18 @@ state 63
 	'$'  shift 23
 	.  error
 
-	name  goto 88
+	name  goto 89
 
 state 64
 	as:  '='.    (28)
 
-	.  reduce 28 (src line 174)
+	.  reduce 28 (src line 172)
 
 
 state 65
 	as:  '←'.    (29)
 
-	.  reduce 29 (src line 176)
+	.  reduce 29 (src line 174)
 
 
 state 66
@@ -678,8 +680,8 @@ state 66
 	'$'  shift 23
 	.  error
 
-	name  goto 90
-	list  goto 89
+	name  goto 91
+	list  goto 90
 
 state 67
 	list:  list '^'.name 
@@ -694,19 +696,19 @@ state 67
 	'$'  shift 23
 	.  error
 
-	name  goto 91
-	list  goto 92
+	name  goto 92
+	list  goto 93
 
 state 68
 	list:  '(' optnames.')' 
 
-	')'  shift 93
+	')'  shift 94
 	.  error
 
 
 state 69
 	names:  names.nameel 
-	optnames:  names.    (57)
+	optnames:  names.    (59)
 
 	LEN  shift 25
 	SINGLE  shift 24
@@ -715,7 +717,7 @@ state 69
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 57 (src line 320)
+	.  reduce 59 (src line 323)
 
 	name  goto 38
 	list  goto 39
@@ -729,9 +731,9 @@ state 70
 	IREDIR  shift 9
 	.  reduce 16 (src line 110)
 
-	bgpipe  goto 81
+	bgpipe  goto 82
 	pipe  goto 8
-	blkcmds  goto 94
+	blkcmds  goto 95
 	optin  goto 13
 
 state 71
@@ -742,9 +744,9 @@ state 71
 	IREDIR  shift 9
 	.  reduce 16 (src line 110)
 
-	bgpipe  goto 81
+	bgpipe  goto 82
 	pipe  goto 8
-	blkcmds  goto 95
+	blkcmds  goto 96
 	optin  goto 13
 
 state 72
@@ -756,7 +758,7 @@ state 72
 	'$'  shift 23
 	.  error
 
-	name  goto 96
+	name  goto 97
 
 state 73
 	name:  SINGLE NAME '['.name ']' 
@@ -767,7 +769,7 @@ state 73
 	'$'  shift 23
 	.  error
 
-	name  goto 97
+	name  goto 98
 
 state 74
 	func:  FUNC NAME '{' optsep.blkcmds optsep '}' 
@@ -777,9 +779,9 @@ state 74
 	IREDIR  shift 9
 	.  reduce 16 (src line 110)
 
-	bgpipe  goto 81
+	bgpipe  goto 82
 	pipe  goto 8
-	blkcmds  goto 98
+	blkcmds  goto 99
 	optin  goto 13
 
 state 75
@@ -791,79 +793,85 @@ state 75
 state 76
 	redirs:  redirs redir.    (36)
 
-	.  reduce 36 (src line 215)
+	.  reduce 36 (src line 213)
 
 
 state 77
 	redir:  IREDIR name.    (38)
 
-	.  reduce 38 (src line 228)
+	.  reduce 38 (src line 226)
 
 
 state 78
-	redir:  OREDIR name.    (39)
+	redir:  OREDIR optname.    (39)
 
-	.  reduce 39 (src line 233)
+	.  reduce 39 (src line 231)
 
 
 state 79
-	redir:  APP name.    (40)
+	optname:  name.    (41)
 
-	.  reduce 40 (src line 237)
+	.  reduce 41 (src line 240)
 
 
 state 80
-	cmd:  '{' optsep blkcmds.optsep '}' optredirs 
-	blkcmds:  blkcmds.sep bgpipe 
-	optsep: .    (44)
+	redir:  APP name.    (40)
 
-	NL  shift 11
-	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 40 (src line 235)
 
-	sep  goto 100
-	optsep  goto 99
 
 state 81
-	blkcmds:  bgpipe.    (33)
+	cmd:  '{' optsep blkcmds.optsep '}' optredirs 
+	blkcmds:  blkcmds.sep bgpipe 
+	optsep: .    (46)
 
-	.  reduce 33 (src line 198)
+	NL  shift 11
+	';'  shift 12
+	.  reduce 46 (src line 254)
 
+	sep  goto 101
+	optsep  goto 100
 
 state 82
-	cmd:  FOR names '{'.optsep blkcmds optsep '}' optredirs 
-	optsep: .    (44)
+	blkcmds:  bgpipe.    (33)
 
-	NL  shift 11
-	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 33 (src line 196)
 
-	sep  goto 56
-	optsep  goto 101
 
 state 83
-	cmd:  WHILE pipe '{'.optsep blkcmds optsep '}' optredirs 
-	optsep: .    (44)
+	cmd:  FOR names '{'.optsep blkcmds optsep '}' optredirs 
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
 	sep  goto 56
 	optsep  goto 102
 
 state 84
-	cond:  cond OR '{'.optsep blkcmds optsep '}' 
-	optsep: .    (44)
+	cmd:  WHILE pipe '{'.optsep blkcmds optsep '}' optredirs 
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
 	sep  goto 56
 	optsep  goto 103
 
 state 85
+	cond:  cond OR '{'.optsep blkcmds optsep '}' 
+	optsep: .    (46)
+
+	NL  shift 11
+	';'  shift 12
+	.  reduce 46 (src line 254)
+
+	sep  goto 56
+	optsep  goto 104
+
+state 86
 	cond:  COND '{' optsep.blkcmds optsep '}' 
 	optin: .    (16)
 
@@ -871,12 +879,12 @@ state 85
 	IREDIR  shift 9
 	.  reduce 16 (src line 110)
 
-	bgpipe  goto 81
+	bgpipe  goto 82
 	pipe  goto 8
-	blkcmds  goto 104
+	blkcmds  goto 105
 	optin  goto 13
 
-state 86
+state 87
 	setvar:  NAME as names.    (25)
 	names:  names.nameel 
 
@@ -887,16 +895,16 @@ state 86
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 25 (src line 159)
+	.  reduce 25 (src line 157)
 
 	name  goto 38
 	list  goto 39
 	nameel  goto 49
 
-state 87
+state 88
 	setvar:  NAME as '('.mapels ')' 
 	list:  '('.optnames ')' 
-	optnames: .    (58)
+	optnames: .    (60)
 
 	LEN  shift 25
 	SINGLE  shift 24
@@ -904,132 +912,132 @@ state 87
 	INBLK  shift 41
 	OUTBLK  shift 42
 	'('  shift 40
-	'['  shift 106
+	'['  shift 107
 	'$'  shift 23
-	.  reduce 58 (src line 322)
+	.  reduce 60 (src line 325)
 
 	name  goto 38
 	names  goto 69
 	optnames  goto 68
 	list  goto 39
 	nameel  goto 35
-	mapels  goto 105
+	mapels  goto 106
 
-state 88
+state 89
 	setvar:  NAME '[' name.']' as names 
 
-	']'  shift 107
+	']'  shift 108
 	.  error
 
 
-state 89
-	list:  name '^' list.    (50)
+state 90
+	list:  name '^' list.    (52)
 	list:  list.'^' name 
 	list:  list.'^' list 
 
-	.  reduce 50 (src line 272)
+	.  reduce 52 (src line 277)
 
 
-state 90
+state 91
 	list:  name.'^' list 
 
 	'^'  shift 66
 	.  error
 
 
-state 91
-	list:  name.'^' list 
-	list:  list '^' name.    (51)
-
-	.  reduce 51 (src line 277)
-
-
 state 92
-	list:  list.'^' name 
-	list:  list.'^' list 
-	list:  list '^' list.    (52)
+	list:  name.'^' list 
+	list:  list '^' name.    (53)
 
-	.  reduce 52 (src line 282)
+	.  reduce 53 (src line 282)
 
 
 state 93
-	list:  '(' optnames ')'.    (49)
+	list:  list.'^' name 
+	list:  list.'^' list 
+	list:  list '^' list.    (54)
 
-	.  reduce 49 (src line 267)
+	.  reduce 54 (src line 287)
 
 
 state 94
-	blkcmds:  blkcmds.sep bgpipe 
-	list:  INBLK optsep blkcmds.optsep '}' 
-	optsep: .    (44)
+	list:  '(' optnames ')'.    (51)
 
-	NL  shift 11
-	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 51 (src line 272)
 
-	sep  goto 100
-	optsep  goto 108
 
 state 95
 	blkcmds:  blkcmds.sep bgpipe 
-	list:  OUTBLK optsep blkcmds.optsep '}' 
-	optsep: .    (44)
+	list:  INBLK optsep blkcmds.optsep '}' 
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
-	sep  goto 100
+	sep  goto 101
 	optsep  goto 109
 
 state 96
-	name:  '$' NAME '[' name.']' 
+	blkcmds:  blkcmds.sep bgpipe 
+	list:  OUTBLK optsep blkcmds.optsep '}' 
+	optsep: .    (46)
 
-	']'  shift 110
-	.  error
+	NL  shift 11
+	';'  shift 12
+	.  reduce 46 (src line 254)
 
+	sep  goto 101
+	optsep  goto 110
 
 state 97
-	name:  SINGLE NAME '[' name.']' 
+	name:  '$' NAME '[' name.']' 
 
 	']'  shift 111
 	.  error
 
 
 state 98
-	func:  FUNC NAME '{' optsep blkcmds.optsep '}' 
-	blkcmds:  blkcmds.sep bgpipe 
-	optsep: .    (44)
+	name:  SINGLE NAME '[' name.']' 
 
-	NL  shift 11
-	';'  shift 12
-	.  reduce 44 (src line 249)
-
-	sep  goto 100
-	optsep  goto 112
-
-state 99
-	cmd:  '{' optsep blkcmds optsep.'}' optredirs 
-
-	'}'  shift 113
+	']'  shift 112
 	.  error
 
 
+state 99
+	func:  FUNC NAME '{' optsep blkcmds.optsep '}' 
+	blkcmds:  blkcmds.sep bgpipe 
+	optsep: .    (46)
+
+	NL  shift 11
+	';'  shift 12
+	.  reduce 46 (src line 254)
+
+	sep  goto 101
+	optsep  goto 113
+
 state 100
+	cmd:  '{' optsep blkcmds optsep.'}' optredirs 
+
+	'}'  shift 114
+	.  error
+
+
+state 101
 	blkcmds:  blkcmds sep.bgpipe 
-	optsep:  sep.    (43)
+	optsep:  sep.    (45)
 	optin: .    (16)
 
 	PIPE  shift 14
 	IREDIR  shift 9
-	'}'  reduce 43 (src line 247)
+	'}'  reduce 45 (src line 252)
 	.  reduce 16 (src line 110)
 
-	bgpipe  goto 114
+	bgpipe  goto 115
 	pipe  goto 8
 	optin  goto 13
 
-state 101
+state 102
 	cmd:  FOR names '{' optsep.blkcmds optsep '}' optredirs 
 	optin: .    (16)
 
@@ -1037,12 +1045,12 @@ state 101
 	IREDIR  shift 9
 	.  reduce 16 (src line 110)
 
-	bgpipe  goto 81
+	bgpipe  goto 82
 	pipe  goto 8
-	blkcmds  goto 115
+	blkcmds  goto 116
 	optin  goto 13
 
-state 102
+state 103
 	cmd:  WHILE pipe '{' optsep.blkcmds optsep '}' optredirs 
 	optin: .    (16)
 
@@ -1050,12 +1058,12 @@ state 102
 	IREDIR  shift 9
 	.  reduce 16 (src line 110)
 
-	bgpipe  goto 81
+	bgpipe  goto 82
 	pipe  goto 8
-	blkcmds  goto 116
+	blkcmds  goto 117
 	optin  goto 13
 
-state 103
+state 104
 	cond:  cond OR '{' optsep.blkcmds optsep '}' 
 	optin: .    (16)
 
@@ -1063,33 +1071,33 @@ state 103
 	IREDIR  shift 9
 	.  reduce 16 (src line 110)
 
-	bgpipe  goto 81
+	bgpipe  goto 82
 	pipe  goto 8
-	blkcmds  goto 117
+	blkcmds  goto 118
 	optin  goto 13
 
-state 104
+state 105
 	cond:  COND '{' optsep blkcmds.optsep '}' 
 	blkcmds:  blkcmds.sep bgpipe 
-	optsep: .    (44)
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
-	sep  goto 100
-	optsep  goto 118
+	sep  goto 101
+	optsep  goto 119
 
-state 105
+state 106
 	setvar:  NAME as '(' mapels.')' 
 	mapels:  mapels.'[' names ']' 
 
-	')'  shift 119
-	'['  shift 120
+	')'  shift 120
+	'['  shift 121
 	.  error
 
 
-state 106
+state 107
 	mapels:  '['.names ']' 
 
 	LEN  shift 25
@@ -1102,121 +1110,121 @@ state 106
 	.  error
 
 	name  goto 38
-	names  goto 121
+	names  goto 122
 	list  goto 39
 	nameel  goto 35
 
-state 107
+state 108
 	setvar:  NAME '[' name ']'.as names 
 
 	'='  shift 64
 	'←'  shift 65
 	.  error
 
-	as  goto 122
-
-state 108
-	list:  INBLK optsep blkcmds optsep.'}' 
-
-	'}'  shift 123
-	.  error
-
+	as  goto 123
 
 state 109
-	list:  OUTBLK optsep blkcmds optsep.'}' 
+	list:  INBLK optsep blkcmds optsep.'}' 
 
 	'}'  shift 124
 	.  error
 
 
 state 110
-	name:  '$' NAME '[' name ']'.    (62)
-
-	.  reduce 62 (src line 340)
-
-
-state 111
-	name:  SINGLE NAME '[' name ']'.    (63)
-
-	.  reduce 63 (src line 344)
-
-
-state 112
-	func:  FUNC NAME '{' optsep blkcmds optsep.'}' 
+	list:  OUTBLK optsep blkcmds optsep.'}' 
 
 	'}'  shift 125
 	.  error
 
 
+state 111
+	name:  '$' NAME '[' name ']'.    (64)
+
+	.  reduce 64 (src line 343)
+
+
+state 112
+	name:  SINGLE NAME '[' name ']'.    (65)
+
+	.  reduce 65 (src line 347)
+
+
 state 113
+	func:  FUNC NAME '{' optsep blkcmds optsep.'}' 
+
+	'}'  shift 126
+	.  error
+
+
+state 114
 	cmd:  '{' optsep blkcmds optsep '}'.optredirs 
 	optredirs: .    (35)
 
 	IREDIR  shift 52
 	OREDIR  shift 53
 	APP  shift 54
-	.  reduce 35 (src line 209)
+	.  reduce 35 (src line 207)
 
 	redir  goto 51
 	redirs  goto 50
-	optredirs  goto 126
-
-state 114
-	blkcmds:  blkcmds sep bgpipe.    (32)
-
-	.  reduce 32 (src line 193)
-
+	optredirs  goto 127
 
 state 115
-	cmd:  FOR names '{' optsep blkcmds.optsep '}' optredirs 
-	blkcmds:  blkcmds.sep bgpipe 
-	optsep: .    (44)
+	blkcmds:  blkcmds sep bgpipe.    (32)
 
-	NL  shift 11
-	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 32 (src line 191)
 
-	sep  goto 100
-	optsep  goto 127
 
 state 116
-	cmd:  WHILE pipe '{' optsep blkcmds.optsep '}' optredirs 
+	cmd:  FOR names '{' optsep blkcmds.optsep '}' optredirs 
 	blkcmds:  blkcmds.sep bgpipe 
-	optsep: .    (44)
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
-	sep  goto 100
+	sep  goto 101
 	optsep  goto 128
 
 state 117
-	cond:  cond OR '{' optsep blkcmds.optsep '}' 
+	cmd:  WHILE pipe '{' optsep blkcmds.optsep '}' optredirs 
 	blkcmds:  blkcmds.sep bgpipe 
-	optsep: .    (44)
+	optsep: .    (46)
 
 	NL  shift 11
 	';'  shift 12
-	.  reduce 44 (src line 249)
+	.  reduce 46 (src line 254)
 
-	sep  goto 100
+	sep  goto 101
 	optsep  goto 129
 
 state 118
+	cond:  cond OR '{' optsep blkcmds.optsep '}' 
+	blkcmds:  blkcmds.sep bgpipe 
+	optsep: .    (46)
+
+	NL  shift 11
+	';'  shift 12
+	.  reduce 46 (src line 254)
+
+	sep  goto 101
+	optsep  goto 130
+
+state 119
 	cond:  COND '{' optsep blkcmds optsep.'}' 
 
-	'}'  shift 130
+	'}'  shift 131
 	.  error
 
 
-state 119
+state 120
 	setvar:  NAME as '(' mapels ')'.    (26)
 
-	.  reduce 26 (src line 164)
+	.  reduce 26 (src line 162)
 
 
-state 120
+state 121
 	mapels:  mapels '['.names ']' 
 
 	LEN  shift 25
@@ -1229,11 +1237,11 @@ state 120
 	.  error
 
 	name  goto 38
-	names  goto 131
+	names  goto 132
 	list  goto 39
 	nameel  goto 35
 
-state 121
+state 122
 	names:  names.nameel 
 	mapels:  '[' names.']' 
 
@@ -1243,7 +1251,7 @@ state 121
 	INBLK  shift 41
 	OUTBLK  shift 42
 	'('  shift 40
-	']'  shift 132
+	']'  shift 133
 	'$'  shift 23
 	.  error
 
@@ -1251,7 +1259,7 @@ state 121
 	list  goto 39
 	nameel  goto 49
 
-state 122
+state 123
 	setvar:  NAME '[' name ']' as.names 
 
 	LEN  shift 25
@@ -1264,62 +1272,62 @@ state 122
 	.  error
 
 	name  goto 38
-	names  goto 133
+	names  goto 134
 	list  goto 39
 	nameel  goto 35
 
-state 123
-	list:  INBLK optsep blkcmds optsep '}'.    (53)
-
-	.  reduce 53 (src line 286)
-
-
 state 124
-	list:  OUTBLK optsep blkcmds optsep '}'.    (54)
+	list:  INBLK optsep blkcmds optsep '}'.    (55)
 
-	.  reduce 54 (src line 296)
+	.  reduce 55 (src line 291)
 
 
 state 125
+	list:  OUTBLK optsep blkcmds optsep '}'.    (56)
+
+	.  reduce 56 (src line 300)
+
+
+state 126
 	func:  FUNC NAME '{' optsep blkcmds optsep '}'.    (9)
 
 	.  reduce 9 (src line 63)
 
 
-state 126
+state 127
 	cmd:  '{' optsep blkcmds optsep '}' optredirs.    (20)
 
 	.  reduce 20 (src line 134)
 
 
-state 127
-	cmd:  FOR names '{' optsep blkcmds optsep.'}' optredirs 
-
-	'}'  shift 134
-	.  error
-
-
 state 128
-	cmd:  WHILE pipe '{' optsep blkcmds optsep.'}' optredirs 
+	cmd:  FOR names '{' optsep blkcmds optsep.'}' optredirs 
 
 	'}'  shift 135
 	.  error
 
 
 state 129
-	cond:  cond OR '{' optsep blkcmds optsep.'}' 
+	cmd:  WHILE pipe '{' optsep blkcmds optsep.'}' optredirs 
 
 	'}'  shift 136
 	.  error
 
 
 state 130
-	cond:  COND '{' optsep blkcmds optsep '}'.    (30)
+	cond:  cond OR '{' optsep blkcmds optsep.'}' 
 
-	.  reduce 30 (src line 179)
+	'}'  shift 137
+	.  error
 
 
 state 131
+	cond:  COND '{' optsep blkcmds optsep '}'.    (30)
+
+	.  reduce 30 (src line 177)
+
+
+state 132
 	names:  names.nameel 
 	mapels:  mapels '[' names.']' 
 
@@ -1329,7 +1337,7 @@ state 131
 	INBLK  shift 41
 	OUTBLK  shift 42
 	'('  shift 40
-	']'  shift 137
+	']'  shift 138
 	'$'  shift 23
 	.  error
 
@@ -1337,13 +1345,13 @@ state 131
 	list  goto 39
 	nameel  goto 49
 
-state 132
-	mapels:  '[' names ']'.    (56)
-
-	.  reduce 56 (src line 313)
-
-
 state 133
+	mapels:  '[' names ']'.    (58)
+
+	.  reduce 58 (src line 316)
+
+
+state 134
 	setvar:  NAME '[' name ']' as names.    (27)
 	names:  names.nameel 
 
@@ -1354,71 +1362,71 @@ state 133
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 27 (src line 169)
+	.  reduce 27 (src line 167)
 
 	name  goto 38
 	list  goto 39
 	nameel  goto 49
 
-state 134
+state 135
 	cmd:  FOR names '{' optsep blkcmds optsep '}'.optredirs 
 	optredirs: .    (35)
 
 	IREDIR  shift 52
 	OREDIR  shift 53
 	APP  shift 54
-	.  reduce 35 (src line 209)
-
-	redir  goto 51
-	redirs  goto 50
-	optredirs  goto 138
-
-state 135
-	cmd:  WHILE pipe '{' optsep blkcmds optsep '}'.optredirs 
-	optredirs: .    (35)
-
-	IREDIR  shift 52
-	OREDIR  shift 53
-	APP  shift 54
-	.  reduce 35 (src line 209)
+	.  reduce 35 (src line 207)
 
 	redir  goto 51
 	redirs  goto 50
 	optredirs  goto 139
 
 state 136
-	cond:  cond OR '{' optsep blkcmds optsep '}'.    (31)
+	cmd:  WHILE pipe '{' optsep blkcmds optsep '}'.optredirs 
+	optredirs: .    (35)
 
-	.  reduce 31 (src line 186)
+	IREDIR  shift 52
+	OREDIR  shift 53
+	APP  shift 54
+	.  reduce 35 (src line 207)
 
+	redir  goto 51
+	redirs  goto 50
+	optredirs  goto 140
 
 state 137
-	mapels:  mapels '[' names ']'.    (55)
+	cond:  cond OR '{' optsep blkcmds optsep '}'.    (31)
 
-	.  reduce 55 (src line 308)
+	.  reduce 31 (src line 184)
 
 
 state 138
+	mapels:  mapels '[' names ']'.    (57)
+
+	.  reduce 57 (src line 311)
+
+
+state 139
 	cmd:  FOR names '{' optsep blkcmds optsep '}' optredirs.    (21)
 
 	.  reduce 21 (src line 139)
 
 
-state 139
+state 140
 	cmd:  WHILE pipe '{' optsep blkcmds optsep '}' optredirs.    (22)
 
-	.  reduce 22 (src line 145)
+	.  reduce 22 (src line 144)
 
 
-32 terminals, 26 nonterminals
-65 grammar rules, 140/2000 states
+32 terminals, 27 nonterminals
+67 grammar rules, 141/2000 states
 0 shift/reduce, 0 reduce/reduce conflicts reported
-75 working sets used
-memory: parser 174/30000
-107 extra closures
+76 working sets used
+memory: parser 177/30000
+108 extra closures
 287 shift entries, 26 exceptions
-96 goto entries
+97 goto entries
 86 entries saved by goto default
-Optimizer space used: output 257/30000
-257 table entries, 38 zero
-maximum spread: 32, maximum offset: 135
+Optimizer space used: output 262/30000
+262 table entries, 42 zero
+maximum spread: 32, maximum offset: 136

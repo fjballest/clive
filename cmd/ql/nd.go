@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sort"
 )
 
 // We could have used a series of 
@@ -77,12 +76,17 @@ struct NdAddr {
 	Ln   int
 }
 
+struct Redir {
+	name string
+	nd *Nd
+}
+
 struct Nd {
 	typ   NdType
 	Args  []string
 	Child []*Nd
 	NdAddr
-	Redirs map[string]*Nd
+	Redirs []*Redir
 }
 
 func newNd(typ NdType, args ...string) *Nd {
@@ -187,14 +191,11 @@ func (n *Nd) writeTo(w io.Writer, lvl int) {
 	for _, c := range n.Child {
 		c.writeTo(w, lvl+1)
 	}
-	nms := []string{}
-	for k := range n.Redirs {
-		nms = append(nms, k)
-	}
-	sort.Sort(sort.StringSlice(nms))
-	for _, k := range nms {
-		fmt.Fprintf(w, "%s%s:\n", pref+"  ", k)
-		n.Redirs[k].writeTo(w, lvl+1)
+	for _, v := range n.Redirs {
+		fmt.Fprintf(w, "%s%s:\n", pref+"  ", v.name)
+		if v.nd != nil {
+			v.nd.writeTo(w, lvl+1)
+		}
 	}
 
 	fmt.Fprintf(w, "%s}\n", pref)

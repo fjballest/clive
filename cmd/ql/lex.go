@@ -77,17 +77,18 @@ func (l *lex) AtEof() bool {
 	return l.eofmet
 }
 
-func (l *lex) source(what string) {
+func (l *lex) source(what string) error {
 	dat, err := zx.GetAll(cmd.NS(), cmd.AbsPath(what))
 	if err != nil {
 		cmd.Warn("open: %s: %s", what, err)
-		return
+		return err
 	}
 	rdr := &bufRdr{name: what}
 	rdr.Write(dat)
 	l.in = append([]inText{rdr}, l.in...)
 	l.saddr = append([]Addr{l.Addr}, l.saddr...)
 	l.Addr = Addr{rdr, 1}
+	return nil
 }
 
 func (l *lex) Error(s string) {
