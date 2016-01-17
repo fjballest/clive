@@ -628,6 +628,9 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 		d["type"] = "d"
 		mkall = true
 	}
+	if d["type"] == "-" && d["size"] == "" {
+		d["size"] = "0"
+	}
 	mode := d.Mode()
 	if d["mode"] == "" {
 		if d["type"] == "d" {

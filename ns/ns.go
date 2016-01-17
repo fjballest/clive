@@ -351,7 +351,7 @@ func (ns *NS) Unmount(fname string, d zx.Dir) error {
 	return ns.unmount(name, d)
 }
 
-// Resolve a name and return the prefix path, the array of mount points for it.
+// Resolve a name and return the prefix path and the array of mount points for it.
 // The "addr" attribute for each mount point returned is adjusted to refer to the path
 // in the server for the resource resolved.
 // The path must be absolute.

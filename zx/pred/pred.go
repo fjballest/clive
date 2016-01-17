@@ -54,6 +54,10 @@
 		``	everything
 		`type=d`	directories
 		`depth==1`	directory contents
+
+	Because prunes are notified as soon as they are found, place the prune
+	terms at the end of the conditions or they will notify the prunes and stop
+	evaluating other conditions.
 */
 package pred
 

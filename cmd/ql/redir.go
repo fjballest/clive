@@ -3,6 +3,13 @@ package main
 import (
 	"strings"
 	"fmt"
+	"io"
+	"clive/ch"
+	"clive/cmd"
+	"errors"
+	fpath "path"
+	"os"
+	"clive/zx"
 )
 
 func fields(s, sep string) []string {
@@ -132,4 +139,195 @@ func newRedir(what, tag string, name *Nd) *Nd {
 		nd.Add(name)
 	}
 	return nd
+}
+
+// Used by redirs
+// We rely zx through a pipe, so unix commands could be happy.
+// Only []byte messages are relayed.
+func inFrom(path string) (*os.File, error) {
+	name, pred := cmd.CleanName(path)
+	if pred == "0" {
+		if _, err := cmd.Stat(name); err != nil {
+			return nil, err
+		}
+		rd, wr, err := os.Pipe()
+		if err != nil {
+			return nil, err
+		}
+		rc := cmd.Get(path, 0, -1)
+		go func () {
+			defer wr.Close()
+			for m := range rc {
+				if _, err := wr.Write(m); err != nil {
+					close(rc, err)
+					return
+				}
+			}
+			if err := cerror(rc); err != nil {
+				cmd.Warn("<: %s: %s", path, err)
+			}
+		}()
+		return rd, nil
+	}
+	rd, wr, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	go func() {
+		defer wr.Close()
+		rc := cmd.Files(path)
+		_, _, err := ch.WriteBytes(wr, rc)
+		if err != nil {
+			close(rc, err)
+		}
+	}()
+	return rd, nil
+}
+
+// The returned chan is used by the command environment to wait for the
+// writes to complete, because this is a zx stream now.
+func outTo(path string, app bool) (*os.File, chan bool, error) {
+	name, pred := cmd.CleanName(path)
+	if pred != "0" {
+		return nil, nil, errors.New("can't use predicates for > redir")
+	}
+	ppath := fpath.Dir(name)
+	d, err := cmd.Stat(ppath)
+	if err != nil {
+		return nil, nil, err
+	}
+	if d["type"] != "d" {
+		return nil, nil, fmt.Errorf("%s: %s", path, zx.ErrNotDir)
+	}
+	rd, wr, err := os.Pipe()
+	if err != nil {
+		return nil, nil, err
+	}
+	dc := make(chan bool)
+	go func() {
+		defer func() {
+			rd.Close()
+			close(dc)
+		}()
+		buf := make([]byte, ch.MsgSz)
+		dc := make(chan []byte)
+		var d zx.Dir
+		var off int64
+		if app {
+			off = -1
+		} else {
+			d = zx.Dir{"type": "-"}
+		}
+		rc := cmd.Put(path, d, off, dc)
+		for {
+			n, rerr := rd.Read(buf[0:])
+			if rerr != nil {
+				if rerr != io.EOF && err == nil {
+					err = rerr
+				}
+				break
+			}
+			if err != nil {
+				continue
+			}
+			m := make([]byte, n)
+			copy(m, buf[:n])
+			if ok := dc <- m; !ok {
+				err = cerror(dc)
+				cmd.Warn(">: write: %s", err)
+			}
+		}
+		close(dc)
+		<-rc
+		if err := cerror(rc); err != nil {
+			cmd.Warn(">: write: %s", cerror(dc))
+		}
+	}()
+	return wr, dc, nil
+}
+
+// Called for each pipe child to apply its redirs, including those for the pipeline
+func (c *Nd) applyRedirs(x, cx *xEnv, pipes map[string]pFd) ([]io.Closer, error) {
+	var pcloses []io.Closer
+	for _, rd := range c.Redirs {
+		r := rd.nd
+		if r == nil {	// dup
+			flds := fields(rd.name, ":")
+			nfd, ofd := flds[0], flds[1]
+			xfd := cx.fds[ofd]
+			if xfd != nil {
+				xfd.ref++
+			}
+			if fd, ok := cx.fds[nfd]; ok {
+				fd.Close()
+			}
+			cx.fds[nfd] = xfd
+			continue
+		}
+		paths, err := r.Child[0].expand1(x)
+		if err != nil {
+			cmd.Warn("expand: %s", err)
+			return pcloses, err
+		}
+		path := paths[0]
+		kind, tag := r.Args[0], r.Args[1]
+		var osfd *os.File
+		var dc chan bool
+		cnames := fields(tag, ",")
+		switch kind {
+		case "<":
+			osfd, err = inFrom(path)
+			if err != nil {
+				cmd.Warn("redir: %s", err)
+				return pcloses, err
+			}
+			pcloses = append(pcloses, osfd)
+		case ">":
+			osfd, dc, err = outTo(path, false)
+			// osfd, err = os.Create(path)
+			if err != nil {
+				cmd.Warn("redir: %s", err)
+				return pcloses, err
+			}
+			pcloses = append(pcloses, osfd)
+			cx.waits = append(cx.waits, dc)
+		case ">>":
+			osfd, dc, err = outTo(path, true)
+			// osfd, err = os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0644)
+			if err != nil {
+				cmd.Warn("redir: %s", err)
+				return pcloses, err
+			}
+			pcloses = append(pcloses, osfd)
+			cx.waits = append(cx.waits, dc)
+		case "<|", ">|":
+			p, ok := pipes[path]
+			if !ok {
+				p.r, p.w, err = os.Pipe()
+				if err != nil {
+					cmd.Warn("pipe: %s", err)
+					return pcloses, err
+				}
+				pcloses = append(pcloses, p.r, p.w)
+				pipes[path] = p
+			}
+			if kind[0] == '>' {
+				osfd = p.w
+			} else {
+				osfd = p.r
+			}
+		default:
+			panic("bad kind")
+		}
+		isin := kind[0] == '<'
+		xfd := &xFd{fd: osfd, path: path, ref: 0, isIn: isin}
+		for _, cname := range cnames {
+			xfd.ref++
+			if fd, ok := cx.fds[cname]; ok {
+				fd.Close()
+			}
+			cx.fds[cname] = xfd
+		}
+	}
+	return pcloses, nil
 }

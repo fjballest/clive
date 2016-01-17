@@ -40,7 +40,9 @@ struct bgCmds {
 // the name to the unix file descriptor.
 struct xEnv {
 	fds map[string]*xFd
+	waits []chan bool
 	bgtag string
+	isbg bool		// this cmd is a child of a bg command
 	xctx *cmd.Ctx
 }
 
@@ -74,6 +76,10 @@ func (x *xEnv) Close() error {
 	for _, fd := range x.fds {
 		fd.Close()
 	}
+	for _, wc := range x.waits {
+		<-wc
+	}
+	x.waits = nil
 	return nil
 }
 
@@ -144,6 +150,7 @@ func newEnv() *xEnv {
 func (x *xEnv) dup() *xEnv {
 	ne := &xEnv{
 		fds: map[string]*xFd{},
+		isbg: x.isbg,
 	}
 	for k, f := range x.fds {
 		f.addref()
@@ -230,10 +237,11 @@ func (nd *Nd) runFunc(x *xEnv) error {
 }
 
 // make xEnvs for pipe children
-func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, err error) {
+func (nd *Nd) mkChildEnvs(x *xEnv) ([]*xEnv, error) {
+	var err error
 	var pcloses []io.Closer
 	nc := len(nd.Child)
-	cxs = make([]*xEnv, nc)
+	cxs := make([]*xEnv, nc)
 	pipes := map[string]pFd{}
 	defer func() {
 		if err != nil {
@@ -250,85 +258,10 @@ func (nd *Nd) mkChildEnvs(x *xEnv) (cxs []*xEnv, err error) {
 		if dry {
 			continue
 		}
-		for _, rd := range c.Redirs {
-			r := rd.nd
-			if r == nil {	// dup
-				flds := fields(rd.name, ":")
-				nfd, ofd := flds[0], flds[1]
-				xfd := cx.fds[ofd]
-				if xfd != nil {
-					xfd.ref++
-				}
-				if fd, ok := cx.fds[nfd]; ok {
-					fd.Close()
-				}
-				cx.fds[nfd] = xfd
-				continue
-			}
-			paths, err := r.Child[0].expand1(x)
-			if err != nil {
-				cmd.Warn("expand: %s", err)
-				return nil, err
-			}
-			path := paths[0]
-			kind, tag := r.Args[0], r.Args[1]
-			var osfd *os.File
-			// TODO: Use zx to rely files
-			//	pro: we can avoid using sshfs
-			//	con: we'd read the file before the command reads it.
-			//	just use a pipe and be careful not to die because of
-			//	writes in closed pipes.
-			cnames := fields(tag, ",")
-			switch kind {
-			case "<":
-				osfd, err = os.Open(path)
-				if err != nil {
-					cmd.Warn("redir: %s", err)
-					return nil, err
-				}
-				pcloses = append(pcloses, osfd)
-			case ">":
-				osfd, err = os.Create(path)
-				if err != nil {
-					cmd.Warn("redir: %s", err)
-					return nil, err
-				}
-				pcloses = append(pcloses, osfd)
-			case ">>":
-				osfd, err = os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0644)
-				if err != nil {
-					cmd.Warn("redir: %s", err)
-					return nil, err
-				}
-				pcloses = append(pcloses, osfd)
-			case "<|", ">|":
-				p, ok := pipes[path]
-				if !ok {
-					p.r, p.w, err = os.Pipe()
-					if err != nil {
-						cmd.Warn("pipe: %s", err)
-						return nil, err
-					}
-					pcloses = append(pcloses, p.r, p.w)
-					pipes[path] = p
-				}
-				if kind[0] == '>' {
-					osfd = p.w
-				} else {
-					osfd = p.r
-				}
-			default:
-				panic("bad kind")
-			}
-			isin := kind[0] == '<'
-			xfd := &xFd{fd: osfd, path: path, ref: 0, isIn: isin}
-			for _, cname := range cnames {
-				xfd.ref++
-				if fd, ok := cx.fds[cname]; ok {
-					fd.Close()
-				}
-				cx.fds[cname] = xfd
-			}
+		ccloses, err := c.applyRedirs(x, cx, pipes)
+		pcloses = append(pcloses, ccloses...)
+		if err != nil {
+			return nil, err
 		}
 	}
 	return cxs, nil
@@ -373,6 +306,9 @@ func (nd *Nd) runPipe(x *xEnv) error {
 	for i, c := range nd.Child {
 		c := c
 		cx := cxs[i]
+		if bg != "" {
+			cx.isbg = true
+		}
 		cx.xctx = cmd.New(func() {
 			defer cx.Close()
 			if bg != "" || i < len(nd.Child)-1 {
@@ -726,7 +662,8 @@ func (nd *Nd) eval(x *xEnv, argv ...string) error {
 
 func cleanenv(env []string) []string {
 	for i := 0; i < len(env); {
-		if strings.HasPrefix(env[i], "dot=") || strings.HasPrefix(env[i], "cliveio#") {
+		if strings.HasPrefix(env[i], "dot=") || strings.HasPrefix(env[i], "cliveio#") ||
+			strings.HasPrefix(env[i], "clivebg") {
 			copy(env[i:], env[i+1:])
 			env = env[:len(env)-1]
 		} else {
@@ -790,7 +727,14 @@ func (nd *Nd) runCmd(x *xEnv) error {
 	}
 	ev := fmt.Sprintf("dot=%s", cmd.Dot())
 	xc.Env = append(xc.Env, ev)
-	if err := xc.Run(); err != nil {
+	if x.isbg {
+		xc.Env = append(xc.Env, "clivebg=y")
+	}
+	if err := xc.Start(); err != nil {
+		cmd.Warn("%s", err)
+		return nil
+	}
+	if err := xc.Wait(); err != nil {
 		cmd.SetEnv("sts", err.Error())
 		return nil
 	} else {

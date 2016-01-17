@@ -60,9 +60,11 @@ func main() {
 		case zx.Dir:
 			cmd.Dprintf("got %T %s\n", d, d["upath"])
 			dirs = append(dirs, d)
+		case error:
+			cmd.Warn("%s", d)
 		default:
 			// ignored
-			cmd.Dprintf("got %T\n", m)
+			cmd.Dprintf("ignored %T\n", m)
 		}
 	}
 	if aflag {

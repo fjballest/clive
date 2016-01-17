@@ -25,6 +25,8 @@ var (
 	yylex *lex
 	ldebug, ydebug, nddebug, dry, cflag, iflag bool
 
+	intrc <-chan os.Signal
+
 	yprintf = cmd.FlagPrintf(&ydebug)
 	nprintf = cmd.FlagPrintf(&nddebug)
 
@@ -135,6 +137,11 @@ func main() {
 	in := &inRdr{name: "in", inc: cmd.In("in")}
 	yylex = newLex(in)
 	yylex.interactive = iflag
+	if iflag {
+		intrc = cmd.HandleIntr()
+	} else {
+		intrc = make(chan os.Signal)
+	}
 	if ldebug {
 		cmd.Warn("debug lex")
 		justLex()	// does not return

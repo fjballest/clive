@@ -216,3 +216,28 @@ func (ns *NS) RemoveAll(path string) <-chan error {
 	return xfs.RemoveAll(d.SPath())
 }
 
+func (ns *NS) Move(from, to string) <-chan error {
+	_, fromds, err := ns.Resolve(from)
+	if err != nil {
+		return rerr(err)
+	}
+	fromd := fromds[0]
+	fromfs, err := DirFs(fromd)
+	if err != nil {
+		return rerr(err)
+	}
+	_, tods, err := ns.Resolve(to)
+	if err != nil {
+		return rerr(err)
+	}
+	tod := tods[0]
+	if fromd.SAddr() != tod.SAddr() {
+		return rerr(fmt.Errorf("%s: cross device move", from))
+	}
+	xfs, ok := fromfs.(zx.Mover)
+	if !ok {
+		return rerr(fmt.Errorf("%s: tree is not a mover", from))
+	}
+	return xfs.Move(fromd.SPath(), tod.SPath())
+}
+

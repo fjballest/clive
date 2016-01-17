@@ -64,9 +64,14 @@ func bcd(x *xEnv, args ...string) error {
 	case 1:
 		err = cmd.Cd(u.Home)
 	case 2:
-		err = cmd.Cd(args[1])
-	default:
-		err = errors.New("too many arguments");
+		d, derr := cmd.Dir(args[1])
+		if derr != nil {
+			err = derr
+		} else {
+			err = cmd.Cd(d["path"])
+		}
+	case 0:
+		err = errors.New("missing argument");
 	}
 	if err != nil {
 		cmd.Eprintf("cd: %s", err)

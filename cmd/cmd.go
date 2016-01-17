@@ -40,6 +40,7 @@ import (
 	"clive/dbg"
 	"clive/ns"
 	"os"
+	"os/signal"
 	"bytes"
 	"fmt"
 	"errors"
@@ -457,12 +458,26 @@ func SetOut(name string, c chan<- interface{}) {
 	ctx().SetOut(name, c)
 }
 
+func HandleIntr() <-chan os.Signal {
+	sigc := make(chan os.Signal, 16)
+	signal.Notify(sigc, os.Interrupt)
+	return sigc
+}
+
 func init() {
 	mainctx = mkCtx()
 	ns.AddLfsPath("/", nil)
 	cdot := GetEnv("dot")
 	if cdot != "" {
 		Cd(cdot)
+	}
+	if os.Getenv("clivebg") != "" {
+		ic := HandleIntr()
+		go func() {
+			for range ic {
+				Dprintf("*interrupted*\n")
+			}
+		}()
 	}
 }
 

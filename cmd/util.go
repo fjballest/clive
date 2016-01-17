@@ -11,9 +11,14 @@ import (
 )
 
 func Stat(path string) (zx.Dir, error) {
+	upath := path
 	path = AbsPath(path)
 	rc := NS().Stat(path)
 	d := <-rc
+	if d != nil {
+		d["Upath"] = upath
+		d["Rpath"] = "/"
+	}
 	return d, cerror(rc)
 }
 
@@ -44,7 +49,34 @@ func RemoveAll(path string) error {
 	return <-NS().RemoveAll(path)
 }
 
+func Move(from, to string) error {
+	from = AbsPath(from)
+	to = AbsPath(to)
+	return <-NS().Move(from, to)
+}
+
+// Clean a name according to conventions so that it has both a path and
+// a predicate and return both things.
+// In the predicate, both '&' and ',' can be used as the and operator.
+// (which is & in clive/zx/pred)
+// The name is returned as given by the user, it's not an absolute path.
+func CleanName(name string) (string, string) {
+	toks := strings.SplitN(name, ",", 2)
+	if toks[0] == "" {
+		toks[0] = "."
+	}
+	if len(toks) == 1 {
+		toks = append(toks, "0")
+	} else {
+		toks[1] = strings.Replace(toks[1], ",", "&", -1)
+	}
+	toks[0] = fpath.Clean(toks[0])
+	return toks[0], toks[1]
+}
+
 // Issue a find for these names ("filename,predicate")
+// In the predicate, both '&' and ',' can be used as the and operator.
+// (which is & in clive/zx/pred)
 // If no predicate is given, then "depth<1" is used.
 // eg. /a -> just /a; /a, -> subtree at /a
 // Errors are reported by sending an error.
@@ -67,24 +99,17 @@ func Dirs(names ...string) chan interface{} {
 				rc <- d
 				continue
 			}
-			toks := strings.SplitN(name, ",", 2)
-			if toks[0] == "" {
-				toks[0] = "."
-			}
-			if len(toks) == 1 {
-				toks = append(toks, "0")
-			}
-			toks[0] = fpath.Clean(toks[0])
-			name = AbsPath(toks[0])
-			Dprintf("getdirs: find %s %s\n", name, toks[1])
-			dc := ns.Find(name, toks[1], "/", "/", 0)
+			tok0, tok1 := CleanName(name)
+			name = AbsPath(tok0)
+			Dprintf("getdirs: find %s %s\n", name, tok1)
+			dc := ns.Find(name, tok1, "/", "/", 0)
 			for d := range dc {
 				if d == nil {
 					break
 				}
 				d["Upath"] = d["path"]
-				if toks[0] != name && zx.HasPrefix(d["path"], name) {
-					u := fpath.Join(toks[0], zx.Suffix(d["path"], name))
+				if tok0 != name && zx.HasPrefix(d["path"], name) {
+					u := fpath.Join(tok0, zx.Suffix(d["path"], name))
 					d["Upath"] = u
 				}
 				d["Rpath"] = zx.Suffix(d["path"], name)
@@ -112,6 +137,31 @@ func Dirs(names ...string) chan interface{} {
 		close(rc, err)
 	}()
 	return rc
+}
+
+// Like Dirs(), but return a single dir.
+func Dir(name string) (zx.Dir, error) {
+	tok0, tok1 := CleanName(name)
+	if tok1 == "0" {
+		return Stat(tok0)
+	}
+	rc := Dirs(name)
+	for x := range rc {
+		switch x := x.(type) {
+		case zx.Dir:
+			close(rc)
+			if err := x["err"]; err != "" {
+				return nil, errors.New(err)
+			}
+			return x, nil
+		default:
+			Dprintf("Dir: ignored %T\n", x)
+		}
+	}
+	if err := cerror(rc); err != nil {
+		return nil, err
+	}
+	return nil, fmt.Errorf("%s: %s", name, zx.ErrNotExist)
 }
 
 // Like Dirs(), but sends also file contents
@@ -144,17 +194,10 @@ func Files(names ...string) chan interface{} {
 				}
 				continue
 			}
-			toks := strings.SplitN(name, ",", 2)
-			if toks[0] == "" {
-				toks[0] = "."
-			}
-			if len(toks) == 1 {
-				toks = append(toks, "0")
-			}
-			toks[0] = fpath.Clean(toks[0])
-			name = AbsPath(toks[0])
-			Dprintf("getfiles: findget %s %s\n", name, toks[1])
-			dc := ns.FindGet(name, toks[1], "/", "/", 0)
+			tok0, tok1 := CleanName(name)
+			name = AbsPath(tok0)
+			Dprintf("getfiles: findget %s %s\n", name, tok1)
+			dc := ns.FindGet(name, tok1, "/", "/", 0)
 			for m := range dc {
 				d, ok := m.(zx.Dir)
 				if !ok {
@@ -165,8 +208,8 @@ func Files(names ...string) chan interface{} {
 					continue
 				}
 				d["Upath"] = d["path"]
-				if toks[0] != name && zx.HasPrefix(d["path"], name) {
-					u := fpath.Join(toks[0], zx.Suffix(d["path"], name))
+				if tok0 != name && zx.HasPrefix(d["path"], name) {
+					u := fpath.Join(tok0, zx.Suffix(d["path"], name))
 					d["Upath"] = u
 				}
 				d["Rpath"] = zx.Suffix(d["path"], name)
