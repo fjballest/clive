@@ -436,11 +436,7 @@ func main() {
 	opts.NewFlag("c", "cmd: run just cmd dir and exit", &cmd1)
 	opts.NewFlag("d", "dir: use dir to find commands (default /x/<sys>)", &dir)
 	opts.NewFlag("v", "verbose (report commands started)", &verb)
-	args, err := opts.Parse(os.Args...)
-	if err != nil {
-		dbg.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse(os.Args...)
 	if len(args) != 0 {
 		dbg.Warn("too many arguments")
 		opts.Usage()

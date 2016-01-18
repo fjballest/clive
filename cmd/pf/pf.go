@@ -104,14 +104,10 @@ func main() {
 	opts.NewFlag("o", "write destination path", &odir)
 	opts.NewFlag("w", "write file data back to disk (-d implied)", &wflag)
 	opts.NewFlag("W", "writeall file data back to disk (-d implied)", &wwflag)
-	args, err := opts.Parse()
+	args := opts.Parse()
 	cmd.UnixIO("err")
 	if !notux {
 		cmd.UnixIO("out")
-	}
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
 	}
 	if len(args) != 0 {
 		cmd.SetIn("in", cmd.Files(args...))
@@ -122,6 +118,7 @@ func main() {
 	in := cmd.In("in")
 	out := cmd.Out("out")
 	var w wFile
+	var err error
 	for m := range in {
 		cmd.Dprintf("got %T\n", m)
 		ok := true

@@ -138,11 +138,7 @@ func main() {
 	opts.NewFlag("n", "print just totals", &nflag)
 	opts.NewFlag("u", "use unix output", &ux)
 	cmd.UnixIO("err")
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if len(args) != 0 {
 		cmd.SetIn("in", cmd.Files(args...))
 	}
@@ -163,5 +159,7 @@ func main() {
 	if len(tots) > 1 || nflag {
 		report(tot)
 	}
-	cmd.Exit(cerror(in))
+	if err := cerror(in); err != nil {
+		cmd.Fatal(err)
+	}
 }

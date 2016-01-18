@@ -309,7 +309,8 @@ func (f *Flags) NewFlag(name, help string, vp interface{}) {
 // A "--" argument terminates the options.
 // A "-?" argument fails with a "usage" error
 // If argv is nil, it is taken from the current cmd context.
-func (f *Flags) Parse(argv ...string) ([]string, error) {
+// An error in parsing calls Usage() and terminates execution.
+func (f *Flags) Parse(argv ...string) []string {
 	var err error
 	if len(argv) == 0 {
 		c := cmd.AppCtx()
@@ -322,12 +323,13 @@ func (f *Flags) Parse(argv ...string) ([]string, error) {
 Loop:
 	for len(args) > 0 && len(args[0]) > 0 && (args[0][0] == '-' || args[0][0] == '+') {
 		if args[0] == "-?" {
-			return nil, errors.New("usage")
+			f.Usage()
 		}
 		if f.plus != nil && args[0][0] == '+' {
 			args, err = f.plus.parsePlus(args)
 			if err != nil {
-				return nil, err
+				cmd.Warn("%s", err)
+				f.Usage()
 			}
 			continue Loop
 		}
@@ -335,24 +337,27 @@ Loop:
 		if f.minus != nil && isdigit {
 			args, err = f.minus.parseMinus(args)
 			if err != nil {
-				return nil, err
+				cmd.Warn("%s", err)
+				f.Usage()
 			}
 			continue Loop
 		}
 		args[0] = args[0][1:] // drop "-"
 		name := args[0]
 		if name == "" {
-			return nil, errors.New("'-' supplied without option name")
+			cmd.Warn("'-' supplied without option name")
+			f.Usage()
 		}
 		if name == "-" {
-			return args[1:], nil
+			return args[1:]
 		}
 		// try full-names first
 		for n, def := range f.defs {
 			if name == n {
 				args, err = def.parse(args)
 				if err != nil {
-					return nil, err
+					cmd.Warn("%s", err)
+					f.Usage()
 				}
 				continue Loop
 			}
@@ -365,16 +370,18 @@ Loop:
 				if name == n {
 					args, err = def.parse(args)
 					if err != nil {
-						return nil, err
+						cmd.Warn("%s", err)
+						f.Usage()
 					}
 					continue Loop
 				}
 			}
 			// no flag defined for the rune
-			return nil, fmt.Errorf("unknown option '%c'", r)
+			cmd.Warn("unknown option '%c'", r)
+			f.Usage()
 		}
 	}
-	return args, err
+	return args
 }
 
 func optArg(argv []string) ([]string, string, error) {

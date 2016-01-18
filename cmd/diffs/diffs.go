@@ -377,11 +377,7 @@ func main() {
 	opts.NewFlag("q", "quiet output (report which files differ)", &qflag)
 	ux := false
 	opts.NewFlag("u", "use unix out", &ux)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}

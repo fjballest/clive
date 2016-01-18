@@ -45,16 +45,13 @@ func main() {
 	opts.NewFlag("a", "remove all", &aflag)
 	opts.NewFlag("f", "quiet, called 'force' in unix", &fflag)
 	opts.NewFlag("n", "dry run; report removes but do not do them", &dry)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if len(args) != 0 {
 		cmd.SetIn("in", cmd.Dirs(args...))
 	}
 	c.Verb = c.Verb || dry
 	in := cmd.In("in")
+	var err error
 	for m := range in {
 		switch d := m.(type) {
 		case zx.Dir:
@@ -97,6 +94,9 @@ func main() {
 	}
 	if err == nil {
 		err = cerror(in)
+		if err != nil {
+			cmd.Fatal(err)
+		}
 	}
 	cmd.Exit(err)
 }

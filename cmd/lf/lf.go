@@ -17,19 +17,14 @@ var (
 )
 
 func main() {
+	cmd.UnixIO("err")
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("u", "unix IO", &ux)
 	opts.NewFlag("g", "get contents", &gflag)
-	args, err := opts.Parse()
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO()
-	} else {
-		cmd.UnixIO("err")
-	}
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
 	}
 	if cmd.Args()[0] == "gf" {
 		gflag = true
@@ -73,6 +68,6 @@ func main() {
 		}
 	}
 	if err := cerror(dc); err != nil {
-		cmd.Exit(err)
+		cmd.Fatal(err)
 	}
 }

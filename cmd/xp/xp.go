@@ -102,11 +102,7 @@ func main() {
 	bhelp := false
 	opts.NewFlag("F", "report known functions and exit", &bhelp)
 	opts.NewFlag("q", "do not print values as they are evaluated", &quiet)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}
@@ -129,6 +125,6 @@ func main() {
 	}
 	in := cmd.Lines(cmd.In("in"))
 	if err := xp(in); err != nil {
-		cmd.Exit(err)
+		cmd.Fatal(err)
 	}
 }

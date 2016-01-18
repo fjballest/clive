@@ -31,11 +31,7 @@ func main() {
 	dir = dfltdir
 	opts.NewFlag("d", "adir: clive auth dir", &dir)
 	opts.NewFlag("f", "force write of key file when file already exists", &force)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if len(args) < 3 {
 		opts.Usage()
 	}
@@ -46,7 +42,7 @@ func main() {
 	if fi != nil && !force {
 		cmd.Fatal("key file already exists")
 	}
-	err = auth.SaveKey(dir, name, user, secret, groups...)
+	err := auth.SaveKey(dir, name, user, secret, groups...)
 	if err != nil {
 		cmd.Fatal("%s: %s", file, err)
 	}

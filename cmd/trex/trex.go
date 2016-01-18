@@ -178,11 +178,7 @@ func main() {
 	opts.NewFlag("x", "match against each extracted text (eg., out from gr -x)", &xflag)
 	ux := false
 	opts.NewFlag("u", "use unix out", &ux)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}

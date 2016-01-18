@@ -22,10 +22,7 @@ func main() {
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("n", "don't add a final newline", &nflag)
 	opts.NewFlag("u", "use unix out", &ux)
-	args, err := opts.Parse()
-	if err != nil {
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}

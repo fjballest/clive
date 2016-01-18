@@ -364,11 +364,7 @@ func main() {
 	ux := false
 	opts.NewFlag("u", "use unix out", &ux)
 	aliases()
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}
@@ -382,6 +378,7 @@ func main() {
 			args[i] = `(.|\n)*(` + a + `)(.|\n)*`
 		}
 	}
+	var err error
 	re, err = sre.CompileStr(args[0], sre.Fwd)
 	if err != nil {
 		cmd.Fatal(err)
@@ -403,7 +400,7 @@ func main() {
 	}
 
 	if err := cerror(in); err != nil {
-		cmd.Exit(err)
+		cmd.Fatal(err)
 	}
 	if !found {
 		if !sflag {

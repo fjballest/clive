@@ -225,11 +225,7 @@ func main() {
 	opts.NewFlag("b", "dir: change the default refer bib dir", &refsdir)
 	opts.NewFlag("u", "do not generate output for unix", &notux)
 
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if !notux {
 		cmd.UnixIO("out")
 	}

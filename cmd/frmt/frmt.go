@@ -95,11 +95,7 @@ func main() {
 	opts.NewFlag("t", "tabwid: set tab width (default $tabstop or 8)", &tabwid)
 	ux := false
 	opts.NewFlag("u", "use unix out", &ux)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}
@@ -140,5 +136,7 @@ func main() {
 			}
 		}
 	}
-	cmd.Exit(cerror(parc))
+	if err := cerror(parc); err != nil {
+		cmd.Fatal(err)
+	}
 }

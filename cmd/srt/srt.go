@@ -287,11 +287,7 @@ func main() {
 	opts.NewFlag("x", "sort each extracted text on its own (eg. out from gr -x)", &xflag)
 	ux := false
 	opts.NewFlag("u", "use unix out", &ux)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}
@@ -305,7 +301,7 @@ func main() {
 		cmd.Fatal(err)
 	}
 	setSep()
-	err = sortFiles(cmd.Lines(cmd.In("in")))
+	err := sortFiles(cmd.Lines(cmd.In("in")))
 	if err != nil {
 		cmd.Fatal(err)
 	}

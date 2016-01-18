@@ -205,11 +205,7 @@ func main() {
 	opts.NewFlag("i", "isep: input field separator character(s) or string under -1", &seps)
 	opts.NewFlag("1", "fields are separated by one run of the separator string", &one)
 	opts.NewFlag("o", "osep: output field delimiter string", &osep)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args:= opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}

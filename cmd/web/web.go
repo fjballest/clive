@@ -18,11 +18,7 @@ var (
 func main() {
 	cmd.UnixIO()
 	opts.NewFlag("p", "port: port used (8080 by default)", &port)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	switch len(args) {
 	case 0:
 	case 1:
@@ -31,6 +27,8 @@ func main() {
 		cmd.Warn("too many arguments")
 		opts.Usage()
 	}
-	err = http.ListenAndServe(":"+port, http.FileServer(http.Dir(dir)))
-	cmd.Exit(err)
+	err := http.ListenAndServe(":"+port, http.FileServer(http.Dir(dir)))
+	if err != nil {
+		cmd.Fatal(err)
+	}
 }

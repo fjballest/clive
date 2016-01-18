@@ -113,11 +113,7 @@ func main() {
 	opts.NewFlag("v", "report moves", &c.Verb)
 	opts.NewFlag("d", "take always destination as a parent dir", &todir)
 	opts.NewFlag("u", "use unix output", &ux)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}

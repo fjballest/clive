@@ -71,11 +71,7 @@ func main() {
 	opts.NewFlag("n", "ncols: set number of columns", &ncols)
 	opts.NewFlag("u", "use unix output", &ux)
 	cmd.UnixIO("err")
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}

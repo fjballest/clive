@@ -70,11 +70,7 @@ func main() {
 	cmd.UnixIO("err")
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("u", "use unix out", &ux)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args:= opts.Parse()
 	if len(args) == 0 {
 		cmd.Warn("missing predicate")
 		opts.Usage()
@@ -92,5 +88,7 @@ func main() {
 	}
 	in := cmd.In("in")
 	out := cmd.Out("out")
-	cmd.Exit(gp(in, out))
+	if err := gp(in, out); err != nil {
+		cmd.Fatal(err)
+	}
 }

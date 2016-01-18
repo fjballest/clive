@@ -66,12 +66,6 @@ var okchks = []chk{
 	},
 }
 
-var errchks = []chk{
-	{
-		argv: []string{"ls", "-"},
-	},
-}
-
 func TestFlags(t *testing.T) {
 	opts := New("[file...]")
 	var bl, bd, br bool
@@ -82,26 +76,14 @@ func TestFlags(t *testing.T) {
 	opts.NewFlag("i", "ival", &ival)
 	for _, c := range okchks {
 		bl, bd, br = false, false, false
-		args, err := opts.Parse(c.argv...)
+		args := opts.Parse(c.argv...)
 		flg := fmt.Sprintf("%v %v %v %d", bl, bd, br, ival)
 		left := strings.Join(args, " ")
 		if testing.Verbose() {
-			fmt.Printf("flags %s args %s sts %v\n", flg, left, err)
+			fmt.Printf("flags %s args %s\n", flg, left)
 		}
 		if flg != c.flags || left != c.args {
 			t.Fatal("bad result")
-		}
-	}
-	for _, c := range errchks {
-		bl, bd, br = false, false, false
-		args, err := opts.Parse(c.argv...)
-		flg := fmt.Sprintf("%v %v %v %d", bl, bd, br, ival)
-		left := strings.Join(args, " ")
-		if testing.Verbose() {
-			fmt.Printf("flags %s args %s sts %v\n", flg, left, err)
-		}
-		if err == nil {
-			t.Fatal("didn't fail")
 		}
 	}
 	if testing.Verbose() {
@@ -110,11 +92,11 @@ func TestFlags(t *testing.T) {
 	var pn, mn int
 	opts.NewFlag("+num", "add numb", &pn)
 	opts.NewFlag("-num", "del numb", &mn)
-	args, err := opts.Parse("ls", "+3", "-ldi", "15", "-5", "/tmp")
+	args := opts.Parse("ls", "+3", "-ldi", "15", "-5", "/tmp")
 	flg := fmt.Sprintf("%v %v %v %d %d %d", bl, bd, br, ival, pn, mn)
 	left := strings.Join(args, " ")
 	if testing.Verbose() {
-		fmt.Printf("flags %s args %s sts %v\n", flg, left, err)
+		fmt.Printf("flags %s args %s\n", flg, left)
 	}
 	if flg != `true true false 15 3 -5` || left != "/tmp" {
 		t.Fatal("bad arg")

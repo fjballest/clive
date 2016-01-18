@@ -107,10 +107,7 @@ func main() {
 	opts.NewFlag("n", "dry run", &dry)
 	opts.NewFlag("c", "run args as a command", &cflag)
 	opts.NewFlag("i", "interactive", &iflag)
-	args, err := opts.Parse()
-	if err != nil {
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if cflag {
 		if len(args) == 0 {
 			cmd.Warn("no args and flag -c")

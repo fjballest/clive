@@ -38,11 +38,7 @@ func main() {
 	opts.NewFlag("x", "expr: files excluded (.*, tmp.* if none given); tmp always excluded.", &Xcludes)
 	Dump = dfltdump
 	opts.NewFlag("d", "dir: where to keep the dump, ~/dump if none", &Dump)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if len(Xcludes) == 0 {
 		Xcludes = []string{".*", "tmp.*", "*.tmp"}
 	}

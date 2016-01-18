@@ -38,11 +38,7 @@ func main() {
 	opts.NewFlag("r", "read only", &rflag)
 	opts.NewFlag("n", "no caching", &nocache)
 	opts.NewFlag("x", "addr: re-export locally the mounted tree to this address", &xaddr)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	fuse.Debug = func(m interface{}) {
 		if fs.Debug {
 			cmd.Eprintf("fuse: %v\n", m)
@@ -59,6 +55,7 @@ func main() {
 		opts.Usage()
 	}
 	var rfs zx.Getter
+	var err error
 	method := "lfs"
 	if strings.ContainsRune(addr, '!') {
 		if strings.HasPrefix(addr, "zx!") {
@@ -92,8 +89,7 @@ func main() {
 	cmd.Warn("mount %s: %s %s %s %s", mntdir, addr, method, rs[rflag], cs[!nocache])
 	err = zxfs.MountServer(xfs, mntdir)
 	if err != nil {
-		cmd.Warn("mount error: %s", err)
+		cmd.Fatal("mount error: %s", err)
 	}
 	cmd.Warn("%s %s unmounted: exiting", mntdir, addr)
-	cmd.Exit(err)
 }

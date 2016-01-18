@@ -132,11 +132,7 @@ func main() {
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
 	cmd.UnixIO("err")
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if len(args) == 1 && ismode(args[0]) {
 		args = append([]string{"mode"}, args...)
 	}
@@ -147,6 +143,7 @@ func main() {
 	nd := chd(args...)
 
 	in := cmd.In("in")
+	var err error
 	for m := range in {
 		switch d := m.(type) {
 		case zx.Dir:

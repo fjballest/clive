@@ -13,11 +13,7 @@ var opts = opt.New("{file}")
 func main() {
 	cmd.UnixIO("err")
 	cmd.UnixIO("in")
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if len(args) != 0 {
 		in := cmd.Files(args...)
 		cmd.SetIn("in", in)
@@ -29,5 +25,7 @@ func main() {
 			close(in, cerror(out))
 		}
 	}
-	close(out, cerror(in))
+	if err := cerror(in); err != nil {
+		cmd.Fatal(err)
+	}
 }

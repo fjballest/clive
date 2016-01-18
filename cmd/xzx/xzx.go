@@ -43,11 +43,7 @@ func main() {
 	opts.NewFlag("v", "report users logged in/out (verbose)", &c.Verb)
 	opts.NewFlag("Z", "verbose debug", &Zdebug)
 	opts.NewFlag("n", "no auth", &noauth)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if len(args) == 0 {
 		cmd.Warn("missing arguments")
 		opts.Usage()

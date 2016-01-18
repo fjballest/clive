@@ -23,11 +23,7 @@ func main() {
 	opts.NewFlag("1", "collect all files (not one msg per file)", &one)
 	ux := false
 	opts.NewFlag("u", "use unix out", &ux)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}

@@ -187,11 +187,7 @@ func main() {
 	opts.NewFlag("w", "date: backward search start time (default is now)", &when)
 	ux := false
 	opts.NewFlag("u", "unix IO", &ux)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if (all && cflag) || (force && !all) {
 		cmd.Warn("incompatible flags")
 		opts.Usage()

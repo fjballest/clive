@@ -61,11 +61,7 @@ func main() {
 	opts.NewFlag("1", "words separated by 1 run of the blank string given to -F", &one)
 	ux := false
 	opts.NewFlag("u", "use unix out", &ux)
-	args, err := opts.Parse()
-	if err != nil {
-		cmd.Warn("%s", err)
-		opts.Usage()
-	}
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}
@@ -74,5 +70,7 @@ func main() {
 	}
 	in := cmd.Lines(cmd.In("in")) // to make sure we don't break a word in recvs.
 	words(in, cmd.Out("out"))
-	cmd.Exit(cerror(in))
+	if err := cerror(in); err != nil {
+		cmd.Fatal(err)
+	}
 }
