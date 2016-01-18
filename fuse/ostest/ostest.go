@@ -6,15 +6,15 @@ package ostest
 
 import (
 	"bytes"
-	"clive/bufs/rwtest"
+	"clive/mblk/rwtest"
 	"clive/dbg"
-	"clive/zx"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
 	"strings"
+	fpath "path"
 	"testing"
 	"time"
 )
@@ -44,7 +44,6 @@ type Fataler interface {
 }
 
 var (
-	printf = dbg.FuncPrintf(os.Stdout, testing.Verbose)
 	xt     int64
 
 	// directories created
@@ -58,6 +57,12 @@ var (
 
 	Repeats = 1
 )
+
+func printf(x string, arg ...interface{}) {
+	if testing.Verbose() {
+		dbg.Printf(x, arg...)
+	}
+}
 
 // Make some changes in the test tree.
 //	- Touch /a/a1
@@ -248,8 +253,8 @@ func diff(rc chan<- string, fn string, mtime bool, dirs ...string) {
 	d0 := dirs[0]
 	dirs = dirs[1:]
 	for _, di := range dirs {
-		p0 := zx.Path(d0, fn)
-		pi := zx.Path(di, fn)
+		p0 := fpath.Join(d0, fn)
+		pi := fpath.Join(di, fn)
 		s := diff1(p0, pi, fn != "/", mtime)
 		if s != "" {
 			rc <- fmt.Sprintf("%s: chg %s %s", di, fn, s)
@@ -260,7 +265,7 @@ func diff(rc chan<- string, fn string, mtime bool, dirs ...string) {
 			continue
 		}
 		for _, c := range c0 {
-			cf := zx.Path(fn, c)
+			cf := fpath.Join(fn, c)
 			if !member(c, c1) {
 				rc <- fmt.Sprintf("%s: del %s", di, cf)
 				continue
@@ -269,7 +274,7 @@ func diff(rc chan<- string, fn string, mtime bool, dirs ...string) {
 		}
 		for _, c := range c1 {
 			if !member(c, c0) {
-				cf := zx.Path(fn, c)
+				cf := fpath.Join(fn, c)
 				rc <- fmt.Sprintf("%s: add %s", di, cf)
 			}
 		}
@@ -283,7 +288,7 @@ func AsAFile(t Fataler, dirs ...string) {
 	}
 	fn := "/foo"
 	for _, d := range dirs {
-		p := zx.Path(d, fn)
+		p := fpath.Join(d, fn)
 		fd, err := os.Create(p)
 		if err != nil {
 			t.Fatalf("create: %s: %s", d, err)
@@ -333,7 +338,7 @@ func Stats(t Fataler, dirs ...string) {
 	}
 	for _, d := range dirs {
 		for _, st := range StatTests {
-			p := zx.Path(d, st.Path)
+			p := fpath.Join(d, st.Path)
 			fi, err := os.Stat(p)
 			if err == nil && st.Fails {
 				t.Fatalf("%s did not fail", st.Path)
@@ -364,7 +369,7 @@ func Gets(t Fataler, dirs ...string) {
 	}
 	for _, d := range dirs {
 		for _, fp := range GetFPaths {
-			p := zx.Path(d, fp)
+			p := fpath.Join(d, fp)
 			dat, err := ioutil.ReadFile(p)
 			if err != nil {
 				t.Fatalf("get %s: %s", p, err)
@@ -378,7 +383,7 @@ func Gets(t Fataler, dirs ...string) {
 		}
 		for _, dp := range GetDPaths {
 			printf("getall %s\n", dp)
-			p := zx.Path(d, dp)
+			p := fpath.Join(d, dp)
 			cs := Children(p)
 			printf("children `%s`\n", strings.Join(cs, " "))
 			if strings.Join(cs, " ") != GetDOuts[dp] {
@@ -387,7 +392,7 @@ func Gets(t Fataler, dirs ...string) {
 			}
 		}
 		for _, fp := range BadPaths {
-			p := zx.Path(d, fp)
+			p := fpath.Join(d, fp)
 			_, err := ioutil.ReadFile(p)
 			if err == nil {
 				t.Fatalf("%s did not fail", fp)
@@ -419,7 +424,7 @@ func Puts(t Fataler, dirs ...string) {
 		nn := 0
 		for _, pt := range PutTests {
 			printf("put %s\n", pt.Path)
-			p := zx.Path(d, pt.Path)
+			p := fpath.Join(d, pt.Path)
 			// 1. use create
 			fd, err := os.Create(p)
 			if err != nil && !pt.Fails {
@@ -479,7 +484,7 @@ func Mkdirs(t Fataler, dirs ...string) {
 	for _, d := range dirs {
 		for _, dp := range MkdirPaths {
 			printf("mkdir %s\n", dp)
-			p := zx.Path(d, dp)
+			p := fpath.Join(d, dp)
 			if err := os.Mkdir(p, 0750); err != nil {
 				t.Fatalf("mkdir %s: %s", p, err)
 			}
@@ -496,7 +501,7 @@ func Mkdirs(t Fataler, dirs ...string) {
 		}
 		for _, dp := range BadMkdirPaths {
 			printf("mkdir %s\n", dp)
-			p := zx.Path(d, dp)
+			p := fpath.Join(d, dp)
 			if err := os.Mkdir(p, 0750); err == nil {
 				t.Fatalf("mkdir %s: didn't fail")
 			}
@@ -516,14 +521,14 @@ func Removes(t Fataler, dirs ...string) {
 	for _, d := range dirs {
 		for _, dp := range RemovePaths {
 			printf("remove %s\n", dp)
-			p := zx.Path(d, dp)
+			p := fpath.Join(d, dp)
 			if err := os.Remove(p); err != nil {
 				t.Fatalf("rm %s: %s", p, err)
 			}
 		}
 		for _, dp := range BadRemovePaths {
 			printf("remove %s\n", dp)
-			p := zx.Path(d, dp)
+			p := fpath.Join(d, dp)
 			if err := os.Remove(p); err == nil {
 				t.Fatalf("rm %s: did not fail", p)
 			}
@@ -575,7 +580,7 @@ func Wstats(t Fataler, dirs ...string) {
 	}
 	for _, d := range dirs {
 		for _, dp := range WstatTests {
-			p := zx.Path(d, dp.Path)
+			p := fpath.Join(d, dp.Path)
 			printf("wstat %s %o %d\n", dp.Path, os.FileMode(dp.Mode)&0777, dp.Mtime)
 			if err := os.Chmod(p, dp.Mode); err != nil {
 				if dp.Fails {
@@ -620,7 +625,7 @@ func All(t Fataler, dirs ...string) {
 	Wstats(t, dirs...)
 	Removes(t, dirs...)
 	for _, d := range dirs {
-		os.Remove(zx.Path(d, "/foo"))
+		os.Remove(fpath.Join(d, "/foo"))
 	}
 	diffs, err = Diff(WithoutMtime, dirs...)
 	if err != nil {

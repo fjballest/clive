@@ -2,10 +2,10 @@ package ostest
 
 import (
 	"bytes"
-	"clive/zx"
 	"io/ioutil"
 	"math/rand"
 	"os"
+	fpath "path"
 )
 
 type fsOp int
@@ -280,8 +280,8 @@ func AsAFs(t Fataler, dirs ...string) {
 			continue
 		}
 		fp := paths[i%len(paths)]
-		p1 := zx.Path(dir1, fp)
-		p2 := zx.Path(osdir, fp)
+		p1 := fpath.Join(dir1, fp)
+		p2 := fpath.Join(osdir, fp)
 		ok := calls[op](t, p1, p2)
 		if ok {
 			counts[op] = counts[op] + 1
