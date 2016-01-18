@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	noauth bool
+	noauth, wsync bool
 	Zdebug bool
 	dprintf = cmd.Dprintf
 	vprintf = cmd.VWarn
@@ -37,6 +37,7 @@ func main() {
 	addr = "*!*!zx"
 	opts.NewFlag("p", "port: tcp server port (8002 by default)", &port)
 	opts.NewFlag("a", "addr: service address (*!*!zx by default)", &addr)
+	opts.NewFlag("s", "use writesync for caches", &wsync)
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("v", "report users logged in/out (verbose)", &c.Verb)
@@ -94,6 +95,9 @@ func main() {
 			}
 			if Zdebug {
 				x.(*zxc.Fs).Debug = true
+			}
+			if wsync {
+				x.(*zxc.Fs).Flags.Set("writesync", true)
 			}
 		} else if Zdebug {
 			x.(*zux.Fs).Debug = true
