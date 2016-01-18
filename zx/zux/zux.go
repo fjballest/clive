@@ -54,7 +54,7 @@ var (
 	dontremove bool      // set during testing to prevent removes
 	_fs        zx.FullFs = &Fs{}
 
-	paranoia = true	// if true, would panic if removing outside /tmp/...
+	paranoia = false	// if true, would panic if removing outside /tmp/...
 )
 
 func (fs *Fs) String() string {
