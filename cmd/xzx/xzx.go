@@ -127,7 +127,7 @@ func main() {
 			cfs.Flags.Add("zdebug", &cfs.Debug)
 		} else if lfs, ok := fs.(*zux.Fs); ok {
 			lfs.Flags.Add("debug", &srv.Debug)
-			lfs.Flags.Add("zdebug", &cfs.Debug)
+			lfs.Flags.Add("zdebug", &lfs.Debug)
 		}
 		if rotrs[nm] {
 			fs = zx.MakeRO(fs)
