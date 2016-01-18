@@ -4,6 +4,7 @@ package main
 import (
 	"testing"
 	"clive/dbg"
+	"clive/cmd"
 	"clive/cmd/test"
 )
 
@@ -223,4 +224,14 @@ func TestQl(t *testing.T) {
 	}
 	test.InstallCmd(t)
 	test.Cmds(t, runs)
+}
+
+func TestPath(t *testing.T) {	
+	t.Logf("path %v", cmd.Path())
+	if p := cmd.LookPath("sh"); p != "/bin/sh" {
+		t.Fatalf("sh is %q\n", p)
+	}
+	if p := cmd.LookPath("./sh"); p != "" {
+		t.Fatalf("sh is %q\n", p)
+	}
 }

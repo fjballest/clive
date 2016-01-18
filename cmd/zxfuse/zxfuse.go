@@ -92,7 +92,8 @@ func main() {
 	cmd.Warn("mount %s: %s %s %s %s", mntdir, addr, method, rs[rflag], cs[!nocache])
 	err = zxfs.MountServer(xfs, mntdir)
 	if err != nil {
-		cmd.Fatal("%s", err)
+		cmd.Warn("mount error: %s", err)
 	}
 	cmd.Warn("%s %s unmounted: exiting", mntdir, addr)
+	cmd.Exit(err)
 }

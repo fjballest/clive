@@ -133,7 +133,7 @@ func main() {
 	c.Debug = c.Debug || ldebug || ydebug || nddebug
 	nddebug = nddebug || ydebug
 	cmd.SetEnv("argv0", c.Args[0])
-	cmd.SetEnv("argv", listEnv(c.Args[1:]))
+	cmd.SetEnvList("argv", c.Args[1:])
 	in := &inRdr{name: "in", inc: cmd.In("in")}
 	yylex = newLex(in)
 	yylex.interactive = iflag

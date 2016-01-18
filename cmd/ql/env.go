@@ -3,10 +3,8 @@ package main
 import (
 	"clive/cmd"
 	"strconv"
-	"strings"
 	"sort"
 	"sync"
-	"os/exec"
 	"clive/u"
 	"errors"
 	"fmt"
@@ -17,7 +15,6 @@ var (
 	builtins = map[string]func(x*xEnv, args ...string)error{}
 	fns = map[string]*Nd{}
 	xpath []string
-
 )
 
 func newFunc(nd *Nd) {
@@ -49,7 +46,7 @@ func btype(x *xEnv, args ...string) error {
 		if builtins[a] != nil {
 			cmd.Printf("%s: builtin\n", a)
 		}
-		if p, err := exec.LookPath(a); err == nil {
+		if p := cmd.LookPath(a); p != "" {
 			cmd.Printf("%s: %s\n", a, p)
 		} else {
 			cmd.Printf("%s: unknown\n", a)
@@ -131,26 +128,6 @@ func bwait(x *xEnv, args ...string) error {
 // Maps are lists with of key-value lists preceded by \a
 // the first item in each list is the key.
 
-func isMap(env string) bool {
-	return strings.ContainsRune(env, '\a')
-}
-
-func envMap(env string) map[string][]string {
-	toks := strings.Split(env, "\a")
-	if len(toks) > 0 {
-		toks = toks[1:]
-	}
-	m := map[string][]string{}
-	for _, t := range toks {
-		lst := envList(t)
-		if len(lst) == 0 {
-			continue
-		}
-		m[lst[0]] = lst[1:]
-	}
-	return m
-}
-
 func mapKeys(m map[string][]string) []string {
 	s := []string{}
 	for k := range m {
@@ -158,23 +135,6 @@ func mapKeys(m map[string][]string) []string {
 	}
 	sort.Sort(sort.StringSlice(s))
 	return s
-}
-
-func mapEnv(m map[string][]string) string {
-	s := ""
-	for k, v := range m {
-		lst := append([]string{k}, v...)
-		s += "\a" + listEnv(lst)
-	}
-	return s
-}
-
-func envList(env string) []string {
-	return strings.Split(env, "\b")
-}
-
-func listEnv(lst []string) string {
-	return strings.Join(lst, "\b")
 }
 
 func listEl(lst []string, idxs string) string {
@@ -201,5 +161,3 @@ func setListEl(lst []string, idxs, val string) []string {
 	lst[i] = val
 	return lst
 }
-
-

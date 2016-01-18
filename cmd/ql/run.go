@@ -364,10 +364,10 @@ func (nd *Nd) varLen() int {
 	if v == "" {
 		return 0
 	}
-	if isMap(v) {
-		return len(envMap(v))
+	if cmd.IsEnvMap(v) {
+		return len(cmd.EnvMap(v))
 	}
-	return len(envList(v))
+	return len(cmd.EnvList(v))
 }
 
 func (nd *Nd) varValue(x *xEnv) (names []string) {
@@ -379,10 +379,10 @@ func (nd *Nd) varValue(x *xEnv) (names []string) {
 	v := cmd.GetEnv(nd.Args[0])
 	switch len(nd.Child) {
 	case 0:	// $a
-		if isMap(v) {
-			names = mapKeys(envMap(v))
+		if cmd.IsEnvMap(v) {
+			names = mapKeys(cmd.EnvMap(v))
 		} else {
-			names = envList(v)
+			names = cmd.EnvList(v)
 		}
 	case 1:	// $a[b]
 		c := nd.Child[0]
@@ -395,12 +395,12 @@ func (nd *Nd) varValue(x *xEnv) (names []string) {
 			cmd.Warn("$%s[...]: not a single index name", nd.Args[0])
 			break
 		}
-		if isMap(v) {
-			m := envMap(v)
+		if cmd.IsEnvMap(v) {
+			m := cmd.EnvMap(v)
 			cmd.Dprintf("map value %v [ %s ] ...\n", m, names[0])
 			names = m[names[0]]
 		} else {
-			lst := envList(v)
+			lst := cmd.EnvList(v)
 			cmd.Dprintf("lst value %v [ %s ] ...\n", lst, names[0])
 			el := listEl(lst, names[0])
 			if el == "" {
@@ -655,7 +655,7 @@ func (nd *Nd) expand(x *xEnv) ([]string, error) {
 func (nd *Nd) eval(x *xEnv, argv ...string) error {
 	nd.chk(Nfunc)
 	cmd.SetEnv("argv0", argv[0])
-	e := listEnv(argv[1:])
+	e := cmd.ListEnv(argv[1:])
 	cmd.SetEnv("argv", e)
 	return nd.Child[0].runBlock(x)
 }
@@ -705,6 +705,9 @@ func (nd *Nd) runCmd(x *xEnv) error {
 	xc := exec.Command(args[0], args[1:]...)
 	xc.Dir = cmd.Dot()
 	xc.Env = cleanenv(cmd.OSEnv())
+	if p := cmd.LookPath(args[0]); p != "" {
+		xc.Path = p
+	}
 	for cname, xfd := range x.fds {
 		switch cname {
 		case "in":
@@ -908,7 +911,7 @@ func (nd *Nd) runSet(x *xEnv) error {
 			return err
 		}
 		cmd.VWarn("set %s = %s", name, dnames(vals))
-		cmd.SetEnv(name, listEnv(vals))
+		cmd.SetEnvList(name, vals)
 	case 2:	// $name[name] = ...
 		c0, c1 := nd.Child[0], nd.Child[1]
 		idxs, err := c0.expand1(x)
@@ -929,16 +932,16 @@ func (nd *Nd) runSet(x *xEnv) error {
 			return err
 		}
 		e := cmd.GetEnv(name)
-		if isMap(e) {
-			m := envMap(e)
+		if cmd.IsEnvMap(e) {
+			m := cmd.EnvMap(e)
 			m[idx] = vals
 			cmd.VWarn("set %s[%s] = %s", name, idx, dnames(vals))
-			cmd.SetEnv(name, mapEnv(m))
+			cmd.SetEnvMap(name, m)
 		} else {
-			lst := envList(e)
+			lst := cmd.EnvList(e)
 			lst = setListEl(lst, idx, strings.Join(vals, " "))
 			cmd.VWarn("set %s[%s] = %s", name, idx, dnames(vals))
-			cmd.SetEnv(name, listEnv(lst))
+			cmd.SetEnvList(name, lst)
 		}
 	default:
 	}
@@ -963,6 +966,6 @@ func (nd *Nd) runSetMap(x *xEnv) error {
 		m[nms[0]] = nms[1:]
 	}
 	cmd.VWarn("set %s = %v", name, m)
-	cmd.SetEnv(name, mapEnv(m))
+	cmd.SetEnvMap(name, m)
 	return nil
 }

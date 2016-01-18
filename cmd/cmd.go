@@ -288,8 +288,98 @@ func (c *Ctx) GetEnv(name string) string {
 	return c.env.get(name)
 }
 
-func GetEnv(to string) string {
-	return ctx().GetEnv(to)
+func EnvList(val string) []string {
+	// rc seems to use \1 for lists
+	val = strings.Replace(val, "\001", "\b", -1)
+	return strings.Split(val, "\b")
+}
+
+func EnvMap(env string) map[string][]string {
+	toks := strings.Split(env, "\a")
+	if len(toks) > 0 {
+		toks = toks[1:]
+	}
+	m := map[string][]string{}
+	for _, t := range toks {
+		lst := EnvList(t)
+		if len(lst) == 0 {
+			continue
+		}
+		m[lst[0]] = lst[1:]
+	}
+	return m
+}
+
+func Path() []string {
+	pval := GetEnvList("path")
+	if pval == nil {
+		pval = strings.Split(GetEnv("PATH"), ":")
+	}
+	if pval == nil {
+		return []string{"/bin", "/usr/bin", "."}
+	}
+	return pval
+}
+
+// Returns "" if there's no such cmd in the path.
+// Returns the absolute path for cmd if it's /... or ./... or ../...
+func LookPath(cmd string) string {
+	if strings.HasPrefix(cmd, "/") || strings.HasPrefix(cmd, "./") ||
+		strings.HasPrefix(cmd, "../") {
+		path := AbsPath(cmd)
+		if fi, err := os.Stat(path); err == nil {
+			if !fi.IsDir() && fi.Mode()&0111 != 0 {
+				return path
+			}
+		}
+		return ""
+	}
+	for _, d := range Path() {
+		path := fpath.Join(d, cmd)
+		if fi, err := os.Stat(path); err == nil {
+			if !fi.IsDir() && fi.Mode()&0111 != 0 {
+				return path
+			}
+		}
+	}
+	return ""
+}
+
+func MapEnv(m map[string][]string) string {
+	s := ""
+	for k, v := range m {
+		lst := append([]string{k}, v...)
+		s += "\a" + ListEnv(lst)
+	}
+	return s
+}
+
+func IsEnvMap(value string) bool {
+	return strings.ContainsRune(value, '\a')
+}
+
+func ListEnv(lst []string) string {
+	return strings.Join(lst, "\b")
+}
+
+func GetEnvList(v string) []string {
+	return EnvList(GetEnv(v))
+}
+
+func GetEnvMap(v string) map[string][]string {
+	return EnvMap(GetEnv(v))
+}
+
+func SetEnvList(v string, val []string) {
+	SetEnv(v, ListEnv(val))
+}
+
+func SetEnvMap(v string, val map[string][]string) {
+	SetEnv(v, MapEnv(val))
+}
+
+func GetEnv(v string) string {
+	return ctx().GetEnv(v)
 }
 
 func (c *Ctx) SetEnv(name, value string) {
