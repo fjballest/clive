@@ -91,6 +91,7 @@ func (w *wFile) write(b []byte) error {
 }
 
 func main() {
+	cmd.UnixIO("err")
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("d", "no not print file data", &dflag)
@@ -105,7 +106,6 @@ func main() {
 	opts.NewFlag("w", "write file data back to disk (-d implied)", &wflag)
 	opts.NewFlag("W", "writeall file data back to disk (-d implied)", &wwflag)
 	args := opts.Parse()
-	cmd.UnixIO("err")
 	if !notux {
 		cmd.UnixIO("out")
 	}
