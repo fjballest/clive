@@ -21,12 +21,10 @@ var (
 	addr         string
 	mntdir       = "/n/zx"
 	rflag bool
-	nopings      bool
 
-	zxdebug, lfsdebug, rfsdebug, verb bool
+	verb bool
 
 	nocache             bool
-	lfscache, mlfscache string
 	xaddr               string
 	opts                = opt.New("addr|dir [mntdir] &")
 )
@@ -36,6 +34,7 @@ func main() {
 	opts.NewFlag("D", "debug requests", &zxfs.Debug)
 	opts.NewFlag("F", "verbose debug requests", &zxfs.Verb)
 	opts.NewFlag("V", "verbose fuse debug", &fs.Debug)
+	opts.NewFlag("v", "verbose cache", &verb)
 	opts.NewFlag("r", "read only", &rflag)
 	opts.NewFlag("n", "no caching", &nocache)
 	opts.NewFlag("x", "addr: re-export locally the mounted tree to this address", &xaddr)
@@ -80,6 +79,9 @@ func main() {
 		xfs, err = zxc.New(rfs)
 		if err != nil {
 			cmd.Fatal("cache fs: %s", err)
+		}
+		if verb {
+			xfs.(*zxc.Fs).Flags.Set("verb", true)
 		}
 	}
 	if rflag {
