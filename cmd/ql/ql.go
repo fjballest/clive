@@ -30,7 +30,7 @@ var (
 	yprintf = cmd.FlagPrintf(&ydebug)
 	nprintf = cmd.FlagPrintf(&nddebug)
 
-	opts = opt.New("")
+	opts = opt.New("[file] ...")
 	parseErr = errors.New("parse error")
 
 )
@@ -123,7 +123,7 @@ func main() {
 		close(in)
 		cmd.SetIn("in", in)
 	} else if len(args) != 0 {
-		cmd.SetIn("in", cmd.Files(args...))
+		cmd.SetIn("in", cmd.Files(args[0]))
 	} else {
 		iflag = tty.IsTTY(os.Stdin)
 	}

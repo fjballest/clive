@@ -72,7 +72,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyInitialStackSize = 16
 
-//line parse.y:356
+//line parse.y:362
 
 //line yacctab:1
 var yyExca = [...]int{
@@ -112,7 +112,7 @@ var yyExca = [...]int{
 	-2, 16,
 }
 
-const yyNprod = 67
+const yyNprod = 68
 const yyPrivate = 57344
 
 var yyTokenNames []string
@@ -130,7 +130,7 @@ var yyAct = [...]int{
 	71, 135, 25, 24, 74, 23, 76, 75, 49, 58,
 	23, 22, 41, 42, 57, 83, 85, 40, 131, 86,
 	49, 81, 126, 69, 23, 90, 93, 125, 124, 114,
-	84, 61, 46, 66, 67, 45, 44, 43, 49, 100,
+	84, 61, 46, 67, 66, 45, 44, 43, 49, 100,
 	60, 102, 103, 104, 101, 87, 38, 52, 53, 26,
 	54, 20, 14, 109, 110, 115, 21, 113, 101, 101,
 	47, 123, 101, 119, 18, 7, 127, 2, 101, 10,
@@ -155,13 +155,13 @@ var yyPact = [...]int{
 	113, -1000, 113, -1000, 9, 9, -1000, 107, 84, 28,
 	80, -1000, -1000, 23, -1000, -1000, -1000, -1000, -1000, -1000,
 	-1000, -1000, -1000, 68, 67, 66, 59, 96, -1000, 162,
-	9, 213, 88, 82, -1000, -1000, 58, -8, 61, 62,
+	9, 213, 88, 82, -1000, -1000, 58, -8, 62, 61,
 	213, 9, 9, -2, -7, -1000, 9, 23, -1000, -1000,
 	137, -1000, 28, 28, 28, 133, -1000, 42, 57, -1000,
 	43, 9, 229, 28, -1000, -1000, 213, 213, 11, 213,
 	133, 133, 28, 28, 133, -1000, -1000, -1000, -1000, -1000,
 	-1000, 9, -1000, 9, 9, 9, 133, 213, 210, 3,
-	-1000, 61, -1000, -1000, -1000, 9, 9, 1, -14, 9,
+	-1000, -1000, -1000, -1000, -1000, 9, 9, 1, -14, 9,
 	55, 133, 133, 133, 133, 9, -3, 213, -19, 54,
 	53, -1000, -1000, 48, 137, -1000, 9, 9, 9, 44,
 	-1000, 213, 194, 213, -1000, -1000, -1000, -1000, 27, 21,
@@ -181,8 +181,8 @@ var yyR1 = [...]int{
 	3, 3, 3, 3, 3, 15, 15, 15, 26, 26,
 	14, 14, 12, 12, 20, 20, 19, 19, 10, 10,
 	10, 16, 16, 24, 24, 25, 25, 2, 2, 6,
-	6, 5, 5, 5, 5, 5, 5, 7, 7, 4,
-	4, 1, 1, 1, 1, 1, 1,
+	6, 5, 5, 5, 5, 5, 5, 5, 7, 7,
+	4, 4, 1, 1, 1, 1, 1, 1,
 }
 var yyR2 = [...]int{
 
@@ -191,8 +191,8 @@ var yyR2 = [...]int{
 	6, 8, 8, 2, 1, 3, 5, 6, 1, 1,
 	6, 7, 3, 1, 1, 0, 2, 1, 2, 2,
 	2, 1, 0, 1, 1, 1, 0, 2, 1, 1,
-	1, 3, 3, 3, 3, 5, 5, 4, 3, 1,
-	0, 1, 2, 2, 5, 5, 2,
+	1, 3, 3, 3, 3, 3, 5, 5, 4, 3,
+	1, 0, 1, 2, 2, 5, 5, 2,
 }
 var yyChk = [...]int{
 
@@ -216,18 +216,18 @@ var yyDef = [...]int{
 
 	-2, -2, -2, 4, 0, 0, 7, 0, 13, 0,
 	0, 43, 44, 0, 15, 3, 5, 6, 8, 10,
-	12, 11, 61, 0, 0, 0, 0, 14, 18, 35,
-	46, 0, 16, 35, 24, 48, 0, 61, 49, 50,
-	60, 46, 46, 62, 63, 66, 46, 0, 19, 47,
+	12, 11, 62, 0, 0, 0, 0, 14, 18, 35,
+	46, 0, 16, 35, 24, 48, 0, 62, 49, 50,
+	61, 46, 46, 63, 64, 67, 46, 0, 19, 47,
 	34, 37, 0, 42, 0, 16, 45, 0, 0, 23,
-	0, 46, 0, 0, 28, 29, 0, 0, 0, 59,
+	0, 46, 0, 0, 28, 29, 0, 0, 0, 60,
 	16, 16, 0, 0, 16, 17, 36, 38, 39, 41,
-	40, 46, 33, 46, 46, 46, 16, 25, 60, 0,
-	52, 0, 53, 54, 51, 46, 46, 0, 0, 46,
+	40, 46, 33, 46, 46, 46, 16, 25, 61, 0,
+	52, 53, 54, 55, 51, 46, 46, 0, 0, 46,
 	0, -2, 16, 16, 16, 46, 0, 0, 0, 0,
-	0, 64, 65, 0, 35, 32, 46, 46, 46, 0,
-	26, 0, 0, 0, 55, 56, 9, 20, 0, 0,
-	0, 30, 0, 58, 27, 35, 35, 31, 57, 21,
+	0, 65, 66, 0, 35, 32, 46, 46, 46, 0,
+	26, 0, 0, 0, 56, 57, 9, 20, 0, 0,
+	0, 30, 0, 59, 27, 35, 35, 31, 58, 21,
 	22,
 }
 var yyTok1 = [...]int{
@@ -842,18 +842,26 @@ yydefault:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		//line parse.y:283
 		{
-			nd := newList(Nnames, yyDollar[3].nd)
-			yyVAL.nd = newList(Napp, yyDollar[1].nd, nd)
+			nd1 := newList(Nnames, yyDollar[1].nd)
+			nd2 := newList(Nnames, yyDollar[3].nd)
+			yyVAL.nd = newList(Napp, nd1, nd2)
 		}
 	case 54:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parse.y:288
+		//line parse.y:289
+		{
+			nd := newList(Nnames, yyDollar[3].nd)
+			yyVAL.nd = newList(Napp, yyDollar[1].nd, nd)
+		}
+	case 55:
+		yyDollar = yyS[yypt-3 : yypt+1]
+		//line parse.y:294
 		{
 			yyVAL.nd = newList(Napp, yyDollar[1].nd, yyDollar[3].nd)
 		}
-	case 55:
+	case 56:
 		yyDollar = yyS[yypt-5 : yypt+1]
-		//line parse.y:292
+		//line parse.y:298
 		{
 			yyVAL.nd = yyDollar[3].nd
 			yyDollar[3].nd.Args = []string{"<"}
@@ -862,9 +870,9 @@ yydefault:
 			}
 			yyDollar[3].nd.typ = Nioblk
 		}
-	case 56:
+	case 57:
 		yyDollar = yyS[yypt-5 : yypt+1]
-		//line parse.y:301
+		//line parse.y:307
 		{
 			yyVAL.nd = yyDollar[3].nd
 			if yyDollar[1].sval == "" {
@@ -873,58 +881,58 @@ yydefault:
 			yyDollar[3].nd.Args = []string{">", yyDollar[1].sval}
 			yyDollar[3].nd.typ = Nioblk
 		}
-	case 57:
+	case 58:
 		yyDollar = yyS[yypt-4 : yypt+1]
-		//line parse.y:313
+		//line parse.y:319
 		{
 			yyVAL.nd = yyDollar[1].nd.Add(yyDollar[3].nd)
 		}
-	case 58:
+	case 59:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parse.y:317
+		//line parse.y:323
 		{
 			// the parent adds Args with the var name
 			yyVAL.nd = newList(Nsetmap, yyDollar[2].nd)
 		}
-	case 60:
+	case 61:
 		yyDollar = yyS[yypt-0 : yypt+1]
-		//line parse.y:326
+		//line parse.y:332
 		{
 			yyVAL.nd = newList(Nnames)
 		}
-	case 61:
+	case 62:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parse.y:332
+		//line parse.y:338
 		{
 			yyVAL.nd = newNd(Nname, yyDollar[1].sval)
 		}
-	case 62:
+	case 63:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parse.y:336
+		//line parse.y:342
 		{
 			yyVAL.nd = newNd(Nval, yyDollar[2].sval)
 		}
-	case 63:
+	case 64:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parse.y:340
+		//line parse.y:346
 		{
 			yyVAL.nd = newNd(Nsingle, yyDollar[2].sval)
 		}
-	case 64:
+	case 65:
 		yyDollar = yyS[yypt-5 : yypt+1]
-		//line parse.y:344
+		//line parse.y:350
 		{
 			yyVAL.nd = newNd(Nval, yyDollar[2].sval).Add(yyDollar[4].nd)
 		}
-	case 65:
+	case 66:
 		yyDollar = yyS[yypt-5 : yypt+1]
-		//line parse.y:348
+		//line parse.y:354
 		{
 			yyVAL.nd = newNd(Nsingle, yyDollar[2].sval).Add(yyDollar[4].nd)
 		}
-	case 66:
+	case 67:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parse.y:352
+		//line parse.y:358
 		{
 			yyVAL.nd = newNd(Nlen, yyDollar[2].sval)
 		}

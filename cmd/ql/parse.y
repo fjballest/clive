@@ -279,6 +279,12 @@ list
 		nd := newList(Nnames, $1)
 		$$ = newList(Napp, nd, $3)
 	}
+	| name '^' name
+	{
+		nd1 := newList(Nnames, $1)
+		nd2 := newList(Nnames, $3)
+		$$ = newList(Napp, nd1, nd2)
+	}
 	| list '^' name
 	{
 		nd := newList(Nnames, $3)

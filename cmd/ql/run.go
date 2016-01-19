@@ -173,17 +173,21 @@ func (nd *Nd) run() error {
 	}
 	x := newEnv()
 	// bgpipe or func
+	var err error
 	switch nd.typ {
 	case Npipe:
-		return nd.runPipe(x)
+		err = nd.runPipe(x)
 	case Nsrc:
-		return nd.runSrc(x)
+		err = nd.runSrc(x)
 	case Nfunc:
-		return nd.runFunc(x)
+		err = nd.runFunc(x)
 	default:
 		panic(fmt.Errorf("run: bad type %s", nd.typ))
 	}
-	return nil
+	if isExit(err) {
+		cmd.Exit(strings.TrimPrefix(err.Error(), "qlexit"))
+	}
+	return err
 }
 
 func (nd *Nd) chk(k ...NdType) {
@@ -350,7 +354,9 @@ func (nd *Nd) runPipe(x *xEnv) error {
 	if bg != "" {
 		cx.bg(bg)
 	} else {
-		cx.wait()
+		if err := cx.wait(); isBreak(err) || isExit(err) {
+			return err
+		}
 	}
 	return nil
 }
@@ -765,6 +771,9 @@ func (nd *Nd) runBlock(x *xEnv) error {
 			panic(fmt.Errorf("runblock: bad child type %s", c.typ))
 		}
 		if err != nil {
+			if isBreak(err) || isExit(err) {
+				return err
+			}
 			break
 		}
 	}
@@ -802,6 +811,9 @@ func (nd *Nd) runFor(x *xEnv) error {
 		defer cx.Close()
 		err = blk.runBlock(cx)
 		if err != nil {
+			if isExit(err) {
+				return err
+			}
 			break
 		}
 	}
@@ -820,6 +832,9 @@ func (nd *Nd) runWhile(x *xEnv) error {
 		cx := x.dup()
 		defer cx.Close()
 		if err = pipe.runPipe(cx); err != nil {
+			if isExit(err) {
+				return err
+			}
 			break
 		}
 		if sts := cmd.GetEnv("sts"); sts != "" {
@@ -828,6 +843,9 @@ func (nd *Nd) runWhile(x *xEnv) error {
 		cx2 := x.dup()
 		defer cx2.Close()
 		if err = blk.runBlock(cx2); err != nil {
+			if isExit(err) {
+				return err
+			}
 			break
 		}
 	}
@@ -885,6 +903,12 @@ func (nd *Nd) runCond(x *xEnv) error {
 		defer cx.Close()
 		if err = or1.runOr(cx); err != nil {
 			if err == orSuccess {
+				err = nil
+			}
+			if isExit(err) {
+				return err
+			}
+			if isBreak(err) {
 				err = nil
 			}
 			break

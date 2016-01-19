@@ -222,9 +222,9 @@ state 21
 
 
 state 22
-	name:  NAME.    (61)
+	name:  NAME.    (62)
 
-	.  reduce 61 (src line 330)
+	.  reduce 62 (src line 336)
 
 
 state 23
@@ -371,18 +371,19 @@ state 37
 	setvar:  NAME.as names 
 	setvar:  NAME.as '(' mapels ')' 
 	setvar:  NAME.'[' name ']' as names 
-	name:  NAME.    (61)
+	name:  NAME.    (62)
 
 	'['  shift 63
 	'='  shift 64
 	'←'  shift 65
-	.  reduce 61 (src line 330)
+	.  reduce 62 (src line 336)
 
 	as  goto 62
 
 state 38
 	nameel:  name.    (49)
 	list:  name.'^' list 
+	list:  name.'^' name 
 
 	'^'  shift 66
 	.  reduce 49 (src line 268)
@@ -399,7 +400,7 @@ state 39
 
 state 40
 	list:  '('.optnames ')' 
-	optnames: .    (60)
+	optnames: .    (61)
 
 	LEN  shift 25
 	SINGLE  shift 24
@@ -408,7 +409,7 @@ state 40
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 60 (src line 325)
+	.  reduce 61 (src line 331)
 
 	name  goto 38
 	names  goto 69
@@ -439,25 +440,25 @@ state 42
 	optsep  goto 71
 
 state 43
-	name:  '$' NAME.    (62)
+	name:  '$' NAME.    (63)
 	name:  '$' NAME.'[' name ']' 
 
 	'['  shift 72
-	.  reduce 62 (src line 335)
+	.  reduce 63 (src line 341)
 
 
 state 44
-	name:  SINGLE NAME.    (63)
+	name:  SINGLE NAME.    (64)
 	name:  SINGLE NAME.'[' name ']' 
 
 	'['  shift 73
-	.  reduce 63 (src line 339)
+	.  reduce 64 (src line 345)
 
 
 state 45
-	name:  LEN NAME.    (66)
+	name:  LEN NAME.    (67)
 
-	.  reduce 66 (src line 351)
+	.  reduce 67 (src line 357)
 
 
 state 46
@@ -670,6 +671,7 @@ state 65
 
 state 66
 	list:  name '^'.list 
+	list:  name '^'.name 
 
 	LEN  shift 25
 	SINGLE  shift 24
@@ -708,7 +710,7 @@ state 68
 
 state 69
 	names:  names.nameel 
-	optnames:  names.    (59)
+	optnames:  names.    (60)
 
 	LEN  shift 25
 	SINGLE  shift 24
@@ -717,7 +719,7 @@ state 69
 	OUTBLK  shift 42
 	'('  shift 40
 	'$'  shift 23
-	.  reduce 59 (src line 323)
+	.  reduce 60 (src line 329)
 
 	name  goto 38
 	list  goto 39
@@ -904,7 +906,7 @@ state 87
 state 88
 	setvar:  NAME as '('.mapels ')' 
 	list:  '('.optnames ')' 
-	optnames: .    (60)
+	optnames: .    (61)
 
 	LEN  shift 25
 	SINGLE  shift 24
@@ -914,7 +916,7 @@ state 88
 	'('  shift 40
 	'['  shift 107
 	'$'  shift 23
-	.  reduce 60 (src line 325)
+	.  reduce 61 (src line 331)
 
 	name  goto 38
 	names  goto 69
@@ -940,24 +942,26 @@ state 90
 
 state 91
 	list:  name.'^' list 
+	list:  name.'^' name 
+	list:  name '^' name.    (53)
 
-	'^'  shift 66
-	.  error
+	.  reduce 53 (src line 282)
 
 
 state 92
 	list:  name.'^' list 
-	list:  list '^' name.    (53)
+	list:  name.'^' name 
+	list:  list '^' name.    (54)
 
-	.  reduce 53 (src line 282)
+	.  reduce 54 (src line 288)
 
 
 state 93
 	list:  list.'^' name 
 	list:  list.'^' list 
-	list:  list '^' list.    (54)
+	list:  list '^' list.    (55)
 
-	.  reduce 54 (src line 287)
+	.  reduce 55 (src line 293)
 
 
 state 94
@@ -1138,15 +1142,15 @@ state 110
 
 
 state 111
-	name:  '$' NAME '[' name ']'.    (64)
+	name:  '$' NAME '[' name ']'.    (65)
 
-	.  reduce 64 (src line 343)
+	.  reduce 65 (src line 349)
 
 
 state 112
-	name:  SINGLE NAME '[' name ']'.    (65)
+	name:  SINGLE NAME '[' name ']'.    (66)
 
-	.  reduce 65 (src line 347)
+	.  reduce 66 (src line 353)
 
 
 state 113
@@ -1277,15 +1281,15 @@ state 123
 	nameel  goto 35
 
 state 124
-	list:  INBLK optsep blkcmds optsep '}'.    (55)
+	list:  INBLK optsep blkcmds optsep '}'.    (56)
 
-	.  reduce 55 (src line 291)
+	.  reduce 56 (src line 297)
 
 
 state 125
-	list:  OUTBLK optsep blkcmds optsep '}'.    (56)
+	list:  OUTBLK optsep blkcmds optsep '}'.    (57)
 
-	.  reduce 56 (src line 300)
+	.  reduce 57 (src line 306)
 
 
 state 126
@@ -1346,9 +1350,9 @@ state 132
 	nameel  goto 49
 
 state 133
-	mapels:  '[' names ']'.    (58)
+	mapels:  '[' names ']'.    (59)
 
-	.  reduce 58 (src line 316)
+	.  reduce 59 (src line 322)
 
 
 state 134
@@ -1401,9 +1405,9 @@ state 137
 
 
 state 138
-	mapels:  mapels '[' names ']'.    (57)
+	mapels:  mapels '[' names ']'.    (58)
 
-	.  reduce 57 (src line 311)
+	.  reduce 58 (src line 317)
 
 
 state 139
@@ -1419,12 +1423,12 @@ state 140
 
 
 32 terminals, 27 nonterminals
-67 grammar rules, 141/2000 states
+68 grammar rules, 141/2000 states
 0 shift/reduce, 0 reduce/reduce conflicts reported
 76 working sets used
 memory: parser 177/30000
 108 extra closures
-287 shift entries, 26 exceptions
+286 shift entries, 26 exceptions
 97 goto entries
 86 entries saved by goto default
 Optimizer space used: output 262/30000

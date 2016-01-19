@@ -8,6 +8,7 @@ import (
 	"clive/u"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 var (
@@ -15,6 +16,8 @@ var (
 	builtins = map[string]func(x*xEnv, args ...string)error{}
 	fns = map[string]*Nd{}
 	xpath []string
+
+	errBreak = errors.New("break")
 )
 
 func newFunc(nd *Nd) {
@@ -36,19 +39,41 @@ func init() {
 	builtins["pwd"] = bpwd
 	builtins["fork"] = bfork
 	builtins["wait"] = bwait
+	builtins["exit"] = bexit
+	builtins["break"] = bbreak
+	builtins["shift"] = bshift
+}
+
+func bshift(x *xEnv, args ...string) error {
+	if len(args) > 2 {
+		cmd.Warn("usage: shift [var]")
+		return nil
+	}
+	v := "argv"
+	if len(args) == 2 {
+		v = args[1]
+	}
+	argv := cmd.GetEnvList(v)
+	if len(argv) > 0 {
+		cmd.SetEnvList(v, argv[1:])
+	}
+	return nil
 }
 
 func btype(x *xEnv, args ...string) error {
 	for _, a := range args[1:] {
+		found := false
 		if getFunc(a) != nil {
 			cmd.Printf("%s: func\n", a)
+			found = true
 		}
 		if builtins[a] != nil {
 			cmd.Printf("%s: builtin\n", a)
+			found = true
 		}
 		if p := cmd.LookPath(a); p != "" {
 			cmd.Printf("%s: %s\n", a, p)
-		} else {
+		} else if !found {
 			cmd.Printf("%s: unknown\n", a)
 		}
 	}
@@ -90,6 +115,25 @@ func bpwd(x *xEnv, args ...string) error {
 	}
 	cmd.Printf("%s\n", cmd.Dot())
 	return nil
+}
+
+func isExit(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "qlexit")
+}
+
+func isBreak(err error) bool {
+	return err == errBreak || (err != nil && err.Error() == "break")
+}
+
+func bexit(x *xEnv, args ...string) error {
+	if len(args) == 1 {
+		return fmt.Errorf("qlexit")
+	}
+	return fmt.Errorf("qlexit%s", strings.Join(args, " "))
+}
+
+func bbreak(x *xEnv, args ...string) error {
+	return errBreak
 }
 
 func bfork(x *xEnv, args ...string) error {
