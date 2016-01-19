@@ -146,6 +146,8 @@ func bfork(x *xEnv, args ...string) error {
 			cmd.ForkEnv()
 		case "dot":
 			cmd.ForkDot()
+		case "io":
+			cmd.ForkIO()
 		default:
 			err = fmt.Errorf("%s unknown (not ns, env, dot)", a)
 			cmd.Eprintf("cd: %s", err)

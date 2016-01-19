@@ -158,7 +158,7 @@ func inFrom(path string) (*os.File, error) {
 		go func () {
 			defer wr.Close()
 			for m := range rc {
-				if _, err := wr.Write(m); err != nil {
+				if _, err := ch.WriteMsg(wr, 1, m); err != nil {
 					close(rc, err)
 					return
 				}
@@ -176,7 +176,7 @@ func inFrom(path string) (*os.File, error) {
 	go func() {
 		defer wr.Close()
 		rc := cmd.Files(path)
-		_, _, err := ch.WriteBytes(wr, rc)
+		_, _, err := ch.WriteMsgs(wr, 1, rc)
 		if err != nil {
 			close(rc, err)
 		}
