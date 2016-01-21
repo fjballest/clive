@@ -1099,7 +1099,8 @@ function tmwheel(e) {
 
 function tmdown(e) {
 	e.preventDefault();
-	$(this).focus();
+	$("#" + this.divid ).focus();
+	console.log("tmdown ", e.divid);
 	this.secondary = 0;		/* paranoia: see tm23 */
 	this.secondaryabort = false;
 	try {
@@ -1133,11 +1134,11 @@ function tmdown(e) {
 
 function tevkey(e) {
 	try {
+		console.log("key");
 		var key = e.keyCode;
 		if(!e.keyCode)
 			key = e.which;
 		var rune = String.fromCharCode(e.keyCode);
-		if(1)
 		console.log("key: which " + e.which + " key " + e.keyCode +
 			" '" + rune + "'");
 		switch(key){
@@ -1225,7 +1226,6 @@ function tkeydown(e) {
 		if(!e.keyCode)
 			key = e.which;
 		var rune = String.fromCharCode(e.keyCode);
-		if(0)
 		console.log("keydown which " + e.which + " key " + e.keyCode +
 			" '" + rune + "'" +
 			" " + e.ctrlKey + " " + e.metaKey);
@@ -1422,18 +1422,32 @@ function mktext(d, e, vers, cid, id) {
 	e.fixfont();
 	e.mayresize();
 	e.redrawtext();
+	e.div = d;
 
 	var wsurl = "wss://" + window.location.host + "/ws/" + id;
 	e.ws = new WebSocket(wsurl);
 	e.ws.onopen = function() {
-		ws.send("Hi there...\n");
-		ws.send("Buddy...\n");
 	}
 	e.ws.onmessage = function(e) {
 		console.log("got msg", e.data);
+		var o = JSON.parse(e.data);
+		if(!o || !o.Id) {
+			console.log("update: no objet id");
+			return;
+		}
+		console.log($("."+o.Id));
+		var some = false;
+		$("."+o.Id).each(function(i){
+			if(this.update){
+				some = true;
+				this.update(o)
+			}
+		});
+		if(!some)
+			console.log("update: " + e.data);
 	}
 	e.ws.onclose = function() {
-		console.log("text socket " + e.tag + " closed\n");
+		console.log("text socket " + wsurl+ " closed\n");
 		var nd = document.open("text/html", "replace")
 		nd.write("<b>disconnected</b>")
 		nd.close();
@@ -1470,11 +1484,11 @@ function mktext(d, e, vers, cid, id) {
 		}
 	};
 	e.post = function(args) {
-		var ws = partws;
-		if(!partws){
+		if(!e.ws){
 			console.log("no ws");
 			return nil;
 		}
+		var ws = e.ws;
 		if(!args || !args[0]){
 			console.log("post: no args");
 			return nil;
@@ -1492,6 +1506,7 @@ function mktext(d, e, vers, cid, id) {
 		var msg = JSON.stringify(ev);
 		try {
 			ws.send(msg);
+			console.log("posting ", msg);
 		}catch(ex){
 			console.log("post: " + ex);
 		}
