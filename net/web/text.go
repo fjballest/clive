@@ -8,17 +8,24 @@ import (
 	"bytes"
 	"fmt"
 	"clive/snarf"
+	"sync"
 )
 
 // Editable text
 struct Text {
+	sync.Mutex
+	nb int
 	*Ctlr
 	*txt.Text
 	napplies int
 }
 
 func (t *Text) HTML() string {
-	return `<div id="txt1" class="`+t.Id+
+	t.Lock()
+	defer t.Unlock()
+	t.nb++
+	id := fmt.Sprintf("%s", t.Id)
+	return `<div id="`+id+`" class="`+t.Id+
 		`", tabindex="1" style="padding=0; margin:0; width:100%%;height:100%%;">
 <canvas id="`+t.Id+
 		`c" class="mayresize txt1c hastag" width="300" height="128" style="border:1px solid black;"></canvas>
@@ -56,8 +63,10 @@ func (t *Text) wrongVers(tag string, wev *Ev) bool {
 	}
 	cmd.Dprintf("%s: %s: vers %d != %d+1\n", t.Id, tag, wev.Vers, vers)
 	nev := *wev
+	XXX: send all the text with the reload
+	use the same event at the start to pre-charge the text.
 	nev.Args = []string{"reload"}
-	// t.Updc <- &nev
+	t.Out <- &nev
 	return true
 }
 
