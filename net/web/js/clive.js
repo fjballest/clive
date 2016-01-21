@@ -5,6 +5,7 @@
 $(document).ready(function() {
 	console.log("we're here");
 	console.log(window.location.href);
+/*
 	var wsurl = "wss://" + window.location.host + "/clive"; 
 	var ws = new WebSocket(wsurl);
 	ws.onopen = function() {
@@ -17,5 +18,5 @@ $(document).ready(function() {
 	ws.onclose = function() {
 		console.log("closed\n");
 	}
-	
+*/
 });
