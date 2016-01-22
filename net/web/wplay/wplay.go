@@ -29,6 +29,8 @@ func jsHandler(w http.ResponseWriter, r *http.Request) {
 func rHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s\n", xhtml)
 	t.WriteTo(w)
+	fmt.Fprintf(w, "<p><hr><p>");
+	t.WriteTo(w)
 	fmt.Fprintf(w, "</body></html>\n")
 }
 

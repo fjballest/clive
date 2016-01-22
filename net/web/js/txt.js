@@ -1303,7 +1303,7 @@ function tapply(ev) {
 		return;
 	}
 	var arg = ev.Args
-	if(1)console.log(this.divid, "apply", ev.Args, "v", ev.Vers);
+	if(0)console.log(this.divid, "apply", ev.Args, "v", ev.Vers);
 	switch(arg[0]){
 	case "eins":
 		if(arg.length < 3){
@@ -1535,7 +1535,7 @@ function mktext(d, e, cid, id) {
 			console.log("update: no objet id");
 			return;
 		}
-		console.log("update to", o.Id);
+		//console.log("update to", o.Id);
 		e.apply(o)
 	};
 	e.ws.onclose = function() {
