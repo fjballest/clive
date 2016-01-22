@@ -1100,7 +1100,7 @@ function tmwheel(e) {
 function tmdown(e) {
 	e.preventDefault();
 	$("#" + this.divid ).focus();
-	console.log("tmdown ", e.divid);
+	console.log("tmdown ", this.divid);
 	this.secondary = 0;		/* paranoia: see tm23 */
 	this.secondaryabort = false;
 	try {
@@ -1348,6 +1348,9 @@ function tapply(ev) {
 		if(ev.Vers)
 			this.vers = ev.Vers;
 		break;
+	case "reload":
+		console.log("text: reload: todo");
+		break
 	default:
 		console.log("text: unhandled", arg[0]);
 	}
@@ -1422,37 +1425,7 @@ function mktext(d, e, vers, cid, id) {
 	e.fixfont();
 	e.mayresize();
 	e.redrawtext();
-	e.div = d;
 
-	var wsurl = "wss://" + window.location.host + "/ws/" + id;
-	e.ws = new WebSocket(wsurl);
-	e.ws.onopen = function() {
-	}
-	e.ws.onmessage = function(e) {
-		console.log("got msg", e.data);
-		var o = JSON.parse(e.data);
-		if(!o || !o.Id) {
-			console.log("update: no objet id");
-			return;
-		}
-		console.log($("."+o.Id));
-		var some = false;
-		$("."+o.Id).each(function(i){
-			if(this.update){
-				some = true;
-				this.update(o)
-			}
-		});
-		if(!some)
-			console.log("update: " + e.data);
-	}
-	e.ws.onclose = function() {
-		console.log("text socket " + wsurl+ " closed\n");
-		var nd = document.open("text/html", "replace")
-		nd.write("<b>disconnected</b>")
-		nd.close();
-	}
-	
 	d.keypress(function(ev){
 		return e.tkeypress(ev);
 	})
@@ -1513,6 +1486,38 @@ function mktext(d, e, vers, cid, id) {
 		return ev;
 	};
 
+	var wsurl = "wss://" + window.location.host + "/ws/" + cid;
+	e.ws = new WebSocket(wsurl);
+	e.ws.onopen = function() {
+		e.post(["id"]);
+	}
+	e.ws.onmessage = function(e) {
+		console.log("got msg", e.data);
+		var o = JSON.parse(e.data);
+		if(!o || !o.Id) {
+			console.log("update: no objet id");
+			return;
+		}
+		console.log($("."+o.Id));
+		var some = false;
+		$("."+o.Id).each(function(i){
+			if(this.update){
+				some = true;
+				this.update(o)
+			}
+		});
+		if(!some)
+			console.log("update: " + e.data);
+	}
+	e.ws.onclose = function() {
+		console.log("text socket " + wsurl+ " closed\n");
+		var nd = document.open("text/html", "replace")
+		nd.write("<b>disconnected</b>")
+		nd.close();
+	}
+	
+
 }
 
 document.mktext = mktext
+t

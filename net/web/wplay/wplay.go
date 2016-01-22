@@ -12,7 +12,8 @@ import (
 	"fmt"
 )
 
-var jspath, txthtml string
+var jspath string
+var t *web.Text
 
 func EchoServer(ws *websocket.Conn) {
 	io.Copy(ws, ws)
@@ -27,8 +28,7 @@ func jsHandler(w http.ResponseWriter, r *http.Request) {
 
 func rHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s\n", xhtml)
-	
-	fmt.Fprintf(w, "%s\n", txthtml)
+	t.WriteTo(w)
 	fmt.Fprintf(w, "</body></html>\n")
 }
 
@@ -41,8 +41,7 @@ func main() {
 	jspath = fpath.Dir(cmd.Dot())
 	http.HandleFunc("/", rHandler)
 	http.Handle("/clive", websocket.Handler(EchoServer))
-	t := web.NewText("txt1")
-	txthtml = t.HTML()
+	t = web.NewText("txt1")
 	http.HandleFunc("/js/", jsHandler)
 	if err := http.ListenAndServeTLS(":8181", auth.ServerPem, auth.ServerKey, nil); err != nil {
 		cmd.Fatal(err)

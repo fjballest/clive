@@ -8,14 +8,35 @@ import (
 	"clive/cmd"
 	"clive/x/code.google.com/p/go.net/websocket"
 	"encoding/json"
+	"sync"
+	"fmt"
 )
 
 // events to/from the page
+// Args[0] is the event name
+// If the name starts with uppercase, it does reflect and all views
+// get an automatic copy of the event.
 struct Ev  {
-	Id, Src string   // target id and source
+	Id, Src string   // target id and source (eg txt1, txt1_3)
 	Vers    int      // version of the control the event is for
 	Args    []string // events with string arguments
 	Data    []byte   // all other events
+}
+
+struct view {
+	Id string		// set by the eid event
+	out chan *Ev	// events from/to this view
+}
+
+// element controler, provides a chan interface for a websocket
+// connection to the element involved.
+struct Ctlr {
+	Id string	// unique id for the controlled element
+	in, out chan *Ev	// input events (from the page), and output events
+
+	sync.Mutex
+	nb int
+	views map[*view]bool
 }
 
 // parse a event
@@ -25,57 +46,119 @@ func ParseEv(data []byte) (*Ev, error) {
 	return ev, err
 }
 
-// element controler, provides a chan interface for a websocket
-// connection to the element involved.
-struct Ctlr {
-	Id string	// unique id for the controlled element
-	In <-chan *Ev	// input events (from the page)
-	Out chan<- *Ev	// output events (sent to the page)
-	in, out chan *Ev	// to send to Out
-	Ev <-chan *Ev	// dup of events for the user
-}
-
-func NewCtlr(id string) *Ctlr {
-	out := make(chan *Ev)
-	in := make(chan *Ev)
+func NewCtlr(tag string) *Ctlr {
 	c := &Ctlr{
-		Id: id,
-		In: in,
-		in: in,
-		out: out,
-		Out: out,
+		Id: tag,
+		in: make(chan *Ev),
+		out: make(chan *Ev),
+		views: make(map[*view]bool),
 	}
 	http.Handle("/ws/" + c.Id, websocket.Handler(c.server))
+	go c.reflector()
 	return c
+}
+
+func (c *Ctlr) In() <-chan *Ev {
+	return c.in
+}
+
+func (c *Ctlr) Out() chan<- *Ev {
+	return c.out
+}
+
+func (c *Ctlr) ViewOut(id string) chan<- *Ev {
+	c.Lock()
+	defer c.Unlock()
+	for v := range c.views {
+		if v.Id == id {
+			return v.out
+		}
+	}
+	c := make(chan *Ev)
+	close(c)
+	return c
+}
+
+func (c *Ctlr) NewViewId() string {
+	c.Lock()
+	defer c.Unlock()
+	c.nb++
+	return  fmt.Sprintf("%s_%d", c.Id, c.nb)
+}
+
+func (e *Ev) reflects() bool {
+	if e==nil || len(e.Args)==0 || len(e.Args[0])==0 {
+		return false
+	}
+	return e.Args[0][0]>='A' && e.Args[0][0]<='Z'
+}
+
+func (c *Ctlr) reflector() {
+	for ev := range c.out {
+		ev := ev
+		c.Lock()
+		for v := range c.views {
+			if ev.Src != v.Id {
+				cmd.Dprintf("%s: reflecting %v\n", v.Id, ev.Args)
+				go func(v *view) {
+					v.out <- ev
+				}(v)
+			}
+		}
+		c.Unlock()
+	}
+}
+
+func (c *Ctlr) newView() *view {
+	c.Lock()
+	defer c.Unlock()
+	v := &view{
+		out: make(chan *Ev),
+	}
+	c.views[v] = true
+	return v
+}
+
+func (c *Ctlr) delView(v *view) {
+	close(v.out, "closed")
+	c.Lock()
+	delete(c.views, v)
+	c.Unlock()
 }
 
 func (c *Ctlr) server(ws *websocket.Conn) {
 	cmd.Dprintf("%s: ws started\n", c.Id)
-	defer cmd.Dprintf("%s: ws reader done\n", c.Id)
-	defer ws.Close()
+	v := c.newView()
+	defer func() {
+		cmd.Dprintf("%s: ws reader done\n", c.Id)
+		ws.Close()
+		c.delView(v)
+	}()
 	go func() {
 		defer cmd.Dprintf("%s: ws writer done\n", c.Id)
-		for ev := range c.out {
+		defer c.delView(v)
+		for ev := range v.out {
 			m, err := json.Marshal(ev)
 			if err != nil {
 				cmd.Dprintf("%s: update: marshal: %s\n", c.Id, err)
-				return
+				close(v.out, err)
+				break
 			}
 			cmd.Dprintf("%s: update: %v\n", c.Id, ev)
 			if _, err := ws.Write(m); err != nil {
 				cmd.Dprintf("%s: update: %v wr: %s\n", c.Id, ev, err)
-				return
+				close(v.out, err)
+				break
 			}
 		}
-		close(c.In, cerror(c.out))
-		close(c.Ev, cerror(c.out))
 	}()
 	var buf [8*1024]byte
 	for {
 		n, err := ws.Read(buf[0:])
 		if err != nil {
 			cmd.Dprintf("%s: server read: %s\n", c.Id, err)
-			return
+			close(v.out, err)
+			break
 		}
 		if n == 0 {
 			continue
@@ -86,12 +169,22 @@ func (c *Ctlr) server(ws *websocket.Conn) {
 			continue
 		}
 		cmd.Dprintf("%s: ev %v\n", c.Id, ev)
+		if len(ev.Args) == 1 && ev.Args[0] == "id" && v.Id == "" {
+			v.Id = ev.Src
+			c.in <- &Ev{Id: c.Id, Src: v.Id, Args: []string{"start"}}
+			continue
+		}
 		if ok := c.in <- ev; !ok {
 			err := cerror(c.in)
 			cmd.Dprintf("%s: in closed %v", c.Id, err)
-			close(c.out, err)
-			close(c.Ev, err)
+			close(v.out, err)
 			break
 		}
+		if ev.reflects() {
+			c.out <- ev
+		}
+	}
+	if v.Id != "" {
+		c.in <- &Ev{Id: c.Id, Src: v.Id, Args: []string{"end"}}
 	}
 }
