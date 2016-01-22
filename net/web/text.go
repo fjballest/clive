@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"clive/snarf"
 	"io"
+	"html"
 )
 
 // Editable text
@@ -21,9 +22,9 @@ struct Text {
 // Write the HTML for the text to the page.
 func (t *Text) WriteTo(w io.Writer) (int64, error) {
 	vid := t.NewViewId()
-	html := `<div id="`+vid+`" class="`+t.Id+
-		`", tabindex="1" style="padding=0; margin:0; width:100%%;height:100%%;">
-<canvas id="`+vid+`c" class="mayresize txt1c hastag" width="300" height="128" style="border:1px solid black;"></canvas>
+	html := `
+		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; overflow:auto;width:100%;height:300">
+<canvas id="`+vid+`c" class="txt1c" width="100%" height="100%" style="border:1px solid black;"></canvas>
 </div>
 <script>
 	$(function(){
@@ -31,8 +32,8 @@ func (t *Text) WriteTo(w io.Writer) (int64, error) {
 		var x = $("#`+vid+`c").get(0);
 		x.tag = "text";
 		x.lines = [];
-		x.lines.push({txt: "", off: 0, eol: true});
-		document.mktext(d, x, 0, "`+t.Id+`", "`+vid+`");
+		x.lines.push({txt: "", off: 0});
+		document.mktext(d, x, "`+t.Id+`", "`+vid+`");
 	});
 </script>
 `
@@ -53,10 +54,42 @@ func NewText(id string) *Text {
 	return t
 }
 
-// XXX: The Ctlr should tell us when a new view starts, we could do its load,
-// and also when a view ends, should we want to exit, or cleanup or whatever.
-// This could be an event "estart", "eend", with the view id.
-// And we can then use t.ViewOut() to post events just to it.
+func (t *Text) sendLine(toid string, to chan<- *Ev, buf *bytes.Buffer) bool {
+	s := html.EscapeString(buf.String())
+	buf.Reset()
+	ev := &Ev{Id: t.Id, Src: "", Args: []string{"reloading", s}}
+	ok := to <- ev
+	return ok
+}
+
+func (t *Text) update(toid string) {
+	to := t.ViewOut(toid)
+	ev := &Ev{Id: t.Id, Src: "", Args: []string{"reload"}}
+	if ok := to <- ev; !ok {
+		return
+	}
+	var buf bytes.Buffer
+	gc := t.Get(0, txt.All)
+	for rs := range gc {
+		for _, r := range rs {
+			if r == '\n' {
+				if !t.sendLine(toid, to, &buf) {
+					close(gc)
+					return
+				}
+			} else {
+				buf.WriteRune(r)
+			}
+		}
+	}
+	if buf.Len() > 0 {
+		t.sendLine(toid, to, &buf)
+	}
+	ev = &Ev{Id: t.Id, Src: "", Args: []string{"reloaded", fmt.Sprintf("%d", t.Vers())}}
+	if ok := to <- ev; !ok {
+		return
+	}
+}
 
 func (t *Text) wrongVers(tag string, wev *Ev) bool {
 	vers := t.Vers()
@@ -64,13 +97,7 @@ func (t *Text) wrongVers(tag string, wev *Ev) bool {
 		return false
 	}
 	cmd.Dprintf("%s: %s: vers %d != %d+1\n", t.Id, tag, wev.Vers, vers)
-	nev := *wev
-	nev.Args = []string{"reload"}
-	t.ViewOut(wev.Src) <- &nev
-	// XXX: and send just to that view the full text again
-	// so it re-initializes its frame, that requires sending the text vers
-	// as well.
-	// The same must be done at init time.
+	t.update(wev.Src)
 	return true
 }
 
@@ -119,11 +146,10 @@ func (t *Text) handle(wev *Ev) {
 		cmd.Dprintf("%s: unhandled %v\n", t.Id, ev)
 		return
 	case "start":
-		// XXX: must reload the text into the view
-		// use ViewOut() to get the web.Src out chan and
-		// then send all the stuff to it
+		cmd.Dprintf("%s: start %v\n", t.Id, wev.Src)
+		t.update(wev.Src)
 	case "end":
-		// nothing to do
+		cmd.Dprintf("%s: end %v\n", t.Id, wev.Src)
 	case "tick", "click1", "click2", "click4":
 		// t.uevc <- wev
 	case "eins":

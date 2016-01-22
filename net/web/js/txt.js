@@ -414,6 +414,9 @@ function treformat(l0) {
 		if(this.ln0 >= lns.length)
 			this.ln0 = lns.length-1;
 	}
+	if(lns.length == 0) {
+		lns[0] = {txt:"", off: lnlen(last)};
+	}
 	var last = lns[lns.length-1];
 	if(last.eol){
 		lns[lns.length] = {txt:"", off: lnlen(last)};
@@ -1100,7 +1103,7 @@ function tmwheel(e) {
 function tmdown(e) {
 	e.preventDefault();
 	$("#" + this.divid ).focus();
-	console.log("tmdown ", this.divid);
+	// console.log("tmdown ", this.divid);
 	this.secondary = 0;		/* paranoia: see tm23 */
 	this.secondaryabort = false;
 	try {
@@ -1134,12 +1137,12 @@ function tmdown(e) {
 
 function tevkey(e) {
 	try {
-		console.log("key");
+		// console.log("key");
 		var key = e.keyCode;
 		if(!e.keyCode)
 			key = e.which;
 		var rune = String.fromCharCode(e.keyCode);
-		console.log("key: which " + e.which + " key " + e.keyCode +
+		if(0)console.log("key: which " + e.which + " key " + e.keyCode +
 			" '" + rune + "'");
 		switch(key){
 		case 9:
@@ -1209,6 +1212,7 @@ function tkeyup(e) {
 				fakey: this.lasty,
 				which: key-112+1,
 			};
+			mev.preventDefault = function(){}
 			this.onmouseup(mev);
 			break;
 		default:
@@ -1226,7 +1230,7 @@ function tkeydown(e) {
 		if(!e.keyCode)
 			key = e.which;
 		var rune = String.fromCharCode(e.keyCode);
-		console.log("keydown which " + e.which + " key " + e.keyCode +
+		if(0)console.log("keydown which " + e.which + " key " + e.keyCode +
 			" '" + rune + "'" +
 			" " + e.ctrlKey + " " + e.metaKey);
 	
@@ -1281,6 +1285,7 @@ function tkeydown(e) {
 				fakey: this.lasty,
 				which: key-112+1,
 			};
+			mev.preventDefault = function(){}
 			this.onmousedown(mev);
 			break;
 		default:
@@ -1298,7 +1303,7 @@ function tapply(ev) {
 		return;
 	}
 	var arg = ev.Args
-	console.log(this.divid, "apply", ev.Args, "v", ev.Vers);
+	if(1)console.log(this.divid, "apply", ev.Args, "v", ev.Vers);
 	switch(arg[0]){
 	case "eins":
 		if(arg.length < 3){
@@ -1349,11 +1354,41 @@ function tapply(ev) {
 			this.vers = ev.Vers;
 		break;
 	case "reload":
-		console.log("text: reload: todo");
+		this.reloadoff = 0;
+		this.tclear()
+		break
+	case "reloading":
+		if(arg.length < 2){
+			console.log(this.divid, "apply: short reloading");
+			break;
+		}
+		this.lines.push({txt: arg[1], off: this.reloadoff, eol: true});
+		this.reloadoff += arg[1].length;
+		break
+	case "reloaded":
+		if(arg.length < 2){
+			console.log(this.divid, "apply: short reloaded");
+			break;
+		}
+		this.vers = parseInt(arg[1])
+		this.mayresize();
+		this.redrawtext();
+		this.dump()
 		break
 	default:
 		console.log("text: unhandled", arg[0]);
 	}
+}
+
+function tclear() {
+	this.vers = 0;
+	this.nlines = 0;
+	this.ln0 = 0;
+	this.p0 = 0;
+	this.p1 = 0;
+	this.frsize = 0;
+	this.frlines = 0;
+	this.lines = [];
 }
 
 /*
@@ -1362,9 +1397,9 @@ function tapply(ev) {
 	d is is the (jquery) parent that will supply kbd events.
 	cid is the class id for e.
  */
-function mktext(d, e, vers, cid, id) {
+function mktext(d, e, cid, id) {
 	var ctx=e.getContext("2d");
-	e.vers = vers;
+	e.vers = 0;
 	e.nlines = 0;
 	e.ln0 = 0;
 	e.frsize = 0;
@@ -1426,6 +1461,8 @@ function mktext(d, e, vers, cid, id) {
 	e.mayresize();
 	e.redrawtext();
 
+	e.tclear = tclear;
+
 	d.keypress(function(ev){
 		return e.tkeypress(ev);
 	})
@@ -1442,7 +1479,7 @@ function mktext(d, e, vers, cid, id) {
 		console.log("txt update", ev.Args);
 		e.apply(ev);
 	};
-
+	var preht = d.height();
 	e.divcid = cid;
 	e.divid = id;
 	e.apply = tapply;
@@ -1479,7 +1516,7 @@ function mktext(d, e, vers, cid, id) {
 		var msg = JSON.stringify(ev);
 		try {
 			ws.send(msg);
-			console.log("posting ", msg);
+			// console.log("posting ", msg);
 		}catch(ex){
 			console.log("post: " + ex);
 		}
@@ -1490,34 +1527,27 @@ function mktext(d, e, vers, cid, id) {
 	e.ws = new WebSocket(wsurl);
 	e.ws.onopen = function() {
 		e.post(["id"]);
-	}
-	e.ws.onmessage = function(e) {
-		console.log("got msg", e.data);
-		var o = JSON.parse(e.data);
+	};
+	e.ws.onmessage = function(ev) {
+		// console.log("got msg", e.data);
+		var o = JSON.parse(ev.data);
 		if(!o || !o.Id) {
 			console.log("update: no objet id");
 			return;
 		}
-		console.log($("."+o.Id));
-		var some = false;
-		$("."+o.Id).each(function(i){
-			if(this.update){
-				some = true;
-				this.update(o)
-			}
-		});
-		if(!some)
-			console.log("update: " + e.data);
-	}
+		console.log("update to", o.Id);
+		e.apply(o)
+	};
 	e.ws.onclose = function() {
 		console.log("text socket " + wsurl+ " closed\n");
 		var nd = document.open("text/html", "replace")
 		nd.write("<b>disconnected</b>")
 		nd.close();
-	}
-	
-
+	};
+	d.resizable().on('resize', function() {
+		console.log("resized");
+		e.mayresize();
+	});
 }
 
 document.mktext = mktext
-t

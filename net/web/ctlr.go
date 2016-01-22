@@ -74,9 +74,9 @@ func (c *Ctlr) ViewOut(id string) chan<- *Ev {
 			return v.out
 		}
 	}
-	c := make(chan *Ev)
-	close(c)
-	return c
+	rc := make(chan *Ev)
+	close(rc)
+	return rc
 }
 
 func (c *Ctlr) NewViewId() string {
