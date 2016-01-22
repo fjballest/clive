@@ -39,6 +39,14 @@ struct Ctlr {
 	views map[*view]bool
 }
 
+// HTML headers to be included in pages using this interface.
+var Headers = `
+<link rel="stylesheet" href="/js/jquery-ui/jquery-ui.css">
+<script src="/js/jquery-2.2.0.js"></script>
+<script type="text/javascript" src="/js/clive.js"></script>
+<script type="text/javascript" src="/js/txt.js"></script>
+<script src="/js/jquery-ui/jquery-ui.js"></script>
+`
 // parse a event
 func ParseEv(data []byte) (*Ev, error) {
 	ev := &Ev{}

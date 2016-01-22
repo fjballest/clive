@@ -51,11 +51,7 @@ func main() {
 var xhtml=`<html>
 <head>
 <title>testing</title>
-<link rel="stylesheet" href="/js/jquery-ui/jquery-ui.css">
-<script src="/js/jquery-2.2.0.js"></script>
-<script type="text/javascript" src="/js/clive.js"></script>
-<script type="text/javascript" src="/js/txt.js"></script>
-<script src="/js/jquery-ui/jquery-ui.js"></script>
+` + web.Headers + `
 </head>
 <body>
 Testing text
