@@ -10,12 +10,14 @@ import (
 	"clive/snarf"
 	"io"
 	"html"
+	"strings"
 )
 
 // Editable text
 struct Text {
 	*Ctlr
-	*txt.Text
+	t *txt.Text
+	tag string
 	napplies int
 }
 
@@ -23,17 +25,19 @@ struct Text {
 func (t *Text) WriteTo(w io.Writer) (int64, error) {
 	vid := t.NewViewId()
 	html := `
-		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; overflow:auto;width:100%;height:300">
+		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; overflow:auto;width:95%;height:300">
+<div id="`+vid+`t" class="ui-widget-header">`+ html.EscapeString(t.tag) + `</div>
 <canvas id="`+vid+`c" class="txt1c" width="100%" height="100%" style="border:1px solid black;"></canvas>
 </div>
 <script>
 	$(function(){
 		var d = $("#`+vid+`");
+		var t = $("#`+vid+`t");
 		var x = $("#`+vid+`c").get(0);
-		x.tag = "text";
+		x.tag = "`+t.tag+`";
 		x.lines = [];
 		x.lines.push({txt: "", off: 0});
-		document.mktext(d, x, "`+t.Id+`", "`+vid+`");
+		document.mktext(d, t, x, "`+t.Id+`", "`+vid+`");
 	});
 </script>
 `
@@ -41,10 +45,12 @@ func (t *Text) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-func NewText(id string) *Text {
+func NewText(tag string, lines ...string) *Text {
+	lns := strings.Join(lines, "\n");
 	t := &Text {
-		Ctlr: NewCtlr(id),
-		Text: txt.NewEditing(nil),
+		Ctlr: NewCtlr("text"),
+		t: txt.NewEditing([]rune(lns)),
+		tag: tag,
 	}
 	go func() {
 		for e := range t.In() {
@@ -52,6 +58,20 @@ func NewText(id string) *Text {
 		}
 	}()
 	return t
+}
+
+// TODO: methods to call Undo(), Redo() ContdEdit() Ins(), Del(), DelAll()
+// Mark(), Unmark().
+// They must call the same method on t.t and they must t.Post() an event
+// to ins/del the text to reflect the change.
+
+// Text locked while getting the text
+func (t *Text) Get(off int, n int) <-chan []rune {
+	return t.t.Get(off, n)
+}
+
+func (t *Text) Getc(off int) rune {
+	return t.t.Getc(off)
 }
 
 func (t *Text) sendLine(toid string, to chan<- *Ev, buf *bytes.Buffer) bool {
@@ -69,7 +89,7 @@ func (t *Text) update(toid string) {
 		return
 	}
 	var buf bytes.Buffer
-	gc := t.Get(0, txt.All)
+	gc := t.t.Get(0, txt.All)
 	for rs := range gc {
 		for _, r := range rs {
 			if r == '\n' {
@@ -85,14 +105,14 @@ func (t *Text) update(toid string) {
 	if buf.Len() > 0 {
 		t.sendLine(toid, to, &buf)
 	}
-	ev = &Ev{Id: t.Id, Src: "", Args: []string{"reloaded", fmt.Sprintf("%d", t.Vers())}}
+	ev = &Ev{Id: t.Id, Src: "", Args: []string{"reloaded", fmt.Sprintf("%d", t.t.Vers())}}
 	if ok := to <- ev; !ok {
 		return
 	}
 }
 
 func (t *Text) wrongVers(tag string, wev *Ev) bool {
-	vers := t.Vers()
+	vers := t.t.Vers()
 	if wev.Vers == vers+1 {
 		return false
 	}
@@ -120,14 +140,13 @@ func (t *Text) p0p1(ev []string) (int, int, error) {
 }
 
 func (t *Text) getString(off int, n int) string {
-	rc := t.Get(off, n)
+	rc := t.t.Get(off, n)
 	var buf bytes.Buffer
 	for rs := range rc {
 		fmt.Fprintf(&buf, "%s", string(rs))
 	}
 	return buf.String()
 }
-
 
 func (t *Text) handle(wev *Ev) {
 	if wev==nil || len(wev.Args)<1 {
@@ -137,7 +156,7 @@ func (t *Text) handle(wev *Ev) {
 	ev := wev.Args
 	switch ev[0] {
 	case "tick", "ecut", "epaste", "ecopy", "eintr", "eundo", "eredo":
-		t.DiscontdEdit()
+		t.t.DiscontdEdit()
 	default:
 	}
 
@@ -145,13 +164,19 @@ func (t *Text) handle(wev *Ev) {
 	default:
 		cmd.Dprintf("%s: unhandled %v\n", t.Id, ev)
 		return
+	case "tag":
+		cmd.Dprintf("%s: %v\n", t.Id, wev)
+		t.Post(wev)
 	case "start":
 		cmd.Dprintf("%s: start %v\n", t.Id, wev.Src)
 		t.update(wev.Src)
+		t.Post(wev)
 	case "end":
 		cmd.Dprintf("%s: end %v\n", t.Id, wev.Src)
+		t.Post(wev)
 	case "tick", "click1", "click2", "click4":
 		// t.uevc <- wev
+		t.Post(wev)
 	case "eins":
 		if len(ev) < 3 {
 			cmd.Dprintf("%s: ins: short\n", t.Id)
@@ -169,13 +194,14 @@ func (t *Text) handle(wev *Ev) {
 		if len(data) == 0 {
 			return
 		}
-		if err := t.Ins(data, p0); err != nil {
+		if err := t.t.Ins(data, p0); err != nil {
 			cmd.Dprintf("%s: ins: %s\n", t.Id, err)
 			return
 		}
-		t.ContdEdit()
-		cmd.Dprintf("%s: vers %d\n", t.Id, t.Vers())
-		t.Out() <- wev
+		t.t.ContdEdit()
+		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
+		t.out <- wev
+		t.Post(wev)
 	case "edel", "ecut":
 		p0, p1, err := t.p0p1(ev)
 		if err!=nil || t.wrongVers(ev[0], wev) {
@@ -184,18 +210,18 @@ func (t *Text) handle(wev *Ev) {
 		if p1 <= p0 {
 			return
 		}
-		rs := t.Del(p0, p1-p0)
+		rs := t.t.Del(p0, p1-p0)
 		if ev[0] == "ecut" {
 			if err := snarf.Set(string(rs)); err != nil {
 				cmd.Dprintf("%s: %s: snarf: %s\n", t.Id, ev[0], err)
 			}
 		} else {
-			t.ContdEdit()
+			t.t.ContdEdit()
 		}
-		cmd.Dprintf("%s: vers %d\n", t.Id, t.Vers())
+		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 		ev[0] = "edel"
-		t.Out() <- wev
-		// t.uevc <- wev
+		t.out <- wev
+		t.Post(wev)
 	case "ecopy":
 		p0, p1, err := t.p0p1(ev)
 		if err!=nil || t.wrongVers(ev[0], wev) {
@@ -221,28 +247,28 @@ func (t *Text) handle(wev *Ev) {
 		if s == "" {
 			return
 		}
-		if err := t.Ins([]rune(s), p0); err != nil {
+		if err := t.t.Ins([]rune(s), p0); err != nil {
 			cmd.Dprintf("%s: %s: ins: %s\n", t.Id, ev[0], err)
 			return
 		}
-		nev := &Ev{Id: t.Id, Src: "", Vers: t.Vers()}
+		nev := &Ev{Id: t.Id, Src: "", Vers: t.t.Vers()}
 		nev.Args = []string{"eins", s, wev.Args[1]}
-		t.Out() <- nev
-		// t.uevc <- nev
+		t.out <- nev
+		t.Post(nev)
 	case "eundo", "eredo":
 		for {
 			var uev *txt.Edit
 			if ev[0] == "eundo" {
-				uev = t.Undo()
+				uev = t.t.Undo()
 			} else {
-				uev = t.Redo()
+				uev = t.t.Redo()
 			}
 			if uev == nil {
 				cmd.Dprintf("%s: %s: no more\n", t.Id, ev[0])
 				return
 			}
 			cmd.Dprintf("%s: %s: undo1\n", t.Id, ev[0])
-			nev := &Ev{Id: t.Id, Src: "", Vers: t.Vers()}
+			nev := &Ev{Id: t.Id, Src: "", Vers: t.t.Vers()}
 			off := fmt.Sprintf("%d", uev.Off)
 			s := string(uev.Data)
 			if uev.Op == txt.Eins {
@@ -251,15 +277,16 @@ func (t *Text) handle(wev *Ev) {
 				off2 := fmt.Sprintf("%d", uev.Off+len(s))
 				nev.Args = []string{"edel", off, off2}
 			}
-			t.Out() <- nev
-			// t.uevc <- nev
+			t.out <- nev
+			t.Post(nev)
 			if !uev.Contd {
 				break
 			}
 		}
 	case "intr":
-		cmd.Dprintf("%s: intr dump:\n:%s", t.Id, t.Sprint())
-		cmd.Dprintf("%s: vers %d\n", t.Id, t.Vers())
+		cmd.Dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
+		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
+		t.Post(wev)
 		// t.uevc <- wev
 	}
 }

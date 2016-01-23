@@ -32,8 +32,9 @@ struct view {
 // connection to the element involved.
 struct Ctlr {
 	Id string	// unique id for the controlled element
+	closed bool
 	in, out chan *Ev	// input events (from the page), and output events
-
+	evs chan *Ev
 	sync.Mutex
 	nb int
 	views map[*view]bool
@@ -46,7 +47,21 @@ var Headers = `
 <script type="text/javascript" src="/js/clive.js"></script>
 <script type="text/javascript" src="/js/txt.js"></script>
 <script src="/js/jquery-ui/jquery-ui.js"></script>
+<script src="/js/jquery.get-word-by-event.js"></script>
 `
+
+var (
+	idgen int
+	idlk sync.Mutex
+)
+
+func newId() int {
+	idlk.Lock()
+	defer idlk.Unlock()
+	idgen++
+	return idgen
+}
+
 // parse a event
 func ParseEv(data []byte) (*Ev, error) {
 	ev := &Ev{}
@@ -56,7 +71,7 @@ func ParseEv(data []byte) (*Ev, error) {
 
 func NewCtlr(tag string) *Ctlr {
 	c := &Ctlr{
-		Id: tag,
+		Id: fmt.Sprintf("%s%d", tag, newId()),
 		in: make(chan *Ev),
 		out: make(chan *Ev),
 		views: make(map[*view]bool),
@@ -66,12 +81,66 @@ func NewCtlr(tag string) *Ctlr {
 	return c
 }
 
+func (c *Ctlr) Close() error {
+	c.closed = true
+	close(c.in, "closed")
+	close(c.out, "closed")
+	close(c.evs, "closed")
+	http.Handle("/ws" + c.Id, nil)
+	return nil
+}
+
+func (c *Ctlr) CloseView(id string) {
+	c.Lock()
+	defer c.Unlock()
+	for v := range c.views {
+		if v.Id == id {
+			v.out <- &Ev{Id: v.Id, Src: v.Id, Args: []string{"close"}}
+			return
+		}
+	}
+}
+
+func (c *Ctlr) Closed() bool {
+	return c.closed
+}
+
 func (c *Ctlr) In() <-chan *Ev {
 	return c.in
 }
 
-func (c *Ctlr) Out() chan<- *Ev {
-	return c.out
+func (c *Ctlr) Events() <-chan *Ev {
+	c.Lock()
+	defer c.Unlock()
+	if c.evs == nil {
+		c.evs = make(chan *Ev)
+	}
+	return c.evs
+}
+
+func (c *Ctlr) Post(ev *Ev) error {
+	c.Lock()
+	ec := c.evs
+	c.Unlock()
+	if ec == nil {
+		return nil
+	}
+	if ok := ec <- ev; !ok {
+		return cerror(ec)
+	}
+	return nil
+}
+
+func (c *Ctlr) Views() []string {
+	c.Lock()
+	defer c.Unlock()
+	vs := make([]string, 0, len(c.views))
+	for v := range c.views {
+		if v.Id != "" {
+			vs = append(vs, v.Id)
+		}
+	}
+	return vs
 }
 
 func (c *Ctlr) ViewOut(id string) chan<- *Ev {
@@ -115,6 +184,13 @@ func (c *Ctlr) reflector() {
 		}
 		c.Unlock()
 	}
+	c.Lock()
+	err := cerror(c.out)
+	for v := range c.views {
+		close(v.out, err)
+	}
+	close(c.evs, err)
+	c.Unlock()
 }
 
 func (c *Ctlr) newView() *view {
@@ -196,3 +272,4 @@ func (c *Ctlr) server(ws *websocket.Conn) {
 		c.in <- &Ev{Id: c.Id, Src: v.Id, Args: []string{"end"}}
 	}
 }
+

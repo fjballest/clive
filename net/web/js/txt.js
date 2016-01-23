@@ -419,7 +419,7 @@ function treformat(l0) {
 	}
 	var last = lns[lns.length-1];
 	if(last.eol){
-		lns[lns.length] = {txt:"", off: lnlen(last)};
+		lns[lns.length] = {txt:"", off: last.off + lnlen(last)};
 	}
 }
 
@@ -830,7 +830,10 @@ function ttinslines(x) {
 	}
 }
 
-function tmayresize(dx, dy) {
+function tmayresize(user) {
+	if(user) {
+		this.userresized = true;
+	}
 	var p = $(this).parent();
 	var dx = p.width();
 	var dy = p.height();
@@ -843,6 +846,24 @@ function tmayresize(dx, dy) {
 	this.saved = null;
 	this.reformat(0);
 	this.redrawtext();
+}
+
+function tautoresize() {
+	var nln = this.frlines;
+	if(nln < 3) {
+		nln = 3;
+	}
+	var ht = (nln+2) * this.fontht;
+	var p = $(this);
+	console.log("auto rsz", nln, ht, p.height());
+	var oldht = p.height();
+	if (oldht < ht - this.fontht || oldht > ht + this.fontht) {
+		var delta = ht - oldht;
+		p = $(this).parent();
+		var nht = p.height() + delta;
+		p.css('height', nht);
+		this.mayresize();
+	}
 }
 
 function tmrlse(e) {
@@ -868,14 +889,18 @@ function tmpress(e) {
 
 // set lastx, lasty to ev coords relative to canvas
 function tevxy(e) {
+	var x = 0;
+	var y = 0;
 	if(e.fakex != undefined) {
-		this.lastx = e.fakex;
-		this.lasty = e.fakey;
-		return
+		x = e.fakex;
+		y = e.fakey;
+	} else {
+		var poff = $(this).offset();
+		x = e.pageX - poff.left;
+		y = e.pageY - poff.top;
 	}
-	var poff = $(this).offset();
-	this.lastx = e.pageX - poff.left;
-	this.lasty = e.pageY - poff.top;
+	this.lastx = x;
+	this.lasty = y;
 }
 
 function tmwait() {
@@ -1101,9 +1126,10 @@ function tmwheel(e) {
 }
 
 function tmdown(e) {
-	e.preventDefault();
 	$("#" + this.divid ).focus();
-	// console.log("tmdown ", this.divid);
+	// console.log("tmdown ", this.divid, e);
+
+	e.preventDefault();
 	this.secondary = 0;		/* paranoia: see tm23 */
 	this.secondaryabort = false;
 	try {
@@ -1322,6 +1348,9 @@ function tapply(ev) {
 			op1 += arg[1].length;
 		if(ev.Vers)
 			this.vers = ev.Vers;
+		if(!this.userresized) {
+			this.autoresize();
+		}
 		break;
 	case "edel":
 		if(arg.length < 3){
@@ -1354,7 +1383,6 @@ function tapply(ev) {
 			this.vers = ev.Vers;
 		break;
 	case "reload":
-		this.reloadoff = 0;
 		this.tclear()
 		break
 	case "reloading":
@@ -1363,7 +1391,7 @@ function tapply(ev) {
 			break;
 		}
 		this.lines.push({txt: arg[1], off: this.reloadoff, eol: true});
-		this.reloadoff += arg[1].length;
+		this.reloadoff += arg[1].length + 1;
 		break
 	case "reloaded":
 		if(arg.length < 2){
@@ -1371,16 +1399,20 @@ function tapply(ev) {
 			break;
 		}
 		this.vers = parseInt(arg[1])
-		this.mayresize();
+		this.autoresize();
 		this.redrawtext();
 		this.dump()
 		break
+	case "close":
+		this.ws.close();
+		$("#"+this.divid).remove();
 	default:
 		console.log("text: unhandled", arg[0]);
 	}
 }
 
 function tclear() {
+	this.reloadoff = 0;
 	this.vers = 0;
 	this.nlines = 0;
 	this.ln0 = 0;
@@ -1396,9 +1428,12 @@ function tclear() {
 	and .lines[] with initial text.
 	d is is the (jquery) parent that will supply kbd events.
 	cid is the class id for e.
+	t is the tag
  */
-function mktext(d, e, cid, id) {
+function mktext(d, t, e, cid, id) {
 	var ctx=e.getContext("2d");
+	e.divcid = cid;
+	e.divid = id;
 	e.vers = 0;
 	e.nlines = 0;
 	e.ln0 = 0;
@@ -1411,6 +1446,7 @@ function mktext(d, e, cid, id) {
 	e.fontht = 14; // TODO: use font height from fixfont
 	e.buttons = 0;
 	e.nclicks = {1: 0, 2: 0, 4: 0};
+	e.userresized = false;
 
 	e.drawline = tdrawline;
 	e.dump = tdump;
@@ -1418,6 +1454,7 @@ function mktext(d, e, cid, id) {
 	e.fixfont = tfixfont;
 	e.linewrap = tlinewrap;
 	e.mayresize = tmayresize;
+	e.autoresize = tautoresize;
 	e.posdx = tposdx;
 	e.ptr2tpos = tptr2tpos;
 	e.redrawtext = tredrawtext;
@@ -1480,8 +1517,6 @@ function mktext(d, e, cid, id) {
 		e.apply(ev);
 	};
 	var preht = d.height();
-	e.divcid = cid;
-	e.divid = id;
 	e.apply = tapply;
 	e.Post = function(args) {
 		var ev = this.post(args);
@@ -1540,14 +1575,24 @@ function mktext(d, e, cid, id) {
 	};
 	e.ws.onclose = function() {
 		console.log("text socket " + wsurl+ " closed\n");
-		var nd = document.open("text/html", "replace")
-		nd.write("<b>disconnected</b>")
-		nd.close();
+		d.replaceWith("<h3>disconnected</h3>")
 	};
 	d.resizable().on('resize', function() {
 		console.log("resized");
-		e.mayresize();
+		e.mayresize(true);
 	});
+	d.resizable("option", "ghost", true);
+
+	$("#"+id+"t").getWordByEvent('click', function tagclick(ev, word) {
+		console.log("tag click on ", ev, word);
+		if(word == "Del") {
+			e.ws.close();
+			d.remove();
+			return;
+		}
+		e.post(["tag", word]);
+	});
+
 }
 
 document.mktext = mktext

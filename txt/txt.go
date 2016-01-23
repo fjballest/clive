@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"sync"
 )
 
 // edit type
@@ -77,6 +78,7 @@ type Text struct {
 	seek   seek
 	contd  bool
 	vers   int
+	sync.Mutex
 }
 
 type seek struct {
@@ -87,10 +89,14 @@ type seek struct {
 	Return the text length
 */
 func (t *Text) Len() int {
+	t.Lock()
+	defer t.Unlock()
 	return t.sz
 }
 
 func (t *Text) Vers() int {
+	t.Lock()
+	defer t.Unlock()
 	return t.vers
 }
 
@@ -228,6 +234,8 @@ func (t *Text) edit(e *Edit) error {
 	(and apply the edit to the text)
 */
 func (t *Text) Undo() *Edit {
+	t.Lock()
+	defer t.Unlock()
 	if t.edits == nil || t.nedits == 0 {
 		return nil
 	}
@@ -250,6 +258,8 @@ func (t *Text) Undo() *Edit {
 	(and apply the edit to the text).
 */
 func (t *Text) Redo() *Edit {
+	t.Lock()
+	defer t.Unlock()
 	if t.edits == nil || t.nedits == len(t.edits) {
 		return nil
 	}
@@ -360,6 +370,8 @@ func (t *Text) del(off int, n int) []rune {
 	The edit added to the undo list will have Contd == true
 */
 func (t *Text) ContdEdit() {
+	t.Lock()
+	defer t.Unlock()
 	t.contd = true
 }
 
@@ -369,6 +381,8 @@ func (t *Text) ContdEdit() {
 	That is, undo the effect of a previous call to ContdEdit().
 */
 func (t *Text) DiscontdEdit() {
+	t.Lock()
+	defer t.Unlock()
 	t.contd = false
 }
 
@@ -376,6 +390,8 @@ func (t *Text) DiscontdEdit() {
 	Insert text at off
 */
 func (t *Text) Ins(data []rune, off int) error {
+	t.Lock()
+	defer t.Unlock()
 	contd := t.contd
 	t.contd = false
 	if err := t.ins(data, off); err != nil {
@@ -391,6 +407,8 @@ func (t *Text) Ins(data []rune, off int) error {
 	Delete n runes at off
 */
 func (t *Text) Del(off, n int) []rune {
+	t.Lock()
+	defer t.Unlock()
 	if n == 0 {
 		return []rune{}
 	}
@@ -408,13 +426,18 @@ func (t *Text) Del(off, n int) []rune {
 	They will be sent as slices to the chan returned.
 	Updating the runes returned will change the text
 	without it knowing, beware.
+	The text is locked while we are getting the runes
 */
 func (t *Text) Get(off int, n int) <-chan []rune {
+	t.Lock()
+	defer t.Unlock()
 	c := make(chan []rune)
 	if n < 0 {
 		n = t.sz
 	}
 	go func() {
+		t.Lock()
+		defer t.Unlock()
 		defer close(c)
 		// defer t.dump("get")
 		d := t.data
@@ -449,6 +472,8 @@ func (t *Text) Get(off int, n int) <-chan []rune {
 	Get a single rune at off (0 if off-limits)
 */
 func (t *Text) Getc(off int) rune {
+	t.Lock()
+	defer t.Unlock()
 	d := t.data
 	switch off {
 	case t.seek.off:
@@ -544,6 +569,8 @@ func (t *Text) Sprint() string {
 	Delete all text (undoable)
 */
 func (t *Text) DelAll() {
+	t.Lock()
+	defer t.Unlock()
 	contd := t.contd
 	t.contd = false
 	if t.sz == 0 {
@@ -563,6 +590,8 @@ func (t *Text) DelAll() {
 	advance the mark.
 */
 func (t *Text) Mark(off int, equaltoo bool) *Mark {
+	t.Lock()
+	defer t.Unlock()
 	m := &Mark{off, equaltoo}
 	t.marks = append(t.marks, m)
 	return m
@@ -572,6 +601,8 @@ func (t *Text) Mark(off int, equaltoo bool) *Mark {
 	Remove a mark from the text
 */
 func (t *Text) Unmark(m *Mark) {
+	t.Lock()
+	defer t.Unlock()
 	for i := 0; i < len(t.marks); i++ {
 		if t.marks[i] == m {
 			t.marks = append(t.marks[0:i], t.marks[i+1:]...)
