@@ -10,14 +10,15 @@ import (
 	"encoding/json"
 	"sync"
 	"fmt"
+	"io"
 )
 
-// events to/from the page
+// Events to/from a control
 // Args[0] is the event name
 // If the name starts with uppercase, it does reflect and all views
 // get an automatic copy of the event.
 struct Ev  {
-	Id, Src string   // target id and source (eg txt1, txt1_3)
+	Id, Src string   // element id and source view id (eg txt1, txt1_3)
 	Vers    int      // version of the control the event is for
 	Args    []string // events with string arguments
 	Data    []byte   // all other events
@@ -28,11 +29,13 @@ struct view {
 	out chan *Ev	// events from/to this view
 }
 
-// element controler, provides a chan interface for a websocket
-// connection to the element involved.
+// Element controler, provides a chan interface for a page interface element,
+// running over a web socket to the element.
+// Supports multiple views and reflects events to synchronize them.
+// All controls export this public interface.
 struct Ctlr {
 	Id string	// unique id for the controlled element
-	closed bool
+	closec chan bool
 	in, out chan *Ev	// input events (from the page), and output events
 	evs chan *Ev
 	sync.Mutex
@@ -41,7 +44,7 @@ struct Ctlr {
 }
 
 // HTML headers to be included in pages using this interface.
-var Headers = `
+var headers = `
 <link rel="stylesheet" href="/js/jquery-ui/jquery-ui.css">
 <script src="/js/jquery-2.2.0.js"></script>
 <script type="text/javascript" src="/js/clive.js"></script>
@@ -55,6 +58,12 @@ var (
 	idlk sync.Mutex
 )
 
+// Write headers to a page so it can support controls.
+// Not needed for pages created with NewPg.
+func WriteHeaders(w io.Writer) {
+	io.WriteString(w, headers)
+}
+
 func newId() int {
 	idlk.Lock()
 	defer idlk.Unlock()
@@ -63,26 +72,30 @@ func newId() int {
 }
 
 // parse a event
-func ParseEv(data []byte) (*Ev, error) {
+func parseEv(data []byte) (*Ev, error) {
 	ev := &Ev{}
 	err := json.Unmarshal(data, ev)
 	return ev, err
 }
 
-func NewCtlr(tag string) *Ctlr {
+// Create a new control.
+// This is done by all controls during their creation.
+func newCtlr(tag string) *Ctlr {
 	c := &Ctlr{
 		Id: fmt.Sprintf("%s%d", tag, newId()),
 		in: make(chan *Ev),
 		out: make(chan *Ev),
 		views: make(map[*view]bool),
+		closec: make(chan bool),
 	}
 	http.Handle("/ws/" + c.Id, websocket.Handler(c.server))
 	go c.reflector()
 	return c
 }
 
+// Terminate the operation of the control and remove it from pages.
 func (c *Ctlr) Close() error {
-	c.closed = true
+	close(c.closec)
 	close(c.in, "closed")
 	close(c.out, "closed")
 	close(c.evs, "closed")
@@ -90,6 +103,12 @@ func (c *Ctlr) Close() error {
 	return nil
 }
 
+// Wait for the control to be closed.
+func (c *Ctlr) Wait() {
+	<-c.closec
+}
+
+// Close the view of this control with the given id.
 func (c *Ctlr) CloseView(id string) {
 	c.Lock()
 	defer c.Unlock()
@@ -101,14 +120,17 @@ func (c *Ctlr) CloseView(id string) {
 	}
 }
 
+// Return true if the control is closed.
 func (c *Ctlr) Closed() bool {
-	return c.closed
+	select {
+	case <-c.closec:
+		return true
+	default:
+		return false
+	}
 }
 
-func (c *Ctlr) In() <-chan *Ev {
-	return c.in
-}
-
+// Return the (application) event channel for the control.
 func (c *Ctlr) Events() <-chan *Ev {
 	c.Lock()
 	defer c.Unlock()
@@ -118,7 +140,7 @@ func (c *Ctlr) Events() <-chan *Ev {
 	return c.evs
 }
 
-func (c *Ctlr) Post(ev *Ev) error {
+func (c *Ctlr) post(ev *Ev) error {
 	c.Lock()
 	ec := c.evs
 	c.Unlock()
@@ -131,6 +153,7 @@ func (c *Ctlr) Post(ev *Ev) error {
 	return nil
 }
 
+// Return the list of identifiers of the current views of the control.
 func (c *Ctlr) Views() []string {
 	c.Lock()
 	defer c.Unlock()
@@ -143,7 +166,7 @@ func (c *Ctlr) Views() []string {
 	return vs
 }
 
-func (c *Ctlr) ViewOut(id string) chan<- *Ev {
+func (c *Ctlr) viewOut(id string) chan<- *Ev {
 	c.Lock()
 	defer c.Unlock()
 	for v := range c.views {
@@ -156,7 +179,7 @@ func (c *Ctlr) ViewOut(id string) chan<- *Ev {
 	return rc
 }
 
-func (c *Ctlr) NewViewId() string {
+func (c *Ctlr) newViewId() string {
 	c.Lock()
 	defer c.Unlock()
 	c.nb++
@@ -247,7 +270,7 @@ func (c *Ctlr) server(ws *websocket.Conn) {
 		if n == 0 {
 			continue
 		}
-		ev, err := ParseEv(buf[:n])
+		ev, err := parseEv(buf[:n])
 		if err != nil {
 			cmd.Dprintf("%s: ev parse: %s\n", c.Id, err)
 			continue

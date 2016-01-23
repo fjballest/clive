@@ -13,7 +13,11 @@ import (
 	"strings"
 )
 
-// Editable text
+// Editable text control.
+// Events can be 
+// tag start end tick click1 click2 click4 eins edel ecut ecopy epaste
+// eundo eredo intr.
+// See Ctlr for the common API for controls.
 struct Text {
 	*Ctlr
 	t *txt.Text
@@ -21,9 +25,13 @@ struct Text {
 	napplies int
 }
 
-// Write the HTML for the text to the page.
+// TODO: need methods to make it editable and read only
+// It's just a matter of telling the javascript not to edit the text
+
+
+// Write the HTML for the text control to the page.
 func (t *Text) WriteTo(w io.Writer) (int64, error) {
-	vid := t.NewViewId()
+	vid := t.newViewId()
 	html := `
 		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; overflow:auto;width:95%;height:300">
 <div id="`+vid+`t" class="ui-widget-header">`+ html.EscapeString(t.tag) + `</div>
@@ -45,31 +53,68 @@ func (t *Text) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
+// Create a new text control with the given tag line and body lines.
 func NewText(tag string, lines ...string) *Text {
 	lns := strings.Join(lines, "\n");
 	t := &Text {
-		Ctlr: NewCtlr("text"),
+		Ctlr: newCtlr("text"),
 		t: txt.NewEditing([]rune(lns)),
 		tag: tag,
 	}
 	go func() {
-		for e := range t.In() {
+		for e := range t.in {
 			t.handle(e)
 		}
 	}()
 	return t
 }
 
-// TODO: methods to call Undo(), Redo() ContdEdit() Ins(), Del(), DelAll()
-// Mark(), Unmark().
-// They must call the same method on t.t and they must t.Post() an event
-// to ins/del the text to reflect the change.
+/// Insert in the text and update the views.
+// Views might have to reload if they are concurrently editing.
+func (t *Text) Ins(data []rune, off int) error {
+	if err := t.t.Ins(data, off); err != nil {
+		return err
+	}
+	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Vers: t.t.Vers(),
+		Args: []string{"eins", string(data), fmt.Sprintf("%d", off)},
+	}
+	return nil
+}
 
-// Text locked while getting the text
+// Delete in the text and update the views.
+// Views might have to reload if they are concurrently editing.
+func (t *Text) Del(off, n int) []rune {
+	rs := t.t.Del(off, n)
+	if len(rs) == 0 {
+		return rs
+	}
+	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Vers: t.t.Vers(),
+		Args: []string{"edel", fmt.Sprintf("%d", off), fmt.Sprintf("%d", off+len(rs))},
+	}
+	return rs
+}
+
+// Return the text so the application can edit it at will,
+// further updates from the views will fail due to wrong version,
+// and the caller must call TextEdited() when done so the view are reloaded
+// with the new text.
+func (t *Text) EditText() *txt.Text {
+	return t.t
+}
+
+// After calling EditText() and using the txt.Text to edit by program,
+// this must be called to reload the views with the new text.
+func (t *Text) EditDone() {
+	t.updateAll()
+}
+
+// Retrieve the current text.
+// Text is locked while getting the text
 func (t *Text) Get(off int, n int) <-chan []rune {
 	return t.t.Get(off, n)
 }
 
+// Retrieve a rune.
 func (t *Text) Getc(off int) rune {
 	return t.t.Getc(off)
 }
@@ -83,7 +128,7 @@ func (t *Text) sendLine(toid string, to chan<- *Ev, buf *bytes.Buffer) bool {
 }
 
 func (t *Text) update(toid string) {
-	to := t.ViewOut(toid)
+	to := t.viewOut(toid)
 	ev := &Ev{Id: t.Id, Src: "", Args: []string{"reload"}}
 	if ok := to <- ev; !ok {
 		return
@@ -108,6 +153,13 @@ func (t *Text) update(toid string) {
 	ev = &Ev{Id: t.Id, Src: "", Args: []string{"reloaded", fmt.Sprintf("%d", t.t.Vers())}}
 	if ok := to <- ev; !ok {
 		return
+	}
+}
+
+func (t *Text) updateAll() {
+	vs := t.Views()
+	for _, v := range vs {
+		t.update(v)
 	}
 }
 
@@ -166,17 +218,17 @@ func (t *Text) handle(wev *Ev) {
 		return
 	case "tag":
 		cmd.Dprintf("%s: %v\n", t.Id, wev)
-		t.Post(wev)
+		t.post(wev)
 	case "start":
 		cmd.Dprintf("%s: start %v\n", t.Id, wev.Src)
 		t.update(wev.Src)
-		t.Post(wev)
+		t.post(wev)
 	case "end":
 		cmd.Dprintf("%s: end %v\n", t.Id, wev.Src)
-		t.Post(wev)
+		t.post(wev)
 	case "tick", "click1", "click2", "click4":
 		// t.uevc <- wev
-		t.Post(wev)
+		t.post(wev)
 	case "eins":
 		if len(ev) < 3 {
 			cmd.Dprintf("%s: ins: short\n", t.Id)
@@ -201,7 +253,7 @@ func (t *Text) handle(wev *Ev) {
 		t.t.ContdEdit()
 		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 		t.out <- wev
-		t.Post(wev)
+		t.post(wev)
 	case "edel", "ecut":
 		p0, p1, err := t.p0p1(ev)
 		if err!=nil || t.wrongVers(ev[0], wev) {
@@ -221,7 +273,7 @@ func (t *Text) handle(wev *Ev) {
 		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 		ev[0] = "edel"
 		t.out <- wev
-		t.Post(wev)
+		t.post(wev)
 	case "ecopy":
 		p0, p1, err := t.p0p1(ev)
 		if err!=nil || t.wrongVers(ev[0], wev) {
@@ -254,7 +306,7 @@ func (t *Text) handle(wev *Ev) {
 		nev := &Ev{Id: t.Id, Src: "", Vers: t.t.Vers()}
 		nev.Args = []string{"eins", s, wev.Args[1]}
 		t.out <- nev
-		t.Post(nev)
+		t.post(nev)
 	case "eundo", "eredo":
 		for {
 			var uev *txt.Edit
@@ -278,7 +330,7 @@ func (t *Text) handle(wev *Ev) {
 				nev.Args = []string{"edel", off, off2}
 			}
 			t.out <- nev
-			t.Post(nev)
+			t.post(nev)
 			if !uev.Contd {
 				break
 			}
@@ -286,7 +338,7 @@ func (t *Text) handle(wev *Ev) {
 	case "intr":
 		cmd.Dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
 		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
-		t.Post(wev)
+		t.post(wev)
 		// t.uevc <- wev
 	}
 }

@@ -602,7 +602,7 @@ function ttdel(dontscroll) {
 	var ndel = this.p1 - this.p0;
 	var off = this.p0 - xln.off;
 	var tot = 0;
-	do{
+	while(tot < ndel && i < this.lines.length) {
 		var xln = this.lines[i];
 		var xlnlen = xln.txt.length;
 		var nd = ndel-tot;
@@ -627,7 +627,7 @@ function ttdel(dontscroll) {
 		}
 		i++;
 		off = 0;
-	}while(tot < ndel);
+	}
 	this.setlinesoff(ln0+1);
 	this.nrunes -= tot;
 	this.p1 -= tot;
@@ -1571,6 +1571,9 @@ function mktext(d, t, e, cid, id) {
 			return;
 		}
 		//console.log("update to", o.Id);
+		// TODO: when applying eins/edel this should check if
+		// our version is ok, and, if it's not, it should just ask for
+		// a full reload (eg., by setting and ins out of order)
 		e.apply(o)
 	};
 	e.ws.onclose = function() {
@@ -1585,7 +1588,7 @@ function mktext(d, t, e, cid, id) {
 
 	$("#"+id+"t").getWordByEvent('click', function tagclick(ev, word) {
 		console.log("tag click on ", ev, word);
-		if(word == "Del") {
+		if(false && word == "Del") {
 			e.ws.close();
 			d.remove();
 			return;
