@@ -36,6 +36,8 @@ import (
 //	eins ...
 //	edel ...
 //	close
+//	noedits
+//	edits
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end
@@ -55,15 +57,28 @@ struct Text {
 	*Ctlr
 	t *txt.Text
 	tag string
-	napplies int
+	tagged, noedits bool
 }
 
 // Write the HTML for the text control to a page.
-func (t *Text) WriteTo(w io.Writer) (int64, error) {
+func (t *Text) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := t.newViewId()
-	html := `
-		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; overflow:auto;width:95%;height:300">
-<div id="`+vid+`t" class="ui-widget-header">`+ html.EscapeString(t.tag) + `</div>
+
+	n, err := io.WriteString(w, `
+		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; overflow:auto;width:95%;height:300">`)
+	tot += int64(n)
+	if err != nil {
+		return tot, err
+	}
+	if t.tagged {
+		n, err := io.WriteString(w, `<div id="`+vid+`t" class="ui-widget-header">`+ 
+			html.EscapeString(t.tag) + `</div>`)
+		tot += int64(n)
+		if err != nil {
+			return tot, err
+		}
+	}
+	n, err = io.WriteString(w, `
 <canvas id="`+vid+`c" class="txt1c" width="100%" height="100%" style="border:1px solid black;"></canvas>
 </div>
 <script>
@@ -76,19 +91,19 @@ func (t *Text) WriteTo(w io.Writer) (int64, error) {
 		x.lines.push({txt: "", off: 0});
 		document.mktext(d, t, x, "`+t.Id+`", "`+vid+`");
 	});
-</script>
-`
-	n, err := io.WriteString(w, html)
-	return int64(n), err
+</script>`)
+	tot += int64(n)
+	return tot, err
 }
 
 // Create a new text control with the given tag line and body lines.
-func NewText(tag string, lines ...string) *Text {
+func newText(tagged bool, tag string, lines ...string) *Text {
 	lns := strings.Join(lines, "\n");
 	t := &Text {
 		Ctlr: newCtlr("text"),
 		t: txt.NewEditing([]rune(lns)),
 		tag: tag,
+		tagged: tagged,
 	}
 	go func() {
 		for e := range t.in {
@@ -97,6 +112,29 @@ func NewText(tag string, lines ...string) *Text {
 	}()
 	return t
 }
+
+// Create a new text control with the given tag line and body lines.
+func NewTaggedText(tag string, lines ...string) *Text {
+	return newText(true, tag, lines...)
+}
+
+// Create a new text control with no tag line and the given body lines.
+func NewText(lines ...string) *Text {
+	return newText(false, "", lines...)
+}
+
+// Prevent user edits
+func (t *Text) NoEdits() {
+	t.noedits = true
+	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"noedits"}}
+}
+
+// Permit user edits (default)
+func (t *Text) Edits() {
+	t.noedits = false
+	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"edits"}}
+}
+
 
 /// Insert in the text and update the views.
 // Views might have to reload if they are concurrently editing.
@@ -158,6 +196,11 @@ func (t *Text) sendLine(toid string, to chan<- *Ev, buf *bytes.Buffer) bool {
 
 func (t *Text) update(toid string) {
 	to := t.viewOut(toid)
+	if t.noedits {
+		t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"noedits"}}
+	} else {
+		t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"edits"}}
+	}
 	ev := &Ev{Id: t.Id, Src: "", Args: []string{"reload"}}
 	if ok := to <- ev; !ok {
 		return

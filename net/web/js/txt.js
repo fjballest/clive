@@ -980,6 +980,9 @@ function tm1(pos) {
 		try{
 			this.evxy(e);
 			this.tmpress(e);
+			if(this.noedits) {
+				return;
+			}
 			if(this.buttons == 3){
 				this.post(["tick", ""+this.p0, ""+this.p1]);
 				this.Post(["ecut", ""+this.p0, ""+this.p1]);
@@ -1192,6 +1195,9 @@ function tevkey(e) {
 			break;
 		case 'v':
 		case 'V':
+			if(this.noedits) {
+				break;
+			}
 			if(e.ctrlKey || e.metaKey){
 				e.preventDefault();
 				if(this.p0 != this.p1){
@@ -1203,6 +1209,9 @@ function tevkey(e) {
 			break;
 		case 'x':
 		case 'X':
+			if(this.noedits) {
+				break;
+			}
 			if(e.ctrlKey || e.metaKey){
 				e.preventDefault();
 				this.Post(["ecut", ""+this.p0, ""+this.p1]);
@@ -1210,7 +1219,7 @@ function tevkey(e) {
 			}
 			break;
 		}
-		if(e.metaKey || e.ctrlKey)
+		if(e.metaKey || e.ctrlKey || this.noedits)
 			return;
 		if(this.p0 != this.p1){
 			this.Post(["edel", ""+this.p0, ""+this.p1]);
@@ -1265,6 +1274,9 @@ function tkeydown(e) {
 	
 		switch(key){
 		case 8:		/* backspace */
+			if(this.noedits) {
+				return;
+			}
 			if(this.p0 != this.p1){
 				this.Post(["edel", ""+this.p0, ""+this.p1]);
 			}else if(this.p0 > 0){
@@ -1273,6 +1285,9 @@ function tkeydown(e) {
 			}
 			break;
 		case 9:		/* tab */
+			if(this.noedits) {
+				return;
+			}
 			if(this.p0 != this.p1){
 				this.Post(["edel", ""+this.p0, ""+this.p1]);
 			}
@@ -1285,6 +1300,9 @@ function tkeydown(e) {
 				this.tget(this.p0, this.p1) + "'");
 			break;
 		case 37:	/* left */
+			if(this.noedits) {
+				return;
+			}
 			this.post(["eundo"]);
 			break;
 		case 38:	/* up */
@@ -1294,6 +1312,9 @@ function tkeydown(e) {
 			}
 			break;
 		case 39:	/* right */
+			if(this.noedits) {
+				return;
+			}
 			this.post(["eredo"]);
 			break;
 		case 40:	/* down */
@@ -1334,6 +1355,12 @@ function tapply(ev, fromserver) {
 	var arg = ev.Args
 	if(0)console.log(this.divid, "apply", ev.Args, "v", ev.Vers, this.vers);
 	switch(arg[0]){
+	case "noedits":
+		this.noedits = true;
+		break;
+	case "edits":
+		this.noedits = false;
+		break;
 	case "eins":
 		if(arg.length < 3){
 			console.log(this.divid, "apply: short ins");
@@ -1412,7 +1439,6 @@ function tapply(ev, fromserver) {
 			break;
 		}
 		this.vers = parseInt(arg[1]);
-		this.autoresize();
 		this.redrawtext();
 		this.autoresize();
 		this.dump();
@@ -1513,6 +1539,8 @@ function mktext(d, t, e, cid, id) {
 	e.selectstart = tselectstart;
 	e.selectend = tselectend;
 	e.deferred = [];
+
+	e.noedits = false;
 
 	e.tkeydown = tkeydown;
 	e.tkeypress = tevkey;
@@ -1630,16 +1658,17 @@ function mktext(d, t, e, cid, id) {
 	});
 	d.resizable("option", "ghost", true);
 
-	$("#"+id+"t").getWordByEvent('click', function tagclick(ev, word) {
-		console.log("tag click on ", ev, word);
-		if(false && word == "Del") {
-			e.ws.close();
-			d.remove();
-			return;
-		}
-		e.post(["tag", word]);
-	});
-
+	if(t) {
+		$("#"+id+"t").getWordByEvent('click', function tagclick(ev, word) {
+			console.log("tag click on ", ev, word);
+			if(false && word == "Del") {
+				e.ws.close();
+				d.remove();
+				return;
+			}
+			e.post(["tag", word]);
+		});
+	}
 }
 
 document.mktext = mktext

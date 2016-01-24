@@ -57,20 +57,29 @@ func main() {
 	opts := opt.New("[file]")
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
+	rdonly := false
+	opts.NewFlag("r", "read only", &rdonly)
 	cmd.UnixIO()
 	args := opts.Parse()
 	var t *web.Text
 	if len(args) == 0 {
-		t = web.NewText("text Del", "1234", "abc")
+		t = web.NewText("1234", "abc")
 	} else {
 		dat, err := zx.GetAll(cmd.NS(), cmd.AbsPath(args[0]))
 		if err != nil {
 			cmd.Fatal(err)
 		}
-		t = web.NewText(args[0] + " Del", string(dat))
+		t = web.NewTaggedText(args[0] + " Del", string(dat))
 	}
 	go edit(t)
-	web.NewPg("/", "Example text editing:", t)
+	if rdonly {
+		t.NoEdits()
+	}
+	one := false
+	two := false
+	bs := web.NewButtonSet(&web.Button{Tag: "One", Value: &one},
+		&web.Button{Tag: "Two", Value: &two})
+	web.NewPg("/", "Example text editing:", t, "buttons", bs)
 	go web.Serve()
 	t.Wait()
 	for rs := range t.Get(0, -1) {
