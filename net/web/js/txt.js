@@ -1,5 +1,5 @@
 /*
-	js code for the wax text frame
+	js code for the clive text frame
 	which is similar to a Plan 9 text frame
 	but implemented with the HTML5 canvas.
 

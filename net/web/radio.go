@@ -8,14 +8,6 @@ import (
 	"strconv"
 )
 
-// A single button
-struct Button {
-	Name string	// reported in events
-	Tag string		// shown in the button
-	Value *bool	// nil, or on/off value for check buttons
-	value bool
-}
-
 // Events sent from the viewer:
 //	click name nb
 //	Set  name nb on|off
@@ -25,22 +17,21 @@ struct Button {
 //	start
 //	end
 
-// A set of buttons
+// A set of radio buttons
 // See Ctlr for the common API for controls.
 // The events posted to the user are:
 //	start
 //	end
-//	click name nb	(nb is the index in the button array)
-//	Set  name nb on|off
-struct ButtonSet {
+//	Set  name idx on
+struct RadioSet {
 	*Ctlr
 	els []*Button
 }
 
-// Create a Button Set
+// Create a Radio button Set
 // The buttons are check buttons if they have a pointer to a bool
-func NewButtonSet(button ...*Button) *ButtonSet {
-	bs := &ButtonSet {
+func NewRadioSet(button ...*Button) *RadioSet {
+	bs := &RadioSet {
 		Ctlr: newCtlr("buttons"),
 		els: button,
 	}
@@ -52,11 +43,11 @@ func NewButtonSet(button ...*Button) *ButtonSet {
 	return bs
 }
 
-// Write the HTML for the button set control to a page.
-func (bs *ButtonSet) WriteTo(w io.Writer) (tot int64, err error) {
+// Write the HTML for the radio set control to a page.
+func (bs *RadioSet) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := bs.newViewId()
 	n, err := io.WriteString(w,
-		`<div id="`+vid+`" class="`+bs.Id+`, ui-widget-header, ui-corner-all">`)
+		`<form><div id="`+vid+`" class="`+bs.Id+`">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -65,42 +56,28 @@ func (bs *ButtonSet) WriteTo(w io.Writer) (tot int64, err error) {
 	for i, b := range bs.els {
 		bid := fmt.Sprintf("%s_b%d", vid, i)
 		bids = append(bids, bid)
-		if b.Value != nil {
-			n, err = io.WriteString(w, `<input type="checkbox" id="`+bid+`">` +
+		n, err = io.WriteString(w, `<input type="radio" id="`+bid+`" name="`+vid+`">` +
 				`<label for = "`+bid+`">` + 
 				html.EscapeString(b.Tag) + `</label>` + "\n")
-		} else {
-			n, err = io.WriteString(w, `<button id="`+bid+`">` +
-				html.EscapeString(b.Tag) + `</button>` + "\n")
-		}
 		tot += int64(n)
 		if err != nil {
 			return tot, err
 		}
 	}
-	n, err = io.WriteString(w, `</div><script>
+	n, err = io.WriteString(w, `</div></form><script>
 		$(function(){
 			var d = $("#`+vid+`");
-			document.mkbuttons(d, "`+bs.Id+`", "`+vid+`");` + "\n")
+			document.mkradio(d, "`+bs.Id+`", "`+vid+`");
+			$("#`+vid+`").buttonset();` + "\n")
 	tot += int64(n)
 	if err != nil {
 		return tot, err
 	}
 	for i, b := range bids {
-		if bs.els[i].Value != nil {
-			n, err = io.WriteString(w, `$("#`+b+`").button().click(function(e) {
-				var checked = $("#`+b+`").is(':checked');
-				if(checked) {
-					d.post(["Set", "`+bs.els[i].Name+`", "`+fmt.Sprintf("%d", i)+`", "on"]);
-				} else {
-					d.post(["Set", "`+bs.els[i].Name+`", "`+fmt.Sprintf("%d", i)+`", "off"]);
-				}
-			});`)
-		} else {
-			n, err = io.WriteString(w, `$("#`+b+`").button().click(function() {
-				d.post(["click", "`+bs.els[i].Name+`", "`+fmt.Sprintf("%d", i)+`"]);
-			});`)
-		}
+		n, err = io.WriteString(w, `$("#`+b+`").change(function() {
+			console.log("change", "`+b+`");
+			d.post(["Set", "`+bs.els[i].Name+`", "`+fmt.Sprintf("%d", i)+`", "on"]);
+		});`)
 		tot += int64(n)
 		if err != nil {
 			return tot, err
@@ -112,12 +89,9 @@ func (bs *ButtonSet) WriteTo(w io.Writer) (tot int64, err error) {
 	return tot, err
 }
 
-func (bs *ButtonSet) update(id string) {
+func (bs *RadioSet) update(id string) {
 	out := bs.viewOut(id)
 	for i, b := range bs.els {
-		if b.Value == nil {
-			continue
-		}
 		v := "on"
 		if !b.value {
 			v = "off"
@@ -128,7 +102,7 @@ func (bs *ButtonSet) update(id string) {
 	}
 }
 
-func (bs *ButtonSet) handle(wev *Ev) {
+func (bs *RadioSet) handle(wev *Ev) {
 	if wev==nil || len(wev.Args)<1 {
 		return
 	}
@@ -139,18 +113,19 @@ func (bs *ButtonSet) handle(wev *Ev) {
 		bs.post(wev)
 	case "end":
 		bs.post(wev)
-	case "click":
-		if len(ev) < 3 {
+	case "Set":
+		if len(ev) < 4 {
 			return
 		}
-		n, _ := strconv.Atoi(ev[1])
+		n, _ := strconv.Atoi(ev[2])
 		if n < 0 || n >= len(bs.els) {
 			return
 		}
-		b := bs.els[n]
-		if b.Value != nil && len(ev) > 3 {
-			b.value = ev[3] == "on"
-			*b.Value = b.value
+		for i, b := range bs.els {
+			b.value = i == n
+			if b.Value != nil  {
+				*b.Value = b.value
+			}
 		}
 		bs.post(wev)
 	default:

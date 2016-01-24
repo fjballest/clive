@@ -49,6 +49,9 @@ var headers = `
 <script src="/js/jquery-2.2.0.js"></script>
 <script type="text/javascript" src="/js/clive.js"></script>
 <script type="text/javascript" src="/js/txt.js"></script>
+<script type="text/javascript" src="/js/txt.js"></script>
+<script type="text/javascript" src="/js/button.js"></script>
+<script type="text/javascript" src="/js/radio.js"></script>
 <script src="/js/jquery-ui/jquery-ui.js"></script>
 <script src="/js/jquery.get-word-by-event.js"></script>
 `

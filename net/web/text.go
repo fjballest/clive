@@ -13,7 +13,6 @@ import (
 	"strings"
 )
 
-// Events:
 // Events sent from the viewer:
 //	tag wordclicked
 //	click[124]	textclicked	p0 p1	(buttons are 1, 2, 4, 8, 16, ...)
