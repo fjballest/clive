@@ -13,11 +13,44 @@ import (
 	"strings"
 )
 
+// Events:
+// Events sent from the viewer:
+//	tag wordclicked
+//	click[124]	textclicked	p0 p1	(buttons are 1, 2, 4, 8, 16, ...)
+//	tick	p0 p1
+//	epaste	p0 p1
+//	ecopy	p0 p1
+//	ecut	p0 p1
+//	eins	text p0
+//	edel	p0 p1
+//	eundo
+//	eredo
+//	neeedreload
+//	intr	esc|...
+// Events sent from the viewer but not for the user:
+//	id
+// Events sent to the viewer (besides all reflected events):
+//	reload
+//	reloading text
+//	reloaded vers
+//	eins ...
+//	edel ...
+//	close
+// Events sent to the user (besides those from the viewer):
+//	start
+//	end
+
 // Editable text control.
-// Events can be 
-// tag start end tick click1 click2 click4 eins edel ecut ecopy epaste
-// eundo eredo intr.
 // See Ctlr for the common API for controls.
+// The events posted to the user are:
+//	start
+//	end
+//	tag wordclicked
+//	click[124]	textclicked	p0 p1	(buttons are 1, 2, 4, 8, 16, ...)
+//	tick	p0 p1
+//	eins	text p0
+//	edel	p0 p1
+//	intr	esc|...
 struct Text {
 	*Ctlr
 	t *txt.Text
@@ -25,11 +58,7 @@ struct Text {
 	napplies int
 }
 
-// TODO: need methods to make it editable and read only
-// It's just a matter of telling the javascript not to edit the text
-
-
-// Write the HTML for the text control to the page.
+// Write the HTML for the text control to a page.
 func (t *Text) WriteTo(w io.Writer) (int64, error) {
 	vid := t.newViewId()
 	html := `
@@ -96,7 +125,7 @@ func (t *Text) Del(off, n int) []rune {
 
 // Return the text so the application can edit it at will,
 // further updates from the views will fail due to wrong version,
-// and the caller must call TextEdited() when done so the view are reloaded
+// and the caller must call EditDone() when done so the views are reloaded
 // with the new text.
 func (t *Text) EditText() *txt.Text {
 	return t.t
@@ -120,7 +149,7 @@ func (t *Text) Getc(off int) rune {
 }
 
 func (t *Text) sendLine(toid string, to chan<- *Ev, buf *bytes.Buffer) bool {
-	s := html.EscapeString(buf.String())
+	s := buf.String()
 	buf.Reset()
 	ev := &Ev{Id: t.Id, Src: "", Args: []string{"reloading", s}}
 	ok := to <- ev
@@ -223,6 +252,8 @@ func (t *Text) handle(wev *Ev) {
 		cmd.Dprintf("%s: start %v\n", t.Id, wev.Src)
 		t.update(wev.Src)
 		t.post(wev)
+	case "needreload":
+		t.update(wev.Src)
 	case "end":
 		cmd.Dprintf("%s: end %v\n", t.Id, wev.Src)
 		t.post(wev)

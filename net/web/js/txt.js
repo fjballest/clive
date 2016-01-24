@@ -1003,6 +1003,7 @@ function tm1(pos) {
 				this.onmousedown = this.tmdown;
 				this.onmouseup = this.tmup;
 				this.onmousemove = this.evxy;
+				this.selectend();
 			}
 		}catch(ex){
 			console.log("tm1: up: " + ex);
@@ -1084,6 +1085,7 @@ function tm23(pos, b) {
 			this.p1 = this.oldp1;
 			this.secondary = 0;
 			this.secondaryabort = false;
+			this.selectend();
 		}
 	}
 }
@@ -1095,6 +1097,7 @@ function tmup(e) {
 		this.evxy(e);
 		if(this.buttons == 0){
 			this.post(["tick", ""+this.p0, ""+this.p1]);
+			this.selectend();
 		}
 	}catch(ex){
 		console.log("tevmup: " + ex);
@@ -1128,7 +1131,7 @@ function tmwheel(e) {
 function tmdown(e) {
 	$("#" + this.divid ).focus();
 	// console.log("tmdown ", this.divid, e);
-
+	this.selectstart();
 	e.preventDefault();
 	this.secondary = 0;		/* paranoia: see tm23 */
 	this.secondaryabort = false;
@@ -1323,18 +1326,22 @@ function tkeydown(e) {
 	}
 }
 
-function tapply(ev) {
+function tapply(ev, fromserver) {
 	if(!ev || !ev.Args || !ev.Args[0]){
 		console.log("apply: nil ev");
 		return;
 	}
 	var arg = ev.Args
-	if(0)console.log(this.divid, "apply", ev.Args, "v", ev.Vers);
+	if(0)console.log(this.divid, "apply", ev.Args, "v", ev.Vers, this.vers);
 	switch(arg[0]){
 	case "eins":
 		if(arg.length < 3){
 			console.log(this.divid, "apply: short ins");
 			break;
+		}
+		if(ev.Vers && fromserver && ev.Vers != this.vers+1){
+			console.log("OUT OF SYNC", ev.Args, "v", ev.Vers, this.vers);
+			this.post(["needreload"]);
 		}
 		var p0 = parseInt(arg[2]);
 		var op0 = this.p0;
@@ -1346,8 +1353,9 @@ function tapply(ev) {
 			op0 += arg[1].length;
 		if(op1 > p0)
 			op1 += arg[1].length;
-		if(ev.Vers)
+		if(ev.Vers) {
 			this.vers = ev.Vers;
+		}
 		if(!this.userresized) {
 			this.autoresize();
 		}
@@ -1356,6 +1364,10 @@ function tapply(ev) {
 		if(arg.length < 3){
 			console.log(this.divid, "apply: short del");
 			break;
+		}
+		if(ev.Vers && fromserver && ev.Vers != this.vers+1){
+			console.log("OUT OF SYNC", ev.Args, "v", ev.Vers, this.vers);
+			this.post(["needreload"]);
 		}
 		var p0 = parseInt(arg[1]);
 		var p1 = parseInt(arg[2]);
@@ -1370,8 +1382,9 @@ function tapply(ev) {
 		}
 		op0 = adjdel(op0, p0, p1);
 		op1 = adjdel(op1, p0, p1);
-		if(ev.Vers)
+		if(ev.Vers) {
 			this.vers = ev.Vers;
+		}
 		break;
 	case "ecut":
 		try{
@@ -1383,7 +1396,7 @@ function tapply(ev) {
 			this.vers = ev.Vers;
 		break;
 	case "reload":
-		this.tclear()
+		this.tclear();
 		break
 	case "reloading":
 		if(arg.length < 2){
@@ -1398,10 +1411,11 @@ function tapply(ev) {
 			console.log(this.divid, "apply: short reloaded");
 			break;
 		}
-		this.vers = parseInt(arg[1])
+		this.vers = parseInt(arg[1]);
 		this.autoresize();
 		this.redrawtext();
-		this.dump()
+		this.autoresize();
+		this.dump();
 		break
 	case "close":
 		this.ws.close();
@@ -1409,6 +1423,28 @@ function tapply(ev) {
 	default:
 		console.log("text: unhandled", arg[0]);
 	}
+}
+
+function tselectstart() {
+	if(!this.selecting) {
+		console.log("selecting...");
+	}
+	this.selecting = true;
+}
+
+function tselectend() {
+	if(!this.selecting) {
+		return;
+	}
+	console.log("select end");
+	this.selecting = false;
+	if(!this.deferred) {
+		return;
+	}
+	for(var i = 0; i < this.deferred.length; i++) {
+		this.apply(this.deferred[i], true);
+	}
+	this.deferred = [];
 }
 
 function tclear() {
@@ -1473,6 +1509,10 @@ function mktext(d, t, e, cid, id) {
 	e.tsetsel = ttsetsel;
 	e.untick = tuntick;
 	e.updatescrl = tupdatescrl;
+
+	e.selectstart = tselectstart;
+	e.selectend = tselectend;
+	e.deferred = [];
 
 	e.tkeydown = tkeydown;
 	e.tkeypress = tevkey;
@@ -1574,7 +1614,11 @@ function mktext(d, t, e, cid, id) {
 		// TODO: when applying eins/edel this should check if
 		// our version is ok, and, if it's not, it should just ask for
 		// a full reload (eg., by setting and ins out of order)
-		e.apply(o)
+		if(e.selecting) {
+			e.deferred.push(o);
+			return;
+		}
+		e.apply(o, true)
 	};
 	e.ws.onclose = function() {
 		console.log("text socket " + wsurl+ " closed\n");

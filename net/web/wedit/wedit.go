@@ -1,10 +1,13 @@
 /*
 	Simple editor mostly to test the web UI framework
+	Creates a text control to edit the text and then prints the text
+	when it exits.
 */
 package main
 
 import (
 	"clive/cmd"
+	"clive/zx"
 	"clive/cmd/opt"
 	"clive/net/web"
 	"time"
@@ -23,6 +26,7 @@ func edit(t *web.Text) {
 		cmd.Warn("got %v", ev.Args)
 		switch ev.Args[0] {
 		case "start":
+			continue
 			// Example: keep only a single view
 			vs := t.Views()
 			for _, v := range vs {
@@ -30,6 +34,7 @@ func edit(t *web.Text) {
 					t.CloseView(v)
 				}
 			}
+			// Example: do some edits from the program.
 			go edits(t)
 		case "tag":
 			if len(ev.Args) == 1 || ev.Args[1] != "Del" {
@@ -39,7 +44,7 @@ func edit(t *web.Text) {
 		case "end":
 			// Example: delete the text when all views are gone
 			vs := t.Views()
-			cmd.Dprintf("views %v", t.Views())
+			cmd.Dprintf("views %v\n", t.Views())
 			if len(vs) == 0 {
 				t.Close()
 				return
@@ -49,12 +54,21 @@ func edit(t *web.Text) {
 }
 
 func main() {
-	opts := opt.New("")
+	opts := opt.New("[file]")
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
 	cmd.UnixIO()
-	opts.Parse()
-	t := web.NewText("txt1 Del", "1234", "abc")
+	args := opts.Parse()
+	var t *web.Text
+	if len(args) == 0 {
+		t = web.NewText("text Del", "1234", "abc")
+	} else {
+		dat, err := zx.GetAll(cmd.NS(), cmd.AbsPath(args[0]))
+		if err != nil {
+			cmd.Fatal(err)
+		}
+		t = web.NewText(args[0] + " Del", string(dat))
+	}
 	go edit(t)
 	web.NewPg("/", "Example text editing:", t)
 	go web.Serve()
