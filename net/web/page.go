@@ -15,6 +15,7 @@ import (
 struct Pg {
 	sync.Mutex
 	Path string
+	NoAuth bool	// set to true to disable auth
 	els []interface{}	// string, Html, io.WriterTo
 }
 
@@ -46,8 +47,9 @@ func start() {
 }
 
 // Serve the pages.
-func Serve() error {
-	if err := http.ListenAndServeTLS(":8181", auth.ServerPem, auth.ServerKey, nil); err != nil {
+// Even if they are NoAuth, it's always through TLS.
+func Serve(port string) error {
+	if err := http.ListenAndServeTLS(port, auth.ServerPem, auth.ServerKey, nil); err != nil {
 		cmd.Warn("%s", err)
 		return err
 	}
@@ -68,9 +70,17 @@ func NewPg(path string, els ...interface{}) *Pg {
 		els: els,
 	}
 	hndlr := func(w http.ResponseWriter, r *http.Request) {
+		authok := true
+		if !pg.NoAuth {
+			Auth(w, r)
+			cmd.Warn("authok = %v", authok)
+		}
 		fmt.Fprintln(w, `<html><head><title>Clive web</title>`);
 		WriteHeaders(w);
 		fmt.Fprintln(w, `</head><body>`);
+		if !authok {
+			return
+		}
 		pg.Lock()
 		defer pg.Unlock()
 		for i := 0; i < len(pg.els);  {

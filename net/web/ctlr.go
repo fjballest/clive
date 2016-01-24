@@ -63,6 +63,9 @@ var (
 
 // Write headers to a page so it can support controls.
 // Not needed for pages created with NewPg.
+// If you do not use NewPg, remember to call Auth
+// early in the handler (unless you don't want auth) and
+// then return without writing anything if it failed. 
 func WriteHeaders(w io.Writer) {
 	io.WriteString(w, headers)
 }

@@ -101,9 +101,10 @@ func main() {
 		&web.Button{Tag: "Blue", Name: "blue", Value: &blue},
 		&web.Button{Tag: "Green", Name: "green", Value: &green})
 	web.NewPg("/", "Example text editing:", bs, rs, t)
+	web.ServeLoginFor("/")
 	go radio(rs)
 
-	go web.Serve()
+	go web.Serve(":8181")
 	t.Wait()
 	for rs := range t.Get(0, -1) {
 		cmd.Printf("%s", string(rs))
