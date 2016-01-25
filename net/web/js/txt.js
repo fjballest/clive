@@ -14,8 +14,8 @@
  * Hack to make sure the fixed and var width fonts exist, and
  * global font names for those variants.
  */
-var tffixed = "AndaleMono";
-var tfvar = "LucidaGrande";
+var tffixed = "Courier New";
+var tfvar = "Lucida Grande";	// or Verdana
 var fontscheckedout = false;
 
 function checkoutfonts(ctx) {
@@ -36,7 +36,7 @@ function checkoutfonts(ctx) {
 
 function tfixfont() {
 	var c = this;
-	var ctx = c.getContext("2d");
+	var ctx = c.getContext("2d", {alpha: false});
 	var mod = "";
 	var style = "";
 	style = tfvar;
@@ -50,7 +50,7 @@ function tfixfont() {
 		mod = "italic " + mod;
 	}
 	var ht = this.fontht - 2;
-	ctx.font = mod + " "  + ht+"px "+style;
+	ctx.font = mod + " "  + ht+"px "+ style;
 	ctx.textBaseline="top";
 }
 
@@ -117,7 +117,7 @@ function notabs(t, pos0) {
 
 function tlinewrap(t) {
 	var c = this;
-	var ctx = c.getContext("2d");
+	var ctx = c.getContext("2d", {alpha: false});
 	var marginsz = 3;
 	var avail = c.width - 2*marginsz;
 	var pos = 0;
@@ -143,7 +143,7 @@ function tlinewrap(t) {
 function tposdx(ln, n) {
 	var t = ln.txt;
 	var c = this;
-	var ctx = c.getContext("2d");
+	var ctx = c.getContext("2d", {alpha: false});
 	var pos = 0;
 	var dx = 0;
 	for(var i = 0; i < t.length && i < n; i++){
@@ -212,7 +212,7 @@ function ttpos2pos(x, nln) {
 
 function tuntick() {
 	var c = this;
-	var ctx = c.getContext("2d");
+	var ctx = c.getContext("2d", {alpha: false});
 	if(!this.saved)
 		return;
 	ctx.putImageData(this.saved, this.tickx, this.ticky);
@@ -221,7 +221,7 @@ function tuntick() {
 
 function ttsetsel(p0, p1, refreshall) {
 	var c = this;
-	var ctx = c.getContext("2d");
+	var ctx = c.getContext("2d", {alpha: false});
 	if(p0 > this.nrunes)
 		p0 = this.nrunes;
 	if(p1 < p0)
@@ -262,7 +262,7 @@ function ttsetsel(p0, p1, refreshall) {
 
 function tupdatescrl() {
 	var c = this;
-	var ctx = c.getContext("2d");
+	var ctx = c.getContext("2d", {alpha: false});
 	var y0 = this.ln0 / this.lines.length * c.height;
 	var dy = this.frlines / this.lines.length * c.height;
 	ctx.clearRect(c.width-1, 0, 1, y0);
@@ -272,7 +272,7 @@ function tupdatescrl() {
 
 function tdrawline(xln, i) {
 	var c = this;
-	var ctx = c.getContext("2d");
+	var ctx = c.getContext("2d", {alpha: false});
 	var lnht = this.fontht;
 	var marginsz = 3;
 	var avail = c.width - 2*marginsz -1;
@@ -419,7 +419,7 @@ function tsetlinesoff(l0) {
 
 function tredrawtext() {
 	var c = this;
-	var ctx = c.getContext("2d");
+	var ctx = c.getContext("2d", {alpha: false});
 	c.fixfont();
 	var nlines = c.height / (this.fontht);
 
@@ -823,7 +823,7 @@ function tmayresize(user) {
 	var dy = p.height();
 	console.log('text resized', dx, dy);
 	var c = this;
-	var ctx = this.getContext("2d");
+	var ctx = this.getContext("2d", {alpha: false});
 	c.width = dx;
 	c.height = dy;
 	this.nlines = Math.floor(c.height/this.fontht);
@@ -1487,7 +1487,7 @@ function tclear() {
 	t is the tag
  */
 function mktext(d, t, e, cid, id) {
-	var ctx=e.getContext("2d");
+	var ctx=e.getContext("2d", {alpha: false});
 	e.divcid = cid;
 	e.divid = id;
 	e.vers = 0;
@@ -1499,7 +1499,7 @@ function mktext(d, t, e, cid, id) {
 	e.fontstyle = 'r';
 	checkoutfonts(ctx);
 	e.tabwid = ctx.measureText("XXXX").width;
-	e.fontht = 14; // TODO: use font height from fixfont
+	e.fontht = 16; // TODO: use font height from fixfont
 	e.buttons = 0;
 	e.nclicks = {1: 0, 2: 0, 4: 0};
 	e.userresized = false;
