@@ -29,8 +29,8 @@ struct RadioSet {
 	els []*Button
 }
 
-// Create a Radio button Set
-// The buttons are check buttons if they have a pointer to a bool
+// Create a Radio button Set.
+// Value is updated to reflect the selected button name.
 func NewRadioSet(value *string, button ...*Button) *RadioSet {
 	bs := &RadioSet {
 		Value: value,

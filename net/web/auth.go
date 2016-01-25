@@ -23,8 +23,8 @@ func authFailed(w http.ResponseWriter) {
 }
 
 
-// Authenticate the wax server. To be called early within the
-// handler function for wax pages. It returns false if auth failed
+// Authenticate the client of the interface. To be called early within the
+// handler function for clive pages. It returns false if auth failed
 // and the handler should return without handling anything.
 // When TLS is disabled, or there's no key file, auth is considered ok.
 func Auth(w http.ResponseWriter, r *http.Request) bool {

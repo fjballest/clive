@@ -147,8 +147,8 @@ func (c *Ctlr) Events() chan *Ev {
 	return c.evs
 }
 
-// Set the (application) event channel for the control to the given on.
-// It is an error to try to change the channel once one was set or returned.
+// Set the (application) event channel for the control to the given one.
+// It is an error to call this after the event channel is already set.
 func (c *Ctlr) SendEventsTo(evc chan *Ev) error {
 	c.Lock()
 	defer c.Unlock()
