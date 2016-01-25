@@ -53,29 +53,13 @@ func edit(t *web.Text) {
 	}
 }
 
-func clicks(bs *web.ButtonSet, t *web.Text) {
+func buttons(bs *web.ButtonSet, rs *web.RadioSet, t *web.Text) {
 	in := bs.Events()
+	rs.SendEventsTo(in)
 	for ev := range in {
-		cmd.Warn("got buttons: %v", ev.Args)
+		cmd.Warn("buttons: %v", ev.Args)
 		if ev.Args[0] == "Set" {
 			s := style
-			if bold {
-				s += "b"
-			}
-			if italic {
-				s += "i"
-			}
-			t.SetFont(s);
-		}
-	}
-}
-
-func radio(bs *web.RadioSet, t *web.Text) {
-	in := bs.Events()
-	for ev := range in {
-		cmd.Warn("got radio: %v", ev.Args)
-		if ev.Args[0] == "Set" {
-			s := ev.Args[1]
 			if bold {
 				s += "b"
 			}
@@ -119,14 +103,12 @@ func main() {
 		&web.Button{Tag: "Two", Name: "two"},
 		&web.Button{Tag: "B", Name: "b", Value: &bold},
 		&web.Button{Tag: "I", Name: "i", Value: &italic})
-	go clicks(bs, t)
-
-	// Use radio buttons.
 	rs := web.NewRadioSet(&style, &web.Button{Tag: "R", Name: "r"},
 		&web.Button{Tag: "T", Name: "t"})
+	go buttons(bs, rs, t)
+
 	web.NewPg("/", "Example text editing:", bs, rs, t)
 	web.ServeLoginFor("/")
-	go radio(rs, t)
 
 	go web.Serve(":8181")
 	t.Wait()

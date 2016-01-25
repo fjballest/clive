@@ -9,6 +9,7 @@ import (
 	"clive/x/code.google.com/p/go.net/websocket"
 	"encoding/json"
 	"sync"
+	"errors"
 	"fmt"
 	"io"
 )
@@ -137,13 +138,25 @@ func (c *Ctlr) Closed() bool {
 }
 
 // Return the (application) event channel for the control.
-func (c *Ctlr) Events() <-chan *Ev {
+func (c *Ctlr) Events() chan *Ev {
 	c.Lock()
 	defer c.Unlock()
 	if c.evs == nil {
 		c.evs = make(chan *Ev)
 	}
 	return c.evs
+}
+
+// Set the (application) event channel for the control to the given on.
+// It is an error to try to change the channel once one was set or returned.
+func (c *Ctlr) SendEventsTo(evc chan *Ev) error {
+	c.Lock()
+	defer c.Unlock()
+	if c.evs != nil {
+		return errors.New("event channel already set")
+	}
+	c.evs = evc
+	return nil
 }
 
 func (c *Ctlr) post(ev *Ev) error {
