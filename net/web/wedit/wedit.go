@@ -53,19 +53,44 @@ func edit(t *web.Text) {
 	}
 }
 
-func clicks(bs *web.ButtonSet) {
+func clicks(bs *web.ButtonSet, t *web.Text) {
 	in := bs.Events()
 	for ev := range in {
 		cmd.Warn("got buttons: %v", ev.Args)
+		if ev.Args[0] == "Set" {
+			s := style
+			if bold {
+				s += "b"
+			}
+			if italic {
+				s += "i"
+			}
+			t.SetFont(s);
+		}
 	}
 }
 
-func radio(bs *web.RadioSet) {
+func radio(bs *web.RadioSet, t *web.Text) {
 	in := bs.Events()
 	for ev := range in {
 		cmd.Warn("got radio: %v", ev.Args)
+		if ev.Args[0] == "Set" {
+			s := ev.Args[1]
+			if bold {
+				s += "b"
+			}
+			if italic {
+				s += "i"
+			}
+			t.SetFont(s);
+		}
 	}
 }
+
+var (
+	bold, italic bool
+	style = "r"
+)
 
 func main() {
 	opts := opt.New("[file]")
@@ -90,19 +115,18 @@ func main() {
 		t.NoEdits()
 	}
 
-	// This is to test the button set, not really used here.
-	checked := false
 	bs := web.NewButtonSet(&web.Button{Tag: "One", Name: "one"},
 		&web.Button{Tag: "Two", Name: "two"},
-		&web.Button{Tag: "Chk", Name: "check", Value: &checked})
-	go clicks(bs)
-	var red, blue, green bool
-	rs := web.NewRadioSet(&web.Button{Tag: "Red", Name: "red", Value: &red},
-		&web.Button{Tag: "Blue", Name: "blue", Value: &blue},
-		&web.Button{Tag: "Green", Name: "green", Value: &green})
+		&web.Button{Tag: "B", Name: "b", Value: &bold},
+		&web.Button{Tag: "I", Name: "i", Value: &italic})
+	go clicks(bs, t)
+
+	// Use radio buttons.
+	rs := web.NewRadioSet(&style, &web.Button{Tag: "R", Name: "r"},
+		&web.Button{Tag: "T", Name: "t"})
 	web.NewPg("/", "Example text editing:", bs, rs, t)
 	web.ServeLoginFor("/")
-	go radio(rs)
+	go radio(rs, t)
 
 	go web.Serve(":8181")
 	t.Wait()

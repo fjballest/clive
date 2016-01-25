@@ -37,6 +37,7 @@ import (
 //	close
 //	noedits
 //	edits
+//	font name
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end
@@ -120,6 +121,13 @@ func NewTaggedText(tag string, lines ...string) *Text {
 // Create a new text control with no tag line and the given body lines.
 func NewText(lines ...string) *Text {
 	return newText(false, "", lines...)
+}
+
+// Change the font used.
+// Known fonts are "r", "b", "i", "t".
+// Known combinations are "rb", "tb", and "ri".
+func (t *Text) SetFont(f string) {
+	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"font", f}}
 }
 
 // Prevent user edits

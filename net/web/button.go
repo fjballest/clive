@@ -139,11 +139,11 @@ func (bs *ButtonSet) handle(wev *Ev) {
 		bs.post(wev)
 	case "end":
 		bs.post(wev)
-	case "click":
+	case "click", "Set":
 		if len(ev) < 3 {
 			return
 		}
-		n, _ := strconv.Atoi(ev[1])
+		n, _ := strconv.Atoi(ev[2])
 		if n < 0 || n >= len(bs.els) {
 			return
 		}

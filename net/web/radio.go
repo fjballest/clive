@@ -25,15 +25,23 @@ import (
 //	Set  name idx on
 struct RadioSet {
 	*Ctlr
+	Value *string	// current value
 	els []*Button
 }
 
 // Create a Radio button Set
 // The buttons are check buttons if they have a pointer to a bool
-func NewRadioSet(button ...*Button) *RadioSet {
+func NewRadioSet(value *string, button ...*Button) *RadioSet {
 	bs := &RadioSet {
+		Value: value,
 		Ctlr: newCtlr("buttons"),
 		els: button,
+	}
+	for _, b := range button {
+		if *value == b.Name {
+			b.value = true
+			break
+		}
 	}
 	go func() {
 		for e := range bs.in {
@@ -125,6 +133,9 @@ func (bs *RadioSet) handle(wev *Ev) {
 			b.value = i == n
 			if b.Value != nil  {
 				*b.Value = b.value
+			}
+			if b.value && bs.Value != nil {
+				*bs.Value = b.Name
 			}
 		}
 		bs.post(wev)

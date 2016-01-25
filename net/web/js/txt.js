@@ -39,31 +39,15 @@ function tfixfont() {
 	var ctx = c.getContext("2d");
 	var mod = "";
 	var style = "";
-	switch(this.fontstyle){
-	case 't':
+	style = tfvar;
+	if(this.fontstyle.indexOf('r') === -1) {
 		style = tffixed;
-		break;
-	case 'r':
-	default:
-		style = tfvar;
-		break;
-	case 'rb':
-	case 'br':
-	case 'b':
-		style = tfvar;
-		mod = "bold";
-		break;
-	case 'bt':
-	case 'tb':
-		style = tffixed;
-		mod = "bold";
-		break;
-	case 'i':
-	case 'ri':
-	case 'ir':
-		style = tfvar;
-		mod = "italic";
-		break;
+	}
+	if(this.fontstyle.indexOf('b') > -1) {
+		mod = "bold " + mod;
+	}
+	if(this.fontstyle.indexOf('i') > -1) {
+		mod = "italic " + mod;
 	}
 	var ht = this.fontht - 2;
 	ctx.font = mod + " "  + ht+"px "+style;
@@ -1360,6 +1344,16 @@ function tapply(ev, fromserver) {
 		break;
 	case "edits":
 		this.noedits = false;
+		break;
+	case "font":
+		if(arg.length < 2){
+			console.log(this.divid, "apply: short font");
+			break;
+		}
+		console.log(this.divid, "font", arg[1]);
+		this.fontstyle = arg[1];
+		this.fixfont();
+		this.redrawtext();
 		break;
 	case "eins":
 		if(arg.length < 3){
