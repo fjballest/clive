@@ -41,7 +41,7 @@ const (
 )
 
 var (
-	cacheTout = time.Minute
+	cacheTout = 5*time.Minute
 	syncIval  = time.Minute
 )
 

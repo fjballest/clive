@@ -1,7 +1,7 @@
 /*
-	Clive web interfaces and tools
+	Clive's ink: web based user interfaces.
 */
-package web
+package ink
 
 import (
 	"net/http"

@@ -53,7 +53,7 @@ struct Mux {
 
 var (
 	// Number of messages in chan buffers; can't be < 2
-	nbuf = 128
+	nbuf = 1024
 
 	ErrBadPeer = errors.New("both peers are caller/callee")
 )

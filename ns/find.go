@@ -82,16 +82,13 @@ func (f *finder) find1get(d zx.Dir) error {
 		}
 		return nil
 	}
-	spath := d["spath"]
-	if spath == "" {		// Can't happen now
-		spath = "/"
-	}
 
 	rf, err := DirFs(d)
 	if err != nil {
 		f.ns.vprintf("fnd:\t\tdir fs: %s\n", err)
 		return err
 	}
+	spath := d.SPath()
 	r, ok := rf.(zx.FindGetter)
 	if !ok {
 		f.ns.vprintf("fnd:\t\tdir fs: not a findgetter\n")
@@ -179,16 +176,13 @@ func (f *finder) find1(d zx.Dir) error {
 		}
 		return nil
 	}
-	spath := d["spath"]
-	if spath == "" {
-		spath = "/"
-	}
 
 	rf, err := DirFs(d)
 	if err != nil {
 		f.ns.vprintf("fnd:\t\tdir fs: %s\n", err)
 		return err
 	}
+	spath := d.SPath()
 	r, ok := rf.(zx.Finder)
 	if !ok {
 		f.ns.vprintf("fnd:\t\tdir fs: not a finder\n")

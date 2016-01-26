@@ -14,11 +14,13 @@ import (
 	"bytes"
 	"clive/dbg"
 	"clive/zx"
+	"clive/zx/rzx"
 	"fmt"
 	"path"
 	"sort"
 	"strings"
 	"sync"
+	"io/ioutil"
 	fpath "path"
 )
 
@@ -190,13 +192,30 @@ func specialForm(ln string) zx.Dir {
 	if len(toks) > 2 {
 		return nil
 	}
-	last := toks[len(toks)-1]
-	if n = strings.IndexRune(last, '!'); n < 0 {
-		last = fmt.Sprintf("lfs!%s!/", last)
+	addr := toks[len(toks)-1]
+	if n = strings.IndexRune(addr, '!'); n < 0 {
+		addr = fmt.Sprintf("lfs!%s!/", addr)
+	} else {
+		els := strings.Split(addr, "!")
+		if els[0] != "zx" && els[0] != "lfs" {
+			els = append([]string{"zx"}, els...)
+			addr = "zx!" + addr
+		}
+		switch len(els) {
+		case 6:	// zx!unix!localhost!zx!main!/
+		case 5:	// zx!unix!localhost!zx!main
+			addr += "!/"
+		case 4:	// zx!unix!localhost!zx
+			addr += "!main!/"
+		case 3, 2:
+			oaddr := strings.Join(els[1:], "!")
+			naddr := rzx.FillAddr(oaddr)
+			addr = els[0] +"!"+ naddr + "!main!/"
+		}
 	}
 	return zx.Dir{
 		"path": toks[0],
-		"addr": last,
+		"addr": addr,
 		"name": fpath.Base(toks[0]),
 	}
 }
@@ -206,8 +225,26 @@ func specialForm(ln string) zx.Dir {
 // 	path addr
 // 	path filepath
 // to dial the given addr or use the given lfs filepath and mount it at path.
+//
+// A full addr is proto!net!host!port!tree!path,
+// where proto can be zx|lfs.
+// zx is implied it no proto is given.
+// Any suffix components may be absent so we accept
+//	localhost!zx	-> zx!tcp!localhost!zx!main!/
+//	unix!localhost!zx	-> zx!unix!localhost!zx!main!/
+//	zx!unix!localhost!zx
+//	unix!localhost!zx!other
+//	...
 func Parse(s string) (*NS, error) {
-	lns := strings.SplitN(s, "\n", -1)
+	lns := strings.Split(s, "\n")
+	if len(lns) == 1 || len(lns) == 2 && lns[2] == "" {
+		if !strings.ContainsAny(lns[0], " \t") {
+			dat, err := ioutil.ReadFile(lns[0])
+			if err == nil {
+				lns = strings.Split(string(dat), "\n")
+			}
+		}
+	}
 	ns := New()
 	for _, ln := range lns {
 		ln = strings.TrimSpace(ln)

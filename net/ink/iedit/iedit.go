@@ -1,5 +1,5 @@
 /*
-	Simple editor mostly to test the web UI framework
+	Simple editor mostly to test the ink UI framework
 	Creates a text control to edit the text and then prints the text
 	when it exits.
 */
@@ -9,18 +9,18 @@ import (
 	"clive/cmd"
 	"clive/zx"
 	"clive/cmd/opt"
-	"clive/net/web"
+	"clive/net/ink"
 	"time"
 )
 
-func edits(t *web.Text) {
+func edits(t *ink.Text) {
 	time.Sleep(3)
 	t.Ins([]rune("bar"), 0)
 	t.Ins([]rune("foo"), 8)
 	t.Del(8, 3)
 }
 
-func edit(t *web.Text) {
+func edit(t *ink.Text) {
 	in := t.Events()
 	for ev := range in {
 		cmd.Warn("got text: %v", ev.Args)
@@ -53,7 +53,7 @@ func edit(t *web.Text) {
 	}
 }
 
-func buttons(bs *web.ButtonSet, rs *web.RadioSet, t *web.Text) {
+func buttons(bs *ink.ButtonSet, rs *ink.RadioSet, t *ink.Text) {
 	in := bs.Events()
 	rs.SendEventsTo(in)
 	for ev := range in {
@@ -84,33 +84,33 @@ func main() {
 	opts.NewFlag("r", "read only", &rdonly)
 	cmd.UnixIO()
 	args := opts.Parse()
-	var t *web.Text
+	var t *ink.Text
 	if len(args) == 0 {
-		t = web.NewText("1234", "abc")
+		t = ink.NewText("1234", "abc")
 	} else {
 		dat, err := zx.GetAll(cmd.NS(), cmd.AbsPath(args[0]))
 		if err != nil {
 			cmd.Fatal(err)
 		}
-		t = web.NewTaggedText(args[0] + " Del", string(dat))
+		t = ink.NewTaggedText(args[0] + " Del", string(dat))
 	}
 	go edit(t)
 	if rdonly {
 		t.NoEdits()
 	}
 
-	bs := web.NewButtonSet(&web.Button{Tag: "One", Name: "one"},
-		&web.Button{Tag: "Two", Name: "two"},
-		&web.Button{Tag: "B", Name: "b", Value: &bold},
-		&web.Button{Tag: "I", Name: "i", Value: &italic})
-	rs := web.NewRadioSet(&style, &web.Button{Tag: "R", Name: "r"},
-		&web.Button{Tag: "T", Name: "t"})
+	bs := ink.NewButtonSet(&ink.Button{Tag: "One", Name: "one"},
+		&ink.Button{Tag: "Two", Name: "two"},
+		&ink.Button{Tag: "B", Name: "b", Value: &bold},
+		&ink.Button{Tag: "I", Name: "i", Value: &italic})
+	rs := ink.NewRadioSet(&style, &ink.Button{Tag: "R", Name: "r"},
+		&ink.Button{Tag: "T", Name: "t"})
 	go buttons(bs, rs, t)
 
-	web.NewPg("/", "Example text editing:", bs, rs, t)
-	web.ServeLoginFor("/")
+	ink.NewPg("/", "Example text editing:", bs, rs, t)
+	ink.ServeLoginFor("/")
 
-	go web.Serve(":8181")
+	go ink.Serve(":8181")
 	t.Wait()
 	for rs := range t.Get(0, -1) {
 		cmd.Printf("%s", string(rs))

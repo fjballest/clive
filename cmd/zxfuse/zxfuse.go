@@ -22,7 +22,7 @@ var (
 	mntdir       = "/n/zx"
 	rflag bool
 
-	verb bool
+	verb, xdebug bool
 
 	nocache             bool
 	xaddr               string
@@ -31,6 +31,7 @@ var (
 
 func main() {
 	cmd.UnixIO()
+	opts.NewFlag("X", "debug exported requests", &xdebug)
 	opts.NewFlag("D", "debug requests", &zxfs.Debug)
 	opts.NewFlag("F", "verbose debug requests", &zxfs.Verb)
 	opts.NewFlag("V", "verbose fuse debug", &fs.Debug)
@@ -83,6 +84,14 @@ func main() {
 	}
 	if rflag {
 		xfs = zx.MakeRO(xfs)
+	}
+	srv, err := rzx.NewServer(xaddr, auth.TLSserver)
+	if err != nil {
+		cmd.Fatal("serve: %s", err)
+	}
+	srv.Debug  = xdebug
+	if err := srv.Serve("main", xfs); err != nil {
+		cmd.Warn("serve: %s: %s", xaddr, err)
 	}
 	rs := map[bool]string{false: "rw", true: "ro"}
 	cs := map[bool]string{false: "uncached", true: "cached"}

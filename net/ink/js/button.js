@@ -1,9 +1,10 @@
+"use strict";
 /*
-	js code for the radio buttons control
+	js code for the buttons control
  */
 
 
-function rapply(ev, fromserver) {
+function bapply(ev, fromserver) {
 	if(!ev || !ev.Args || !ev.Args[0]){
 		console.log("apply: nil ev");
 		return;
@@ -30,11 +31,12 @@ function rapply(ev, fromserver) {
 	}
 }
 
+
 /*
 	d is is the (jquery) parent that will supply events.
 	cid is the class id d.
  */
-function mkradio(d, cid, id) {
+function mkbuttons(d, cid, id) {
 	var wsurl = "wss://" + window.location.host + "/ws/" + cid;
 	d.post = function(args) {
 		if(!d.ws){
@@ -60,7 +62,7 @@ function mkradio(d, cid, id) {
 		}
 		return ev;
 	};
-	d.apply = rapply;
+	d.apply = bapply;
 	d.divid = id;
 	d.divcid = cid;
 	d.ws = new WebSocket(wsurl);
@@ -83,5 +85,5 @@ function mkradio(d, cid, id) {
 	};
 }
 
-document.mkradio = mkradio;
+document.mkbuttons = mkbuttons;
 

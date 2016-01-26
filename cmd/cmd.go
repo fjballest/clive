@@ -11,8 +11,6 @@
 
 		- A set of environment variables
 
-		- Handlers for signals
-
 		- A wait channel and exit status
 
 
@@ -31,6 +29,12 @@
 	All commands are expected to forward messages not understood
 	and process those they understand along the way, in very much
 	the same way a roff pipeline works.
+
+	The name space is constructed by the first method that works:
+		1. Using $NS as the description (see ns.Parse).
+		2. Using the contents of $HOME/NS as the description.
+		3. Using "/" 
+	Methods 2 and 3 set $NS to the resulting name space.
 */
 package cmd
 

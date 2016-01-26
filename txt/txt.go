@@ -75,6 +75,7 @@ type Text struct {
 	nedits int // edits applied in edits
 	sz     int
 	marks  []*Mark
+	mark *Mark
 	seek   seek
 	contd  bool
 	vers   int
@@ -119,7 +120,7 @@ func pdel(old, delp0, delp1 int) int {
 
 func (t *Text) markins(p0, n int) {
 	for _, m := range t.marks {
-		if m.Off != p0 || m.equaltoo {
+		if m.Off != p0 || m.equaltoo || m == t.mark {
 			m.Off = pdel(m.Off, p0, n)
 		}
 	}
@@ -404,6 +405,27 @@ func (t *Text) Ins(data []rune, off int) error {
 }
 
 /*
+	Insert text at the given mark, and advance the mark after the
+	insertion.
+*/
+func (t *Text) MarkIns(data []rune, m *Mark) error {
+	t.Lock()
+	defer t.Unlock()
+	t.mark = m
+	contd := t.contd
+	off := m.Off
+	t.contd = false
+	if err := t.ins(data, off); err != nil {
+		return err
+	}
+	t.vers++
+	e := t.addEdit(Eins, off, data, contd)
+	t.markEdit(e)
+	t.mark = nil
+	return nil
+}
+
+/*
 	Delete n runes at off
 */
 func (t *Text) Del(off, n int) []rune {
@@ -418,6 +440,27 @@ func (t *Text) Del(off, n int) []rune {
 	rs := t.del(off, n)
 	e := t.addEdit(Edel, off, rs, contd)
 	t.markEdit(e)
+	return rs
+}
+
+/*
+	Delete n runes at the given mark and keep the mark where it is.
+*/
+func (t *Text) MarkDel(n int, m *Mark) []rune {
+	t.Lock()
+	defer t.Unlock()
+	if n == 0 {
+		return []rune{}
+	}
+	t.mark = m
+	off := m.Off
+	t.vers++
+	contd := t.contd
+	t.contd = false
+	rs := t.del(off, n)
+	e := t.addEdit(Edel, off, rs, contd)
+	t.markEdit(e)
+	t.mark = nil
 	return rs
 }
 

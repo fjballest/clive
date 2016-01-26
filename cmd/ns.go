@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"clive/u"
 	"clive/ns"
 	"clive/dbg"
 	"sync"
@@ -67,12 +68,19 @@ func (c *cwd) dup() *cwd {
 func mkNS() *ns.NS {
 	s := GetEnv("NS")
 	if s == ""  {
-		s = "/"
+		nsf := fpath.Join(u.Home, "NS")
+		if fi, err := os.Stat(nsf); err == nil && !fi.IsDir() {
+			s = nsf
+		} else {
+			s = "/"
+		}
+		SetEnv("NS", s)
 	}
 	n, err := ns.Parse(s)
 	if err != nil {
 		dbg.Warn("mkNS: %s", err)
 		n, _ = ns.Parse("/")
 	}
+dbg.Warn("ns %v", n)
 	return n
 }

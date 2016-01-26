@@ -1,3 +1,4 @@
+"use strict";
 /*
 	js code for the clive text frame
 	which is similar to a Plan 9 text frame
@@ -183,7 +184,7 @@ function tptr2tpos(cx, cy) {
 	var pos = 0;
 	var ll = this.lines[nln+this.ln0];
 	for(; pos <= ll.txt.length; pos++){
-		coff = this.posdx(ll, pos);
+		var coff = this.posdx(ll, pos);
 		if(coff+marginsz > x){
 			if(pos > 0)
 				pos--;
@@ -283,7 +284,7 @@ function tdrawline(xln, i) {
 		ctx.clearRect(0, pos, c.width-1, lnht);
 		return true;
 	}
-	ln = notabs(xln.txt);
+	var ln = notabs(xln.txt);
 	/* draw selected line */
 	if(this.p0 != this.p1){
 		if(this.p0 > xln.off+xln.txt.length || this.p1 < xln.off){

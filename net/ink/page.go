@@ -1,4 +1,4 @@
-package web
+package ink
 
 import (
 	"sync"
@@ -72,7 +72,7 @@ func NewPg(path string, els ...interface{}) *Pg {
 	hndlr := func(w http.ResponseWriter, r *http.Request) {
 		authok := true
 		if !pg.NoAuth {
-			Auth(w, r)
+			authok = Auth(w, r)
 			cmd.Warn("authok = %v", authok)
 		}
 		fmt.Fprintln(w, `<html><head><title>Clive web</title>`);

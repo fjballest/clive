@@ -25,8 +25,8 @@ var (
 // If the path is not ok, it's a panic.
 // DirFs relies on this to resolve addresses of the form lfs!*
 // and the longest path added is used.
-// If fs is not given, a default zux tree is made for it and its a panic if
-// the make fails.
+// If fs is not given, a default zux tree is made for it and it's a panic if
+// we fail to make fs.
 func AddLfsPath(path string, fs zx.Fs) {
 	path, err := zx.UseAbsPath(path)
 	if err != nil {
@@ -49,32 +49,39 @@ func AddLfsPath(path string, fs zx.Fs) {
 	lfs[addr] = fs
 }
 
-// Return the best lfs added for the given path
+// Return the best lfs added for the given path, its root, and the relative path for path
 // Returns nil if there's no such tree
-func Lfs(path string) zx.Fs {
+func Lfs(path string) (zx.Fs, string, string) {
 	lfslk.Lock()
 	defer lfslk.Unlock()
-	var bp string
+	var bp, rel, root string
 	path = fpath.Clean(path)
 	for p, _ := range lfs {
-		if len(p) > len(bp) && strings.HasPrefix(path, p) {
+		if len(p) > len(bp) && zx.HasPrefix(path, p) {
 			bp = p
+			rel = zx.Suffix(path, p)
+			root = p
 		}
 	}
-	return lfs[bp]
+	return lfs[bp], root, rel
 }
 
-// Dial the server for this dir (if not already dialed) and return it.
+// Dial the server for this dir (if not already dialed) and return it,
+// the dir addr is updated.
 func DirFs(d zx.Dir) (zx.Fs, error) {
 	switch p := d.Proto(); p {
 	case "lfs":
-		spath := d.SPath()
-		saddr := d.SAddr()
-		saddr = saddr[4:]
-		fs := Lfs(saddr)
-		if fs == nil {
-			return nil, fmt.Errorf("no zux tree for addr %s spath %s", saddr, spath)
+		addr := d["addr"]
+		toks := strings.Split(d["addr"], "!")	// lfs!root!/path
+		if len(toks) != 3 {
+			return nil, fmt.Errorf("ns: no zux tree for addr %q", addr)
 		}
+		fullpath := fpath.Join(toks[1], toks[2])
+		fs, root, rel := Lfs(fullpath)
+		if fs == nil {
+			return nil, fmt.Errorf("ns: no zux tree for addr %q", addr)
+		}
+		d["addr"] = "lfs!" + root + "!" + rel
 		return fs, nil
 	case "zx":
 		addr := d.SAddr()
@@ -85,7 +92,7 @@ func DirFs(d zx.Dir) (zx.Fs, error) {
 		// rzx does cache dials, no need to do it again here.
 		return rzx.Dial(addr, auth.TLSclient)
 	default:
-		return nil, fmt.Errorf("no tree for addr %q", d["addr"])
+		return nil, fmt.Errorf("ns: no tree for addr %q", d["addr"])
 	}
 }
 
