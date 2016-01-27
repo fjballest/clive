@@ -23,6 +23,7 @@ struct Ev  {
 	Vers    int      // version of the control the event is for
 	Args    []string // events with string arguments
 	Data    []byte   // all other events
+	fn func()	// to run fn synchronously in even handlers
 }
 
 struct view {
@@ -51,6 +52,7 @@ var headers = `
 <script type="text/javascript" src="/js/clive.js"></script>
 <script type="text/javascript" src="/js/txt.js"></script>
 <script type="text/javascript" src="/js/txt.js"></script>
+<script type="text/javascript" src="/js/txt2.js"></script>
 <script type="text/javascript" src="/js/button.js"></script>
 <script type="text/javascript" src="/js/radio.js"></script>
 <script src="/js/jquery-ui/jquery-ui.js"></script>

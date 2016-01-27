@@ -13,14 +13,13 @@ import (
 	"time"
 )
 
-func edits(t *ink.Text) {
+func edits(t *ink.Txt) {
 	time.Sleep(3)
-	t.Ins([]rune("bar"), 0)
-	t.Ins([]rune("foo"), 8)
-	t.Del(8, 3)
+	t.EditTxt()
+	t.EditDone()
 }
 
-func edit(t *ink.Text) {
+func edit(t *ink.Txt) {
 	in := t.Events()
 	for ev := range in {
 		cmd.Warn("got text: %v", ev.Args)
@@ -53,7 +52,7 @@ func edit(t *ink.Text) {
 	}
 }
 
-func buttons(bs *ink.ButtonSet, rs *ink.RadioSet, t *ink.Text) {
+func buttons(bs *ink.ButtonSet, rs *ink.RadioSet, t *ink.Txt) {
 	in := bs.Events()
 	rs.SendEventsTo(in)
 	for ev := range in {
@@ -84,15 +83,15 @@ func main() {
 	opts.NewFlag("r", "read only", &rdonly)
 	cmd.UnixIO()
 	args := opts.Parse()
-	var t *ink.Text
+	var t *ink.Txt
 	if len(args) == 0 {
-		t = ink.NewText("1234", "abc")
+		t = ink.NewTxt("1234", "abc")
 	} else {
 		dat, err := zx.GetAll(cmd.NS(), cmd.AbsPath(args[0]))
 		if err != nil {
 			cmd.Fatal(err)
 		}
-		t = ink.NewTaggedText(args[0] + " Del", string(dat))
+		t = ink.NewTaggedTxt(args[0] + " Del", string(dat))
 	}
 	go edit(t)
 	if rdonly {

@@ -27,7 +27,6 @@ var (
 	once sync.Once
 )
 
-
 func jsHandler(w http.ResponseWriter, r *http.Request) {
 	p := fpath.Clean(r.URL.Path)
 	p = fpath.Join(jspath, p)

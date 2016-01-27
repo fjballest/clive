@@ -39,6 +39,7 @@ type Edit struct {
 	A position kept in text despite insertions/removals
 */
 type Mark struct {
+	Name string
 	Off      int
 	equaltoo bool
 }
@@ -74,7 +75,7 @@ type Text struct {
 	edits  []*Edit
 	nedits int // edits applied in edits
 	sz     int
-	marks  []*Mark
+	marks  map[string]*Mark
 	mark *Mark
 	seek   seek
 	contd  bool
@@ -164,7 +165,7 @@ func NewEditing(txt []rune) *Text {
 	t := &Text{
 		data:  make([][]rune, 0, 128),
 		edits: make([]*Edit, 0, 128),
-		marks: make([]*Mark, 0, 4),
+		marks: map[string]*Mark{},
 		seek:  seek{off: -2},
 	}
 	if len(txt) > 0 {
@@ -179,7 +180,7 @@ func NewEditing(txt []rune) *Text {
 func New(txt []rune) *Text {
 	t := &Text{
 		data:  make([][]rune, 0, 128),
-		marks: make([]*Mark, 0, 4),
+		marks: map[string]*Mark{},
 		seek:  seek{off: -2},
 	}
 	if len(txt) > 0 {
@@ -408,7 +409,7 @@ func (t *Text) Ins(data []rune, off int) error {
 	Insert text at the given mark, and advance the mark after the
 	insertion.
 */
-func (t *Text) MarkIns(data []rune, m *Mark) error {
+func (t *Text) MarkIns(m *Mark, data []rune) error {
 	t.Lock()
 	defer t.Unlock()
 	t.mark = m
@@ -444,9 +445,18 @@ func (t *Text) Del(off, n int) []rune {
 }
 
 /*
+	Return a mark by name
+*/
+func (t *Text) Mark(name string) *Mark {
+	t.Lock()
+	defer t.Unlock()
+	return t.marks[name]
+}
+
+/*
 	Delete n runes at the given mark and keep the mark where it is.
 */
-func (t *Text) MarkDel(n int, m *Mark) []rune {
+func (t *Text) MarkDel(m *Mark, n int) []rune {
 	t.Lock()
 	defer t.Unlock()
 	if n == 0 {
@@ -628,28 +638,20 @@ func (t *Text) DelAll() {
 /*
 	Place a mark in the text, keeping its position despite
 	further inserts and removes.
-	If equaltoo is true, the mark advances due to insertions
-	exactly at off. Otherwise, an insert at off does not
-	advance the mark.
 */
-func (t *Text) Mark(off int, equaltoo bool) *Mark {
+func (t *Text) SetMark(name string, off int) *Mark {
 	t.Lock()
 	defer t.Unlock()
-	m := &Mark{off, equaltoo}
-	t.marks = append(t.marks, m)
+	m := &Mark{name, off, true}
+	t.marks[name] = m
 	return m
 }
 
 /*
 	Remove a mark from the text
 */
-func (t *Text) Unmark(m *Mark) {
+func (t *Text) DelMark(name string) {
 	t.Lock()
 	defer t.Unlock()
-	for i := 0; i < len(t.marks); i++ {
-		if t.marks[i] == m {
-			t.marks = append(t.marks[0:i], t.marks[i+1:]...)
-			return
-		}
-	}
+	delete(t.marks, name)
 }

@@ -840,8 +840,11 @@ function tautoresize() {
 	}
 	var ht = (nln+2) * this.fontht;
 	var p = $(this);
-	console.log("auto rsz", nln, ht, p.height());
 	var oldht = p.height();
+	if (oldht >= 800) {
+		return;
+	}
+	console.log("auto rsz", nln, ht, p.height());
 	if (oldht < ht - this.fontht || oldht > ht + this.fontht) {
 		var delta = ht - oldht;
 		p = $(this).parent();
@@ -1118,7 +1121,7 @@ function tmwheel(e) {
 
 function tmdown(e) {
 	$("#" + this.divid ).focus();
-	// console.log("tmdown ", this.divid, e);
+	if(0)console.log("tmdown ", this.divid, e);
 	this.selectstart();
 	e.preventDefault();
 	this.secondary = 0;		/* paranoia: see tm23 */
@@ -1343,6 +1346,16 @@ function tapply(ev, fromserver) {
 	var arg = ev.Args
 	if(0)console.log(this.divid, "apply", ev.Args, "v", ev.Vers, this.vers);
 	switch(arg[0]){
+	case "held":
+		this.locked();
+		break;
+	case "rlse":
+		if(this.selecting) {
+			this.mustunlock = true;
+			break;
+		}
+		this.unlocked();
+		break;
 	case "noedits":
 		this.noedits = true;
 		break;
@@ -1371,6 +1384,9 @@ function tapply(ev, fromserver) {
 		var p0 = parseInt(arg[2]);
 		var op0 = this.p0;
 		var op1 = this.p1;
+		if(op0 != op1) {
+			this.tsetsel(op0, op0);
+		}
 		this.p0 = p0;
 		this.p1 = p0;
 		this.tinslines(arg[1]);
@@ -1398,8 +1414,11 @@ function tapply(ev, fromserver) {
 		var p1 = parseInt(arg[2]);
 		var op0 = this.p0;
 		var op1 = this.p1;
+		if(op0 != op1) {
+			this.tsetsel(op0, op0);
+		}
 		this.p0 = p0;
-		this.p1 = p1;
+		this.p1 = p0;
 		try{
 			this.tdel();
 		}catch(ex){
@@ -1438,7 +1457,9 @@ function tapply(ev, fromserver) {
 		}
 		this.vers = parseInt(arg[1]);
 		this.redrawtext();
-		this.autoresize();
+		if(!this.userresized) {
+			this.autoresize();
+		}
 		this.dump();
 		break
 	case "close":
@@ -1449,6 +1470,103 @@ function tapply(ev, fromserver) {
 	}
 }
 
+function tlocknkeydown(e) {
+	if(!this.locking) {
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		this.whenlocked = [];
+	}
+	var self = this;
+	this.whenlocked.push(function() {
+		tkeydown.call(self, e);
+	});
+	return true;
+}
+
+function tlocknevkey(e) {
+	if(!this.locking) {
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		this.whenlocked = [];
+	}
+	var self = this;
+	this.whenlocked.push(function() {
+		tevkey.call(self, e);
+	});
+}
+
+function tlocknkeyup(e) {
+	if(!this.locking) {
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		this.whenlocked = [];
+	}
+	var self = this;
+	this.whenlocked.push(function() {
+		tkeyup.call(self, e);
+	});
+}
+
+function tlocknmdown(e) {
+	if(!this.locking) {
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		this.whenlocked = [];
+	}
+	var self = this;
+	this.whenlocked.push(function() {
+		tmdown.call(self, e);
+	});
+}
+
+function tlocknmup(e) {
+	if(!this.locking) {
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		this.whenlocked = [];
+	}
+	var self = this;
+	this.whenlocked.push(function() {
+		tmup.call(self, e);
+	});
+}
+
+function tlocked() {
+	if(this.locking) {
+		this.locking = false;
+		this.tkeydown = tkeydown;
+		this.tkeypress = tevkey;
+		this.tkeyup = tkeyup;
+		this.tmdown = tmdown;
+		this.tmup = tmup;
+		for(var i = 0; i < this.whenlocked.length; i++) {
+			this.whenlocked[i]();
+		}
+		this.whenlocked = [];
+	}
+}
+
+function tunlocked() {
+	this.locking = false;
+	this.mustunlock = false;
+	this.whenlocked = [];
+	this.tkeydown = tlocknkeydown;
+	this.tkeypress = tlocknevkey;
+	this.tkeyup = tlocknkeyup;
+	this.tmdown = tlocknmdown;
+	this.tmup = tlocknmup;
+	this.mustunlock = false;
+	this.post(["rlsed"]);
+	// collapse the selection or other's might insert in the middle.
+	if(this.p0 != this.p1)
+		this.tsetsel(this.p0, this.p1, true);
+}
+
 function tselectstart() {
 	if(!this.selecting) {
 		console.log("selecting...");
@@ -1457,18 +1575,14 @@ function tselectstart() {
 }
 
 function tselectend() {
+	if(this.mustunlock) {
+		this.tunlocked();
+	}
 	if(!this.selecting) {
 		return;
 	}
 	console.log("select end");
 	this.selecting = false;
-	if(!this.deferred) {
-		return;
-	}
-	for(var i = 0; i < this.deferred.length; i++) {
-		this.apply(this.deferred[i], true);
-	}
-	this.deferred = [];
 }
 
 function tclear() {
@@ -1490,7 +1604,7 @@ function tclear() {
 	cid is the class id for e.
 	t is the tag
  */
-function mktext(d, t, e, cid, id) {
+function mktxt(d, t, e, cid, id) {
 	var ctx=e.getContext("2d", {alpha: false});
 	e.divcid = cid;
 	e.divid = id;
@@ -1531,22 +1645,30 @@ function mktext(d, t, e, cid, id) {
 	e.tinslines = ttinslines;
 	e.tpos2pos = ttpos2pos;
 	e.tsetsel = ttsetsel;
-	e.untick = tuntick;
+	e.untick = tuntick; 
 	e.updatescrl = tupdatescrl;
 
 	e.selectstart = tselectstart;
 	e.selectend = tselectend;
-	e.deferred = [];
 
 	e.noedits = false;
 
-	e.tkeydown = tkeydown;
-	e.tkeypress = tevkey;
-	e.tkeyup = tkeyup;
+	e.locked = tlocked;
+	e.unlocked = tunlocked;
 
-	e.onmousedown = tmdown;
+	e.tkeydown = tlocknkeydown;
+//	e.tkeydown = tkeydown;
+	e.tkeypress = tlocknevkey;
+//	e.tkeypress = tevkey;
+	e.tkeyup = tlocknkeyup;
+//	e.tkeyup = tkeyup;
+
+	e.onmousedown = tlocknmdown;
+//	e.onmousedown = tmdown;
+	e.onmouseup = tlocknmup;
+//	e.onmouseup = tmup;
+
 	e.onmousemove = tevxy;
-	e.onmouseup = tmup;
 	e.onmousewheel = tmwheel;
 	e.onpaste = function(){return false;}
 	e.oncontextmenu = function(){return false;}
@@ -1636,19 +1758,12 @@ function mktext(d, t, e, cid, id) {
 			console.log("update: no objet id");
 			return;
 		}
-		//console.log("update to", o.Id);
-		// TODO: when applying eins/edel this should check if
-		// our version is ok, and, if it's not, it should just ask for
-		// a full reload (eg., by setting and ins out of order)
-		if(e.selecting) {
-			e.deferred.push(o);
-			return;
-		}
-		e.apply(o, true)
+		if(0)console.log("update to", o.Id, o.Args);
+		e.apply(o, true);
 	};
 	e.ws.onclose = function() {
 		console.log("text socket " + wsurl+ " closed\n");
-		d.replaceWith("<h3>disconnected</h3>")
+		d.replaceWith("<h3>disconnected</h3>");
 	};
 	d.resizable().on('resize', function() {
 		console.log("resized");
@@ -1669,4 +1784,5 @@ function mktext(d, t, e, cid, id) {
 	}
 }
 
-document.mktext = mktext
+document.mktxt = mktxt
+
