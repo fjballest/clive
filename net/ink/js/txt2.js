@@ -15,7 +15,7 @@
  * Hack to make sure the fixed and var width fonts exist, and
  * global font names for those variants.
  */
-var tffixed = "Consoles";
+var tffixed = "monospace";
 var tfvar = "Lucida Grande";	// or Verdana
 var fontscheckedout = false;
 
