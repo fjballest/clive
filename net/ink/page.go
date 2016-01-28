@@ -13,6 +13,7 @@ import (
 
 // A web page used as a user interface.
 struct Pg {
+	Tag string
 	sync.Mutex
 	Path string
 	NoAuth bool	// set to true to disable auth
@@ -74,9 +75,14 @@ func NewPg(path string, els ...interface{}) *Pg {
 			authok = Auth(w, r)
 			cmd.Warn("authok = %v", authok)
 		}
-		fmt.Fprintln(w, `<html><head><title>Clive web</title>`);
+		tag := pg.Tag
+		if tag == "" {
+			tag = "Clive"
+		}
+		title := html.EscapeString(tag)
+		fmt.Fprintln(w, `<html><head><title>`+title+`</title>`);
 		WriteHeaders(w);
-		fmt.Fprintln(w, `</head><body>`);
+		fmt.Fprintln(w, `</head><body style="background-color:#ddddc8">`);
 		if !authok {
 			return
 		}

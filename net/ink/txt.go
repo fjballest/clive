@@ -11,6 +11,7 @@ import (
 	"io"
 	"html"
 	"strings"
+	"sync"
 )
 
 // Events sent from the viewer:
@@ -27,7 +28,7 @@ import (
 //	neeedreload
 //	intr	esc|...
 //	hold
-//	rlse
+//	rlsed
 // Events sent from the viewer but not for the user:
 //	id
 // Events sent to the viewer (besides all reflected events):
@@ -41,6 +42,7 @@ import (
 //	edits
 //	font name
 //	held
+//	rlse
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end
@@ -64,6 +66,8 @@ struct Txt {
 
 	owner string
 	held []*Ev
+	ngets int
+	getslk sync.Mutex
 }
 
 // Write the HTML for the text control to a page.
@@ -71,7 +75,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := t.newViewId()
 
 	n, err := io.WriteString(w, `
-		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; overflow:auto;width:95%;height:300">`)
+		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; width:100%;height:300; background-color:#ffffea">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -85,7 +89,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 		}
 	}
 	n, err = io.WriteString(w, `
-<canvas id="`+vid+`c" class="txt1c" width="100%" height="100%" style="border:1px solid black;"></canvas>
+<canvas id="`+vid+`c" class="txt1c" width="100%" height="100%" style="border:1px;"></canvas>
 </div>
 <script>
 	$(function(){
@@ -148,25 +152,35 @@ func (t *Txt) Edits() {
 // further updates from the views will fail due to wrong version,
 // and the caller must call EditDone() when done so the views are reloaded
 // with the new text.
-func (t *Txt) EditTxt() *txt.Text {
-	c := make(chan bool, 1)
-	rdy := func() {
-		c <- true
+func (t *Txt) GetText() *txt.Text {
+	t.getslk.Lock()
+	defer t.getslk.Unlock()
+	if t.ngets == 0 {
+		c := make(chan bool)
+		done := func() {
+			c <- true
+		}
+		t.in <- &Ev{Id: t.Id, Src: "app", Args:[]string{"hold"}, fn: done}
+		<-c
 	}
-	t.in <- &Ev{Id: t.Id, Src: "app", Args: []string{"hold"}, fn: rdy}
-	<-c
+	t.ngets++
 	return t.t
 }
 
-// After calling EditTxt() and using the txt.Text to edit by program,
-// this must be called to reload the views with the new text.
-func (t *Txt) EditDone() {
-	c := make(chan bool, 1)
-	rdy := func() {
-		c <- true
+// After calling GetText() and using the txt.Text to edit by program,
+// this must be called to unlock the text and reload the views with the new text.
+func (t *Txt) PutText() {
+	t.getslk.Lock()
+	defer t.getslk.Unlock()
+	t.ngets--
+	if t.ngets == 0 {
+		c := make(chan bool)
+		done := func() {
+			c <- true
+		}
+		t.in <- &Ev{Id: t.Id, Src: "app", Args:[]string{"rlsed"}, fn: done}
+		<-c
 	}
-	t.in <- &Ev{Id: t.Id, Src: "app", Args: []string{"rlse"}, fn: rdy}
-	<-c
 	t.updateAll()
 }
 
@@ -309,12 +323,15 @@ func (t *Txt) handler() {
 		if len(e.Args) > 0 {
 			h = h(e)
 		}
-		if e.fn != nil {
+		if e.fn != nil && (len(t.held) == 0 || t.held[len(t.held)-1] != e) {
+			// call fn, the even was not requeued; it's done.
 			e.fn()
 		}
-		// TODO: This may lead to a close loop if
+		// TODO: This may lead to a tight loop if
 		// we want to receive just from one view and have queued events
-		// that must be deferred until we do receive from the view.
+		// that must be deferred until we do receive from that view.
+		// Should this be a problem, we must teach Ctlr how to receive
+		// from just one view for a while.
 	}
 }
 
@@ -337,7 +354,7 @@ func (t *Txt) handleUnlocked(wev *Ev) handler {
 			panic("owner for a free text")
 		}
 		t.owner = wev.Src
-		if wev.Src != "" {
+		if wev.Src != "" && wev.Src != "app" {
 			to := t.viewOut(wev.Src)
 			to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"held"}}
 		}
@@ -354,7 +371,7 @@ func (t *Txt) handleLocked(wev *Ev) handler {
 		panic("no owner for a locked text")
 	}
 	if wev.Src != t.owner {
-		if ev[0] == "end" || ev[0] == "start" {
+		if ev[0] == "end" || ev[0] == "start" || ev[0] == "intr" {
 			t.apply(wev);
 			return t.handleLocked
 		}
@@ -364,8 +381,10 @@ func (t *Txt) handleLocked(wev *Ev) handler {
 		}
 		t.held = append(t.held, wev)
 		if ev[0] == "hold" {
-			to := t.viewOut(t.owner)
-			to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"rlse"}}
+			if t.owner != "app" {
+				to := t.viewOut(t.owner)
+				to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"rlse"}}
+			}
 			cmd.Dprintf("%s: releasing %s for %s\n", t.Id, t.owner, wev.Src)
 			return t.handleReleasing
 		}
@@ -389,7 +408,7 @@ func (t *Txt) handleReleasing(wev *Ev) handler {
 		panic("no owner for a releasing text")
 	}
 	if wev.Src != t.owner {
-		if ev[0] == "end" || ev[0] == "start" {
+		if ev[0] == "end" || ev[0] == "start" || ev[0] == "intr" {
 			t.apply(wev)
 		} else {
 			t.held = append(t.held, wev)
@@ -424,7 +443,9 @@ func (t *Txt) apply(wev *Ev) {
 		return
 	case "hold", "held", "rlse", "rlsed":
 		cmd.Warn("%s: unexpected %v\n", t.Id, wev)
-panic("bug")
+		// If we get a hold it might be a race on the javascript code,
+		// let's see if that happens.
+		panic("javascript hold bug?")
 	case "tag":
 		cmd.Dprintf("%s: %v\n", t.Id, wev)
 		t.post(wev)

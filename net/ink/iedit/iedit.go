@@ -10,13 +10,17 @@ import (
 	"clive/zx"
 	"clive/cmd/opt"
 	"clive/net/ink"
-	"time"
 )
 
 func edits(t *ink.Txt) {
-	time.Sleep(3)
-	t.EditTxt()
-	t.EditDone()
+	t.GetText()
+	defer t.PutText()
+	// and we'd edit here....
+	// XXX: It would be good to have t.Ins and t.Del to do an edit that's just
+	// ins or del
+	// XXX: We might implement marks in the js and debug the current ones
+	// in txt, and then add MarkIns to keep on adding text to the mark without
+	// holding the text.
 }
 
 func edit(t *ink.Txt) {
@@ -106,7 +110,8 @@ func main() {
 		&ink.Button{Tag: "T", Name: "t"})
 	go buttons(bs, rs, t)
 
-	ink.NewPg("/", "Example text editing:", bs, rs, t)
+	pg := ink.NewPg("/", "Example text editing:", bs, rs, t)
+	pg.Tag = "Clive's iedit"
 	ink.ServeLoginFor("/")
 
 	go ink.Serve(":8181")

@@ -122,7 +122,7 @@ func pdel(old, delp0, delp1 int) int {
 func (t *Text) markins(p0, n int) {
 	for _, m := range t.marks {
 		if m.Off != p0 || m.equaltoo || m == t.mark {
-			m.Off = pdel(m.Off, p0, n)
+			m.Off = pins(m.Off, p0, n)
 		}
 	}
 }
@@ -406,8 +406,16 @@ func (t *Text) Ins(data []rune, off int) error {
 }
 
 /*
-	Insert text at the given mark, and advance the mark after the
-	insertion.
+	Return a mark by name
+*/
+func (t *Text) Mark(name string) *Mark {
+	t.Lock()
+	defer t.Unlock()
+	return t.marks[name]
+}
+
+/*
+	Insert runes at the given mark, moving the mark after them.
 */
 func (t *Text) MarkIns(m *Mark, data []rune) error {
 	t.Lock()
@@ -427,6 +435,33 @@ func (t *Text) MarkIns(m *Mark, data []rune) error {
 }
 
 /*
+	Delete n runes right before the given mark and keep the mark where it is.
+*/
+func (t *Text) MarkDel(m *Mark, n int) []rune {
+	t.Lock()
+	defer t.Unlock()
+	if n == 0 {
+		return []rune{}
+	}
+	if m.Off < 0 {
+		m.Off = 0
+	}
+	t.mark = m
+	if n > m.Off {
+		n = m.Off
+	}
+	off := m.Off - n
+	t.vers++
+	contd := t.contd
+	t.contd = false
+	rs := t.del(off, n)
+	e := t.addEdit(Edel, off, rs, contd)
+	t.markEdit(e)
+	t.mark = nil
+	return rs
+}
+
+/*
 	Delete n runes at off
 */
 func (t *Text) Del(off, n int) []rune {
@@ -441,36 +476,6 @@ func (t *Text) Del(off, n int) []rune {
 	rs := t.del(off, n)
 	e := t.addEdit(Edel, off, rs, contd)
 	t.markEdit(e)
-	return rs
-}
-
-/*
-	Return a mark by name
-*/
-func (t *Text) Mark(name string) *Mark {
-	t.Lock()
-	defer t.Unlock()
-	return t.marks[name]
-}
-
-/*
-	Delete n runes at the given mark and keep the mark where it is.
-*/
-func (t *Text) MarkDel(m *Mark, n int) []rune {
-	t.Lock()
-	defer t.Unlock()
-	if n == 0 {
-		return []rune{}
-	}
-	t.mark = m
-	off := m.Off
-	t.vers++
-	contd := t.contd
-	t.contd = false
-	rs := t.del(off, n)
-	e := t.addEdit(Edel, off, rs, contd)
-	t.markEdit(e)
-	t.mark = nil
 	return rs
 }
 
@@ -580,14 +585,45 @@ func (t *Text) Getc(off int) rune {
 }
 
 /*
+	Return the text as a string
+*/
+func (t *Text) String() string {
+	var w bytes.Buffer
+	for _, d := range t.data {
+		w.WriteString(string(d))
+	}
+	return w.String()
+}
+
+/*
 	Debug: print the tag followed by the state of text
 */
 func (t *Text) Sprint() string {
+	return t.sprint(false)
+}
+
+/*
+	Debug: print the tag followed by the state of text
+	including marks
+*/
+func (t *Text) SprintMarks() string {
+	return t.sprint(true)
+}
+
+func (t *Text) sprint(markstoo bool) string {
 	var w bytes.Buffer
 	fmt.Fprintf(&w, "%d runes\n", t.sz)
+	off := 0
 	for i, d := range t.data {
-		fmt.Fprintf(&w, "%d: [%d]'", i, len(d))
+		fmt.Fprintf(&w, "%d[%d]: [%d]'", i, off, len(d))
 		for j := 0; j < len(d); j++ {
+			if markstoo {
+				for _, p := range t.marks {
+					if p.Off == off {
+						fmt.Fprintf(&w, "<%s>", p.Name)
+					}
+				}
+			}
 			if d[j] == '\n' {
 				fmt.Fprintf(&w, "\\n")
 			} else if d[j] == '	' {
@@ -597,11 +633,19 @@ func (t *Text) Sprint() string {
 			} else {
 				fmt.Fprintf(&w, "%c", d[j])
 			}
+			off++
+			if markstoo && j == len(d)-1 && i == len(t.data)-1 {
+				for _, p := range t.marks {
+					if p.Off == off {
+						fmt.Fprintf(&w, "<%s>", p.Name)
+					}
+				}
+			}
 		}
 		fmt.Fprintf(&w, "'\n")
 	}
 	for m, p := range t.marks {
-		fmt.Fprintf(&w, "mark[%d] = %v\n", m, p)
+		fmt.Fprintf(&w, "mark[%s] = %v\n", m, p)
 	}
 	fmt.Fprintf(&w, "\n")
 	if t.edits == nil {
@@ -642,7 +686,7 @@ func (t *Text) DelAll() {
 func (t *Text) SetMark(name string, off int) *Mark {
 	t.Lock()
 	defer t.Unlock()
-	m := &Mark{name, off, true}
+	m := &Mark{name, off, false}
 	t.marks[name] = m
 	return m
 }
@@ -654,4 +698,8 @@ func (t *Text) DelMark(name string) {
 	t.Lock()
 	defer t.Unlock()
 	delete(t.marks, name)
+}
+
+func (m *Mark) String() string {
+	return fmt.Sprintf("[%s %d]", m.Name, m.Off)
 }

@@ -15,7 +15,7 @@
  * Hack to make sure the fixed and var width fonts exist, and
  * global font names for those variants.
  */
-var tffixed = "Courier New";
+var tffixed = "Consoles";
 var tfvar = "Lucida Grande";	// or Verdana
 var fontscheckedout = false;
 
@@ -266,9 +266,21 @@ function tupdatescrl() {
 	var ctx = c.getContext("2d", {alpha: false});
 	var y0 = this.ln0 / this.lines.length * c.height;
 	var dy = this.frlines / this.lines.length * c.height;
-	ctx.clearRect(c.width-1, 0, 1, y0);
-	ctx.fillRect(c.width-1, y0, 1, dy);
-	ctx.clearRect(c.width-1, y0+dy, 1, c.height-(y0+dy));
+
+	// right
+	ctx.clearRect(c.width-2, 0, 2, y0);
+	var old = ctx.fillStyle;
+	ctx.fillStyle = "#7373FF";
+	ctx.fillRect(c.width-2, y0, 2, dy);
+	ctx.fillStyle = old;
+	ctx.clearRect(c.width-2, y0+dy, 2, c.height-(y0+dy));
+
+	// left
+	if(0) {	
+		ctx.clearRect(0, 0, 1, y0);
+		ctx.fillRect(0, y0, 1, dy);
+		ctx.clearRect(0, y0+dy, 1, c.height-(y0+dy));
+	}
 }
 
 function tdrawline(xln, i) {
@@ -281,7 +293,7 @@ function tdrawline(xln, i) {
 	if(pos >= c.height)
 		return false;
 	if(!xln){
-		ctx.clearRect(0, pos, c.width-1, lnht);
+		ctx.clearRect(1, pos, c.width-1, lnht);
 		return true;
 	}
 	var ln = notabs(xln.txt);
@@ -289,7 +301,7 @@ function tdrawline(xln, i) {
 	if(this.p0 != this.p1){
 		if(this.p0 > xln.off+xln.txt.length || this.p1 < xln.off){
 			/* draw normal line */
-			ctx.clearRect(0, pos, c.width-1, lnht);
+			ctx.clearRect(1, pos, c.width-3, lnht);
 			ctx.fillText(ln, marginsz, pos);
 			return true;
 		}
@@ -302,7 +314,7 @@ function tdrawline(xln, i) {
 			var s0ln = notabs(xln.txt.slice(0, s0));
 			s0pos = s0ln.length;
 			dx = marginsz + ctx.measureText(s0ln).width;
-			ctx.clearRect(0, pos, dx, lnht);
+			ctx.clearRect(1, pos, dx, lnht);
 			ctx.fillText(s0ln, marginsz, pos);
 		}
 		/* from p0 to p1 selected */
@@ -320,7 +332,7 @@ function tdrawline(xln, i) {
 		else
 			ctx.fillStyle = "#D1A0A0";
 		if(this.p1 > xln.off+xln.txt.length)
-			ctx.fillRect(dx, pos, c.width-dx-1, lnht);
+			ctx.fillRect(dx, pos, c.width-dx-3, lnht);
 		else
 			ctx.fillRect(dx, pos, sx, lnht);
 		ctx.fillStyle = old;
@@ -328,7 +340,7 @@ function tdrawline(xln, i) {
 		if(this.p1 > xln.off+xln.txt.length)
 			return true;
 		/* from p1 unselected */
-		ctx.clearRect(dx+sx, pos, c.width-(dx+sx)-1, lnht);
+		ctx.clearRect(dx+sx, pos, c.width-(dx+sx)-3, lnht);
 		if(s1 >= xln.txt.length)
 			return true;
 		var s2ln = notabs(xln.txt.slice(s0+s1, xln.txt.length), s1pos);
@@ -337,7 +349,7 @@ function tdrawline(xln, i) {
 	}
 
 	/* draw unselected line */
-	ctx.clearRect(0, pos, c.width-1, lnht);
+	ctx.clearRect(1, pos, c.width-3, lnht);
 	ctx.fillText(ln, marginsz, pos);
 
 	/* draw tick if needed */
@@ -821,10 +833,15 @@ function tmayresize(user) {
 	}
 	var p = $(this).parent();
 	var dx = p.width();
-	var dy = p.height();
+	var dy = p.height() - 5;
 	console.log('text resized', dx, dy);
 	var c = this;
 	var ctx = this.getContext("2d", {alpha: false});
+	var tag = $("#"+this.divid+"t")
+	if(tag) {
+		var ty = tag.height();
+		dy -= ty;
+	}
 	c.width = dx;
 	c.height = dy;
 	this.nlines = Math.floor(c.height/this.fontht);
@@ -1471,6 +1488,9 @@ function tapply(ev, fromserver) {
 }
 
 function tlocknkeydown(e) {
+	if(this.islocked) {
+		return tkeydown.call(this, e);
+	}
 	if(!this.locking) {
 		this.locking = true;
 		this.post(["hold"]);
@@ -1485,6 +1505,9 @@ function tlocknkeydown(e) {
 }
 
 function tlocknevkey(e) {
+	if(this.islocked) {
+		return tevkey.call(this, e);
+	}
 	if(!this.locking) {
 		this.locking = true;
 		this.post(["hold"]);
@@ -1498,6 +1521,9 @@ function tlocknevkey(e) {
 }
 
 function tlocknkeyup(e) {
+	if(this.islocked) {
+		return tkeyup.call(this, e);
+	}
 	if(!this.locking) {
 		this.locking = true;
 		this.post(["hold"]);
@@ -1511,6 +1537,9 @@ function tlocknkeyup(e) {
 }
 
 function tlocknmdown(e) {
+	if(this.islocked) {
+		return tmdown.call(this, e);
+	}
 	if(!this.locking) {
 		this.locking = true;
 		this.post(["hold"]);
@@ -1524,6 +1553,9 @@ function tlocknmdown(e) {
 }
 
 function tlocknmup(e) {
+	if(this.islocked) {
+		return tmup.call(this, e);
+	}
 	if(!this.locking) {
 		this.locking = true;
 		this.post(["hold"]);
@@ -1537,8 +1569,11 @@ function tlocknmup(e) {
 }
 
 function tlocked() {
+	if(this.islocked)
+		return;
 	if(this.locking) {
 		this.locking = false;
+		this.islocked = true;
 		this.tkeydown = tkeydown;
 		this.tkeypress = tevkey;
 		this.tkeyup = tkeyup;
@@ -1552,6 +1587,7 @@ function tlocked() {
 }
 
 function tunlocked() {
+	this.islocked = false;
 	this.locking = false;
 	this.mustunlock = false;
 	this.whenlocked = [];
@@ -1617,11 +1653,11 @@ function mktxt(d, t, e, cid, id) {
 	e.fontstyle = 'r';
 	checkoutfonts(ctx);
 	e.tabwid = ctx.measureText("XXXX").width;
-	e.fontht = 16; // TODO: use font height from fixfont
+	e.fontht = 14; // TODO: use font height from fixfont
 	e.buttons = 0;
 	e.nclicks = {1: 0, 2: 0, 4: 0};
 	e.userresized = false;
-
+	ctx.fillStyle = "#FFFFEA";
 	e.drawline = tdrawline;
 	e.dump = tdump;
 	e.evxy = tevxy;
@@ -1765,12 +1801,16 @@ function mktxt(d, t, e, cid, id) {
 		console.log("text socket " + wsurl+ " closed\n");
 		d.replaceWith("<h3>disconnected</h3>");
 	};
-	d.resizable().on('resize', function() {
-		console.log("resized");
+	d.resizable({
+		handles: 's'
+	}).on('resize', function() {
+		console.log("user resized");
 		e.mayresize(true);
 	});
-	d.resizable("option", "ghost", true);
-
+	$(window).resize(function() {
+		console.log("window resized");
+		e.mayresize(false);
+	});
 	if(t) {
 		$("#"+id+"t").getWordByEvent('click', function tagclick(ev, word) {
 			console.log("tag click on ", ev, word);
