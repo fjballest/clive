@@ -50,7 +50,7 @@ function tfixfont() {
 	if(this.fontstyle.indexOf('i') > -1) {
 		mod = "italic " + mod;
 	}
-	var ht = this.fontht - 2;
+	var ht = this.fontht - 4;
 	ctx.font = mod + " "  + ht+"px "+ style;
 	ctx.textBaseline="top";
 }
@@ -167,19 +167,17 @@ function tptr2tpos(cx, cy) {
 	var x = cx;
 	var y = cy;
 	var ovf = 0;
+	x *= this.tscale;
+	y *= this.tscale;
 	var nln = Math.floor(y/this.fontht);
 	if(nln < 0 || this.lines.length == 0)
 		return [0, 0, ovf];
 	if(nln+this.ln0 >= this.lines.length){
 		var ll = this.lines[this.lines.length-1];
-		return [ll.txt.length, nln, 1];
+		return [ll.txt.length, this.frlines-1, 1];
 	}
 	if(nln > this.frlines){		// overflow
-		if(this.frlines+this.ln0 >= this.lines.length){
-			var ll = this.lines[this.lines.length-1];
-			return [ll.txt.length, nln, 1];
-		}else
-			return [0, this.ln0+this.frlines, 1];
+		return [ll.txt.length, this.frlines-1, 1];
 	}
 	var pos = 0;
 	var ll = this.lines[nln+this.ln0];
@@ -268,12 +266,12 @@ function tupdatescrl() {
 	var dy = this.frlines / this.lines.length * c.height;
 
 	// right
-	ctx.clearRect(c.width-2, 0, 2, y0);
+	ctx.clearRect(c.width-6, 0, 6, y0);
 	var old = ctx.fillStyle;
 	ctx.fillStyle = "#7373FF";
-	ctx.fillRect(c.width-2, y0, 2, dy);
+	ctx.fillRect(c.width-6, y0, 6, dy);
 	ctx.fillStyle = old;
-	ctx.clearRect(c.width-2, y0+dy, 2, c.height-(y0+dy));
+	ctx.clearRect(c.width-6, y0+dy, 6, c.height-(y0+dy));
 
 	// left
 	if(0) {	
@@ -287,7 +285,7 @@ function tdrawline(xln, i) {
 	var c = this;
 	var ctx = c.getContext("2d", {alpha: false});
 	var lnht = this.fontht;
-	var marginsz = 3;
+	var marginsz = 6;
 	var avail = c.width - 2*marginsz -1;
 	var pos = i*lnht;
 	if(pos >= c.height)
@@ -301,7 +299,7 @@ function tdrawline(xln, i) {
 	if(this.p0 != this.p1){
 		if(this.p0 > xln.off+xln.txt.length || this.p1 < xln.off){
 			/* draw normal line */
-			ctx.clearRect(1, pos, c.width-3, lnht);
+			ctx.clearRect(1, pos, c.width-7, lnht);
 			ctx.fillText(ln, marginsz, pos);
 			return true;
 		}
@@ -332,7 +330,7 @@ function tdrawline(xln, i) {
 		else
 			ctx.fillStyle = "#D1A0A0";
 		if(this.p1 > xln.off+xln.txt.length)
-			ctx.fillRect(dx, pos, c.width-dx-3, lnht);
+			ctx.fillRect(dx, pos, c.width-dx-7, lnht);
 		else
 			ctx.fillRect(dx, pos, sx, lnht);
 		ctx.fillStyle = old;
@@ -340,7 +338,7 @@ function tdrawline(xln, i) {
 		if(this.p1 > xln.off+xln.txt.length)
 			return true;
 		/* from p1 unselected */
-		ctx.clearRect(dx+sx, pos, c.width-(dx+sx)-3, lnht);
+		ctx.clearRect(dx+sx, pos, c.width-(dx+sx)-7, lnht);
 		if(s1 >= xln.txt.length)
 			return true;
 		var s2ln = notabs(xln.txt.slice(s0+s1, xln.txt.length), s1pos);
@@ -349,7 +347,7 @@ function tdrawline(xln, i) {
 	}
 
 	/* draw unselected line */
-	ctx.clearRect(1, pos, c.width-3, lnht);
+	ctx.clearRect(1, pos, c.width-7, lnht);
 	ctx.fillText(ln, marginsz, pos);
 
 	/* draw tick if needed */
@@ -581,6 +579,7 @@ function ttdel(dontscroll) {
 	if(nscrl == 0)
 		nscrl = 1;
 	var mightscroll = (this.p1 >= this.lines[this.ln0].off);
+	console.log("del ", this.p0, this.p1);
 	if(this.p0 > 0 && this.p0 == this.p1)
 		this.p0--;
 	var i;
@@ -842,8 +841,10 @@ function tmayresize(user) {
 		var ty = tag.height();
 		dy -= ty;
 	}
-	c.width = dx;
-	c.height = dy;
+	$(this).width(dx);
+	$(this).height(dy);
+	c.width = c.tscale*dx;
+	c.height = c.tscale*dy;
 	this.nlines = Math.floor(c.height/this.fontht);
 	this.saved = null;
 	this.reformat(0);
@@ -1416,7 +1417,7 @@ function tapply(ev, fromserver) {
 		}
 		if(!this.userresized) {
 			this.autoresize();
-		}
+		} 
 		break;
 	case "edel":
 		if(arg.length < 3){
@@ -1431,11 +1432,8 @@ function tapply(ev, fromserver) {
 		var p1 = parseInt(arg[2]);
 		var op0 = this.p0;
 		var op1 = this.p1;
-		if(op0 != op1) {
-			this.tsetsel(op0, op0);
-		}
 		this.p0 = p0;
-		this.p1 = p0;
+		this.p1 = p1;
 		try{
 			this.tdel();
 		}catch(ex){
@@ -1645,6 +1643,7 @@ function mktxt(d, t, e, cid, id) {
 	e.divcid = cid;
 	e.divid = id;
 	e.vers = 0;
+	e.tscale = 2;
 	e.nlines = 0;
 	e.ln0 = 0;
 	e.frsize = 0;
@@ -1653,7 +1652,7 @@ function mktxt(d, t, e, cid, id) {
 	e.fontstyle = 'r';
 	checkoutfonts(ctx);
 	e.tabwid = ctx.measureText("XXXX").width;
-	e.fontht = 14; // TODO: use font height from fixfont
+	e.fontht = 28; // TODO: use font height from fixfont
 	e.buttons = 0;
 	e.nclicks = {1: 0, 2: 0, 4: 0};
 	e.userresized = false;

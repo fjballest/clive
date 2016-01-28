@@ -76,7 +76,7 @@ func buttons(bs *ink.ButtonSet, rs *ink.RadioSet, t *ink.Txt) {
 
 var (
 	bold, italic bool
-	style = "t"
+	style = "r"
 )
 
 func main() {
