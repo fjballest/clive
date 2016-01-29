@@ -10,17 +10,26 @@ import (
 	"clive/zx"
 	"clive/cmd/opt"
 	"clive/net/ink"
+	"time"
+	"fmt"
 )
 
 func edits(t *ink.Txt) {
-	t.GetText()
-	defer t.PutText()
-	// and we'd edit here....
-	// XXX: It would be good to have t.Ins and t.Del to do an edit that's just
-	// ins or del
-	// XXX: We might implement marks in the js and debug the current ones
-	// in txt, and then add MarkIns to keep on adding text to the mark without
-	// holding the text.
+	time.Sleep(5*time.Second)
+	t.Ins([]rune("ZZZ\n"), 3)
+	time.Sleep(1*time.Second)
+	rs := t.Del(3, 4)
+	cmd.Dprintf("did del %s\n", string(rs))
+	time.Sleep(1*time.Second)
+	x := t.GetText()
+	x.Ins([]rune("XXX\n"), 2)
+	x.Ins([]rune("XXX\n"), x.Len())
+	t.SetMark("xx", 3)
+	t.PutText()
+	for i := 0; i < 30; i++ {
+		time.Sleep(time.Second)
+		t.MarkIns("xx", []rune(fmt.Sprintf("--%d--\n", i)))
+	}
 }
 
 func edit(t *ink.Txt) {
@@ -113,7 +122,7 @@ func main() {
 	pg := ink.NewPg("/", "Example text editing:", bs, rs, t)
 	pg.Tag = "Clive's iedit"
 	ink.ServeLoginFor("/")
-
+	go edits(t)
 	go ink.Serve(":8181")
 	t.Wait()
 	for rs := range t.Get(0, -1) {

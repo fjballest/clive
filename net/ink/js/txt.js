@@ -15,7 +15,7 @@
  * Hack to make sure the fixed and var width fonts exist, and
  * global font names for those variants.
  */
-var tffixed = "Courier New";
+var tffixed = "monospace";
 var tfvar = "Lucida Grande";	// or Verdana
 var fontscheckedout = false;
 
@@ -50,7 +50,7 @@ function tfixfont() {
 	if(this.fontstyle.indexOf('i') > -1) {
 		mod = "italic " + mod;
 	}
-	var ht = this.fontht - 2;
+	var ht = this.fontht - 4;
 	ctx.font = mod + " "  + ht+"px "+ style;
 	ctx.textBaseline="top";
 }
@@ -89,6 +89,9 @@ function tdump() {
 			console.log(""+i+": "+o+"["+n+"]=\t" + this.lines[i].txt + "\\n");
 		else
 			console.log(""+i+": "+o+"["+n+"]=\t" + this.lines[i].txt);
+	}
+	for(var i = 0; i < this.marks.length; i++){
+		console.log("mark: ", this.marks[i].name, this.marks[i].pos);
 	}
 	console.log("sel: " + this.p0 + " " + this.p1);
 	console.log("vers: ", this.vers);
@@ -167,19 +170,17 @@ function tptr2tpos(cx, cy) {
 	var x = cx;
 	var y = cy;
 	var ovf = 0;
+	x *= this.tscale;
+	y *= this.tscale;
 	var nln = Math.floor(y/this.fontht);
 	if(nln < 0 || this.lines.length == 0)
 		return [0, 0, ovf];
 	if(nln+this.ln0 >= this.lines.length){
 		var ll = this.lines[this.lines.length-1];
-		return [ll.txt.length, nln, 1];
+		return [ll.txt.length, this.frlines-1, 1];
 	}
 	if(nln > this.frlines){		// overflow
-		if(this.frlines+this.ln0 >= this.lines.length){
-			var ll = this.lines[this.lines.length-1];
-			return [ll.txt.length, nln, 1];
-		}else
-			return [0, this.ln0+this.frlines, 1];
+		return [ll.txt.length, this.frlines-1, 1];
 	}
 	var pos = 0;
 	var ll = this.lines[nln+this.ln0];
@@ -266,22 +267,34 @@ function tupdatescrl() {
 	var ctx = c.getContext("2d", {alpha: false});
 	var y0 = this.ln0 / this.lines.length * c.height;
 	var dy = this.frlines / this.lines.length * c.height;
-	ctx.clearRect(c.width-1, 0, 1, y0);
-	ctx.fillRect(c.width-1, y0, 1, dy);
-	ctx.clearRect(c.width-1, y0+dy, 1, c.height-(y0+dy));
+
+	// right
+	ctx.clearRect(c.width-6, 0, 6, y0);
+	var old = ctx.fillStyle;
+	ctx.fillStyle = "#7373FF";
+	ctx.fillRect(c.width-6, y0, 6, dy);
+	ctx.fillStyle = old;
+	ctx.clearRect(c.width-6, y0+dy, 6, c.height-(y0+dy));
+
+	// left
+	if(0) {	
+		ctx.clearRect(0, 0, 1, y0);
+		ctx.fillRect(0, y0, 1, dy);
+		ctx.clearRect(0, y0+dy, 1, c.height-(y0+dy));
+	}
 }
 
 function tdrawline(xln, i) {
 	var c = this;
 	var ctx = c.getContext("2d", {alpha: false});
 	var lnht = this.fontht;
-	var marginsz = 3;
+	var marginsz = 6;
 	var avail = c.width - 2*marginsz -1;
 	var pos = i*lnht;
 	if(pos >= c.height)
 		return false;
 	if(!xln){
-		ctx.clearRect(0, pos, c.width-1, lnht);
+		ctx.clearRect(1, pos, c.width-1, lnht);
 		return true;
 	}
 	var ln = notabs(xln.txt);
@@ -289,7 +302,7 @@ function tdrawline(xln, i) {
 	if(this.p0 != this.p1){
 		if(this.p0 > xln.off+xln.txt.length || this.p1 < xln.off){
 			/* draw normal line */
-			ctx.clearRect(0, pos, c.width-1, lnht);
+			ctx.clearRect(1, pos, c.width-7, lnht);
 			ctx.fillText(ln, marginsz, pos);
 			return true;
 		}
@@ -302,7 +315,7 @@ function tdrawline(xln, i) {
 			var s0ln = notabs(xln.txt.slice(0, s0));
 			s0pos = s0ln.length;
 			dx = marginsz + ctx.measureText(s0ln).width;
-			ctx.clearRect(0, pos, dx, lnht);
+			ctx.clearRect(1, pos, dx, lnht);
 			ctx.fillText(s0ln, marginsz, pos);
 		}
 		/* from p0 to p1 selected */
@@ -320,7 +333,7 @@ function tdrawline(xln, i) {
 		else
 			ctx.fillStyle = "#D1A0A0";
 		if(this.p1 > xln.off+xln.txt.length)
-			ctx.fillRect(dx, pos, c.width-dx-1, lnht);
+			ctx.fillRect(dx, pos, c.width-dx-7, lnht);
 		else
 			ctx.fillRect(dx, pos, sx, lnht);
 		ctx.fillStyle = old;
@@ -328,7 +341,7 @@ function tdrawline(xln, i) {
 		if(this.p1 > xln.off+xln.txt.length)
 			return true;
 		/* from p1 unselected */
-		ctx.clearRect(dx+sx, pos, c.width-(dx+sx)-1, lnht);
+		ctx.clearRect(dx+sx, pos, c.width-(dx+sx)-7, lnht);
 		if(s1 >= xln.txt.length)
 			return true;
 		var s2ln = notabs(xln.txt.slice(s0+s1, xln.txt.length), s1pos);
@@ -337,7 +350,7 @@ function tdrawline(xln, i) {
 	}
 
 	/* draw unselected line */
-	ctx.clearRect(0, pos, c.width-1, lnht);
+	ctx.clearRect(1, pos, c.width-7, lnht);
 	ctx.fillText(ln, marginsz, pos);
 
 	/* draw tick if needed */
@@ -427,13 +440,13 @@ function tredrawtext() {
 	if(!this.tick){
 		var x = ctx.lineWidth;
 		ctx.lineWidth = 1;
-		ctx.fillRect(0, 0, 4, 2);
-		ctx.fillRect(0, this.fontht-2, 4, 2);
-		ctx.moveTo(2, 0);
-		ctx.lineTo(2, this.fontht);
+		ctx.fillRect(0, 0, 6, 6);
+		ctx.fillRect(0, this.fontht-6, 6, 6);
+		ctx.moveTo(3, 0);
+		ctx.lineTo(3, this.fontht);
 		ctx.stroke();
 		ctx.lineWidth = x;
-		this.tick = ctx.getImageData(0, 0, 4, this.fontht);
+		this.tick = ctx.getImageData(0, 0, 6, this.fontht);
 	}
 	var off = this.lines[this.ln0].off;
 	var froff = off;
@@ -501,6 +514,7 @@ function ttins(t, dontscroll) {
 	var nscrl = Math.floor(this.nlines/4);
 	if(nscrl == 0)
 		nscrl = 1;
+	this.markins(t.length);
 	for(var i = 0; i < this.lines.length; i++){
 		var xln = this.lines[i];
 		var xlnlen = xln.txt.length;
@@ -560,7 +574,6 @@ function ttins(t, dontscroll) {
  * if the selection is empty, the previous rune is deleted, otherwise
  * the entire selection is removed. p0 and p1 are updated.
  */
-
 function ttdel(dontscroll) {
 	this.untick();
 	if(this.p0 >= this.nrunes || this.p1 < this.p0)
@@ -569,8 +582,10 @@ function ttdel(dontscroll) {
 	if(nscrl == 0)
 		nscrl = 1;
 	var mightscroll = (this.p1 >= this.lines[this.ln0].off);
+	console.log("del ", this.p0, this.p1);
 	if(this.p0 > 0 && this.p0 == this.p1)
 		this.p0--;
+	this.markdel();
 	var i;
 	var xln;
 	for(i = 0; i < this.lines.length; i++){
@@ -821,12 +836,19 @@ function tmayresize(user) {
 	}
 	var p = $(this).parent();
 	var dx = p.width();
-	var dy = p.height();
+	var dy = p.height() - 5;
 	console.log('text resized', dx, dy);
 	var c = this;
 	var ctx = this.getContext("2d", {alpha: false});
-	c.width = dx;
-	c.height = dy;
+	var tag = $("#"+this.divid+"t")
+	if(tag) {
+		var ty = tag.height();
+		dy -= ty;
+	}
+	$(this).width(dx);
+	$(this).height(dy);
+	c.width = c.tscale*dx;
+	c.height = c.tscale*dy;
 	this.nlines = Math.floor(c.height/this.fontht);
 	this.saved = null;
 	this.reformat(0);
@@ -840,8 +862,11 @@ function tautoresize() {
 	}
 	var ht = (nln+2) * this.fontht;
 	var p = $(this);
-	console.log("auto rsz", nln, ht, p.height());
 	var oldht = p.height();
+	if (oldht >= 800) {
+		return;
+	}
+	console.log("auto rsz", nln, ht, p.height());
 	if (oldht < ht - this.fontht || oldht > ht + this.fontht) {
 		var delta = ht - oldht;
 		p = $(this).parent();
@@ -913,12 +938,6 @@ function tmwait() {
 	};
 }
 
-/*
- * XXX: while selecting we should post a hold event to defer
- * updates until we are done with the mouse, that means we
- * select the right text and only after we are done the server would
- * update our text and selection to whatever is current.
- */
 function tm1(pos) {
 	var now = new Date().getTime();
 	if(!this.clicktime || now-this.clicktime>500){
@@ -933,11 +952,8 @@ function tm1(pos) {
 		var x = this.tgetword(pos);
 		this.post(["click1", x[0], ""+x[1], ""+x[2]]);
 		this.tsetsel(x[1], x[2]);
-		this.post(["tick", ""+this.p0, ""+this.p1]);
 		this.clicktime = null;
-	} else
-		this.post(["tick", ""+pos, ""+pos]);
-
+	}
 	this.onmousemove = function(e){
 		try{
 			this.evxy(e);
@@ -969,7 +985,6 @@ function tm1(pos) {
 				return;
 			}
 			if(this.buttons == 3){
-				this.post(["tick", ""+this.p0, ""+this.p1]);
 				this.Post(["ecut", ""+this.p0, ""+this.p1]);
 			}
 			if(this.buttons == 5){
@@ -999,12 +1014,6 @@ function tm1(pos) {
 	}
 }
 
-/*
- * XXX: while selecting we should post a hold event to defer
- * updates until we are done with the mouse, that means we
- * select the right text and only after we are done the server would
- * update our text and selection to whatever is current.
- */
 function tm23(pos, b) {
 	this.secondary = b;
 	this.onmousemove = function(e){
@@ -1084,7 +1093,6 @@ function tmup(e) {
 		this.tmrlse(e);
 		this.evxy(e);
 		if(this.buttons == 0){
-			this.post(["tick", ""+this.p0, ""+this.p1]);
 			this.selectend();
 		}
 	}catch(ex){
@@ -1118,7 +1126,7 @@ function tmwheel(e) {
 
 function tmdown(e) {
 	$("#" + this.divid ).focus();
-	// console.log("tmdown ", this.divid, e);
+	if(0)console.log("tmdown ", this.divid, e);
 	this.selectstart();
 	e.preventDefault();
 	this.secondary = 0;		/* paranoia: see tm23 */
@@ -1343,6 +1351,16 @@ function tapply(ev, fromserver) {
 	var arg = ev.Args
 	if(0)console.log(this.divid, "apply", ev.Args, "v", ev.Vers, this.vers);
 	switch(arg[0]){
+	case "held":
+		this.locked();
+		break;
+	case "rlse":
+		if(this.selecting) {
+			this.mustunlock = true;
+			break;
+		}
+		this.unlocked();
+		break;
 	case "noedits":
 		this.noedits = true;
 		break;
@@ -1359,6 +1377,42 @@ function tapply(ev, fromserver) {
 		this.fixfont();
 		this.redrawtext();
 		break;
+	case "markins":
+		if(arg.length < 3){
+			console.log(this.divid, "apply: short markins");
+			break;
+		}
+		var m = this.getmark(arg[1]);
+		if(!m) {
+			console.log(this.divid, "apply: no mark", arg[1]);
+			break;
+		}
+		var nlen = arg[2].length;
+		var npos = m.pos + nlen;
+		var opos = m.pos;
+		var op0 = this.p0;
+		var op1 = this.p1;
+		if(op0 != op1) {
+			this.tsetsel(op0, op0);
+		}
+		this.p0 = m.pos;
+		this.p1 = m.pos;
+		this.tinslines(arg[2]);
+		m.pos = npos;
+		if(op0 > opos)
+			op0 += nlen;
+		if(op1 > opos)
+			op1 += nlen;
+		this.p0 = op0;
+		this.p1 = op1;
+		this.tsetsel(op0, op1);
+		if(ev.Vers) {
+			this.vers = ev.Vers;
+		}
+		if(!this.userresized) {
+			this.autoresize();
+		} 
+		break;
 	case "eins":
 		if(arg.length < 3){
 			console.log(this.divid, "apply: short ins");
@@ -1371,6 +1425,9 @@ function tapply(ev, fromserver) {
 		var p0 = parseInt(arg[2]);
 		var op0 = this.p0;
 		var op1 = this.p1;
+		if(op0 != op1) {
+			this.tsetsel(op0, op0);
+		}
 		this.p0 = p0;
 		this.p1 = p0;
 		this.tinslines(arg[1]);
@@ -1378,12 +1435,15 @@ function tapply(ev, fromserver) {
 			op0 += arg[1].length;
 		if(op1 > p0)
 			op1 += arg[1].length;
+		if(fromserver) {
+			this.tsetsel(op0, op1);
+		}
 		if(ev.Vers) {
 			this.vers = ev.Vers;
 		}
 		if(!this.userresized) {
 			this.autoresize();
-		}
+		} 
 		break;
 	case "edel":
 		if(arg.length < 3){
@@ -1407,6 +1467,9 @@ function tapply(ev, fromserver) {
 		}
 		op0 = adjdel(op0, p0, p1);
 		op1 = adjdel(op1, p0, p1);
+		if(fromserver) {
+			this.tsetsel(op0, op1);
+		}
 		if(ev.Vers) {
 			this.vers = ev.Vers;
 		}
@@ -1422,7 +1485,7 @@ function tapply(ev, fromserver) {
 		break;
 	case "reload":
 		this.tclear();
-		break
+		break;
 	case "reloading":
 		if(arg.length < 2){
 			console.log(this.divid, "apply: short reloading");
@@ -1438,15 +1501,154 @@ function tapply(ev, fromserver) {
 		}
 		this.vers = parseInt(arg[1]);
 		this.redrawtext();
-		this.autoresize();
+		if(!this.userresized) {
+			this.autoresize();
+		}
 		this.dump();
-		break
+		break;
+	case "mark":
+		if(arg.length < 3){
+			console.log(this.divid, "apply: short mark");
+			break;
+		}
+		var pos = parseInt(arg[2]);
+		this.setmark(arg[1], pos);
+		break;
+	case "delmark":
+		if(arg.length < 3){
+			console.log(this.divid, "apply: short delmark");
+			break;
+		}
+		this.delmark(arg[1]);
+		break;
 	case "close":
 		this.ws.close();
 		$("#"+this.divid).remove();
+		break;
 	default:
 		console.log("text: unhandled", arg[0]);
 	}
+}
+
+function tlocknkeydown(e) {
+	if(this.islocked) {
+		return tkeydown.call(this, e);
+	}
+	if(!this.locking) {
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		this.whenlocked = [];
+	}
+	var self = this;
+	this.whenlocked.push(function() {
+		tkeydown.call(self, e);
+	});
+	if (e && e.which == 32 && e.target == document.body) {
+		e.preventDefault();
+		return false;
+	}
+	return true;
+}
+
+function tlocknevkey(e) {
+	if(this.islocked) {
+		return tevkey.call(this, e);
+	}
+	if(!this.locking) {
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		this.whenlocked = [];
+	}
+	var self = this;
+	this.whenlocked.push(function() {
+		tevkey.call(self, e);
+	});
+}
+
+function tlocknkeyup(e) {
+	if(this.islocked) {
+		return tkeyup.call(this, e);
+	}
+	if(!this.locking) {
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		this.whenlocked = [];
+	}
+	var self = this;
+	this.whenlocked.push(function() {
+		tkeyup.call(self, e);
+	});
+}
+
+function tlocknmdown(e) {
+	if(this.islocked) {
+		return tmdown.call(this, e);
+	}
+	if(!this.locking) {
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		this.whenlocked = [];
+	}
+	var self = this;
+	this.whenlocked.push(function() {
+		tmdown.call(self, e);
+	});
+}
+
+function tlocknmup(e) {
+	if(this.islocked) {
+		return tmup.call(this, e);
+	}
+	if(!this.locking) {
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		this.whenlocked = [];
+	}
+	var self = this;
+	this.whenlocked.push(function() {
+		tmup.call(self, e);
+	});
+}
+
+function tlocked() {
+	if(this.islocked)
+		return;
+	if(this.locking) {
+		this.locking = false;
+		this.islocked = true;
+		this.tkeydown = tkeydown;
+		this.tkeypress = tevkey;
+		this.tkeyup = tkeyup;
+		this.tmdown = tmdown;
+		this.tmup = tmup;
+		for(var i = 0; i < this.whenlocked.length; i++) {
+			this.whenlocked[i]();
+		}
+		this.whenlocked = [];
+	}
+}
+
+function tunlocked() {
+	this.islocked = false;
+	this.locking = false;
+	this.mustunlock = false;
+	this.whenlocked = [];
+	this.tkeydown = tlocknkeydown;
+	this.tkeypress = tlocknevkey;
+	this.tkeyup = tlocknkeyup;
+	this.tmdown = tlocknmdown;
+	this.tmup = tlocknmup;
+	this.mustunlock = false;
+	this.post(["tick", ""+this.p0, ""+this.p1]);
+	this.post(["rlsed"]);
+	// collapse the selection or other's might insert in the middle.
+	if(this.p0 != this.p1)
+		this.tsetsel(this.p0, this.p1, true);
 }
 
 function tselectstart() {
@@ -1457,18 +1659,15 @@ function tselectstart() {
 }
 
 function tselectend() {
+	if(this.mustunlock) {
+		this.unlocked();
+	}
 	if(!this.selecting) {
 		return;
 	}
 	console.log("select end");
+	this.post(["tick", ""+this.p0, ""+this.p1]);
 	this.selecting = false;
-	if(!this.deferred) {
-		return;
-	}
-	for(var i = 0; i < this.deferred.length; i++) {
-		this.apply(this.deferred[i], true);
-	}
-	this.deferred = [];
 }
 
 function tclear() {
@@ -1481,6 +1680,63 @@ function tclear() {
 	this.frsize = 0;
 	this.frlines = 0;
 	this.lines = [];
+	// NB: we are not clearing marks
+	// we might leak old mark names not deleted
+	// but at least we preserve marks upon reloads
+}
+
+function tsetmark(mark, p) {
+	for(var i = 0; i < this.marks.length; i++){
+		var m = this.marks[i];
+		if(m.name == mark) {
+			m.pos = p;
+			return;
+		}
+	}
+	this.marks.push({name: mark, pos: p});
+}
+
+function tgetmark(mark) {
+	for(var i = 0; i < this.marks.length; i++){
+		var m = this.marks[i];
+		if(m.name == mark) {
+			return m;
+		}
+	}
+	return null;
+}
+
+function tdelmark(mark) {
+	for(var i = 0; i < this.marks.length; i++){
+		var m = this.marks[i];
+		if(m.name == mark) {
+			this.marks.splice(i, 1);
+			return;
+		}
+	}
+}
+
+function tmarkins(n) {
+	for(var i = 0; i < this.marks.length; i++){
+		var m = this.marks[i];
+		if(m.pos > this.p0) {
+			m.pos += n;
+		}
+	}
+}
+
+function tmarkdel() {
+	for(var i = 0; i < this.marks.length; i++){
+		var m = this.marks[i];
+		if(m.pos <= this.p0) {
+			continue;
+		}
+		var p1 = this.p1;
+		if(p1 > m.pos) {
+			p1 = m.pos;
+		}
+		m.pos -= (p1-this.p0);
+	}
 }
 
 /*
@@ -1490,11 +1746,12 @@ function tclear() {
 	cid is the class id for e.
 	t is the tag
  */
-function mktext(d, t, e, cid, id) {
+function mktxt(d, t, e, cid, id) {
 	var ctx=e.getContext("2d", {alpha: false});
 	e.divcid = cid;
 	e.divid = id;
 	e.vers = 0;
+	e.tscale = 2;
 	e.nlines = 0;
 	e.ln0 = 0;
 	e.frsize = 0;
@@ -1503,11 +1760,11 @@ function mktext(d, t, e, cid, id) {
 	e.fontstyle = 'r';
 	checkoutfonts(ctx);
 	e.tabwid = ctx.measureText("XXXX").width;
-	e.fontht = 16; // TODO: use font height from fixfont
+	e.fontht = 28; // TODO: use font height from fixfont
 	e.buttons = 0;
 	e.nclicks = {1: 0, 2: 0, 4: 0};
 	e.userresized = false;
-
+	ctx.fillStyle = "#FFFFEA";
 	e.drawline = tdrawline;
 	e.dump = tdump;
 	e.evxy = tevxy;
@@ -1531,22 +1788,37 @@ function mktext(d, t, e, cid, id) {
 	e.tinslines = ttinslines;
 	e.tpos2pos = ttpos2pos;
 	e.tsetsel = ttsetsel;
-	e.untick = tuntick;
+	e.untick = tuntick; 
 	e.updatescrl = tupdatescrl;
 
 	e.selectstart = tselectstart;
 	e.selectend = tselectend;
-	e.deferred = [];
+
+	e.marks = [];
+	e.setmark = tsetmark;
+	e.getmark = tgetmark;
+	e.delmark = tdelmark;
+	e.markins = tmarkins;
+	e.markdel = tmarkdel;
 
 	e.noedits = false;
 
-	e.tkeydown = tkeydown;
-	e.tkeypress = tevkey;
-	e.tkeyup = tkeyup;
+	e.locked = tlocked;
+	e.unlocked = tunlocked;
 
-	e.onmousedown = tmdown;
+	e.tkeydown = tlocknkeydown;
+//	e.tkeydown = tkeydown;
+	e.tkeypress = tlocknevkey;
+//	e.tkeypress = tevkey;
+	e.tkeyup = tlocknkeyup;
+//	e.tkeyup = tkeyup;
+
+	e.onmousedown = tlocknmdown;
+//	e.onmousedown = tmdown;
+	e.onmouseup = tlocknmup;
+//	e.onmouseup = tmup;
+
 	e.onmousemove = tevxy;
-	e.onmouseup = tmup;
 	e.onmousewheel = tmwheel;
 	e.onpaste = function(){return false;}
 	e.oncontextmenu = function(){return false;}
@@ -1636,26 +1908,28 @@ function mktext(d, t, e, cid, id) {
 			console.log("update: no objet id");
 			return;
 		}
-		//console.log("update to", o.Id);
-		// TODO: when applying eins/edel this should check if
-		// our version is ok, and, if it's not, it should just ask for
-		// a full reload (eg., by setting and ins out of order)
-		if(e.selecting) {
-			e.deferred.push(o);
-			return;
-		}
-		e.apply(o, true)
+		if(0)console.log("update to", o.Id, o.Args);
+		e.apply(o, true);
 	};
 	e.ws.onclose = function() {
 		console.log("text socket " + wsurl+ " closed\n");
-		d.replaceWith("<h3>disconnected</h3>")
+		d.replaceWith("<h3>disconnected</h3>");
 	};
-	d.resizable().on('resize', function() {
-		console.log("resized");
+	d.resizable({
+		handles: 's'
+	}).on('resize', function() {
+		console.log("user resized");
 		e.mayresize(true);
 	});
-	d.resizable("option", "ghost", true);
-
+	$(window).resize(function() {
+		console.log("window resized");
+		e.mayresize(false);
+	});
+	$(window).onkeydown = function(e) {
+		if(e.which == 32 && e.target == document.body) {
+			e.preventDefault();
+		}
+	};
 	if(t) {
 		$("#"+id+"t").getWordByEvent('click', function tagclick(ev, word) {
 			console.log("tag click on ", ev, word);
@@ -1669,4 +1943,5 @@ function mktext(d, t, e, cid, id) {
 	}
 }
 
-document.mktext = mktext
+document.mktxt = mktxt
+

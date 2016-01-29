@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sort"
 )
 
 // edit type
@@ -406,20 +407,72 @@ func (t *Text) Ins(data []rune, off int) error {
 }
 
 /*
-	Return a mark by name
+	Place a mark in the text, keeping its position despite
+	further inserts and removes.
+	The returned mark is the actual mark as used by the text.
+	Changing it changes the mark and may lead to races
+	if other processes are modifying the text.
+*/
+func (t *Text) SetMark(name string, off int) *Mark {
+	t.Lock()
+	defer t.Unlock()
+	m := &Mark{name, off, false}
+	t.marks[name] = m
+	return m
+}
+
+/*
+	Remove a mark from the text
+*/
+func (t *Text) DelMark(name string) {
+	t.Lock()
+	defer t.Unlock()
+	delete(t.marks, name)
+}
+
+func (m *Mark) String() string {
+	return fmt.Sprintf("[%s %d]", m.Name, m.Off)
+}
+
+/*
+	Return the names of existing marks
+*/
+func (t *Text) Marks() []string {
+	t.Lock()
+	defer t.Unlock()
+	ms := []string{}
+	for k := range t.marks {
+		ms = append(ms, k)
+	}
+	sort.Sort(sort.StringSlice(ms))
+	return ms	
+}
+
+/*
+	Return a mark by name.
+	The returned mark is a copy and changing it is ok.
 */
 func (t *Text) Mark(name string) *Mark {
 	t.Lock()
 	defer t.Unlock()
-	return t.marks[name]
+	m := t.marks[name]
+	if m != nil {
+		nm := *m
+		m = &nm
+	}
+	return m
 }
 
 /*
 	Insert runes at the given mark, moving the mark after them.
 */
-func (t *Text) MarkIns(m *Mark, data []rune) error {
+func (t *Text) MarkIns(mark string, data []rune) error {
 	t.Lock()
 	defer t.Unlock()
+	m := t.marks[mark]
+	if m == nil {
+		return fmt.Errorf("no mark %s", mark)
+	}
 	t.mark = m
 	contd := t.contd
 	off := m.Off
@@ -437,10 +490,11 @@ func (t *Text) MarkIns(m *Mark, data []rune) error {
 /*
 	Delete n runes right before the given mark and keep the mark where it is.
 */
-func (t *Text) MarkDel(m *Mark, n int) []rune {
+func (t *Text) MarkDel(mark string, n int) []rune {
 	t.Lock()
 	defer t.Unlock()
-	if n == 0 {
+	m := t.marks[mark]
+	if n == 0 || m == nil {
 		return []rune{}
 	}
 	if m.Off < 0 {
@@ -677,29 +731,4 @@ func (t *Text) DelAll() {
 	dat := t.del(0, t.sz)
 	e := t.addEdit(Edel, 0, dat, contd)
 	t.markEdit(e)
-}
-
-/*
-	Place a mark in the text, keeping its position despite
-	further inserts and removes.
-*/
-func (t *Text) SetMark(name string, off int) *Mark {
-	t.Lock()
-	defer t.Unlock()
-	m := &Mark{name, off, false}
-	t.marks[name] = m
-	return m
-}
-
-/*
-	Remove a mark from the text
-*/
-func (t *Text) DelMark(name string) {
-	t.Lock()
-	defer t.Unlock()
-	delete(t.marks, name)
-}
-
-func (m *Mark) String() string {
-	return fmt.Sprintf("[%s %d]", m.Name, m.Off)
 }

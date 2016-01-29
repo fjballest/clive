@@ -11,7 +11,6 @@ import (
 	"io"
 	"html"
 	"strings"
-	"sync"
 )
 
 // Events sent from the viewer:
@@ -27,8 +26,6 @@ import (
 //	eredo
 //	neeedreload
 //	intr	esc|...
-//	hold
-//	rlsed
 // Events sent from the viewer but not for the user:
 //	id
 // Events sent to the viewer (besides all reflected events):
@@ -41,8 +38,6 @@ import (
 //	noedits
 //	edits
 //	font name
-//	held
-//	rlse
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end
@@ -58,24 +53,19 @@ import (
 //	eins	text p0
 //	edel	p0 p1
 //	intr	esc|...
-struct Txt {
+struct Text {
 	*Ctlr
 	t *txt.Text
 	tag string
 	tagged, noedits bool
-
-	owner string
-	held []*Ev
-	ngets int
-	getslk sync.Mutex
 }
 
 // Write the HTML for the text control to a page.
-func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
+func (t *Text) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := t.newViewId()
 
 	n, err := io.WriteString(w, `
-		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; width:100%;height:300; background-color:#ffffea">`)
+		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; overflow:auto;width:95%;height:300">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -89,7 +79,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 		}
 	}
 	n, err = io.WriteString(w, `
-<canvas id="`+vid+`c" class="txt1c" width="100%" height="100%" style="border:1px;"></canvas>
+<canvas id="`+vid+`c" class="txt1c" width="100%" height="100%" style="border:1px solid black;"></canvas>
 </div>
 <script>
 	$(function(){
@@ -99,7 +89,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 		x.tag = "`+t.tag+`";
 		x.lines = [];
 		x.lines.push({txt: "", off: 0});
-		document.mktxt(d, t, x, "`+t.Id+`", "`+vid+`");
+		document.mktext(d, t, x, "`+t.Id+`", "`+vid+`");
 	});
 </script>`)
 	tot += int64(n)
@@ -107,95 +97,103 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 }
 
 // Create a new text control with the given tag line and body lines.
-func newTxt(tagged bool, tag string, lines ...string) *Txt {
+func newText(tagged bool, tag string, lines ...string) *Text {
 	lns := strings.Join(lines, "\n");
-	t := &Txt {
+	t := &Text {
 		Ctlr: newCtlr("text"),
 		t: txt.NewEditing([]rune(lns)),
 		tag: tag,
 		tagged: tagged,
 	}
-	go t.handler()
+	go func() {
+		for e := range t.in {
+			t.handle(e)
+		}
+	}()
 	return t
 }
 
 // Create a new text control with the given tag line and body lines.
-func NewTaggedTxt(tag string, lines ...string) *Txt {
-	return newTxt(true, tag, lines...)
+func NewTaggedText(tag string, lines ...string) *Text {
+	return newText(true, tag, lines...)
 }
 
 // Create a new text control with no tag line and the given body lines.
-func NewTxt(lines ...string) *Txt {
-	return newTxt(false, "", lines...)
+func NewText(lines ...string) *Text {
+	return newText(false, "", lines...)
 }
 
 // Change the font used.
 // Known fonts are "r", "b", "i", "t".
 // Known combinations are "rb", "tb", and "ri".
-func (t *Txt) SetFont(f string) {
+func (t *Text) SetFont(f string) {
 	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"font", f}}
 }
 
 // Prevent user edits
-func (t *Txt) NoEdits() {
+func (t *Text) NoEdits() {
 	t.noedits = true
 	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"noedits"}}
 }
 
 // Permit user edits (default)
-func (t *Txt) Edits() {
+func (t *Text) Edits() {
 	t.noedits = false
 	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"edits"}}
+}
+
+
+/// Insert in the text and update the views.
+// Views might have to reload if they are concurrently editing.
+func (t *Text) Ins(data []rune, off int) error {
+	if err := t.t.Ins(data, off); err != nil {
+		return err
+	}
+	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Vers: t.t.Vers(),
+		Args: []string{"eins", string(data), fmt.Sprintf("%d", off)},
+	}
+	return nil
+}
+
+// Delete in the text and update the views.
+// Views might have to reload if they are concurrently editing.
+func (t *Text) Del(off, n int) []rune {
+	rs := t.t.Del(off, n)
+	if len(rs) == 0 {
+		return rs
+	}
+	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Vers: t.t.Vers(),
+		Args: []string{"edel", fmt.Sprintf("%d", off), fmt.Sprintf("%d", off+len(rs))},
+	}
+	return rs
 }
 
 // Return the text so the application can edit it at will,
 // further updates from the views will fail due to wrong version,
 // and the caller must call EditDone() when done so the views are reloaded
 // with the new text.
-func (t *Txt) GetText() *txt.Text {
-	t.getslk.Lock()
-	defer t.getslk.Unlock()
-	if t.ngets == 0 {
-		c := make(chan bool)
-		done := func() {
-			c <- true
-		}
-		t.in <- &Ev{Id: t.Id, Src: "app", Args:[]string{"hold"}, fn: done}
-		<-c
-	}
-	t.ngets++
+func (t *Text) EditText() *txt.Text {
 	return t.t
 }
 
-// After calling GetText() and using the txt.Text to edit by program,
-// this must be called to unlock the text and reload the views with the new text.
-func (t *Txt) PutText() {
-	t.getslk.Lock()
-	defer t.getslk.Unlock()
-	t.ngets--
-	if t.ngets == 0 {
-		c := make(chan bool)
-		done := func() {
-			c <- true
-		}
-		t.in <- &Ev{Id: t.Id, Src: "app", Args:[]string{"rlsed"}, fn: done}
-		<-c
-	}
+// After calling EditText() and using the txt.Text to edit by program,
+// this must be called to reload the views with the new text.
+func (t *Text) EditDone() {
 	t.updateAll()
 }
 
 // Retrieve the current text.
-// Txt is locked while getting the text
-func (t *Txt) Get(off int, n int) <-chan []rune {
+// Text is locked while getting the text
+func (t *Text) Get(off int, n int) <-chan []rune {
 	return t.t.Get(off, n)
 }
 
 // Retrieve a rune.
-func (t *Txt) Getc(off int) rune {
+func (t *Text) Getc(off int) rune {
 	return t.t.Getc(off)
 }
 
-func (t *Txt) sendLine(toid string, to chan<- *Ev, buf *bytes.Buffer) bool {
+func (t *Text) sendLine(toid string, to chan<- *Ev, buf *bytes.Buffer) bool {
 	s := buf.String()
 	buf.Reset()
 	ev := &Ev{Id: t.Id, Src: "", Args: []string{"reloading", s}}
@@ -203,12 +201,12 @@ func (t *Txt) sendLine(toid string, to chan<- *Ev, buf *bytes.Buffer) bool {
 	return ok
 }
 
-func (t *Txt) update(toid string) {
+func (t *Text) update(toid string) {
 	to := t.viewOut(toid)
 	if t.noedits {
-		to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"noedits"}}
+		t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"noedits"}}
 	} else {
-		to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"edits"}}
+		t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"edits"}}
 	}
 	ev := &Ev{Id: t.Id, Src: "", Args: []string{"reload"}}
 	if ok := to <- ev; !ok {
@@ -237,14 +235,14 @@ func (t *Txt) update(toid string) {
 	}
 }
 
-func (t *Txt) updateAll() {
+func (t *Text) updateAll() {
 	vs := t.Views()
 	for _, v := range vs {
 		t.update(v)
 	}
 }
 
-func (t *Txt) wrongVers(tag string, wev *Ev) bool {
+func (t *Text) wrongVers(tag string, wev *Ev) bool {
 	vers := t.t.Vers()
 	if wev.Vers == vers+1 {
 		return false
@@ -254,7 +252,7 @@ func (t *Txt) wrongVers(tag string, wev *Ev) bool {
 	return true
 }
 
-func (t *Txt) p0p1(ev []string) (int, int, error) {
+func (t *Text) p0p1(ev []string) (int, int, error) {
 	if len(ev) < 3 {
 		cmd.Dprintf("%s: %s: short\n", t.Id, ev[0])
 		return 0, 0, errors.New("short event")
@@ -272,7 +270,7 @@ func (t *Txt) p0p1(ev []string) (int, int, error) {
 	return p0, p1, nil
 }
 
-func (t *Txt) getString(off int, n int) string {
+func (t *Text) getString(off int, n int) string {
 	rc := t.t.Get(off, n)
 	var buf bytes.Buffer
 	for rs := range rc {
@@ -281,155 +279,10 @@ func (t *Txt) getString(off int, n int) string {
 	return buf.String()
 }
 
-type handler func(*Ev) handler
-
-// Event handling goes from these states:
-//	unlocked -> locked
-//	locked -> unlocked
-//	locked -> releasing
-//	releasing - > unlocked
-//
-// Held events are kept in t.held. 
-func (t *Txt) handler() {
-	h := t.handleUnlocked
-	for {
-		select {
-		case e, ok := <-t.in:
-			if !ok {
-				cmd.Dprintf("%s: handler done\n", t.Id)
-				return
-			}
-			t.held = append(t.held, e)
-		default:
-			if len(t.held) == 0 {
-				e, ok := <-t.in
-				if !ok {
-					cmd.Dprintf("%s: handler done\n", t.Id)
-					return
-				}
-				t.held = append(t.held, e)
-			}
-		}
-		e := t.held[0]
-		if len(t.held) == 1 {
-			t.held = nil
-		} else {
-			t.held = t.held[1:]
-		}
-		if e == nil {
-			continue
-		}
-		cmd.Dprintf("-> %d %v\n", len(t.held), e)
-		if len(e.Args) > 0 {
-			h = h(e)
-		}
-		if e.fn != nil && (len(t.held) == 0 || t.held[len(t.held)-1] != e) {
-			// call fn, the even was not requeued; it's done.
-			e.fn()
-		}
-		// TODO: This may lead to a tight loop if
-		// we want to receive just from one view and have queued events
-		// that must be deferred until we do receive from that view.
-		// Should this be a problem, we must teach Ctlr how to receive
-		// from just one view for a while.
+func (t *Text) handle(wev *Ev) {
+	if wev==nil || len(wev.Args)<1 {
+		return
 	}
-}
-
-func (t *Txt) discard(src string) {
-	for i := 0; i < len(t.held); {
-		if t.held[i].Src == src {
-			copy(t.held[i:], t.held[i+1:])
-			t.held = t.held[:len(t.held)-1]
-		} else  {
-			i++
-		}
-	}
-}
-
-func (t *Txt) handleUnlocked(wev *Ev) handler {
-	ev := wev.Args
-	switch ev[0] {
-	case "hold":
-		if t.owner != "" {
-			panic("owner for a free text")
-		}
-		t.owner = wev.Src
-		if wev.Src != "" && wev.Src != "app" {
-			to := t.viewOut(wev.Src)
-			to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"held"}}
-		}
-		cmd.Dprintf("%s: locked by %s (%d)\n", t.Id, wev.Src, len(t.held))
-		return t.handleLocked
-	}
-	t.apply(wev)
-	return t.handleUnlocked
-}
-
-func (t *Txt) handleLocked(wev *Ev) handler {
-	ev := wev.Args
-	if t.owner == "" {
-		panic("no owner for a locked text")
-	}
-	if wev.Src != t.owner {
-		if ev[0] == "end" || ev[0] == "start" || ev[0] == "intr" {
-			t.apply(wev);
-			return t.handleLocked
-		}
-		if ev[0] == "tick" {
-			// BUG? We shouldn't get a tick here, but we do.
-			return t.handleLocked
-		}
-		t.held = append(t.held, wev)
-		if ev[0] == "hold" {
-			if t.owner != "app" {
-				to := t.viewOut(t.owner)
-				to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"rlse"}}
-			}
-			cmd.Dprintf("%s: releasing %s for %s\n", t.Id, t.owner, wev.Src)
-			return t.handleReleasing
-		}
-		return t.handleLocked
-	}
-	if ev[0] == "rlsed" || ev[0] == "end" {
-		t.owner = ""
-		if ev[0] == "end" {
-			t.apply(wev)
-		}
-		cmd.Dprintf("%s: unlocked\n", t.Id)
-		return t.handleUnlocked
-	}
-	t.apply(wev)
-	return t.handleLocked
-}
-
-func (t *Txt) handleReleasing(wev *Ev) handler {
-	ev := wev.Args
-	if t.owner == "" {
-		panic("no owner for a releasing text")
-	}
-	if wev.Src != t.owner {
-		if ev[0] == "end" || ev[0] == "start" || ev[0] == "intr" {
-			t.apply(wev)
-		} else {
-			t.held = append(t.held, wev)
-		}
-		return  t.handleReleasing
-	}
-	if ev[0] == "rlsed" {
-		t.owner = ""
-		cmd.Dprintf("%s: unlocked\n", t.Id)
-		return t.handleUnlocked
-	}
-	t.apply(wev)
-	if ev[0] == "end" {
-		t.owner = ""
-		cmd.Dprintf("%s: unlocked\n", t.Id)
-		return t.handleUnlocked
-	}
-	return t.handleReleasing
-}
-
-func (t *Txt) apply(wev *Ev) {
 
 	ev := wev.Args
 	switch ev[0] {
@@ -437,15 +290,11 @@ func (t *Txt) apply(wev *Ev) {
 		t.t.DiscontdEdit()
 	default:
 	}
+
 	switch ev[0] {
 	default:
 		cmd.Dprintf("%s: unhandled %v\n", t.Id, ev)
 		return
-	case "hold", "held", "rlse", "rlsed":
-		cmd.Warn("%s: unexpected %v\n", t.Id, wev)
-		// If we get a hold it might be a race on the javascript code,
-		// let's see if that happens.
-		panic("javascript hold bug?")
 	case "tag":
 		cmd.Dprintf("%s: %v\n", t.Id, wev)
 		t.post(wev)
@@ -458,22 +307,19 @@ func (t *Txt) apply(wev *Ev) {
 	case "end":
 		cmd.Dprintf("%s: end %v\n", t.Id, wev.Src)
 		t.post(wev)
-		t.discard(wev.Src)
-	case "tick":
-		if len(ev) < 3 {
-			cmd.Dprintf("%s: tick: short\n", t.Id)
-			return
-		}
-		t.post(wev)
-	case "click1", "click2", "click4":
+	case "tick", "click1", "click2", "click4":
+		// t.uevc <- wev
 		t.post(wev)
 	case "eins":
 		if len(ev) < 3 {
 			cmd.Dprintf("%s: ins: short\n", t.Id)
 			return
 		}
+		if t.wrongVers("ins", wev) {
+			return
+		}
 		p0, err := strconv.Atoi(ev[2])
-		if err!=nil || t.wrongVers(ev[0], wev) {
+		if err != nil {
 			cmd.Dprintf("%s: ins: %s\n", t.Id, err)
 			return
 		}
@@ -574,5 +420,6 @@ func (t *Txt) apply(wev *Ev) {
 		cmd.Dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
 		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 		t.post(wev)
+		// t.uevc <- wev
 	}
 }

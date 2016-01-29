@@ -173,13 +173,11 @@ func TestMark(t *testing.T) {
 	for _, tst := range tests2 {
 		if tst.m != "" && tst.op == Eins {
 			printf("markins %s %s\n", tst.m, tst.txt)
-			m := tx.Mark(tst.m)
-			err := tx.MarkIns(m, []rune(tst.txt))
+			err := tx.MarkIns(tst.m, []rune(tst.txt))
 			printf("-> %v\n", err)
 		} else if tst.m != "" && tst.op == Edel {
 			printf("markdel %s %d\n", tst.m, tst.n)
-			m := tx.Mark(tst.m)
-			rs := tx.MarkDel(m, tst.n)
+			rs := tx.MarkDel(tst.m, tst.n)
 			printf("-> %s\n", string(rs))
 		} else if tst.op == Eins {
 			printf("ins %s %d\n", tst.txt, tst.p0)

@@ -28,6 +28,28 @@ var (
 	once sync.Once
 )
 
+// HTML headers to be included in pages using this interface.
+var headers = `
+<link rel="stylesheet" href="/js/jquery-ui/jquery-ui.css">
+<script src="/js/jquery-2.2.0.js"></script>
+<script type="text/javascript" src="/js/clive.js"></script>
+<script type="text/javascript" src="/js/txt.js"></script>
+<script type="text/javascript" src="/js/txt.js"></script>
+<script type="text/javascript" src="/js/button.js"></script>
+<script type="text/javascript" src="/js/radio.js"></script>
+<script src="/js/jquery-ui/jquery-ui.js"></script>
+<script src="/js/jquery.get-word-by-event.js"></script>
+`
+
+// Write headers to a page so it can support controls.
+// Not needed for pages created with NewPg.
+// If you do not use NewPg, remember to call Auth
+// early in the handler (unless you don't want auth) and
+// then return without writing anything if it failed. 
+func WriteHeaders(w io.Writer) {
+	io.WriteString(w, headers)
+}
+
 func jsHandler(w http.ResponseWriter, r *http.Request) {
 	p := fpath.Clean(r.URL.Path)
 	p = fpath.Join(jspath, p)
