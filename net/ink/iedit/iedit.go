@@ -14,6 +14,8 @@ import (
 	"fmt"
 )
 
+// Example of how to update the text from the API while the user edits it,
+// again, mostly for testing.
 func edits(t *ink.Txt) {
 	time.Sleep(5*time.Second)
 	t.Ins([]rune("ZZZ\n"), 3)
@@ -86,6 +88,7 @@ func buttons(bs *ink.ButtonSet, rs *ink.RadioSet, t *ink.Txt) {
 var (
 	bold, italic bool
 	style = "r"
+	doedits = false
 )
 
 func main() {
@@ -94,6 +97,7 @@ func main() {
 	opts.NewFlag("D", "debug", &c.Debug)
 	rdonly := false
 	opts.NewFlag("r", "read only", &rdonly)
+	opts.NewFlag("e", "do edits for testing", &doedits)
 	cmd.UnixIO()
 	args := opts.Parse()
 	var t *ink.Txt
@@ -122,7 +126,9 @@ func main() {
 	pg := ink.NewPg("/", "Example text editing:", bs, rs, t)
 	pg.Tag = "Clive's iedit"
 	ink.ServeLoginFor("/")
-	go edits(t)
+	if doedits {
+		go edits(t)
+	}
 	go ink.Serve(":8181")
 	t.Wait()
 	for rs := range t.Get(0, -1) {
