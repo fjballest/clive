@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 )
 
 // Message types.
@@ -337,4 +338,33 @@ func WriteBytes(w io.Writer, c <-chan face{}) (nbytes int64, nmsgs int, err erro
 		err = cerror(c)
 	}
 	return
+}
+
+// Merge input channels: msgs received from in are sent to a single channel
+func Merge(in ...<-chan face{}) <-chan face{} {
+	var wg sync.WaitGroup
+	outc := make(chan face{})
+	for _, inc := range in {
+		wg.Add(1)
+		inc := inc
+		go func() {
+			for m := range inc {
+				if ok := outc <- m; !ok {
+					close(inc, cerror(outc))
+				}
+			}
+			wg.Done()
+		}()
+	}
+	go func() {
+		wg.Wait()
+		for _, i := range in {
+			if err := cerror(i); err != nil {
+				close(outc, err)
+				return
+			}
+		}
+		close(outc)
+	}()
+	return outc
 }
