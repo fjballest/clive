@@ -1261,6 +1261,7 @@ function tkeydown(e) {
 		if(!e.keyCode)
 			key = e.which;
 		var rune = String.fromCharCode(e.keyCode);
+		e.stopPropagation();
 		if(0)console.log("keydown which " + e.which + " key " + e.keyCode +
 			" '" + rune + "'" +
 			" " + e.ctrlKey + " " + e.metaKey);
@@ -1504,7 +1505,7 @@ function tapply(ev, fromserver) {
 		if(!this.userresized) {
 			this.autoresize();
 		}
-		this.dump();
+		// this.dump();
 		break;
 	case "mark":
 		if(arg.length < 3){
@@ -1530,7 +1531,23 @@ function tapply(ev, fromserver) {
 	}
 }
 
+// This is to prevent the event from being propagated to the parent
+// container.
+// Despite this, it seems that if we return true in safari for a keydown
+// then it's too late and the space bubbles and we scroll when we shouldnt.
+// So, locknkeydown returns false and calls, by hand, the down/key/up handlers.
+function dontbubble(e) {
+	if (e) {
+		e.bubbles = false;
+		if(e.stopPropagation) {
+			e.stopPropagation();
+		}
+		e.cancelBubble = true;
+	}
+}
+
 function tlocknkeydown(e) {
+	dontbubble(e);
 	if(this.islocked) {
 		return tkeydown.call(this, e);
 	}
@@ -1541,17 +1558,26 @@ function tlocknkeydown(e) {
 		this.whenlocked = [];
 	}
 	var self = this;
-	this.whenlocked.push(function() {
-		tkeydown.call(self, e);
-	});
-	if (e && e.which == 32 && e.target == document.body) {
-		e.preventDefault();
-		return false;
+	var xe = {};
+	try {
+		// e is cyclic sometimes; JSON can't
+		// clone a cyclic structure. But it's ok.
+		xe = (JSON.parse(JSON.stringify(e)));
+	}catch(e){;}
+	if(!xe || !xe.stopPropagation) {
+		return;
 	}
-	return true;
+	this.whenlocked.push(function() {
+		tkeydown.call(self, xe);
+		tevkey.call(self, xe);
+		tkeyup.call(self, xe);
+		return false;
+	});
+	return false;
 }
 
 function tlocknevkey(e) {
+	dontbubble(e);
 	if(this.islocked) {
 		return tevkey.call(this, e);
 	}
@@ -1568,6 +1594,7 @@ function tlocknevkey(e) {
 }
 
 function tlocknkeyup(e) {
+	dontbubble(e);
 	if(this.islocked) {
 		return tkeyup.call(this, e);
 	}
@@ -1839,12 +1866,15 @@ function mktxt(d, t, e, cid, id) {
 	e.tclear = tclear;
 
 	d.keypress(function(ev){
+		dontbubble(ev);
 		return e.tkeypress(ev);
 	})
 	.keyup(function(ev){
+		dontbubble(ev);
 		return e.tkeyup(ev);
 	})
 	.keydown(function(ev){
+		dontbubble(ev);
 		return e.tkeydown(ev);
 	}).get(0).update = function(ev) {
 		if(ev.Src == id){
@@ -1925,11 +1955,6 @@ function mktxt(d, t, e, cid, id) {
 		console.log("window resized");
 		e.mayresize(false);
 	});
-	$(window).onkeydown = function(e) {
-		if(e.which == 32 && e.target == document.body) {
-			e.preventDefault();
-		}
-	};
 	if(t) {
 		$("#"+id+"t").getWordByEvent('click', function tagclick(ev, word) {
 			console.log("tag click on ", ev, word);

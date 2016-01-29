@@ -24,7 +24,7 @@ func edits(t *ink.Txt) {
 	x := t.GetText()
 	x.Ins([]rune("XXX\n"), 2)
 	x.Ins([]rune("XXX\n"), x.Len())
-	t.SetMark("xx", 3)
+	t.SetMark("xx", 30)
 	t.PutText()
 	for i := 0; i < 30; i++ {
 		time.Sleep(time.Second)
