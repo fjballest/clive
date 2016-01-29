@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 )
 
 // Message types.
@@ -365,6 +366,54 @@ func Merge(in ...<-chan face{}) <-chan face{} {
 			}
 		}
 		close(outc)
+	}()
+	return outc
+}
+
+// Group bytes from the input channel so data is sent at most every
+// ival or when the given size is reached.
+// Useful to collect command output and display it for the user without
+// issuing a single write for each msg in the input.
+func GroupBytes(in <-chan face{}, ival time.Duration, size int) <-chan face{} {
+	var buf bytes.Buffer
+	var t time.Time
+	outc := make(chan face{})
+	send := func() {
+		m := make([]byte, buf.Len())
+		copy(m, buf.Bytes())
+		buf.Reset()
+		if ok := outc <- m; !ok {
+			close(in, cerror(outc))
+		}
+		t = time.Now()
+	}
+	go func() {
+		doselect {
+		case x, ok := <-in:
+			if !ok {
+				break
+			}
+			switch m := x.(type) {
+			case []byte:
+				buf.Write(m)
+				if buf.Len() > size || time.Since(t) > ival {
+					send()
+				}
+			default:
+				if ok := outc <- m; !ok {
+					close(in, cerror(outc))
+				}
+			}
+		case <-time.After(ival):
+			if buf.Len() > size {
+				send()
+			}
+			t = time.Now()
+		}
+		if buf.Len() > 0 {
+			outc <- buf.Bytes()
+		}
+		close(outc, cerror(in))
 	}()
 	return outc
 }
