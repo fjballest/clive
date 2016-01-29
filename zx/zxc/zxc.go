@@ -383,6 +383,9 @@ func (fs *Fs) wstat(p string, nd zx.Dir) (zx.Dir, error) {
 	if !fs.perms {
 		ai = nil
 	}
+	if d["type"] == "d" {
+		delete(nd, "size")
+	}
 	if nd["wuid"] != "" {
 		delete(nd, "wuid")
 	}
@@ -782,14 +785,25 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 	case "":
 		f, err = fs.walk(forPut, nil, els...)
 	case "d", "-":
+		if typ == "d" {
+			delete(d, "size")
+		} else if d["size"] == "" {
+			d["size"] = "0"
+		}
 		f, err = fs.walk(forCreat, nil, els...)
 	case "D":
+		if typ == "d" {
+			delete(d, "size")
+		}
 		d["type"] = "d"
 		typ = "d"
 		f, err = fs.walk(forCreatAll, d, els...)
 	case "F":	
 		d["type"] = "-"
 		typ = "-"
+		if d["size"] == "" {
+			d["size"] = "0"
+		}
 		f, err = fs.walk(forCreatAll, d, els...)
 	default:
 		return nil, fmt.Errorf("%s: bad file type '%s'", p, typ)

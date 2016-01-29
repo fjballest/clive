@@ -414,7 +414,7 @@ func (zd *Dir) Create(elem string, flg fuse.OpenFlags, mode os.FileMode, intr fs
 	//
 	// By now we keep as close to unix as we can.
 
-	nd := zx.Dir{"type": "-"}
+	nd := zx.Dir{"type": "-", "size": "0"}
 	nd.SetMode(uint64(mode))
 	dc := make(chan []byte)
 	close(dc)

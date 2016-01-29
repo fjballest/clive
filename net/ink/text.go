@@ -111,6 +111,9 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 // Create a new text control with the given tag line and body lines.
 func newTxt(tagged bool, tag string, lines ...string) *Txt {
 	lns := strings.Join(lines, "\n");
+	if len(lns) == 0 || lns[len(lns)-1] != '\n' {
+		lns += "\n"
+	}
 	t := &Txt {
 		Ctlr: newCtlr("text"),
 		t: txt.NewEditing([]rune(lns)),

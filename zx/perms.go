@@ -51,7 +51,7 @@ func (d Dir) CanWalk(ai *auth.Info) bool {
 // path, addr, type, wuid, and name are never updated
 // so they are ignored.
 // Only the owner can udpate the mode
-// Updating the size is ok if CanPut()
+// Updating the size is ok if CanPut(), and it's ignored for directories.
 // The owner can update the group or the owner if it's a
 // member of the target owner/group.
 // The owner and group members may update other attributes
@@ -75,9 +75,6 @@ func (d Dir) CanWstat(ai *auth.Info, nd Dir) error {
 				return fmt.Errorf("mode: %s", ErrPerm)
 			}
 		case "size":
-			if d["type"] == "d" {
-				return fmt.Errorf("size: %s", ErrIsDir)
-			}
 			if !d.CanPut(ai) {
 				return fmt.Errorf("size: %s", ErrPerm)
 			}

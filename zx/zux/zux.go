@@ -387,7 +387,7 @@ func (fs *Fs) wstat(p string, d zx.Dir, chk bool) error {
 		}
 	}
 	path := fpath.Join(fs.root, p)
-	if _, ok := d["size"]; ok {
+	if _, ok := d["size"]; ok && d["type"] != "d" {
 		sz := d.Size()
 		err = os.Truncate(path, sz)
 	}
@@ -664,6 +664,7 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 				}
 			}
 			close(c, zx.ErrIsDir)
+			delete(d, "size")
 			if len(d) > 2 {
 				fs.wstat(p, d, false)
 			}
