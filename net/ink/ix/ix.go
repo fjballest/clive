@@ -9,9 +9,10 @@ import (
 	"clive/cmd/opt"
 	"clive/net/ink"
 	"strings"
-	"os/exec"
-	"os"
+	"clive/ch"
+	"clive/cmd/run"
 	"strconv"
+	"time"
 )
 
 struct Cmds {
@@ -19,7 +20,7 @@ struct Cmds {
 }
 
 func newCmds() *Cmds {
-	win := ink.NewTxt("Type your commands here");
+	win := ink.NewTxt("Online and ready");
 	cin := win.Events()
 	c := &Cmds{win: win}
 	go func() {
@@ -48,43 +49,37 @@ func (c *Cmds) exec(ev *ink.Ev) {
 		cmd.Warn("bad p1 in click2")
 		return
 	}
-	ln := strings.TrimSpace(ev.Args[1])
+	line := ev.Args[1]
+	hasnl := len(line) > 0 && line[len(line)-1] == '\n'
+	ln := strings.TrimSpace(line)
 	if len(ln) == 0 {
 		return
 	}
-	cmd.Dprintf("exec %s\n", ln)
-	argv := strings.Fields(ln)
-	x := exec.Command(argv[0], argv[1:]...)
-	r, w, err := os.Pipe()
-	if err != nil {
-		cmd.Warn("pipe: %s", err)
-		return
-	}
-	x.Stdout = w
-	x.Stderr = w
-	if err := x.Start(); err != nil {
-		w.Close()
-		cmd.Warn("cmd: %s", err)
-		return
-	}
 	c.win.SetMark("cmd", pos)
-	cmd.Warn("cmd: started")
+	cmd.Dprintf("exec %s\n", ln)
+	x, err := run.UnixCmd(strings.Fields(ln)...)
+	if err != nil {
+		cmd.Warn("run: %s", err)
+		c.win.MarkIns("cmd", []rune("error: " + err.Error() + "\n"));
+		return
+	}
 	go func() {
-		var buf [4096]byte
-		for {
-			nr, err := r.Read(buf[0:])
-			if nr > 0 {
-				s := string(buf[:nr])
-				cmd.Warn("out: %s", s)
+		for m := range ch.GroupBytes(ch.Merge(x.Out, x.Err), time.Second, 4096) {
+			switch m := m.(type) {
+			case []byte:
+				cmd.Dprintf("-> [%d] bytes\n", len(m))
+				s := string(m)
+				if !hasnl {
+					hasnl = true
+					s = "\n" + s
+				}
 				c.win.MarkIns("cmd", []rune(s))
-			}
-			if err != nil {
-				break
+			default:
+				cmd.Dprintf("got type %T\n", m)
 			}
 		}
-		err := x.Wait()
-		if err != nil {
-			cmd.Warn("exit: %s", err)
+		if err := cerror(x.Err); err != nil {
+			c.win.MarkIns("cmd", []rune("error: " + err.Error() + "\n"));
 		}
 		c.win.DelMark("cmd")
 	}()

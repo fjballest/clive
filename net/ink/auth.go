@@ -11,14 +11,16 @@ import (
 )
 
 func authFailed(w http.ResponseWriter, r *http.Request) {
-	outs := `
+	outs := `<html><head><title> Logged out of Clive ink</title></head>
+		<body style="background-color:#ddddc8">
 		<script>
 		document.cookie = "clive=xxx; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
 		</script>
-		<b>Authentication failed</b>
+		<b><tt>You are logged out.</tt></b>
 		<p><p><center><b><tt>
-		<b>Please, proceed to the <a href="/login">login page</a>.
+		<b>You may proceed to the <a href="/login">login page</a>.
 		</tt></b></center><p><p>
+		</body></html>
 	`
 	fmt.Fprintf(w, "%s\n", outs)
 }
@@ -92,6 +94,8 @@ func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 }
 
 func ServeLoginFor(proceedto string) {
+	http.HandleFunc("/logout", authFailed)
+
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		vals := r.URL.Query()
 		if len(vals["dst"]) > 0 {
@@ -99,7 +103,7 @@ func ServeLoginFor(proceedto string) {
 		}
 		js := `
 		<html>
-		<body>
+		<body style="background-color:#ddddc8">
 		<script type="text/javascript" src="/js/aes.js"></script>
 		<script type="text/javascript" src="/js/ansix923.js"></script>
 		<script type="text/javascript" src="/js/pbkdf2.js"></script>
