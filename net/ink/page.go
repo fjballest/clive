@@ -43,9 +43,8 @@ var headers = `
 
 // Write headers to a page so it can support controls.
 // Not needed for pages created with NewPg.
-// If you do not use NewPg, remember to call Auth
-// early in the handler (unless you don't want auth) and
-// then return without writing anything if it failed. 
+// If you do not use NewPg, remember to use AuthHandler
+// and HTTPS.
 func WriteHeaders(w io.Writer) {
 	io.WriteString(w, headers)
 }
@@ -82,7 +81,7 @@ interface closeder {
 	Closed() bool
 }
 
-// Create a new UI page.
+// Create a new UI page, authenticated.
 // Elements can be strings, Html, or io.WriterTo that know how to write the
 // HTML for them (controls implement this interface).
 func NewPg(path string, els ...interface{}) *Pg {
@@ -92,11 +91,6 @@ func NewPg(path string, els ...interface{}) *Pg {
 		els: els,
 	}
 	hndlr := func(w http.ResponseWriter, r *http.Request) {
-		authok := true
-		if !pg.NoAuth {
-			authok = Auth(w, r)
-			cmd.Warn("authok = %v", authok)
-		}
 		tag := pg.Tag
 		if tag == "" {
 			tag = "Clive"
@@ -105,9 +99,6 @@ func NewPg(path string, els ...interface{}) *Pg {
 		fmt.Fprintln(w, `<html><head><title>`+title+`</title>`);
 		WriteHeaders(w);
 		fmt.Fprintln(w, `</head><body style="background-color:#ddddc8">`);
-		if !authok {
-			return
-		}
 		pg.Lock()
 		defer pg.Unlock()
 		for i := 0; i < len(pg.els);  {
@@ -133,7 +124,7 @@ func NewPg(path string, els ...interface{}) *Pg {
 		}
 		fmt.Fprintln(w, `</body></html>`);
 	}
-	http.HandleFunc(path, hndlr)
+	http.HandleFunc(path, AuthHandler(hndlr))
 	return pg
 }
 

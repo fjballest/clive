@@ -70,10 +70,10 @@ func newCtlr(tag string) *Ctlr {
 		Id: fmt.Sprintf("%s%d", tag, newId()),
 		in: make(chan *Ev),
 		out: make(chan *Ev),
-		views: make(map[*view]bool),
+		views: make(map[*view]bool), 
 		closec: make(chan bool),
 	}
-	http.Handle("/ws/" + c.Id, websocket.Handler(c.server))
+	http.Handle("/ws/" + c.Id, AuthWebSocketHandler(c.server))
 	go c.reflector()
 	return c
 }
