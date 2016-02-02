@@ -9,6 +9,7 @@ import (
 	"clive/x/code.google.com/p/go.net/websocket"
 	"encoding/json"
 	"sync"
+	"html"
 	"errors"
 	"fmt"
 )
@@ -35,6 +36,7 @@ struct view {
 // Supports multiple views and reflects events to synchronize them.
 // All controls export this public interface.
 struct Ctlr {
+	tag string
 	Id string	// unique id for the controlled element
 	closec chan bool
 	in, out chan *Ev	// input events (from the page), and output events
@@ -77,6 +79,31 @@ func newCtlr(tag string) *Ctlr {
 	go c.reflector()
 	return c
 }
+
+func (c *Ctlr) GetId() string {
+	return c.Id
+}
+
+func (c *Ctlr) SetTag(s string) {
+	c.Lock()
+	defer c.Unlock()
+	c.tag = s
+	ev := &Ev{Id: c.Id, Src: "app", Args:[]string{"tag", html.EscapeString(s)}}
+	// may deadlock if we don't post it in another proc
+	go func() {
+		c.out <- ev
+	}()
+}
+
+func (c *Ctlr) Tag() string {
+	c.Lock()
+	defer c.Unlock()
+	if c.tag == "" {
+		return "ink"
+	}
+	return c.tag
+}
+
 
 // Terminate the operation of the control and remove it from pages.
 func (c *Ctlr) Close() error {

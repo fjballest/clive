@@ -29,6 +29,7 @@ import (
 //	intr	esc|...
 //	hold
 //	rlsed
+//	save
 // Events sent from the viewer but not for the user:
 //	id
 // Events sent to the viewer (besides all reflected events):
@@ -45,6 +46,9 @@ import (
 //	rlse
 //	mark name pos
 //	delmark
+//	dirty
+//	clean
+//	tag str
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end
@@ -63,13 +67,14 @@ import (
 struct Txt {
 	*Ctlr
 	t *txt.Text
-	tag string
-	tagged, noedits bool
+	tag string		// NB: this is not the page element tag.
+	tagged, noedits bool	// It was a tag line but we no longer use it.
 
 	owner string
 	held []*Ev
 	ngets int
 	getslk sync.Mutex
+	dirty bool
 }
 
 // Write the HTML for the text control to a page.
@@ -77,7 +82,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := t.newViewId()
 
 	n, err := io.WriteString(w, `
-		<div id="`+vid+`" class="`+t.Id+`, ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; width:100%;height:300; background-color:#ffffea">`)
+		<div id="`+vid+`" class="`+t.Id+` ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; width:100%;height:300; background-color:#ffffea">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -90,8 +95,25 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 			return tot, err
 		}
 	}
+	ctag := t.Tag()
+	ts := ``
+	if ctag != "" {
+		ctag = html.EscapeString(ctag)
+		ts = `
+			if(document.settag) {
+				document.settag(x, "`+ctag+`");
+			}
+		`
+	}
+	if t.dirty {
+		ts += `
+			if(document.setdirty) {
+				document.setdirty(x);
+			}
+		`
+	}
 	n, err = io.WriteString(w, `
-<canvas id="`+vid+`c" class="txt1c" width="100%" height="100%" style="border:1px;"></canvas>
+<canvas id="`+vid+`c" class="`+t.Id+`c" width="100%" height="100%" style="border:1px;"></canvas>
 </div>
 <script>
 	$(function(){
@@ -102,6 +124,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 		x.lines = [];
 		x.lines.push({txt: "", off: 0});
 		document.mktxt(d, t, x, "`+t.Id+`", "`+vid+`");
+		`+ts+`
 	});
 </script>`)
 	tot += int64(n)
@@ -124,11 +147,6 @@ func newTxt(tagged bool, tag string, lines ...string) *Txt {
 	t.t.SetMark("p1", 0)
 	go t.handler()
 	return t
-}
-
-// Create a new text control with the given tag line and body lines.
-func NewTaggedTxt(tag string, lines ...string) *Txt {
-	return newTxt(true, tag, lines...)
 }
 
 // Create a new text control with no tag line and the given body lines.
@@ -573,12 +591,25 @@ func (t *Txt) apply(wev *Ev) {
 		t.undoRedo(false)
 	case "eredo":
 		t.undoRedo(true)
-
+	case "save":
+		t.post(wev)
 	case "intr":
 		cmd.Dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
 		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 		t.post(wev)
 	}
+}
+
+// Flag the text as dirty
+func (t *Txt) Dirty() {
+	t.dirty = true
+	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"dirty"}}
+}
+
+// Flag the text as clean
+func (t *Txt) Clean() {
+	t.dirty = false
+	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"clean"}}
 }
 
 // Prevent user edits

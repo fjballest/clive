@@ -21,6 +21,7 @@ struct Button {
 //	Set  name nb on|off
 // Events sent from the viewer but not for the user:
 //	id
+//	tag str
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end
@@ -56,7 +57,7 @@ func NewButtonSet(button ...*Button) *ButtonSet {
 func (bs *ButtonSet) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := bs.newViewId()
 	n, err := io.WriteString(w,
-		`<div id="`+vid+`" class="`+bs.Id+`, ui-widget-header, ui-corner-all">`)
+		`<div id="`+vid+`" class="`+bs.Id+` ui-widget-header, ui-corner-all">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err

@@ -125,7 +125,6 @@ func main() {
 
 	pg := ink.NewPg("/", "Example text editing:", bs, rs, t)
 	pg.Tag = "Clive's iedit"
-	ink.ServeLoginFor("/")
 	if doedits {
 		go edits(t)
 	}

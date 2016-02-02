@@ -13,14 +13,50 @@ import (
 	"clive/cmd/run"
 	"strconv"
 	"time"
+	"net/url"
 )
 
 struct Cmds {
 	win *ink.Txt
 }
 
+func pgdrop(pg *ink.Pg, ev *ink.Ev) {
+	args := ev.Args
+	what := args[1]
+	uri, err := url.Parse(what)
+	if err != nil {
+		cmd.Dprintf("pgdrop: not a url: %s\n", err)
+		return
+	}
+	if !uri.IsAbs() {
+		cmd.Dprintf("pgdrop: not an abs url\n")
+		return
+	}
+	pg.Add(ink.Url(args[1]))
+	
+}
+
+func pgevs(pg *ink.Pg) {
+	for ev := range pg.Events() {
+		ev := ev
+		if ev == nil || len(ev.Args) == 0 {
+			continue
+		}
+		cmd.Dprintf("ix: pg %s ev: %v\n", ev.Src, ev.Args)
+		switch ev.Args[0] {
+		case "click4":
+			if len(ev.Args) < 2 {
+				cmd.Dprintf("ix: short drop ev\n")
+				continue
+			}
+			pgdrop(pg, ev)
+		}
+	}
+}
+
 func newCmds() *Cmds {
 	win := ink.NewTxt("Online and ready");
+	win.SetTag("cmds")
 	cin := win.Events()
 	c := &Cmds{win: win}
 	go func() {
@@ -95,10 +131,26 @@ func main() {
 	if len(args) != 0 {
 		opts.Usage()
 	}
-	cmds := newCmds();
-	pg := ink.NewPg("/", cmds.win)
+	cmds1 := newCmds();
+	cmds2 := newCmds();
+	col1 := []face{}{"XX", "YY", cmds1.win}
+	col2 := []face{}{"XX", "ZZ", cmds2.win}
+	col3 := []face{}{"XX", ink.Url("http://lsub.org")}
+	pg := ink.NewColsPg("/", col1, col2, col3)
 	pg.Tag = "Ink cmds"
-	ink.ServeLoginFor("/")
+	go pgevs(pg)
 	go ink.Serve(":8181")
-	cmds.win.Wait()
+	go func() {
+		time.Sleep(5*time.Second)
+		pg.Del(cmds2.win.Id)
+		cmd.Warn("pg views: %v", pg.Views())
+		cmds1.win.Dirty()
+		cmds1.win.SetTag("ql")
+		time.Sleep(15*time.Second)
+		cmds1.win.Clean()
+		time.Sleep(5*time.Second)
+		cmds1.win.Dirty()
+	}()
+	cmds1.win.Wait()
+	cmds2.win.Wait()
 }

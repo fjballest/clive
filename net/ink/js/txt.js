@@ -1368,6 +1368,25 @@ function tapply(ev, fromserver) {
 	case "edits":
 		this.noedits = false;
 		break;
+	case "clean":
+		if(document.setclean) {
+			document.setclean(this);
+		}
+		break;
+	case "dirty":
+		if(document.setdirty) {
+			document.setdirty(this);
+		}
+		break;
+	case "tag":
+		if(arg.length < 2){
+			console.log(this.divid, "apply: short tag");
+			break;
+		}
+		if(document.settag) {
+			document.settag(this, arg[1]);
+		}
+		break;
 	case "font":
 		if(arg.length < 2){
 			console.log(this.divid, "apply: short font");

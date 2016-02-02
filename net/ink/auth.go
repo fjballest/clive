@@ -89,11 +89,16 @@ func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 			authFailed(w, r)
 			return
 		}
+		// TODO: We should decorate r adding the user id to
+		// the url as a query, so fn can inspect the query and
+		// know which user did auth.
 		fn(w, r)
 	}
 }
 
-func ServeLoginFor(proceedto string) {
+// Serve the /login and /logout pages, proceeding to the indicated page
+// after each login.
+func serveLoginFor(proceedto string) {
 	http.HandleFunc("/logout", authFailed)
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {

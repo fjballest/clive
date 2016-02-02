@@ -13,6 +13,7 @@ import (
 //	Set  name nb on|off
 // Events sent from the viewer but not for the user:
 //	id
+//	tag str
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end

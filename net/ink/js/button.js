@@ -31,7 +31,6 @@ function bapply(ev, fromserver) {
 	}
 }
 
-
 /*
 	d is is the (jquery) parent that will supply events.
 	cid is the class id d.
