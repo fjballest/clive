@@ -19,6 +19,7 @@ struct Button {
 // Events sent from the viewer:
 //	click name nb
 //	Set  name nb on|off
+//	quit
 // Events sent from the viewer but not for the user:
 //	id
 //	tag str
@@ -140,9 +141,11 @@ func (bs *ButtonSet) handle(wev *Ev) {
 	ev := wev.Args
 	switch ev[0] {
 	case "start":
+		cmd.Dprintf("%s: %v\n", bs.Id, ev)
 		bs.update(wev.Src)
 		bs.post(wev)
-	case "end":
+	case "end", "quit":
+		cmd.Dprintf("%s: %v\n", bs.Id, ev)
 		bs.post(wev)
 	case "click", "Set":
 		if len(ev) < 3 {

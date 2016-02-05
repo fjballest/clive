@@ -71,8 +71,8 @@ func parseEv(data []byte) (*Ev, error) {
 func newCtlr(tag string) *Ctlr {
 	c := &Ctlr{
 		Id: fmt.Sprintf("%sx%dx%d", tag, os.Getpid(), newId()),
-		in: make(chan *Ev),
-		out: make(chan *Ev),
+		in: make(chan *Ev, 16),
+		out: make(chan *Ev, 16),
 		views: make(map[*view]bool), 
 		closec: make(chan bool),
 	}
@@ -152,7 +152,7 @@ func (c *Ctlr) Events() chan *Ev {
 	c.Lock()
 	defer c.Unlock()
 	if c.evs == nil {
-		c.evs = make(chan *Ev)
+		c.evs = make(chan *Ev, 16)
 	}
 	return c.evs
 }

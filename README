@@ -17,4 +17,8 @@ To get documentation for packages you should, for example,
 
 so you get examples, and the BUGS and REFERENCES sections.
 
-To install, this directory should be in your $GOPATH/clive.
+To install the compiler see ../../golang/guide
+We use the "lsub" branch.
+
+To install clive see ./guide
+We use the "master" branch.

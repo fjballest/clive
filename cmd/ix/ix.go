@@ -16,6 +16,7 @@ import (
 struct IX {
 	pg *ink.Pg
 	eds []*Ed
+	dot *Ed
 	cmds []*Cmd
 	sync.Mutex
 	idgen int
@@ -59,7 +60,7 @@ func (ix *IX) loop() {
 			case "win":
 				go func() {
 					icmds := ix.newCmds()
-					ix.pg.Add(icmds.win)
+					icmds.winid, _ = ix.pg.Add(icmds.win)
 				}()
 			case "dump":
 			case "quit":
@@ -136,7 +137,7 @@ func (ix *IX) editFile(what string) *Ed {
 	if err := cerror(dc); err != nil {
 		cmd.Warn("%s: get: %s", what, err)
 	}
-	ix.pg.Add(ed.win)
+	ed.winid, _ = ix.pg.Add(ed.win)
 	return ed
 }
 

@@ -76,6 +76,7 @@ function mkbuttons(d, cid, id) {
 	d.divcid = cid;
 	d.ws = new WebSocket(wsurl);
 	d.get(0).ws = d.ws;
+	d.get(0).post = d.post;
 	d.ws.onopen = function() {
 		d.post(["id"]);
 	};

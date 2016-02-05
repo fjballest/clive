@@ -247,9 +247,10 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 			} else {
 				pre += `<p>`
 			}
+			// $$ is replaced by writeEls to pgid="xxx"
 			pg.els[i] = writeEls(w, pg.els[i],
 				pre,
-				`<div class="portlet"><div class="portlet-header">`,
+				`<div class="portlet" $$><div class="portlet-header">`,
 				`</div><div class="portlet-content">`,
 				`</div></div>`,
 				`</div>`)
@@ -337,7 +338,10 @@ func writeEls(w io.Writer, els []io.WriterTo, pre, elpre, elmid, elpost, post st
 				continue
 			}
 		}
-		writeEl(w, el, elpre, elmid, elpost)
+		ix := el.(idder)
+		elid := ix.GetId()
+		x := strings.Replace(elpre, "$$", `pgid="`+elid+`"`, 1)
+		writeEl(w, el, x, elmid, elpost)
 		i++
 	}
 	fmt.Fprintln(w, post)
@@ -355,9 +359,11 @@ func (pg *Pg) Add(el interface{}) (string, error) {
 	if nel == nil {
 		return "", fmt.Errorf("unknown element type %T", el)
 	}
+	x := nel.(idder)
+	elid := x.GetId()
 	var buf bytes.Buffer
 	writeEl(&buf, nel,
-		`<div class="portlet"><div class="portlet-header">`,
+		`<div class="portlet" pgid="`+elid+`"><div class="portlet-header">`,
 		`</div><div class="portlet-content">`,
 		`</div></div>
 		<script>
@@ -372,13 +378,14 @@ func (pg *Pg) Add(el interface{}) (string, error) {
 	copy(col[1:], col[0:])
 	col[0] = nel
 	pg.els[len(pg.els)-1] = col
-	x := nel.(idder)
-	return x.GetId(), nil
+	return elid, nil
 }
 
 // Delete the element with the given id from the page (see Add for the id).
 func (pg *Pg) Del(id string) {
+	pg.Lock()
 	el := pg.dettach(id)
+	pg.Unlock()
 	if el != nil {
 		pg.out <- &Ev{Id: pg.Id, Src: "app",
 			Args: []string{"close", id},
@@ -475,6 +482,13 @@ func (pg *Pg) handle(wev *Ev) {
 		pg.post(wev)
 	case "end":
 		pg.post(wev)
+	case "quit":
+		if len(ev) < 2 {
+			return
+		}
+		if ev[1] != "" {
+			go pg.Del(ev[1])
+		}
 	case "click2", "click4":
 		pg.post(wev)
 	case "layout":

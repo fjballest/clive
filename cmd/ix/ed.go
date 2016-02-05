@@ -10,6 +10,8 @@ import (
 	"strings"
 	"strconv"
 	"net/url"
+	"clive/zx"
+	fpath "path"
 )
 
 // command run within an edit
@@ -26,6 +28,7 @@ struct Ed {
 	tag string
 	ix *IX
 	win *ink.Txt
+	winid string
 	markgen int
 	temp bool	// don't save, don't ever flag as dirty
 }
@@ -33,10 +36,14 @@ struct Ed {
 func (ix *IX) delEd(ed *Ed) {
 	ix.Lock()
 	defer ix.Unlock()
+	if ix.dot == ed {
+		ix.dot = nil
+	}
 	for i, e := range ix.eds {
 		if e == ed {
 			copy(ix.eds[i:], ix.eds[i+1:])
 			ix.eds = ix.eds[:len(ix.eds)-1]
+			ix.pg.Del(ed.winid)
 			return
 		}
 	}
@@ -74,7 +81,7 @@ func (ix *IX) newCmds() *Ed {
 	ix.Lock()
 	defer ix.Unlock()
 	ix.eds = append(ix.eds, ed)
-	go ed.cmdLoop()
+	cmd.New(ed.cmdLoop)
 	return ed
 }
 
@@ -83,7 +90,12 @@ func (ix *IX) newEdit(path string) *Ed {
 	ix.Lock()
 	defer ix.Unlock()
 	ix.eds = append(ix.eds, ed)
-	go ed.editLoop()
+	cmd.New(func(){
+		cmd.ForkDot()
+		cmd.Cd(fpath.Dir(ed.tag))
+		cmd.Dprintf("edit %s dot %s\n", ed.tag, cmd.Dot())
+		ed.editLoop()
+	})
 	return ed
 }
 
@@ -115,19 +127,26 @@ func (c *Cmd) io(hasnl bool) {
 	defer cmd.Dprintf("io terminated\n")
 	p := c.p
 	ed := c.ed
+	haderrors := false
 	for m := range ch.GroupBytes(ch.Merge(p.Out, p.Err), time.Second, 4096) {
 		switch m := m.(type) {
+		case error:
+			haderrors = true
 		case []byte:
-			cmd.Dprintf("-> [%d] bytes\n", len(m))
+			cmd.Dprintf("ix cmd io: [%d] bytes\n", len(m))
 			s := string(m)
 			c.printf("%s", s)
+		case zx.Dir:
+			c.printf("%s\n", m.Fmt())
 		default:
-			cmd.Dprintf("got type %T\n", m)
+			cmd.Dprintf("ix cmd io: got type %T\n", m)
 		}
 	}
-	if err := cerror(p.Err); err != nil {
-		cmd.Warn("cmd exit sts: %s", err)
-		c.printf("error: %s\n", err)
+	if err := p.Wait(); err != nil {
+		if !haderrors {
+			cmd.Dprintf("ix cmd exit sts: %s\n", err)
+			c.printf("cmd error: %s\n", err)
+		}
 	}
 	ed.win.DelMark(c.mark)
 	ed.ix.delCmd(c)
@@ -195,6 +214,17 @@ func (ed *Ed) runCmd(at int, line string) {
 	go c.inkio(inkc)
 }
 
+func (ed *Ed) lookFiles(name string) {
+	dc := cmd.Dirs(name)
+	for d := range dc {
+		d, ok := d.(zx.Dir)
+		if !ok || d["type"] != "-" {
+			continue
+		}
+		ed.ix.lookFile(d["path"])
+	}
+}
+
 func (ed *Ed) look(what string) {
 	cmd.Dprintf("look for %q\n", what)
 	s := strings.TrimSpace(what)
@@ -208,6 +238,7 @@ func (ed *Ed) look(what string) {
 	if err == nil && uri.IsAbs() {
 		ed.ix.lookURL(s)
 	}
+	ed.lookFiles(s)
 }
 
 func (ed *Ed) click24(ev *ink.Ev) {
@@ -228,36 +259,60 @@ func (ed *Ed) click24(ev *ink.Ev) {
 }
 
 func (ed *Ed) cmdLoop() {
+	cmd.ForkDot()
+	cmd.ForkNS()
+	cmd.ForkEnv()
 	cmd.Dprintf("%s started\n", ed)
-	defer cmd.Dprintf("%s terminated\n", ed)
-	defer ed.ix.delEd(ed)
-	for ev := range ed.win.Events() {
+	c := ed.win.Events()
+	for ev := range c {
 		ev := ev
 		switch ev.Args[0] {
 		case "click2", "click4":
 			ed.click24(ev)
 		case "end":
 			if len(ed.win.Views()) == 0 {
-				return
+				cmd.Dprintf("%s w/o views\n", ed)
 			}
+		case "quit":
+			ed.ix.delEd(ed)
+			cmd.Dprintf("%s terminated\n", ed)
+			close(c, "quit")
+			return
 		}
 	}
+	cmd.Dprintf("%s terminated\n", ed)
+	ed.ix.delEd(ed)
 }
 
 func (ed *Ed) editLoop() {
 	cmd.Dprintf("%s started\n", ed)
-	defer cmd.Dprintf("%s terminated\n", ed)
-	defer ed.ix.delEd(ed)
-	for ev := range ed.win.Events() {
+	c := ed.win.Events()
+	for ev := range c {
 		ev := ev
 		cmd.Dprintf("ix ev %v\n", ev)
 		switch ev.Args[0] {
+		case "click1":
+			if !ed.temp {
+				ed.ix.dot = ed
+			}
+		case "eins", "edel":
+			ed.win.Dirty()
 		case "click2", "click4":
 			ed.click24(ev)
 		case "end":
 			if len(ed.win.Views()) == 0 {
-				return
+				cmd.Dprintf("%s w/o views\n", ed)
 			}
+		case "save":
+			// XXX: save it
+			ed.win.Clean()
+		case "quit":
+			ed.ix.delEd(ed)
+			cmd.Dprintf("%s terminated\n", ed)
+			close(c, "quit")
+			return
 		}
 	}
+	cmd.Dprintf("%s terminated\n", ed)
+	ed.ix.delEd(ed)
 }

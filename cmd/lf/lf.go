@@ -41,17 +41,18 @@ func main() {
 	}
 
 	out := cmd.Out("out")
+	var err error
 	for m := range dc {
 		cmd.Dprintf("got %T\n", m)
 		switch m := m.(type) {
 		case error:
+			err = m
+			cmd.Warn("%s", m)
 			if !ux {
 				m := fmt.Errorf("%s: %s", cmd.Args()[0], m)
 				if ok := out <- m; !ok {
 					close(dc, cerror(out))
 				}
-			} else {
-				cmd.Warn("%s", m)
 			}
 		case zx.Dir:
 			if !ux {
@@ -68,6 +69,10 @@ func main() {
 		}
 	}
 	if err := cerror(dc); err != nil {
+		if !ux {
+			out <- fmt.Errorf("%s: %s", cmd.Args()[0], err)
+		}
 		cmd.Fatal(err)
 	}
+	cmd.Exit(err)
 }

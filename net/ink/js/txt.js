@@ -1628,6 +1628,7 @@ function tlocknkeyup(e) {
 }
 
 function tlocknmdown(e) {
+	$("#" + this.divid ).focus();
 	if(this.islocked) {
 		return tmdown.call(this, e);
 	}
@@ -1950,6 +1951,7 @@ function mktxt(d, t, e, cid, id) {
 	}
 	e.ws = new WebSocket(wsurl);
 	d.get(0).ws = e.ws;
+	d.get(0).post = e.post;
 	e.ws.onopen = function() {
 		e.post(["id"]);
 	};

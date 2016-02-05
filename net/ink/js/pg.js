@@ -71,7 +71,7 @@ $(function(){
 
 // el is a portlet
 // remove() is not enough, we must close the ws(s)
-function removecontrol(el) {
+function removecontrol(el, needpost) {
 	console.log("closing", el);
 	if(!el) {
 		return;
@@ -81,6 +81,13 @@ function removecontrol(el) {
 			console.log("BUG: hasws w/o ws");
 			console.log("didn't set d.get(0).ws?");
 		} else {
+			if(needpost && this.post) {
+				this.post(["quit"]);
+			}
+			var pgid = $(el).attr('pgid')
+			if(needpost && pgid) {
+				document.post(["quit", pgid]);
+			}
 			this.ws.close();
 		}
 	});
@@ -160,7 +167,7 @@ function updportlets() {
 		$(p).click(function(){
 			var icon = $(this);
 			var el = icon.closest(".portlet");
-			removecontrol(el)
+			removecontrol(el, true)
 		});
 	}
 }
@@ -250,6 +257,10 @@ function pgapply(ev) {
 	var arg = ev.Args
 	switch(arg[0]) {
 	case "load":
+		if(arg.length < 2){
+			console.log(this.divid, "apply: short load");
+			break;
+		}
 		var cols = $(".column");
 		var col = cols[cols.length-1];
 		var first = $(col).find(".portlet");
@@ -261,10 +272,14 @@ function pgapply(ev) {
 		console.log(col);
 		break;
 	case "close":
+		if(arg.length < 2){
+			console.log(this.divid, "apply: short close");
+			break;
+		}
 		var id = arg[1];
 		$("."+id).each(function() {
 			var el = $(this).closest(".portlet");
-			removecontrol(e);
+			removecontrol(e, false);
 		});
 		break;
 	}

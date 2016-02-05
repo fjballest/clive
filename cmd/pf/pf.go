@@ -122,54 +122,51 @@ func main() {
 	for m := range in {
 		cmd.Dprintf("got %T\n", m)
 		ok := true
-		var err error
 		switch m := m.(type) {
 		case error:
+			err = m
 			if wflag {
 				if werr := w.end(); werr != nil {
+					err = werr
 					cmd.Warn("write: %s", werr)
 				}
 			}
-			if notux {
-				if ok := out <- m; !ok {
-					close(in, cerror(out))
-				}
-				continue
-			}
 			cmd.Warn("%s", m)
+			if notux {
+				out <- m
+			}
 		case zx.Dir:
 			if wflag {
 				if werr := w.end(); werr != nil {
+					err = werr
 					cmd.Warn("write: %s", werr)
 				}
 				if werr := w.start(m); werr != nil {
+					err = werr
 					cmd.Warn("write: %s", werr)
 				}
 			}
 			if fflag {
 				continue
 			}
+			var werr error
 			switch {
-			case notux:
-				if ok = out <- m; !ok {
-					close(in, cerror(out))
-					continue
-				}
 			case nflag:
-				_, err = printf("%s\n", m["Upath"])
+				_, werr = printf("%s\n", m["Upath"])
 			case pflag:
-				_, err = printf("%s\n", m["path"])
+				_, werr = printf("%s\n", m["path"])
 			case lflag:
-				_, err = printf("%s\n", m.LongFmt())
+				_, werr = printf("%s\n", m.LongFmt())
 			default:
-				_, err = printf("%s\n", m.Fmt())
+				_, werr = printf("%s\n", m.Fmt())
 			}
-			if err != nil {
+			if werr != nil {
 				ok = false
 			}
 		case []byte:
 			if wflag {
 				if werr := w.write(m); werr != nil {
+					err = werr
 					cmd.Warn("write: %s", werr)
 				}
 			}
@@ -192,7 +189,8 @@ func main() {
 			if !aflag {
 				continue
 			}
-			if _, err := printf("%s\n", m); err != nil {
+			if _, werr := printf("%s\n", m); werr != nil {
+				err = werr
 				ok = false
 			}
 		}
@@ -201,14 +199,13 @@ func main() {
 		}
 	}
 	if wflag {
-		if err = w.end(); err != nil {
+		if werr := w.end(); werr != nil {
+			err = werr
 			cmd.Warn("write: %s", err)
 		}
 	}
-	if err == nil {
-		err = cerror(in)
-	}
-	if err != nil {
+	if err := cerror(in); err != nil {
 		cmd.Fatal(err)
 	}
+	cmd.Exit(err)
 }

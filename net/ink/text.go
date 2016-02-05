@@ -30,6 +30,7 @@ import (
 //	hold
 //	rlsed
 //	save
+//	quit
 // Events sent from the viewer but not for the user:
 //	id
 // Events sent to the viewer (besides all reflected events):
@@ -65,6 +66,7 @@ import (
 //	eins	text p0
 //	edel	p0 p1
 //	intr	esc|...
+//
 struct Txt {
 	*Ctlr
 	t *txt.Text
@@ -75,7 +77,12 @@ struct Txt {
 	held []*Ev
 	ngets int
 	getslk sync.Mutex
-	dirty bool
+	dirty, istemp bool
+}
+
+// Prevent t from getting dirty despite viewer or user calls.
+func (t *Txt) DoesntGetDirty() {
+	t.istemp = true
 }
 
 // Write the HTML for the text control to a page.
@@ -350,7 +357,7 @@ func (t *Txt) handleLocked(wev *Ev) handler {
 		panic("no owner for a locked text")
 	}
 	if wev.Src != t.owner {
-		if ev[0] == "end" || ev[0] == "start" || ev[0] == "intr" {
+		if ev[0] == "end" || ev[0] == "quit"  || ev[0] == "start" || ev[0] == "intr" {
 			t.apply(wev);
 			return t.handleLocked
 		}
@@ -369,9 +376,9 @@ func (t *Txt) handleLocked(wev *Ev) handler {
 		}
 		return t.handleLocked
 	}
-	if ev[0] == "rlsed" || ev[0] == "end" {
+	if ev[0] == "rlsed" || ev[0] == "end" || ev[0] == "quit" {
 		t.owner = ""
-		if ev[0] == "end" {
+		if ev[0] == "end"  || ev[0] == "quit" {
 			t.apply(wev)
 		}
 		cmd.Dprintf("%s: unlocked\n", t.Id)
@@ -387,7 +394,7 @@ func (t *Txt) handleReleasing(wev *Ev) handler {
 		panic("no owner for a releasing text")
 	}
 	if wev.Src != t.owner {
-		if ev[0] == "end" || ev[0] == "start" || ev[0] == "intr" {
+		if ev[0] == "end" || ev[0] == "quit"  || ev[0] == "start" || ev[0] == "intr" {
 			t.apply(wev)
 		} else {
 			t.held = append(t.held, wev)
@@ -400,7 +407,7 @@ func (t *Txt) handleReleasing(wev *Ev) handler {
 		return t.handleUnlocked
 	}
 	t.apply(wev)
-	if ev[0] == "end" {
+	if ev[0] == "end"  || ev[0] == "quit" {
 		t.owner = ""
 		cmd.Dprintf("%s: unlocked\n", t.Id)
 		return t.handleUnlocked
@@ -456,14 +463,14 @@ func (t *Txt) apply(wev *Ev) {
 	default:
 		cmd.Dprintf("%s: unhandled %v\n", t.Id, ev)
 		return
+	case "save", "quit", "tag", "click1", "click2", "click4":
+		cmd.Dprintf("%s: %v\n", t.Id, wev)
+		t.post(wev)
 	case "hold", "held", "rlse", "rlsed":
 		cmd.Warn("%s: unexpected %v\n", t.Id, wev)
 		// If we get a hold it might be a race on the javascript code,
 		// let's see if that happens.
 		panic("javascript hold bug?")
-	case "tag":
-		cmd.Dprintf("%s: %v\n", t.Id, wev)
-		t.post(wev)
 	case "start":
 		cmd.Dprintf("%s: start %v\n", t.Id, wev.Src)
 		p0 := t.t.Mark("p0")
@@ -511,8 +518,6 @@ func (t *Txt) apply(wev *Ev) {
 		t.out <- &Ev{Id: t.Id, Src: wev.Src, Args: []string{
 			"mark", wev.Src+"p1", ev[2],
 		}}
-		t.post(wev)
-	case "click1", "click2", "click4":
 		t.post(wev)
 	case "eins":
 		if len(ev) < 3 {
@@ -594,8 +599,6 @@ func (t *Txt) apply(wev *Ev) {
 		t.undoRedo(false)
 	case "eredo":
 		t.undoRedo(true)
-	case "save":
-		t.post(wev)
 	case "intr":
 		cmd.Dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
 		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
@@ -603,27 +606,46 @@ func (t *Txt) apply(wev *Ev) {
 	}
 }
 
-// Flag the text as dirty
+// Is the text dirty (as indicated by calls to Dirty/Clean)?
+func (t *Txt) IsDirty() bool {
+	t.Lock()
+	defer t.Unlock()
+	return !t.istemp && t.dirty
+}
+
+// Flag the text as dirty; it's a nop if t.DoesntGetDirty() has been called.
 func (t *Txt) Dirty() {
+	t.Lock()
+	if t.istemp {
+		t.Unlock()
+		return
+	}
 	t.dirty = true
+	t.Unlock()
 	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"dirty"}}
 }
 
 // Flag the text as clean
 func (t *Txt) Clean() {
+	t.Lock()
 	t.dirty = false
+	t.Unlock()
 	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"clean"}}
 }
 
 // Prevent user edits
 func (t *Txt) NoEdits() {
+	t.Lock()
 	t.noedits = true
+	t.Unlock()
 	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"noedits"}}
 }
 
 // Permit user edits (default)
 func (t *Txt) Edits() {
+	t.Lock()
 	t.noedits = false
+	t.Unlock()
 	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"edits"}}
 }
 
@@ -750,6 +772,8 @@ func (t *Txt) SetMark(name string, off int) *txt.Mark {
 }
 
 func (t *Txt) DelMark(name string) {
+	t.getText()
+	defer t.putText()
 	t.out <- &Ev{Id: t.Id, Src: "", Args: []string{"delmark", name}}
 	t.t.DelMark(name)
 }
