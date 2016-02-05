@@ -26,6 +26,11 @@ function rapply(ev, fromserver) {
 			b.button("refresh");
 		}
 		break;
+	case "show":
+		if(document.showcontrol) {
+			document.showcontrol(this);
+		}
+		break;
 	default:
 		console.log("text: unhandled", arg[0]);
 	}
@@ -37,6 +42,9 @@ function rapply(ev, fromserver) {
  */
 function mkradio(d, cid, id) {
 	var wsurl = "wss://" + window.location.host + "/ws/" + cid;
+	if(d.wsaddr) {
+		wsurl = d.wsaddr + "/ws/" + cid;
+	}
 	d.post = function(args) {
 		if(!d.ws){
 			console.log("no ws");
@@ -65,6 +73,7 @@ function mkradio(d, cid, id) {
 	d.divid = id;
 	d.divcid = cid;
 	d.ws = new WebSocket(wsurl);
+	d.get(0).ws = d.ws;
 	d.ws.onopen = function() {
 		d.post(["id"]);
 	};

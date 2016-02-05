@@ -44,7 +44,7 @@ func ignored(year, day string) bool {
 
 func find(dpref, rel string, dc chan<- zx.Dir, ufile zx.Dir) {
 	droot := fpath.Join(dump, dpref)
-	years, err := zx.GetDir(cmd.NS(), droot)
+	years, err := cmd.GetDir(droot)
 	if err != nil {
 		cmd.Warn("%s", err)
 		return
@@ -55,7 +55,7 @@ func find(dpref, rel string, dc chan<- zx.Dir, ufile zx.Dir) {
 			continue
 		}
 		ypath := years[i]["path"]
-		days, err := zx.GetDir(cmd.NS(), ypath)
+		days, err := cmd.GetDir(ypath)
 		if err != nil {
 			cmd.Warn("%s: %s", ypath, err)
 			continue

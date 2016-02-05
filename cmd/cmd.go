@@ -423,6 +423,12 @@ func UnixIO(name ...string) {
 	ctx().UnixIO(name...)
 }
 
+func (c *Ctx) Chans() (in []string, out []string) {
+	c.lk.Lock()
+	io := c.io
+	c.lk.Unlock()
+	return io.chans()
+}
 
 func (c *Ctx) In(name string) <-chan interface{} {
 	c.lk.Lock()
@@ -452,6 +458,10 @@ func In(name string) <-chan interface{} {
 
 func Out(name string) chan<- interface{} {
 	return ctx().Out(name)
+}
+
+func Chans() (in []string, out []string) {
+	return ctx().Chans()
 }
 
 func (c *Ctx) CloseIO(name string) {

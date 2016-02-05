@@ -643,7 +643,7 @@ var wordre = null;
 function iswordchar(c) {
 	if(!wordre)
 		wordre = /\w/;
-	return wordre.test(c);
+	return c == '/' || c == '.' || wordre.test(c);
 }
 
 function islparen(c) {
@@ -706,7 +706,7 @@ function ttgetword(pos) {
 			epos++;
 			do{
 				for(; p1 < xlnlen; p1++, epos++){
-					x = xln.txt.charAt(p1);
+					var x = xln.txt.charAt(p1);
 					if(x == rc)
 						n--;
 					else if(x == c)
@@ -1378,6 +1378,11 @@ function tapply(ev, fromserver) {
 			document.setdirty(this);
 		}
 		break;
+	case "show":
+		if(document.showcontrol) {
+			document.showcontrol(this);
+		}
+		break;
 	case "tag":
 		if(arg.length < 2){
 			console.log(this.divid, "apply: short tag");
@@ -1535,7 +1540,7 @@ function tapply(ev, fromserver) {
 		this.setmark(arg[1], pos);
 		break;
 	case "delmark":
-		if(arg.length < 3){
+		if(arg.length < 2){
 			console.log(this.divid, "apply: short delmark");
 			break;
 		}
@@ -1574,22 +1579,17 @@ function tlocknkeydown(e) {
 		this.locking = true;
 		this.post(["hold"]);
 		console.log("holding...");
-		this.whenlocked = [];
 	}
 	var self = this;
-	var xe = {};
-	try {
-		// e is cyclic sometimes; JSON can't
-		// clone a cyclic structure. But it's ok.
-		xe = (JSON.parse(JSON.stringify(e)));
-	}catch(e){;}
-	if(!xe || !xe.stopPropagation) {
-		return;
-	}
+	var xe = jQuery.Event("keydown");
+	xe.which = e.which;
+	xe.keyCode = e.keyCode;
+	xe.ctrlKey = e.ctrlKey;
+	xe.metaKey = e.metaKey;
+	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		tkeydown.call(self, xe);
-		tevkey.call(self, xe);
-		tkeyup.call(self, xe);
+		console.log("holded keydown");
+		$(self).trigger(xe);
 		return false;
 	});
 	return false;
@@ -1604,7 +1604,6 @@ function tlocknevkey(e) {
 		this.locking = true;
 		this.post(["hold"]);
 		console.log("holding...");
-		this.whenlocked = [];
 	}
 	var self = this;
 	this.whenlocked.push(function() {
@@ -1621,7 +1620,6 @@ function tlocknkeyup(e) {
 		this.locking = true;
 		this.post(["hold"]);
 		console.log("holding...");
-		this.whenlocked = [];
 	}
 	var self = this;
 	this.whenlocked.push(function() {
@@ -1637,11 +1635,12 @@ function tlocknmdown(e) {
 		this.locking = true;
 		this.post(["hold"]);
 		console.log("holding...");
-		this.whenlocked = [];
 	}
 	var self = this;
 	this.whenlocked.push(function() {
-		tmdown.call(self, e);
+		console.log("deferred push");
+		self.onmousedown(e)
+		self.onmouseup(e);
 	});
 }
 
@@ -1653,7 +1652,6 @@ function tlocknmup(e) {
 		this.locking = true;
 		this.post(["hold"]);
 		console.log("holding...");
-		this.whenlocked = [];
 	}
 	var self = this;
 	this.whenlocked.push(function() {
@@ -1851,6 +1849,7 @@ function mktxt(d, t, e, cid, id) {
 
 	e.locked = tlocked;
 	e.unlocked = tunlocked;
+	e.whenlocked = [];
 
 	e.tkeydown = tlocknkeydown;
 //	e.tkeydown = tkeydown;
@@ -1946,7 +1945,11 @@ function mktxt(d, t, e, cid, id) {
 	};
 
 	var wsurl = "wss://" + window.location.host + "/ws/" + cid;
+	if(d.wsaddr) {
+		wsurl = d.wsaddr + "/ws/" + cid;
+	}
 	e.ws = new WebSocket(wsurl);
+	d.get(0).ws = e.ws;
 	e.ws.onopen = function() {
 		e.post(["id"]);
 	};

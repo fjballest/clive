@@ -49,6 +49,7 @@ import (
 //	dirty
 //	clean
 //	tag str
+//	show
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end
@@ -82,7 +83,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := t.newViewId()
 
 	n, err := io.WriteString(w, `
-		<div id="`+vid+`" class="`+t.Id+` ui-widget-content", tabindex="1" style="border:2px solid black; margin:0; width:100%;height:300; background-color:#ffffea">`)
+		<div id="`+vid+`" class="`+t.Id+` ui-widget-content hasws", tabindex="1" style="border:2px solid black; margin:0; width:100%;height:300; background-color:#ffffea">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -112,6 +113,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 			}
 		`
 	}
+	wsaddr := `wss://localhost:`+servePort
 	n, err = io.WriteString(w, `
 <canvas id="`+vid+`c" class="`+t.Id+`c" width="100%" height="100%" style="border:1px;"></canvas>
 </div>
@@ -120,6 +122,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 		var d = $("#`+vid+`");
 		var t = $("#`+vid+`t");
 		var x = $("#`+vid+`c").get(0);
+		d.wsaddr = "`+wsaddr+`";
 		x.tag = "`+t.tag+`";
 		x.lines = [];
 		x.lines.push({txt: "", off: 0});

@@ -97,7 +97,7 @@ func parse() (err error) {
 }
 
 func main() {
-	cmd.UnixIO()
+	cmd.UnixIO("err")
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("x", "print commands as they are run", &c.Verb)
@@ -107,7 +107,12 @@ func main() {
 	opts.NewFlag("n", "dry run", &dry)
 	opts.NewFlag("c", "run args as a command", &cflag)
 	opts.NewFlag("i", "interactive", &iflag)
+	noux := false
+	opts.NewFlag("u", "do not use unix IO", &noux)
 	args := opts.Parse()
+	if !noux {
+		cmd.UnixIO()
+	}
 	if cflag {
 		if len(args) == 0 {
 			cmd.Warn("no args and flag -c")

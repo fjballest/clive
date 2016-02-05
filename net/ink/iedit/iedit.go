@@ -12,6 +12,7 @@ import (
 	"clive/net/ink"
 	"time"
 	"fmt"
+	"bytes"
 )
 
 // Example of how to update the text from the API while the user edits it,
@@ -98,9 +99,13 @@ func main() {
 	rdonly := false
 	opts.NewFlag("r", "read only", &rdonly)
 	opts.NewFlag("e", "do edits for testing", &doedits)
-	cmd.UnixIO()
+	cmd.UnixIO("err")
 	args := opts.Parse()
 	var t *ink.Txt
+	inkout := cmd.Out("ink")
+	if inkout == nil {
+		cmd.UnixIO()
+	}
 	if len(args) == 0 {
 		t = ink.NewTxt("1234", "abc")
 	} else {
@@ -108,13 +113,13 @@ func main() {
 		if err != nil {
 			cmd.Fatal(err)
 		}
-		t = ink.NewTaggedTxt(args[0] + " Del", string(dat))
+		t = ink.NewTxt(args[0] + " Del", string(dat))
 	}
 	go edit(t)
 	if rdonly {
 		t.NoEdits()
 	}
-
+	ink.UsePort("8182")
 	bs := ink.NewButtonSet(&ink.Button{Tag: "One", Name: "one"},
 		&ink.Button{Tag: "Two", Name: "two"},
 		&ink.Button{Tag: "B", Name: "b", Value: &bold},
@@ -128,7 +133,16 @@ func main() {
 	if doedits {
 		go edits(t)
 	}
-	go ink.Serve(":8181")
+	go ink.Serve()
+	if inkout != nil {
+		// TODO: ctlrs must use unique ids sytem-wide, or
+		// controls written won't work because of their ids.
+		inkout <- []byte(`<tt>Hi there, this is HTML</tt>`)
+		var buf bytes.Buffer
+		bs.WriteTo(&buf)
+		inkout <- buf.Bytes()
+		inkout <- []byte("https://localhost:8182")
+	}
 	t.Wait()
 	for rs := range t.Get(0, -1) {
 		cmd.Printf("%s", string(rs))

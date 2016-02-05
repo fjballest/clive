@@ -26,6 +26,11 @@ function bapply(ev, fromserver) {
 			b.button("refresh");
 		}
 		break;
+	case "show":
+		if(document.showcontrol) {
+			document.showcontrol(this);
+		}
+		break;
 	default:
 		console.log("text: unhandled", arg[0]);
 	}
@@ -34,9 +39,14 @@ function bapply(ev, fromserver) {
 /*
 	d is is the (jquery) parent that will supply events.
 	cid is the class id d.
+	d has "hasws" in its class and thus we must set
+	d.get(0).ws to the ws to be closed if this element is removed.
  */
 function mkbuttons(d, cid, id) {
 	var wsurl = "wss://" + window.location.host + "/ws/" + cid;
+	if(d.wsaddr) {
+		wsurl = d.wsaddr + "/ws/" + cid;
+	}
 	d.post = function(args) {
 		if(!d.ws){
 			console.log("no ws");
@@ -65,6 +75,7 @@ function mkbuttons(d, cid, id) {
 	d.divid = id;
 	d.divcid = cid;
 	d.ws = new WebSocket(wsurl);
+	d.get(0).ws = d.ws;
 	d.ws.onopen = function() {
 		d.post(["id"]);
 	};

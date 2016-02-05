@@ -48,12 +48,44 @@ function settag(e, tag) {
 		});
 }
 
+// move the control to the start of the column
+function showcontrol(e, tag) {
+	var p = $(e).closest(".portlet");
+	if(!p || !p.length) {
+		return;
+	}
+	var c = p.closest(".column");
+	if(!c) {
+		return;
+	}
+	$(c).find(".portlet").first().before(p);
+}
+
 
 $(function(){
 	document.setdirty = setdirty;
 	document.setclean = setclean;
 	document.settag = settag;
+	document.showcontrol = showcontrol;
 });
+
+// el is a portlet
+// remove() is not enough, we must close the ws(s)
+function removecontrol(el) {
+	console.log("closing", el);
+	if(!el) {
+		return;
+	}
+	$(el).find(".hasws").each(function() {
+		if(!this.ws) {
+			console.log("BUG: hasws w/o ws");
+			console.log("didn't set d.get(0).ws?");
+		} else {
+			this.ws.close();
+		}
+	});
+	el.remove();
+}
 
 function updportlets() {
 	var ps = $(".portlet")
@@ -128,10 +160,7 @@ function updportlets() {
 		$(p).click(function(){
 			var icon = $(this);
 			var el = icon.closest(".portlet");
-			console.log("closing", el);
-			if(el) {
-				el.remove();
-			}
+			removecontrol(el)
 		});
 	}
 }
@@ -223,17 +252,19 @@ function pgapply(ev) {
 	case "load":
 		var cols = $(".column");
 		var col = cols[cols.length-1];
-		$(col).append(arg[1]);
+		var first = $(col).find(".portlet");
+		if(first && first.length > 0) {
+			first.first().before(arg[1]);
+		} else {
+			$(col).append(arg[1]);
+		}
 		console.log(col);
 		break;
 	case "close":
 		var id = arg[1];
 		$("."+id).each(function() {
 			var el = $(this).closest(".portlet");
-			console.log("closing", el);
-			if(el) {
-				el.remove();
-			}
+			removecontrol(e);
 		});
 		break;
 	}

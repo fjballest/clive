@@ -29,6 +29,7 @@ import (
 struct Pg {
 	*Ctlr
 	Tag string
+	Cmds []string	// If set, these commands are added to the top
 	sync.Mutex
 	Path string
 	NoAuth bool	// set to true to disable auth
@@ -53,8 +54,10 @@ type Html string
 type Url string
 
 var (
-	jspath = ""
+	jspath = "/zx/sys/src/clive/net/ink"
 	once sync.Once
+
+	servePort = "8181"
 )
 
 struct rawEl {
@@ -71,7 +74,6 @@ var headers = `
 <link rel="stylesheet" href="/js/jquery-ui/jquery-ui.css">
 <script src="/js/jquery-2.2.0.js"></script>
 <script type="text/javascript" src="/js/clive.js"></script>
-<script type="text/javascript" src="/js/txt.js"></script>
 <script type="text/javascript" src="/js/txt.js"></script>
 <script type="text/javascript" src="/js/button.js"></script>
 <script type="text/javascript" src="/js/radio.js"></script>
@@ -101,15 +103,19 @@ func ServeJS() {
 }
 
 func start() {
-	jspath = fpath.Dir(cmd.Dot())
 	http.HandleFunc("/js/", jsHandler)
 	serveLoginFor("/")
 }
 
+// Use port, "8181" by default
+func UsePort(port string) {
+	servePort = port
+}
+
 // Serve the pages.
 // Even if they are NoAuth, it's always through TLS.
-func Serve(port string) error {
-	if err := http.ListenAndServeTLS(port, auth.ServerPem, auth.ServerKey, nil); err != nil {
+func Serve() error {
+	if err := http.ListenAndServeTLS(":"+servePort, auth.ServerPem, auth.ServerKey, nil); err != nil {
 		cmd.Warn("%s", err)
 		return err
 	}
@@ -128,19 +134,25 @@ func (pg *Pg) mkstr(el string) rawEl {
 	return rawEl{id: id, s: el}
 }
 
+// s is <url> or <url>|name
 func (pg *Pg) mkiframe(s string) urlEl {
-	u := s
+	toks := strings.Split(s, "|")
+	if len(toks) == 1 {
+		toks = append(toks, toks[0])
+	}
+	u := toks[0]
+	n := toks[1]
 	pg.Lock()
 	defer pg.Unlock()
 	pg.idgen++
 	id := fmt.Sprintf("page%d", pg.idgen)
-	s = ` <iframe id="`+id+`frame" src="`+s+`" style="width: 95%; height: 100%;"></iframe>` +
+	s = ` <iframe id="`+id+`frame" src="`+u+`" style="width: 95%; height: 100%;"></iframe>` +
 	`<script>
 		$(function(){
 			$("#`+id+`_0").resizable({handles: "s"});
 		});
 	</script>`
-	return urlEl{rawEl: rawEl{id: id, s: s}, tag: html.EscapeString(u)}
+	return urlEl{rawEl: rawEl{id: id, s: s}, tag: html.EscapeString(n)}
 }
 
 func (pg *Pg) mkel(el interface{}) io.WriterTo {
@@ -219,11 +231,19 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 		fmt.Fprintln(w, `</head><body>`);
 		pg.Lock()
 		defer pg.Unlock()
+		cmds := map[string]string{}
 		for i := 0; i < len(pg.els); i++ {
 			pre := fmt.Sprintf(`<div id="column%d" class="column">`, i)
 			if i == 0 {
 				pre += `<span id="morecols"><tt>more</tt></span> `
-				pre += `<span id="lesscols"><tt>less</tt></span><p> `
+				pre += `<span id="lesscols"><tt>less</tt></span> `
+				for i, c := range pg.Cmds {
+					c = html.EscapeString(c)
+					id := fmt.Sprintf("pgcmd%d", i)
+					cmds[id] = c
+					pre += `<span id="`+id+`"><tt>`+c+`</tt></span> `
+				}
+				pre += `<p>`
 			} else {
 				pre += `<p>`
 			}
@@ -236,6 +256,15 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 		}
 		fmt.Fprintf(w, `<script>$(function() { mkpg("%s", "%s"); });`+"\n</script>\n",
 			pg.newViewId(), pg.Id)
+		for c, e := range cmds {
+			fmt.Fprintln(w, `<script>
+				$(function(){
+					$("#`+c+`").on('click', function() {
+						document.post(["click2", "`+e+`", "0", "0"]);
+					});
+				});
+				</script>`)
+		}
 		fmt.Fprintln(w, `</body></html>`);
 	}
 	go func() {
@@ -317,17 +346,16 @@ func writeEls(w io.Writer, els []io.WriterTo, pre, elpre, elmid, elpost, post st
 
 // Add the given element to the page.
 // The element is always added to the last column and can be
-// a string, Html, io.WriterTo, or fmt.Stringer.
+// a string, Url, Html, io.WriterTo, or fmt.Stringer.
 // The string returned can be used to remove the element later.
+// If it's a Url, the string can be the url or "url|name" where name is
+// the name to be shown as the tag.
 func (pg *Pg) Add(el interface{}) (string, error) {
 	nel := pg.mkel(el)
 	if nel == nil {
 		return "", fmt.Errorf("unknown element type %T", el)
 	}
 	var buf bytes.Buffer
-	// XXX: TODO: We must call a function to convert this into a portlet.
-	// must do what updportlets() does in pg.js but just for the elements
-	// in the new portlet.
 	writeEl(&buf, nel,
 		`<div class="portlet"><div class="portlet-header">`,
 		`</div><div class="portlet-content">`,
@@ -339,7 +367,11 @@ func (pg *Pg) Add(el interface{}) (string, error) {
 	pg.out <- &Ev{Id: pg.Id, Src: "app", Args:[]string{"load", buf.String()}}
 	pg.Lock()
 	defer pg.Unlock()
-	pg.els[len(pg.els)-1] = append(pg.els[len(pg.els)-1], nel)
+	col := pg.els[len(pg.els)-1]
+	col = append(col, nil)
+	copy(col[1:], col[0:])
+	col[0] = nel
+	pg.els[len(pg.els)-1] = col
 	x := nel.(idder)
 	return x.GetId(), nil
 }
@@ -443,7 +475,7 @@ func (pg *Pg) handle(wev *Ev) {
 		pg.post(wev)
 	case "end":
 		pg.post(wev)
-	case "click4":
+	case "click2", "click4":
 		pg.post(wev)
 	case "layout":
 		if len(ev) < 2 {

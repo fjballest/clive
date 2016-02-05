@@ -17,6 +17,8 @@ import (
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end
+// Events sent to the viewer
+//	show
 
 // A set of radio buttons
 // See Ctlr for the common API for controls.
@@ -56,7 +58,7 @@ func NewRadioSet(value *string, button ...*Button) *RadioSet {
 func (bs *RadioSet) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := bs.newViewId()
 	n, err := io.WriteString(w,
-		`<form><div id="`+vid+`" class="`+bs.Id+`">`)
+		`<form><div id="`+vid+`" class="`+bs.Id+` hasws">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -73,9 +75,11 @@ func (bs *RadioSet) WriteTo(w io.Writer) (tot int64, err error) {
 			return tot, err
 		}
 	}
+	wsaddr := `wss://localhost:`+servePort
 	n, err = io.WriteString(w, `</div></form><script>
 		$(function(){
 			var d = $("#`+vid+`");
+			d.wsaddr = "`+wsaddr+`";
 			document.mkradio(d, "`+bs.Id+`", "`+vid+`");
 			$("#`+vid+`").buttonset();` + "\n")
 	tot += int64(n)

@@ -81,6 +81,5 @@ func mkNS() *ns.NS {
 		dbg.Warn("mkNS: %s", err)
 		n, _ = ns.Parse("/")
 	}
-dbg.Warn("ns %v", n)
 	return n
 }

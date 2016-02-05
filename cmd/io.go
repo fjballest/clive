@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"strconv"
+	"sort"
 )
 
 type ioChan struct {
@@ -221,6 +222,21 @@ func (io *ioSet) dup() *ioSet {
 		nio.set[k] = cr
 	}
 	return nio
+}
+
+func (io *ioSet) chans() (in []string, out []string) {
+	io.Lock()
+	defer io.Unlock()
+	for k, cr := range io.set {
+		if cr.isIn {
+			in = append(in, k)
+		} else {
+			out = append(out, k)
+		}
+	}
+	sort.Sort(sort.StringSlice(in))
+	sort.Sort(sort.StringSlice(out))
+	return in, out
 }
 
 func (io *ioSet) close() {

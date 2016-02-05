@@ -668,8 +668,8 @@ func (nd *Nd) eval(x *xEnv, argv ...string) error {
 
 func cleanenv(env []string) []string {
 	for i := 0; i < len(env); {
-		if strings.HasPrefix(env[i], "dot=") || strings.HasPrefix(env[i], "cliveio#") ||
-			strings.HasPrefix(env[i], "clivebg") {
+		if /* strings.HasPrefix(env[i], "dot=") || strings.HasPrefix(env[i], "cliveio#") ||
+		   */	strings.HasPrefix(env[i], "clivebg") {
 			copy(env[i:], env[i+1:])
 			env = env[:len(env)-1]
 		} else {

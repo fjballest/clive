@@ -27,6 +27,22 @@ func Get(path string, off, count int64) <-chan []byte {
 	return NS().Get(path, off, count)
 }
 
+// Unlike zx.GetDir(), this updates the paths in dirs to reflect user paths,
+// like Dirs() and Files() do.
+func GetDir(path string) ([]zx.Dir, error) {
+	apath := AbsPath(path)
+	ds, err := zx.GetDir(NS(), apath)
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range ds {
+		d["Rpath"] = d["path"]
+		d["Upath"] = fpath.Join(d["path"], d["name"])
+		d["path"] = fpath.Join(apath, d["name"])
+	}
+	return ds, nil
+}
+
 func Put(path string, ud zx.Dir, off int64, dc <-chan []byte) <-chan zx.Dir {
 	path = AbsPath(path)
 	return NS().Put(path, ud, off, dc)

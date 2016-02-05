@@ -12,6 +12,7 @@ import (
 	"html"
 	"errors"
 	"fmt"
+	"os"
 )
 
 // Events to/from a control
@@ -69,7 +70,7 @@ func parseEv(data []byte) (*Ev, error) {
 // This is done by all controls during their creation.
 func newCtlr(tag string) *Ctlr {
 	c := &Ctlr{
-		Id: fmt.Sprintf("%s%d", tag, newId()),
+		Id: fmt.Sprintf("%sx%dx%d", tag, os.Getpid(), newId()),
 		in: make(chan *Ev),
 		out: make(chan *Ev),
 		views: make(map[*view]bool), 
@@ -99,7 +100,11 @@ func (c *Ctlr) Tag() string {
 	c.Lock()
 	defer c.Unlock()
 	if c.tag == "" {
-		return "ink"
+		a := cmd.Args()
+		if len(a) > 0 {
+			return "/ink/" + a[0]
+		}
+		return "/ink"
 	}
 	return c.tag
 }
@@ -164,12 +169,20 @@ func (c *Ctlr) SendEventsTo(evc chan *Ev) error {
 	return nil
 }
 
+// Ask the viewer to show this control (eg, by moving it to the first one in the page).
+func (c *Ctlr) Show() {
+	c.out <- &Ev{Id: c.Id, Src: "app", Args: []string{"show"}}
+}
+
 func (c *Ctlr) post(ev *Ev) error {
 	c.Lock()
 	ec := c.evs
 	c.Unlock()
 	if ec == nil {
 		return nil
+	}
+	if ev == nil || len(ev.Args) == 0 {
+		panic("ink ctlr post: nil event or no event args")
 	}
 	if ok := ec <- ev; !ok {
 		return cerror(ec)

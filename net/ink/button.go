@@ -25,6 +25,8 @@ struct Button {
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end
+// Events sent to the viewer
+//	show
 
 // A set of buttons
 // See Ctlr for the common API for controls.
@@ -57,7 +59,7 @@ func NewButtonSet(button ...*Button) *ButtonSet {
 func (bs *ButtonSet) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := bs.newViewId()
 	n, err := io.WriteString(w,
-		`<div id="`+vid+`" class="`+bs.Id+` ui-widget-header, ui-corner-all">`)
+		`<div id="`+vid+`" class="`+bs.Id+` ui-widget-header ui-corner-all hasws">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -79,9 +81,11 @@ func (bs *ButtonSet) WriteTo(w io.Writer) (tot int64, err error) {
 			return tot, err
 		}
 	}
+	wsaddr := `wss://localhost:`+servePort
 	n, err = io.WriteString(w, `</div><script>
 		$(function(){
 			var d = $("#`+vid+`");
+			d.wsaddr = "`+wsaddr+`";
 			document.mkbuttons(d, "`+bs.Id+`", "`+vid+`");` + "\n")
 	tot += int64(n)
 	if err != nil {

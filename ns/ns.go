@@ -237,7 +237,7 @@ func specialForm(ln string) zx.Dir {
 //	...
 func Parse(s string) (*NS, error) {
 	lns := strings.Split(s, "\n")
-	if len(lns) == 1 || len(lns) == 2 && lns[2] == "" {
+	if len(lns) == 1 || (len(lns) == 2 && lns[1] == "") {
 		if !strings.ContainsAny(lns[0], " \t") {
 			dat, err := ioutil.ReadFile(lns[0])
 			if err == nil {

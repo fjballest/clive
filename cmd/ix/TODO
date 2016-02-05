@@ -1,0 +1,40 @@
+
+- recreate a view for cmds if we have io for them.
+- updating clean/dirty
+
+builtin commands: 
+kill -> kill commands
+B -> look for file and open it, using find?
+Z -> xerox the file (open it twice)
+D -> delete the edit
+S name -> save the list of edits to name
+L name -> load the edits from name
+/ find
+must go over args and edit all the files indicated.
+
+We might have a var to represent the "dot", and should maintain our idea of dot.
+
+
+If a edit is dirty and we close it, we are going to save it back to disk.
+We must flag edits as temp, eg., for dirs and cmds.
+
+func pgdrop(pg *ink.Pg, ev *ink.Ev) {
+	args := ev.Args
+	what := args[1]
+	uri, err := url.Parse(what)
+	if err != nil {
+		cmd.Dprintf("pgdrop: not a url: %s\n", err)
+		return
+	}
+	if !uri.IsAbs() {
+		cmd.Dprintf("pgdrop: not an abs url\n")
+		return
+	}
+	pg.Add(ink.Url(args[1]))
+	
+}
+	
+}
+(args[1]))
+	
+}
