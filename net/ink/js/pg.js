@@ -279,7 +279,7 @@ function pgapply(ev) {
 		var id = arg[1];
 		$("."+id).each(function() {
 			var el = $(this).closest(".portlet");
-			removecontrol(e, false);
+			removecontrol(el, false);
 		});
 		break;
 	}

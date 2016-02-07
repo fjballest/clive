@@ -687,6 +687,11 @@ func (t *Txt) GetText() *txt.Text {
 	return t.t
 }
 
+// Undo a GetText w/o putting the new text (no text was changed)
+func (t *Txt) UngetText() {
+	t.putText()
+}
+
 // After calling GetText() and using the txt.Text to edit by program,
 // this must be called to unlock the text and reload the views with the new text.
 func (t *Txt) PutText() {

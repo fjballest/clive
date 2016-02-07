@@ -23,6 +23,10 @@ struct Cmd {
 	p *run.Proc
 }
 
+struct Dot {
+	P0, P1 int
+}
+
 // edit
 struct Ed {
 	tag string
@@ -119,7 +123,9 @@ func (c *Cmd) printf(f string, args ...interface{}) {
 		s = "\n" + s
 		c.hasnl = true
 	}
-	c.ed.win.MarkIns(c.mark, []rune(s))
+	if err := c.ed.win.MarkIns(c.mark, []rune(s)); err != nil {
+		cmd.Warn("mark ins: %s", err)
+	}
 }
 
 func (c *Cmd) io(hasnl bool) {
@@ -190,7 +196,10 @@ func (ed *Ed) runCmd(at int, line string) {
 	if b := bltin[args[0]]; b != nil {
 		cmd.Warn("run: %s", args)
 		b(c, args...)
-		ed.win.DelMark(c.mark)
+		// We don't del the output mark for builtins,
+		// Some will keep bg processes and their io()
+		// procs will del their marks,
+		// Those who don't, del the marks before they return
 		return
 	}
 	args = append([]string{"ql", "-uc"}, args...)
@@ -291,7 +300,7 @@ func (ed *Ed) editLoop() {
 		ev := ev
 		cmd.Dprintf("ix ev %v\n", ev)
 		switch ev.Args[0] {
-		case "click1":
+		case "click1", "tick":
 			if !ed.temp {
 				ed.ix.dot = ed
 			}
