@@ -9,6 +9,7 @@ import (
 	"clive/cmd/opt"
 	"clive/net/ink"
 	"sync"
+	"clive/zx"
 	fpath "path"
 	"strings"
 )
@@ -29,6 +30,11 @@ var (
 func newIX() *IX {
 	ix := &IX{}
 	cmds := ix.newCmds()
+	cmds.d = zx.Dir {
+		"type": "-",
+		"path": cmds.tag,
+		"name": fpath.Base(cmds.tag),
+	}
 	col1 := []face{}{cmds.win}
 	col2 := []face{}{}
 	ix.pg = ink.NewColsPg("/", col1, col2)
@@ -60,6 +66,11 @@ func (ix *IX) loop() {
 			case "win":
 				go func() {
 					icmds := ix.newCmds()
+					icmds.d = zx.Dir {
+						"type": "-",
+						"path": icmds.tag,
+						"name": fpath.Base(icmds.tag),
+					}
 					icmds.winid, _ = ix.pg.Add(icmds.win)
 				}()
 			case "dump":
@@ -105,6 +116,7 @@ func (ix *IX) editFile(what string) *Ed {
 		what += "/"
 	}
 	ed := ix.newEdit(what)
+	ed.d = d
 	var dc <-chan []byte
 	if d["type"] == "d" {
 		ed.temp = true
@@ -148,7 +160,7 @@ func main() {
 	cmd.UnixIO()
 	args := opts.Parse()
 	ix = newIX()
-	_ = args
+	_ = args	// XXX: preload edits for args
 	go ink.Serve()
 	ix.loop()
 }

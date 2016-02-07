@@ -6,9 +6,8 @@ import (
 	"clive/cmd"
 	"clive/cmd/run"
 	"clive/sre"
-	"clive/zx"
-	fpath "path"
 	"clive/txt"
+	"strings"
 )
 
 var (
@@ -93,11 +92,9 @@ func (ix *IX) edits(args ...string) []*Ed {
 
 func (c *Cmd) pipeEdTo(ed *Ed, all bool) bool {
 	p  := c.p
-	d := zx.Dir{
-		"type": "-",
-		"path": ed.tag,
-		"name": fpath.Base(ed.tag),
-	}
+	d := ed.d.Dup()
+	// For the commant, the input is text
+	d["type"] = "-"
 	if ok := p.In <- d; !ok {
 		c.printf("output: %s\n", cerror(p.In))
 		return false
@@ -164,6 +161,7 @@ func (c *Cmd) pipeTo(eds []*Ed, all bool, args ...string) {
 }
 
 func (c *Cmd) edcmd(eds []*Ed, args ...string) {
+	
 	switch args[0] {
 	case "D":
 		for _, ed := range eds {
@@ -181,10 +179,16 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 	}
 }
 
+// TODO: We could add a W (win) command reporting all elements in the page,
+// but then we must record tags for them in ix and make edits() accept a flag
+// to report also those.
+// The implementation should be bX, but taking care than only the D subcommand
+// and perhaps X (xerox) make sense for non-edit windows.
+
 func bX(c *Cmd, args ...string) {
 	var out bytes.Buffer
 	eds := ix.edits(args[1:]...)
-	if len(args) < 3 {
+	if len(args) < 3 || len(args[2]) == 0 {
 		for _, e := range eds {
 			fmt.Fprintf(&out, "%s\n", e)
 		}
@@ -195,12 +199,18 @@ func bX(c *Cmd, args ...string) {
 		c.ed.win.DelMark(c.mark)
 		return
 	}
-	switch args[2] {
-	case "D", "X", "|", ">", "<":
-	default:
+	isio := strings.ContainsRune("|><", rune(args[2][0]))
+	if args[2] != "D" && args[2] != "X" && !isio {
 		c.printf("unknown edit command %q\n", args[2])
 		c.ed.win.DelMark(c.mark)
 		return
+	}
+	if isio {
+		a2 := args[2][:1]
+		args[2] = args[2][1:]
+		args = append(args, "")
+		copy(args[3:], args[2:])
+		args[2] = a2
 	}
 	cmd.Dprintf("edcnd %s", args[2:])
 	c.edcmd(eds, args[2:]...)

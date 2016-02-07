@@ -30,6 +30,7 @@ struct Dot {
 // edit
 struct Ed {
 	tag string
+	d zx.Dir
 	ix *IX
 	win *ink.Txt
 	winid string
@@ -301,6 +302,9 @@ func (ed *Ed) editLoop() {
 		cmd.Dprintf("ix ev %v\n", ev)
 		switch ev.Args[0] {
 		case "click1", "tick":
+			// XXX: We must fix the focus in js
+			// and then we can set the dot for temps,
+			// by now we can't pipe from dirs and cmd wins.
 			if !ed.temp {
 				ed.ix.dot = ed
 			}
