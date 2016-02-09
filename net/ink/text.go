@@ -31,6 +31,7 @@ import (
 //	rlsed
 //	save
 //	quit
+//	focus
 // Events sent from the viewer but not for the user:
 //	id
 // Events sent to the viewer (besides all reflected events):
@@ -51,6 +52,7 @@ import (
 //	clean
 //	tag str
 //	show
+//	sel pos pos	(sets p0 and p1 marks)
 // Events sent to the user (besides those from the viewer):
 //	start
 //	end
@@ -463,7 +465,7 @@ func (t *Txt) apply(wev *Ev) {
 	default:
 		cmd.Dprintf("%s: unhandled %v\n", t.Id, ev)
 		return
-	case "save", "quit", "tag", "click1", "click2", "click4":
+	case "save", "quit", "tag", "click1", "click2", "click4", "focus":
 		cmd.Dprintf("%s: %v\n", t.Id, wev)
 		t.post(wev)
 	case "hold", "held", "rlse", "rlsed":
@@ -766,12 +768,22 @@ func (t *Txt) ContdEdit() {
 	t.t.ContdEdit()
 }
 
+func (t *Txt) SetSel(p0, p1 int) {
+	t.getText()
+	defer t.putText()
+	m0 := t.t.SetMark("p0", p0)
+	m1 := t.t.SetMark("p1", p1)
+	if m0 != nil && m1 != nil {
+		t.out <- &Ev{Id: t.Id, Src: "", Args: []string{"sel", strconv.Itoa(m0.Off), strconv.Itoa(m1.Off)}}
+	}
+}
+
 func (t *Txt) SetMark(name string, off int) *txt.Mark {
 	t.getText()
 	defer t.putText()
 	m := t.t.SetMark(name, off)
 	if m != nil {
-		t.out <- &Ev{Id: t.Id, Src: "", Args: []string{"mark", name, fmt.Sprintf("%d", m.Off)}}
+		t.out <- &Ev{Id: t.Id, Src: "", Args: []string{"mark", name, strconv.Itoa(m.Off)}}
 	}
 	return m
 }
@@ -785,6 +797,22 @@ func (t *Txt) DelMark(name string) {
 
 func (t *Txt) Mark(name string) *txt.Mark {
 	return t.t.Mark(name)
+}
+
+func (t *Txt) LineAt(off int) int {
+	return t.t.LineAt(off)
+}
+
+func (t *Txt) LineOff(n int) int {
+	return t.t.LineOff(n)
+}
+
+func (t *Txt) LinesAt(off0, off1 int) (int, int) {
+	return t.t.LinesAt(off0, off1)
+}
+
+func (t *Txt) LinesOff(ln0, ln1 int) (int, int) {
+	return t.t.LinesOffs(ln0, ln1)
 }
 
 func (t *Txt) Marks() []string {

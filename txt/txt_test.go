@@ -53,6 +53,61 @@ var (
 	}
 )
 
+struct pair {
+	a, b int
+}
+
+func TestLineAt(t *testing.T) {
+	debug = testing.Verbose()
+	tx := NewEditing([]rune("abc\ndef\n\nghi\n"))
+	nbs := [...]int{1,1,1,1,2,2,2,2,3,4,4,4,4,5}
+	printf("=>\n%s\n", tx.Sprint())
+	for o := 0; o <= tx.Len(); o++ {
+		n := tx.LineAt(o)
+		printf("\t%d -> %d\n", o, n)
+		if n != nbs[o] {
+			t.Fatalf("bad line number")
+		}
+	}
+	lns := [...]pair{{1,1}, {0, 0}, {0, 3}, {0, 4}, {1, 5}, {4, 4}}
+	bs := [...]pair{{1,1}, {1,1}, {1,1}, {1,1}, {1,2}, {2,2}}
+	for i, p := range lns {
+		a, b := tx.LinesAt(p.a, p.b)
+		printf("\t%v-> %d %d\n", p, a, b)
+		if a != bs[i].a || b != bs[i].b {
+			t.Fatalf("bad line number")
+		}
+	}
+}
+
+func TestLineOff(t *testing.T) {
+	debug = testing.Verbose()
+	tx := NewEditing([]rune("abc\ndef\n\nghi\n"))
+	offs := [...]int{0, 0, 4, 8, 9, 13, 13}
+	lns := [...]int{1, 1, 2, 3, 4, 5, 5}
+	printf("=>\n%s\n", tx.Sprint())
+	for n := 0; n <= 6; n++ {
+		o := tx.LineOff(n)
+		ln := tx.LineAt(o)
+		printf("\t%d -> %d\t%d\n", n, o, ln)
+		if o != offs[n] {
+			t.Fatalf("bad off")
+		}
+		if ln != lns[n] {
+			t.Fatalf("bad ln")
+		}
+	}
+	ps := [...]pair{{1,1}, {1,2}, {2,2}, {2, 3}, {3, 3}, {4, 4}, {4, 5}, {6, 6}}
+	os := [...]pair{{0, 0}, {0, 8}, {4, 8}, {4, 9}, {8, 9}, {9, 13}, {9, 13}, {13, 13}}
+	for i, p := range ps {
+		a, b := tx.LinesOffs(p.a, p.b)
+		printf("\t%v-> %d %d\n", p, a, b)
+		if a != os[i].a || b != os[i].b {
+			t.Fatalf("bad line number")
+		}
+	}
+}
+
 func TestInsDel(t *testing.T) {
 	debug = testing.Verbose()
 

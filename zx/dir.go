@@ -404,18 +404,73 @@ func (a Addr) TypeId() uint16 {
 	return ch.Taddr
 }
 
+func parseDot(s string) (int, int) {
+	if s == "" {
+		return 0, 0
+	}
+	els := strings.SplitN(s, ",", 2)
+	if els[0][0] == '#' {
+		els[0] = els[0][1:]
+	}
+	p0, _ := strconv.Atoi(els[0])
+	if len(els) == 1 {
+		return p0, p0
+	}
+	if els[1][0] == '#' {
+		els[1] = els[1][1:]
+	}
+	p1, _ := strconv.Atoi(els[1])
+	return p0, p1
+}
+
+func parseLns(s string) (int, int) {
+	if s == "" {
+		return 0, 0
+	}
+	els := strings.SplitN(s, ",", 2)
+	p0, _ := strconv.Atoi(els[0])
+	if len(els) == 1 {
+		return p0, p0
+	}
+	p1, _ := strconv.Atoi(els[1])
+	return p0, p1
+}
+
+func ParseAddr(s string) Addr {
+	var a Addr
+	els := strings.Split(s, ":")
+	if len(els) == 0 {
+		return a
+	}
+	a.Name = els[0]
+	for _, addr := range els[1:] {
+		if len(addr) > 0 && addr[0] == '#' {
+			a.P0, a.P1 = parseDot(addr)
+			continue
+		}
+		if len(addr) > 0 {
+			a.Ln0, a.Ln1 = parseLns(addr)
+		}
+	}
+	return a
+}
+
 func (a Addr) String() string {
 	if a.Name == "" {
 		a.Name = "in"
 	}
-	switch {
-	case a.Ln0 != 0 && a.Ln0 == a.Ln1:
-		return fmt.Sprintf("%s:%d", a.Name, a.Ln0)
-	case a.Ln0 != 0 || a.Ln1 != 0:
-		return fmt.Sprintf("%s:%d,%d", a.Name, a.Ln0, a.Ln1)
-	default:
-		return fmt.Sprintf("%s:%#d,%#d", a.Name, a.P0, a.P1)
+	addr := a.Name
+	if a.Ln0 != 0 || a.Ln1 != 0 {
+		if a.Ln0 == a.Ln1 {
+			addr += fmt.Sprintf(":%d", a.Ln0)
+		} else {
+			addr += fmt.Sprintf(":%d,%d", a.Ln0, a.Ln1)
+		}
+		if a.P0 == 0 && a.P1 == 0 {
+			return addr
+		}
 	}
+	return fmt.Sprintf("%s:#%d,#%d", addr, a.P0, a.P1)
 }
 
 func UnpackAddr(b []byte) ([]byte, Addr, error) {

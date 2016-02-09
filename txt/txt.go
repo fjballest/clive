@@ -638,6 +638,105 @@ func (t *Text) Getc(off int) rune {
 	return d[t.seek.i][t.seek.n]
 }
 
+
+/*
+	Return the line number at the given offset
+*/
+func (t *Text) LineAt(off int) int {
+	a, _ := t.LinesAt(off, off)
+	return a
+}
+
+func dot(p0, p1 int) (int, int) {
+	if p1 < p0 {
+		p1 = p0
+	}
+	return p0, p1
+}
+
+/*
+	Return the line numbers for the given range
+*/
+func (t *Text) LinesAt(p0, p1 int) (int, int) {
+	t.Lock()
+	defer t.Unlock()
+	p0, p1 = dot(p0, p1)
+	tot, ln := 0, 1
+	ln0, ln1 := 1, 1
+	wasnl := false
+Loop:	for _, d := range t.data {
+		for _, r := range d {
+			if tot == p1 {
+				break Loop
+			}
+			tot++
+			wasnl = r == '\n'
+			if wasnl {
+				ln++
+			}
+			if p0 >= tot {
+				ln0 = ln
+			}
+			if p1 >= tot {
+				ln1 = ln
+			}
+		}
+	}
+	if ln1 > ln0 && wasnl {
+		ln1--
+	}
+	return ln0, ln1
+}
+
+/*
+	Return the offset for the start of the given line number
+*/
+func (t *Text) LineOff(ln int) int {
+	a, _ := t.LinesOffs(ln, ln)
+	return a
+}
+
+/*
+	Return the offsets or the given line range
+*/
+func (t *Text) LinesOffs(ln0, ln1 int) (int, int) {
+	t.Lock()
+	defer t.Unlock()
+	ln0, ln1 = dot(ln0, ln1)
+	if ln1 <= 1 {
+		return 0, 0
+	}
+	lnoff, ln := 0, 1
+	off0, off1 := -1, -1
+	tot := 0
+	if ln == ln0 {
+		off0 = 0
+	}
+Loop:	for _, d := range t.data {
+		for _, r := range d {
+			tot++
+			if r == '\n' {
+				if ln == ln0 {
+					off0 = lnoff
+				}
+				lnoff = tot
+				ln++
+				if ln == ln1+1 {
+					off1 = lnoff
+					break Loop
+				}
+			}
+		}
+	}
+	if off0 < 0 {
+		off0 = tot
+	}
+	if off1 < 0 {
+		off1 = tot
+	}
+	return off0, off1
+}
+
 /*
 	Return the text as a string
 */

@@ -13,6 +13,7 @@ import (
 	"clive/zx/zux"
 	"clive/zx/rzx"
 	"clive/zx/zxc"
+	fpath "path"
 )
 
 const tdir = "/tmp/ns_test"
@@ -23,7 +24,8 @@ var (
 	moreverb = false
 	ns1 = `/ /
 /tmp
-/tmp	lfs!/tmp!/
+/tmp	lfs!/!/tmp
+/tmp	lfs!/tmp
 /usr
 /usr/nemo	zx!unix!8089!/tmp
 path:"/x"	io:"0"	addr:"zx!unix!8089!/tmp"
@@ -31,9 +33,10 @@ path:"/x"	io:"0"	addr:"zx!unix!8089!/tmp"
 
 	ns1out = `/
 /tmp
+/tmp	lfs!/!/tmp
 /tmp
 /usr
-/usr/nemo	zx!unix!8089!/tmp
+/usr/nemo	zx!unix!8089!/tmp!main!/
 name:"x" type:"p" mode:"0644" path:"/x" addr:"zx!unix!8089!/tmp" io:"0"
 `
 )
@@ -554,6 +557,7 @@ func TestFindGets(t *testing.T) {
 }
 
 func runRfsTest(t *testing.T, fn fstest.TestFunc) {
+	delLfsPath("/")
 	os.Args[0] = "ns.test"
 	os.Remove("/tmp/clive.9898")
 	defer os.Remove("/tmp/clive.9898")
@@ -597,7 +601,7 @@ func runRfsTest(t *testing.T, fn fstest.TestFunc) {
 	ts := rfs.Trees()
 	t.Logf("trees: %v", ts)
 
-	lns := fmt.Sprintf("/\tzx!unix!local!9898!/")
+	lns := fmt.Sprintf("/\tzx!unix!local!9898")
 	ns := mkns(t, lns)
 	printf("ns is `%s`\n", ns)
 	ns.Debug = false
@@ -608,10 +612,73 @@ func runRfsTest(t *testing.T, fn fstest.TestFunc) {
 }
 
 func TestRfsStats(t *testing.T) {
+	delLfsPath("/")
 	runRfsTest(t, fstest.Stats)
 }
 
 func TestRfsFinds(t *testing.T) {
+	delLfsPath("/")
 	runRfsTest(t, fstest.Finds)
 }
 
+func TestPaths(t *testing.T) {
+	verb = testing.Verbose()
+	os.RemoveAll(tdir+"empty")
+	os.RemoveAll(tdir)
+	os.MkdirAll(tdir+"empty/mnt", 0755)
+	fstest.MkTree(t, tdir)
+	defer os.RemoveAll(tdir)
+	defer os.RemoveAll(tdir+"empty")
+	AddLfsPath(tdir+"empty", nil)
+	AddLfsPath(tdir, nil)
+	lns := `/ `+tdir+`empty
+	/mnt	`+tdir
+	ns := mkns(t, lns)
+	ns.Debug = testing.Verbose()
+	printf("ns is `%s`\n", ns)
+	dc := ns.Stat("/mnt/a/a1")
+	d := <-dc
+	printf("sts %v\n", cerror(dc))
+	printf("got %s\n", d.TestFmt())
+	if d["path"] != "/mnt/a/a1" {
+		t.Fatalf("bad path")
+	}
+	dirs, err := zx.GetDir(ns, "/mnt/a")
+	printf("sts %v\n", err)
+	for _, d := range dirs {
+		printf("dir %s\n", d.TestFmt())
+		if d["path"] != d.SPath() {
+			t.Fatalf("bad getdir path")
+		}
+	}
+	if len(dirs) != 3 {
+		t.Fatalf("bad nb of dirs in getdir")
+	}
+	printf("\nfind /mnt...\n")
+	// ns.Verb = testing.Verbose()
+	dc = ns.Find("/mnt", "type=d", "/", "/", 0)
+	n := 0
+	for d := range dc {
+		printf("found %s\n", d.TestFmt())
+		if d["path"] != fpath.Join("/mnt", d.SPath()) {
+			t.Fatalf("bad find path")
+		}
+		n++
+	}
+	if n != 7 {
+		t.Fatalf("bad nb of dirs in find")
+	}
+	printf("\nfind /...\n")
+	// ns.Verb = testing.Verbose()
+	dc = ns.Find("/", "type=d", "/", "/", 0)
+	for d := range dc {
+		printf("found %s\n", d.TestFmt())
+		if d["path"] != fpath.Join("/mnt", d.SPath()) {
+			t.Fatalf("bad find path")
+		}
+		n++
+	}
+	if n != 8 {
+		t.Fatalf("bad nb of dirs in find")
+	}
+}

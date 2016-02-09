@@ -1006,6 +1006,7 @@ function tm1(pos) {
 				this.onmousedown = this.tmdown;
 				this.onmouseup = this.tmup;
 				this.onmousemove = this.evxy;
+				this.post(["focus"]);
 				this.selectend();
 			}
 		}catch(ex){
@@ -1125,7 +1126,6 @@ function tmwheel(e) {
 }
 
 function tmdown(e) {
-	$("#" + this.divid ).focus();
 	if(0)console.log("tmdown ", this.divid, e);
 	this.selectstart();
 	e.preventDefault();
@@ -1539,6 +1539,18 @@ function tapply(ev, fromserver) {
 		var pos = parseInt(arg[2]);
 		this.setmark(arg[1], pos);
 		break;
+	case "sel":
+		if(arg.length < 3){
+			console.log(this.divid, "apply: short sel");
+			break;
+		}
+		var pos0 = parseInt(arg[1]);
+		var pos1 = parseInt(arg[2]);
+		this.setmark("p0", pos0);
+		this.setmark("p1", pos1);
+		this.tsetsel(pos0, pos1, true);
+		console.log("setsel", pos0, pos1);
+		break;
 	case "delmark":
 		if(arg.length < 2){
 			console.log(this.divid, "apply: short delmark");
@@ -1628,7 +1640,6 @@ function tlocknkeyup(e) {
 }
 
 function tlocknmdown(e) {
-	$("#" + this.divid ).focus();
 	if(this.islocked) {
 		return tmdown.call(this, e);
 	}
@@ -1696,11 +1707,14 @@ function tunlocked() {
 		this.tsetsel(this.p0, this.p1, true);
 }
 
+var selecting = false;
+
 function tselectstart() {
 	if(!this.selecting) {
 		console.log("selecting...");
 	}
 	this.selecting = true;
+	selecting = true;
 }
 
 function tselectend() {
@@ -1713,6 +1727,7 @@ function tselectend() {
 	console.log("select end");
 	this.post(["tick", ""+this.p0, ""+this.p1]);
 	this.selecting = false;
+	selecting = false;
 }
 
 function tclear() {
@@ -1863,6 +1878,11 @@ function mktxt(d, t, e, cid, id) {
 //	e.onmousedown = tmdown;
 	e.onmouseup = tlocknmup;
 //	e.onmouseup = tmup;
+	e.onmouseenter = function(e) {
+		if(!selecting) {
+			$("#" + this.divid ).focus();
+		}
+	};
 
 	e.onmousemove = tevxy;
 	e.onmousewheel = tmwheel;

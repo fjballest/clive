@@ -161,7 +161,7 @@ func (f *finder) find1get(d zx.Dir) error {
 func (f *finder) find1(d zx.Dir) error {
 	pname := fpath.Base(f.walked)
 	searching := zx.HasPrefix(f.name, f.walked)
-	f.ns.vprintf("fnd:\t\tfind name %s walked %s sp %s dp %s depth %d searching %v\n",
+	f.ns.vprintf("fnd:\t\tfind1 name %s walked %s sp %s dp %s depth %d searching %v\n",
 		f.name, f.walked, f.spref, f.dpref, f.depth, searching)
 	if !d.IsFinder() {
 		f.ns.vprintf("fnd:\t\tnot a finder: %s\n", d)
@@ -316,6 +316,15 @@ func (f *finder) find() error {
 }
 
 // Implementation of the Finder.Find operation.
+// Issues finds to all involved mount points, starting at the longest prefix that is a prefix of
+// name (perhaps name itself).
+// As it gets entries, it will issue further finds for those mount points that are suffixes of
+// any directory found.
+// As a result, if a find is issued at /path, and a suffix of path is in a mount point that
+// no longer has a directory entry at the FS mounted at path, no finds are issued for the
+// second.
+// That is, suffixes might be "disconnected" from the prefix if their names can't be reached from there.
+// But you can still issue finds for those prefixes (and any suffix path).
 func (ns *NS) Find(name string, fpred string, spref, dpref string, depth0 int) <-chan zx.Dir {
 	c := make(chan zx.Dir)
 	go ns.findget(name, fpred, spref, dpref, depth0, c, nil)
@@ -323,6 +332,7 @@ func (ns *NS) Find(name string, fpred string, spref, dpref string, depth0 int) <
 }
 
 // Implementation of the Finder.FindGet operation.
+// See also Find for a description of the find requests issued.
 func (ns *NS) FindGet(name string, fpred string, spref, dpref string, depth0 int) <-chan face{} {
 	gc := make(chan face{})
 	go ns.findget(name, fpred, spref, dpref, depth0, nil, gc)

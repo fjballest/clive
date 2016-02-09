@@ -31,11 +31,16 @@ struct Dot {
 struct Ed {
 	tag string
 	d zx.Dir
+	dot Dot
 	ix *IX
 	win *ink.Txt
 	winid string
 	markgen int
 	temp bool	// don't save, don't ever flag as dirty
+}
+
+func (d Dot) String() string {
+	return fmt.Sprintf(":#%d,#%d", d.P0, d.P1)
 }
 
 func (ix *IX) delEd(ed *Ed) {
@@ -113,6 +118,27 @@ func (ed *Ed) newMark(pos int) string {
 	m := fmt.Sprintf("cmd%d", ed.markgen)
 	ed.win.SetMark(m, pos)
 	return m
+}
+
+func (ed *Ed) Addr() zx.Addr {
+	ln0, ln1 := ed.win.LinesAt(ed.dot.P0, ed.dot.P1)
+	return zx.Addr{
+		Name: ed.tag,
+		Ln0: ln0,
+		Ln1: ln1,
+		P0: ed.dot.P0,
+		P1: ed.dot.P1,
+	}
+}
+
+func (ed *Ed) SetAddr(a zx.Addr) {
+	p0, p1 := a.P0, a.P1
+	if a.Ln0 != 0 && a.Ln1 != 0 && p0 == 0 && p1 == 0 {
+		p0, p1 = ed.win.LinesOff(a.Ln0, a.Ln1)
+	}
+	ed.dot.P0 = p0
+	ed.dot.P1 = p1
+	cmd.Dprintf("%s: dot set to %s (%s) for %s\n", ed, ed.dot, ed.Addr(), a)
 }
 
 func (c *Cmd) printf(f string, args ...interface{}) {
@@ -194,7 +220,7 @@ func (ed *Ed) runCmd(at int, line string) {
 		mark: ed.newMark(at),
 		hasnl: hasnl,
 	}
-	if b := bltin[args[0]]; b != nil {
+	if b := builtin(args[0]); b != nil {
 		cmd.Warn("run: %s", args)
 		b(c, args...)
 		// We don't del the output mark for builtins,
@@ -231,23 +257,34 @@ func (ed *Ed) lookFiles(name string) {
 		if !ok || d["type"] != "-" {
 			continue
 		}
-		ed.ix.lookFile(d["path"])
+		ed.ix.lookFile(d["path"], "")
 	}
 }
 
 func (ed *Ed) look(what string) {
-	cmd.Dprintf("look for %q\n", what)
 	s := strings.TrimSpace(what)
-	_, err := cmd.Stat(s)
+	names := strings.SplitN(s, ":", 2)
+	d, err := cmd.Stat(names[0])
 	if err == nil {
+		names[0] = d["path"]
 		// It's a file
-		ed.ix.lookFile(s)
+		if len(names) == 1 {
+			names = append(names, "")
+		} else {
+			names[1] = ":" + names[1]
+		}
+		cmd.Dprintf("look file %q %q\n", names[0], names[1])
+		ed.ix.lookFile(names[0], names[1])
+		return
 	}
 	toks := strings.Split(s, "|")
 	uri, err := url.Parse(toks[0])
 	if err == nil && uri.IsAbs() {
+		cmd.Dprintf("look url %q\n", s)
 		ed.ix.lookURL(s)
+		return
 	}
+	cmd.Dprintf("look files %q\n", s)
 	ed.lookFiles(s)
 }
 
@@ -277,6 +314,15 @@ func (ed *Ed) cmdLoop() {
 	for ev := range c {
 		ev := ev
 		switch ev.Args[0] {
+		case "focus":
+			ed.ix.dot = ed
+		case "tick":
+			if p0 := ed.win.Mark("p0"); p0 != nil {
+				ed.dot.P0 = p0.Off
+			}
+			if p1 := ed.win.Mark("p1"); p1 != nil {
+				ed.dot.P1 = p1.Off
+			}
 		case "click2", "click4":
 			ed.click24(ev)
 		case "end":
@@ -294,6 +340,13 @@ func (ed *Ed) cmdLoop() {
 	ed.ix.delEd(ed)
 }
 
+func (ed *Ed) save() {
+	if ed.win.IsDirty() {
+		// XXX: save it
+	}
+	ed.win.Clean()
+}
+
 func (ed *Ed) editLoop() {
 	cmd.Dprintf("%s started\n", ed)
 	c := ed.win.Events()
@@ -301,12 +354,14 @@ func (ed *Ed) editLoop() {
 		ev := ev
 		cmd.Dprintf("ix ev %v\n", ev)
 		switch ev.Args[0] {
-		case "click1", "tick":
-			// XXX: We must fix the focus in js
-			// and then we can set the dot for temps,
-			// by now we can't pipe from dirs and cmd wins.
-			if !ed.temp {
-				ed.ix.dot = ed
+		case "focus":
+			ed.ix.dot = ed
+		case "tick":
+			if p0 := ed.win.Mark("p0"); p0 != nil {
+				ed.dot.P0 = p0.Off
+			}
+			if p1 := ed.win.Mark("p1"); p1 != nil {
+				ed.dot.P1 = p1.Off
 			}
 		case "eins", "edel":
 			ed.win.Dirty()
@@ -317,8 +372,7 @@ func (ed *Ed) editLoop() {
 				cmd.Dprintf("%s w/o views\n", ed)
 			}
 		case "save":
-			// XXX: save it
-			ed.win.Clean()
+			ed.save()
 		case "quit":
 			ed.ix.delEd(ed)
 			cmd.Dprintf("%s terminated\n", ed)

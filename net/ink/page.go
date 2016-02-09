@@ -210,7 +210,7 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 			}
 		}
 		fmt.Fprintln(w, `<script type="text/javascript" src="/js/pg.js"></script>`);
-		pcent := 100/len(pg.els)
+		pcent := 96/len(pg.els)
 		fmt.Fprintln(w, `
 		<style>
 		body {
@@ -218,12 +218,12 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 			min-width: 520px;
 		}
 		.ui-widget-content {background-color: #ddddc8; }
-		.column {width: `+strconv.Itoa(pcent)+`%;  float: left; padding-bottom: 10px; }
-		.portlet { margin: 0 0 0 0; padding: 0.1em; background-color: #ddddc8;}
-		.portlet-header { padding: 0.2em 0.2em; margin-bottom: 0.5em; 
+		.column {width: `+strconv.Itoa(pcent)+`%;  float: left; padding-bottom: 10px; padding-right: 5px; padding-left: 5px;}
+		.portlet { margin: 0 0 0 0; padding: 0.2em; background-color: #ddddc8;}
+		.portlet-header { padding: 0.1em 0.1em; margin-bottom: 0.5em; 
 			position: relative; background-color: #CC6600}
 		.portlet-toggle { position: absolute; top: 50%; right: 0; margin-top: -8px; }
-		.portlet-content { padding: 0.2em; }
+		.portlet-content { padding: 0.1em; }
 		.portlet-placeholder { border: 1px dotted black; margin: 0 1em 1em 0; height: 30px; }
 		.ui-icon.inline { display:inline-block; }
 		.ui-widget-header.center { text-align:center; }

@@ -201,16 +201,23 @@ func specialForm(ln string) zx.Dir {
 			els = append([]string{"zx"}, els...)
 			addr = "zx!" + addr
 		}
-		switch len(els) {
-		case 6:	// zx!unix!localhost!zx!main!/
-		case 5:	// zx!unix!localhost!zx!main
-			addr += "!/"
-		case 4:	// zx!unix!localhost!zx
-			addr += "!main!/"
-		case 3, 2:
-			oaddr := strings.Join(els[1:], "!")
-			naddr := rzx.FillAddr(oaddr)
-			addr = els[0] +"!"+ naddr + "!main!/"
+		if els[0] == "lfs" {
+			switch len(els) {
+			case 2:
+				addr += "!/"
+			}
+		} else {
+			switch len(els) {
+			case 6:	// zx!unix!localhost!zx!main!/
+			case 5:	// zx!unix!localhost!zx!main
+				addr += "!/"
+			case 4:	// zx!unix!localhost!zx
+				addr += "!main!/"
+			case 3, 2:
+				oaddr := strings.Join(els[1:], "!")
+				naddr := rzx.FillAddr(oaddr)
+				addr = els[0] +"!"+ naddr + "!main!/"
+			}
 		}
 	}
 	return zx.Dir{
@@ -228,6 +235,7 @@ func specialForm(ln string) zx.Dir {
 //
 // A full addr is proto!net!host!port!tree!path,
 // where proto can be zx|lfs.
+// For lfs, the addr is of the form lfs!lfsroot!path
 // zx is implied it no proto is given.
 // Any suffix components may be absent so we accept
 //	localhost!zx	-> zx!tcp!localhost!zx!main!/
@@ -391,6 +399,7 @@ func (ns *NS) Unmount(fname string, d zx.Dir) error {
 // Resolve a name and return the prefix path and the array of mount points for it.
 // The "addr" attribute for each mount point returned is adjusted to refer to the path
 // in the server for the resource resolved.
+// However, the path is left pointing to the mount point.
 // The path must be absolute.
 func (ns *NS) Resolve(name string) (pref string, mnts []zx.Dir, err error) {
 	path, err := zx.UseAbsPath(name)

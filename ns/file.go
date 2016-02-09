@@ -21,6 +21,23 @@ var (
 	_fs3 zx.FindGetter = &NS{}
 )
 
+// For testing
+func delLfsPath(path string) {
+	path, err := zx.UseAbsPath(path)
+	if err != nil {
+		panic(err)
+	}
+	lfslk.Lock()
+	defer lfslk.Unlock()
+	addr := path
+	if ofs, ok := lfs[addr]; ok {
+		if cfs, ok := ofs.(io.Closer); ok {
+			cfs.Close()
+		}
+	}
+	delete(lfs, addr)
+}
+
 // Add the given (absolute) paths as valid paths to resolve lfs addresses.
 // If the path is not ok, it's a panic.
 // DirFs relies on this to resolve addresses of the form lfs!*
@@ -116,13 +133,14 @@ func rerr(err error) <-chan error {
 }
 
 func (ns *NS) Stat(path string) <-chan zx.Dir {
-	_, ds, err := ns.Resolve(path)
+	pname, ds, err := ns.Resolve(path)
 	if err != nil {
 		return derr(err)
 	}
 	d := ds[0]
 	if d["addr"] == "" {
 		c := make(chan zx.Dir, 1)
+		d["path"] = fpath.Join(pname, d.SPath())
 		c <- d
 		close(c)
 		return c
@@ -131,7 +149,17 @@ func (ns *NS) Stat(path string) <-chan zx.Dir {
 	if err != nil {
 		return derr(err)
 	}
-	return fs.Stat(d.SPath())
+	rc := make(chan zx.Dir)
+	go func() {
+		dc := fs.Stat(d.SPath())
+		rd := <-dc
+		if rd != nil {
+			rd["path"] = fpath.Join(pname, d.SPath())
+			rc <- rd
+		}
+		close(rc, cerror(dc))
+	}()
+	return rc
 }
 
 func (ns *NS) Get(path string, off, count int64) <-chan []byte {

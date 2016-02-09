@@ -8,17 +8,89 @@ import (
 	"clive/sre"
 	"clive/txt"
 	"strings"
+	"io"
+	"clive/ch"
+	"time"
 )
 
 var (
-	bltin = map[string] func(*Cmd, ...string) {}
+	btab = map[string] func(*Cmd, ...string) {}
 )
 
 func init() {
-	bltin["cmds"] = bcmds
-	bltin["X"] = bX
-	bltin["cd"] = bcd
+	btab["cmds"] = bcmds
+	btab["X"] = bX
+	btab["cd"] = bcd
+	btab["="] = beq
+	btab["w"] = bw
 }
+
+func builtin(arg0 string) func(*Cmd, ...string) {
+	if arg0 == "" {
+		return nil
+	}
+	if fn, ok := btab[arg0]; ok {
+		return fn
+	}
+	switch arg0[0] {
+	case '>':
+		return bpipeTo
+	case '<':
+		return bpipeFrom
+	case '|':
+		return bpipe
+	}
+	return nil
+}
+
+func bpipeTo(c *Cmd, args ...string) {
+	if(args[0][0] == '>') {
+		args[0] = args[0][1:]
+	}
+	if dot := c.ed.ix.dot; dot  != nil {
+		c.pipeTo([]*Ed{dot}, false, args...)
+		return
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+func bpipeFrom(c *Cmd, args ...string) {
+	if(args[0][0] == '<') {
+		args[0] = args[0][1:]
+	}
+	if dot := c.ed.ix.dot; dot  != nil {
+		c.pipeFrom([]*Ed{dot}, false, args...)
+		return
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+func bpipe(c *Cmd, args ...string) {
+	if(args[0][0] == '|') {
+		args[0] = args[0][1:]
+	}
+	if dot := c.ed.ix.dot; dot  != nil {
+		c.pipe(dot, true, false, args...)
+		return
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+func beq(c *Cmd, args ...string) {
+	if dot := c.ed.ix.dot; dot  != nil {
+		c.printf("%s\n", dot.Addr());
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+func bw(c *Cmd, args ...string) {
+	if dot := c.ed.ix.dot; dot  != nil {
+		dot.save()
+		c.printf("%s saved\n", dot);
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
 
 // NB: All builtins must do a c.ed.win.DelMark(c.mark) once no
 // further I/O is expected from them.
@@ -102,9 +174,17 @@ func (c *Cmd) pipeEdTo(ed *Ed, all bool) bool {
 	buf := &bytes.Buffer{}
 	t := ed.win.GetText()
 	defer ed.win.UngetText()
-	gc := t.Get(0, txt.All)
+	var gc <-chan []rune
+	if all {
+		gc = t.Get(0, txt.All)
+	} else if ed.dot.P1 == ed.dot.P0 {
+		return true
+	} else {
+		gc = t.Get(ed.dot.P0, ed.dot.P1-ed.dot.P0)
+	}
 	for rs := range gc {
 		for _, r := range rs {
+			buf.WriteRune(r)
 			if r == '\n' {
 				if ok := p.In <- buf.Bytes(); !ok {
 					c.printf("output: %s\n", cerror(p.In))
@@ -112,8 +192,6 @@ func (c *Cmd) pipeEdTo(ed *Ed, all bool) bool {
 					return false
 				}
 				buf = &bytes.Buffer{}
-			} else {
-				buf.WriteRune(r)
 			}
 		}
 		if buf.Len() > 0 {
@@ -160,8 +238,117 @@ func (c *Cmd) pipeTo(eds []*Ed, all bool, args ...string) {
 	}()
 }
 
+func (c *Cmd) getOut(w io.Writer, donec chan bool) {
+	cmd.Dprintf("getOut started\n")
+	defer cmd.Dprintf("getOut terminated\n")
+	p := c.p
+	for m := range p.Out {
+		switch m := m.(type) {
+		case error:
+			c.printf("%s\n", m)
+		case []byte:
+			cmd.Dprintf("ix cmd out: [%d] bytes\n", len(m))
+			w.Write(m)
+		default:
+			cmd.Dprintf("ix cmd out: got type %T\n", m)
+		}
+	}
+	donec <- true
+}
+
+func (c *Cmd) getErrs(donec chan bool) {
+	cmd.Dprintf("getErrs started\n")
+	defer cmd.Dprintf("getErrs terminated\n")
+	p := c.p
+	for m := range ch.GroupBytes(p.Err, time.Second, 4096) {
+		switch m := m.(type) {
+		case error:
+			c.printf("%s\n", m)
+		case []byte:
+			cmd.Dprintf("ix cmd err: [%d] bytes\n", len(m))
+			s := string(m)
+			c.printf("%s\n", s)
+		default:
+			cmd.Dprintf("ix cmd out: got type %T\n", m)
+		}
+	}
+	donec <- true
+}
+
+func (ed *Ed) replDot(s string) {
+	some := false
+	if ed.dot.P1 > ed.dot.P0 {
+		some = true
+		ed.win.Del(ed.dot.P0, ed.dot.P1-ed.dot.P0)
+	}
+	rs := []rune(s)
+	if len(rs) > 0 {
+		some = true
+		ed.win.ContdEdit()
+		ed.win.Ins(rs, ed.dot.P0)
+	}
+	if some {
+		ed.dot.P1 = ed.dot.P0 + len(rs)
+		// sets p0 and p1 marks
+		ed.win.SetSel(ed.dot.P0, ed.dot.P1)
+	}
+}
+
+func (c *Cmd) pipeFrom(eds []*Ed, all bool, args ...string) {
+	for _, ed := range eds {
+		c.pipe(ed, false, all, args...)
+	}
+}
+
+func (c *Cmd) pipe(ed *Ed, sendin, all bool, args ...string) {
+	// we ignore all for pipeFrom, so it always replaces the dot.
+	// it's not ignored for pipeTo, so the input may be dot or all the file
+	inkc := make(chan  face{})
+	setio := func(c *cmd.Ctx) {
+		c.ForkEnv()
+		c.ForkNS()
+		c.ForkDot()
+		c.SetOut("ink", inkc)
+	}
+	cmd.Dprintf("pipe from %s\n", args)
+	args = append([]string{"ql", "-uc"}, args...)
+	p, err := run.PipeToCtx(setio, args...)
+	if err != nil {
+		cmd.Warn("run: %s", err)
+		c.printf("error: %s\n", err)
+		c.ed.win.DelMark(c.mark)
+		return
+	}
+	c.p = p
+	c.ed.ix.addCmd(c)
+	var buf bytes.Buffer
+	donec := make(chan bool, 2)
+	go c.getOut(&buf, donec)
+	go c.getErrs(donec)
+	go c.inkio(inkc)
+	go func() {
+		if sendin {
+			c.pipeEdTo(ed, all)
+		}
+		close(p.In)
+	}()
+	go func() {
+		<-donec
+		<-donec
+		if err := p.Wait(); err != nil {
+			cmd.Dprintf("ix cmd exit sts: %s\n", err)
+			c.printf("cmd error: %s\n", err)
+		}
+		s := buf.String()
+		cmd.Dprintf("pipe output %q\n", s)
+		ed.replDot(s)
+		c.ed.win.DelMark(c.mark)
+		c.ed.ix.delCmd(c)
+	}()
+}
+
+
 func (c *Cmd) edcmd(eds []*Ed, args ...string) {
-	
 	switch args[0] {
 	case "D":
 		for _, ed := range eds {
@@ -172,8 +359,29 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 			}
 		}
 		c.ed.win.DelMark(c.mark)
+	case "=":
+		var buf bytes.Buffer
+		for _, ed := range eds {
+			fmt.Fprintf(&buf, "%s\n", ed.Addr());
+		}
+		if buf.Len() > 0 {
+			c.printf("%s\n", buf.String())
+		}
+		c.ed.win.DelMark(c.mark)
+
 	case ">":
 		c.pipeTo(eds, true, args[1:]...)
+	case "<":
+		c.pipeFrom(eds, true, args[1:]...)
+	case "|":
+		for _, ed := range eds {
+			c.pipe(ed, true, true, args[1:]...)
+		}
+	case "w":
+		for _, ed := range eds {
+			ed.save()
+		}
+
 	default:
 		cmd.Warn("edit: %q not implemented", args[0])
 	}
@@ -190,7 +398,7 @@ func bX(c *Cmd, args ...string) {
 	eds := ix.edits(args[1:]...)
 	if len(args) < 3 || len(args[2]) == 0 {
 		for _, e := range eds {
-			fmt.Fprintf(&out, "%s\n", e)
+			fmt.Fprintf(&out, "%s %s\n", e.menuLine(), e.dot)
 		}
 		if out.Len() == 0 {
 			fmt.Fprintf(&out, "none\n")
@@ -200,7 +408,7 @@ func bX(c *Cmd, args ...string) {
 		return
 	}
 	isio := strings.ContainsRune("|><", rune(args[2][0]))
-	if args[2] != "D" && args[2] != "X" && !isio {
+	if args[2] != "w" && args[2] != "=" && args[2] != "D" && args[2] != "X" && !isio {
 		c.printf("unknown edit command %q\n", args[2])
 		c.ed.win.DelMark(c.mark)
 		return

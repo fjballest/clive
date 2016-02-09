@@ -16,6 +16,43 @@ var (
 	printf = dbg.FlagPrintf(&debug)
 )
 
+func TestAddr(t *testing.T) {
+	debug = testing.Verbose()
+	addrs := [...]string{
+		"foo.c",
+		"foo.c:3",
+		"foo.c:3,5",
+		":3",
+		":3,5",
+		"foo.c:#3",
+		"foo.c:#3,#5",
+		":#3",
+		":#3,#5",
+		"foo.c:3:#5,#7",
+		"foo.c:3,4:#5,#7",
+	}
+	outs := [...]string{
+		"foo.c:#0,#0",
+		"foo.c:3",
+		"foo.c:3,5",
+		"in:3",
+		"in:3,5",
+		"foo.c:#3,#3",
+		"foo.c:#3,#5",
+		"in:#3,#3",
+		"in:#3,#5",
+		"foo.c:3:#5,#7",
+		"foo.c:3,4:#5,#7",
+	}
+	for i, a := range addrs {
+		xa := ParseAddr(a)
+		printf("%q -> %s\n", a, xa)
+		if xa.String() != outs[i] {
+			t.Fatalf("bad addr")
+		}
+	}
+}
+
 func TestPaths(t *testing.T) {
 	debug = testing.Verbose()
 

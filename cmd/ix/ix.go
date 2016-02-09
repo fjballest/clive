@@ -93,13 +93,18 @@ func (ix *IX) editFor(what string) *Ed {
 	return nil
 }
 
-func (ix *IX) lookFile(what string) *Ed {
-	what = cmd.AbsPath(strings.TrimSpace(what))
-	if ed := ix.editFor(what); ed != nil {
+func (ix *IX) lookFile(file, addr string) *Ed {
+	file = cmd.AbsPath(strings.TrimSpace(file))
+	var ed *Ed
+	if ed = ix.editFor(file); ed != nil {
 		ed.win.Show()
-		return ed
+	} else {
+		ed = ix.editFile(file)
 	}
-	return ix.editFile(what)
+	if ed != nil && addr != "" {
+		ed.SetAddr(zx.ParseAddr(addr))
+	}
+	return ed
 }
 
 func (ix *IX) lookURL(what string)  {
