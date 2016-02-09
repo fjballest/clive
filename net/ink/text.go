@@ -219,6 +219,12 @@ func (t *Txt) update(toid string) {
 			return
 		}
 	}
+	m0 := t.t.Mark("p0")
+	m1 := t.t.Mark("p1")
+	if m0 != nil && m1 != nil {
+		ev = &Ev{Id: t.Id, Src: "", Args: []string{"sel", strconv.Itoa(m0.Off), strconv.Itoa(m1.Off)}}
+		to <- ev
+	}
 	ev = &Ev{Id: t.Id, Src: "", Args: []string{"reloaded", fmt.Sprintf("%d", t.t.Vers())}}
 	if ok := to <- ev; !ok {
 		return
@@ -825,8 +831,14 @@ func (t *Txt) MarkIns(mark string, data []rune) error {
 	if err := t.t.MarkIns(mark, data); err != nil {
 		return err
 	}
-	t.out <- &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(),
-		Args: []string{"markins", mark, string(data)},
+	for tot, nw := 0, 0; tot < len(data); tot += nw {
+		nw = len(data) - tot
+		if nw > 16*1024 {
+			nw = 16*1024
+		}
+		t.out <- &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(),
+			Args: []string{"markins", mark, string(data[tot:tot+nw])},
+		}
 	}
 	return nil
 }

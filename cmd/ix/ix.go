@@ -122,38 +122,7 @@ func (ix *IX) editFile(what string) *Ed {
 	}
 	ed := ix.newEdit(what)
 	ed.d = d
-	var dc <-chan []byte
-	if d["type"] == "d" {
-		ed.temp = true
-		c := make(chan []byte)
-		dc = c
-		go func() {
-			ds, err := cmd.GetDir(what)
-			for _, d := range ds {
-				c <- []byte(d.Fmt()+"\n")
-			}
-			close(c, err)
-		}()
-	} else {
-		dc = cmd.Get(what, 0, -1)
-	}
-	t := ed.win.GetText()
-	if t.Len() > 0 {
-		t.ContdEdit()
-		t.Del(0, t.Len())
-	}
-	for m := range dc {
-		runes := []rune(string(m))
-		t.ContdEdit()
-		if err := t.Ins(runes, t.Len()); err != nil {
-			close(dc, err)
-			cmd.Warn("%s: insert: %s", what, err)
-		}
-	}
-	ed.win.PutText()
-	if err := cerror(dc); err != nil {
-		cmd.Warn("%s: get: %s", what, err)
-	}
+	ed.load()
 	ed.winid, _ = ix.pg.Add(ed.win)
 	return ed
 }

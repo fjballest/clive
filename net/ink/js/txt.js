@@ -643,7 +643,7 @@ var wordre = null;
 function iswordchar(c) {
 	if(!wordre)
 		wordre = /\w/;
-	return c == '/' || c == '.' || wordre.test(c);
+	return c == '/' || c == '.' || c == ':' || c == '#' || c == ',' || wordre.test(c);
 }
 
 function islparen(c) {
@@ -1412,6 +1412,7 @@ function tapply(ev, fromserver) {
 			console.log(this.divid, "apply: no mark", arg[1]);
 			break;
 		}
+		console.log("markins...");
 		var nlen = arg[2].length;
 		var npos = m.pos + nlen;
 		var opos = m.pos;
@@ -1437,6 +1438,7 @@ function tapply(ev, fromserver) {
 		if(!this.userresized) {
 			this.autoresize();
 		} 
+		console.log("markins done");
 		break;
 	case "eins":
 		if(arg.length < 3){
@@ -1976,7 +1978,8 @@ function mktxt(d, t, e, cid, id) {
 		e.post(["id"]);
 	};
 	e.ws.onmessage = function(ev) {
-		// console.log("got msg", e.data);
+		e.ws.send("\n");
+		console.log("got msg", ev.data);
 		var o = JSON.parse(ev.data);
 		if(!o || !o.Id) {
 			console.log("update: no objet id");

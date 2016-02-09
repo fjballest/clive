@@ -23,6 +23,8 @@ func init() {
 	btab["cd"] = bcd
 	btab["="] = beq
 	btab["w"] = bw
+	btab["r"] = br
+	btab["d"] = bd
 }
 
 func builtin(arg0 string) func(*Cmd, ...string) {
@@ -48,7 +50,7 @@ func bpipeTo(c *Cmd, args ...string) {
 		args[0] = args[0][1:]
 	}
 	if dot := c.ed.ix.dot; dot  != nil {
-		c.pipeTo([]*Ed{dot}, false, args...)
+		go c.pipeTo([]*Ed{dot}, false, args...)
 		return
 	}
 	c.ed.win.DelMark(c.mark)
@@ -59,7 +61,7 @@ func bpipeFrom(c *Cmd, args ...string) {
 		args[0] = args[0][1:]
 	}
 	if dot := c.ed.ix.dot; dot  != nil {
-		c.pipeFrom([]*Ed{dot}, false, args...)
+		go c.pipeFrom([]*Ed{dot}, false, args...)
 		return
 	}
 	c.ed.win.DelMark(c.mark)
@@ -70,7 +72,7 @@ func bpipe(c *Cmd, args ...string) {
 		args[0] = args[0][1:]
 	}
 	if dot := c.ed.ix.dot; dot  != nil {
-		c.pipe(dot, true, false, args...)
+		go c.pipe(dot, true, false, args...)
 		return
 	}
 	c.ed.win.DelMark(c.mark)
@@ -85,8 +87,33 @@ func beq(c *Cmd, args ...string) {
 
 func bw(c *Cmd, args ...string) {
 	if dot := c.ed.ix.dot; dot  != nil {
-		dot.save()
-		c.printf("%s saved\n", dot);
+		if dot.save() {
+			c.printf("saved %s\n", dot)
+		}
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+func br(c *Cmd, args ...string) {
+	if dot := c.ed.ix.dot; dot  != nil {
+		d, err := cmd.Stat(dot.tag)
+		if err != nil {
+			cmd.Warn("%s: look: %s", dot, err)
+		} else {
+			dot.d = d
+		}
+		go dot.load()
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+func bd(c *Cmd, args ...string) {
+	if dot := c.ed.ix.dot; dot  != nil && dot != c.ed {
+		if dot.win != nil {
+			dot.win.Close()
+		} else {
+			dot.ix.delEd(dot)
+		}
 	}
 	c.ed.win.DelMark(c.mark)
 }
@@ -113,17 +140,6 @@ func bcmds(c *Cmd, args ...string) {
 	s := out.String()
 	c.printf("%s", s)
 	c.ed.win.DelMark(c.mark)
-}
-
-func (ed *Ed) menuLine() string {
-	switch {
-	case ed.temp:
-		return "/ " + ed.tag
-	case ed.win.IsDirty():
-		return "! " + ed.tag
-	default:
-		return "- " + ed.tag
-	}
 }
 
 func (ix *IX) edits(args ...string) []*Ed {
@@ -242,7 +258,7 @@ func (c *Cmd) getOut(w io.Writer, donec chan bool) {
 	cmd.Dprintf("getOut started\n")
 	defer cmd.Dprintf("getOut terminated\n")
 	p := c.p
-	for m := range p.Out {
+	for m := range ch.GroupBytes(p.Out, time.Second, 4096) {
 		switch m := m.(type) {
 		case error:
 			c.printf("%s\n", m)
@@ -350,7 +366,7 @@ func (c *Cmd) pipe(ed *Ed, sendin, all bool, args ...string) {
 
 func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 	switch args[0] {
-	case "D":
+	case "d":
 		for _, ed := range eds {
 			if ed.win != nil {
 				ed.win.Close()
@@ -370,18 +386,27 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 		c.ed.win.DelMark(c.mark)
 
 	case ">":
-		c.pipeTo(eds, true, args[1:]...)
+		go c.pipeTo(eds, true, args[1:]...)
 	case "<":
-		c.pipeFrom(eds, true, args[1:]...)
+		go c.pipeFrom(eds, true, args[1:]...)
 	case "|":
-		for _, ed := range eds {
-			c.pipe(ed, true, true, args[1:]...)
-		}
+		go func() {
+			for _, ed := range eds {
+				c.pipe(ed, true, true, args[1:]...)
+			}
+		}()
 	case "w":
 		for _, ed := range eds {
-			ed.save()
+			if ed.save() {
+				c.printf("%s saved\n", ed)
+			}
 		}
-
+	case "r":
+		go func() {
+			for _, ed := range eds {
+				ed.load()
+			}
+		}()
 	default:
 		cmd.Warn("edit: %q not implemented", args[0])
 	}
@@ -398,7 +423,7 @@ func bX(c *Cmd, args ...string) {
 	eds := ix.edits(args[1:]...)
 	if len(args) < 3 || len(args[2]) == 0 {
 		for _, e := range eds {
-			fmt.Fprintf(&out, "%s %s\n", e.menuLine(), e.dot)
+			fmt.Fprintf(&out, "%s%s\n", e.menuLine(), e.dot)
 		}
 		if out.Len() == 0 {
 			fmt.Fprintf(&out, "none\n")
@@ -408,7 +433,7 @@ func bX(c *Cmd, args ...string) {
 		return
 	}
 	isio := strings.ContainsRune("|><", rune(args[2][0]))
-	if args[2] != "w" && args[2] != "=" && args[2] != "D" && args[2] != "X" && !isio {
+	if args[2] != "r" && args[2] != "w" && args[2] != "=" && args[2] != "d" && args[2] != "X" && !isio {
 		c.printf("unknown edit command %q\n", args[2])
 		c.ed.win.DelMark(c.mark)
 		return

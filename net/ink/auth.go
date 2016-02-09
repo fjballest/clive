@@ -6,7 +6,7 @@ import (
 	"clive/net/auth"
 	"fmt"
 	"net/http"
-	"clive/x/code.google.com/p/go.net/websocket"
+	"golang.org/x/net/websocket"
 	"strings"
 )
 

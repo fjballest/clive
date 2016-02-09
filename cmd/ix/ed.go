@@ -113,6 +113,17 @@ func (ed *Ed) String() string {
 	return ed.win.Tag()
 }
 
+func (ed *Ed) menuLine() string {
+	switch {
+	case ed.temp:
+		return "/ " + ed.tag
+	case ed.win.IsDirty():
+		return "! " + ed.tag
+	default:
+		return "- " + ed.tag
+	}
+}
+
 func (ed *Ed) newMark(pos int) string {
 	ed.markgen++
 	m := fmt.Sprintf("cmd%d", ed.markgen)
@@ -139,6 +150,7 @@ func (ed *Ed) SetAddr(a zx.Addr) {
 	ed.dot.P0 = p0
 	ed.dot.P1 = p1
 	cmd.Dprintf("%s: dot set to %s (%s) for %s\n", ed, ed.dot, ed.Addr(), a)
+	ed.win.SetSel(p0, p1)
 }
 
 func (c *Cmd) printf(f string, args ...interface{}) {
@@ -161,7 +173,9 @@ func (c *Cmd) io(hasnl bool) {
 	p := c.p
 	ed := c.ed
 	haderrors := false
-	for m := range ch.GroupBytes(ch.Merge(p.Out, p.Err), time.Second, 4096) {
+	_ = time.Second
+	cmd.Warn("merge... %v", time.Now())
+	for m := range ch.Merge(p.Out, p.Err) {
 		switch m := m.(type) {
 		case error:
 			haderrors = true
@@ -175,6 +189,7 @@ func (c *Cmd) io(hasnl bool) {
 			cmd.Dprintf("ix cmd io: got type %T\n", m)
 		}
 	}
+	cmd.Warn("wait...%v", time.Now())
 	if err := p.Wait(); err != nil {
 		if !haderrors {
 			cmd.Dprintf("ix cmd exit sts: %s\n", err)
@@ -340,11 +355,49 @@ func (ed *Ed) cmdLoop() {
 	ed.ix.delEd(ed)
 }
 
-func (ed *Ed) save() {
+func (ed *Ed) save() bool {
+	s := ed.win.IsDirty()
 	if ed.win.IsDirty() {
 		// XXX: save it
 	}
 	ed.win.Clean()
+	return s
+}
+
+func (ed *Ed) load() {
+	what := ed.tag
+	t := ed.win.GetText()
+	if t.Len() > 0 {
+		t.ContdEdit()
+		t.Del(0, t.Len())
+	}
+	var dc <-chan []byte
+	if ed.d["type"] == "d" {
+		ed.temp = true
+		c := make(chan []byte)
+		dc = c
+		go func() {
+			ds, err := cmd.GetDir(what)
+			for _, d := range ds {
+				c <- []byte(d.Fmt()+"\n")
+			}
+			close(c, err)
+		}()
+	} else {
+		dc = cmd.Get(what, 0, -1)
+	}
+	for m := range dc {
+		runes := []rune(string(m))
+		t.ContdEdit()
+		if err := t.Ins(runes, t.Len()); err != nil {
+			close(dc, err)
+			cmd.Warn("%s: insert: %s", what, err)
+		}
+	}
+	ed.win.PutText()
+	if err := cerror(dc); err != nil {
+		cmd.Warn("%s: get: %s", what, err)
+	}
 }
 
 func (ed *Ed) editLoop() {

@@ -6,7 +6,7 @@ package ink
 import (
 	"net/http"
 	"clive/cmd"
-	"clive/x/code.google.com/p/go.net/websocket"
+	"golang.org/x/net/websocket"
 	"encoding/json"
 	"sync"
 	"html"
@@ -288,8 +288,8 @@ func (c *Ctlr) server(ws *websocket.Conn) {
 				close(v.out, err)
 				break
 			}
-			cmd.Dprintf("%s: update: %v\n", c.Id, ev)
-			if _, err := ws.Write(m); err != nil {
+			cmd.Dprintf("%s: update: %s...\n", c.Id, ev.Args[0])
+			if err := websocket.Message.Send(ws, string(m)); err != nil {
 				cmd.Dprintf("%s: update: %v wr: %s\n", c.Id, ev, err)
 				close(v.out, err)
 				break
