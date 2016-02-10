@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"net/url"
 	"bytes"
+	"clive/net/ink/js"
 )
 
 // The layout event is sent from the viewer to the page and it goes over
@@ -71,13 +72,13 @@ struct urlEl {
 
 // HTML headers to be included in pages using this interface.
 var headers = `
-<link rel="stylesheet" href="/js/jquery-ui/jquery-ui.css">
-<script src="/js/jquery-2.2.0.js"></script>
+<link rel="stylesheet" href="/js/jquery-ui/jquery-ui.min.css">
+<script src="/js/jquery-2.2.0.min.js"></script>
 <script type="text/javascript" src="/js/clive.js"></script>
 <script type="text/javascript" src="/js/txt.js"></script>
 <script type="text/javascript" src="/js/button.js"></script>
 <script type="text/javascript" src="/js/radio.js"></script>
-<script src="/js/jquery-ui/jquery-ui.js"></script>
+<script src="/js/jquery-ui/jquery-ui.min.js"></script>
 <script src="/js/jquery.get-word-by-event.js"></script>
 `
 
@@ -91,6 +92,15 @@ func WriteHeaders(w io.Writer) {
 
 func jsHandler(w http.ResponseWriter, r *http.Request) {
 	p := fpath.Clean(r.URL.Path)
+	if p[0] == '/' {
+		p = p[1:]
+	}
+	if d, ok := js.Files[p]; ok {
+		w.Write(d)
+	} else {
+		http.Error(w, "file not found", 404)
+	}
+	return
 	p = fpath.Join(jspath, p)
 	cmd.Warn("serving %s\n", p)
 	http.ServeFile(w, r, p)
@@ -99,6 +109,15 @@ func jsHandler(w http.ResponseWriter, r *http.Request) {
 // Serve the javascript files at /js.
 // Only needed if NewPg() is not used.
 func ServeJS() {
+	/*
+	   Generate the rom using:
+	   rom -u	-n js\
+		js/pg.js js/clive.js js/txt.js js/button.js js/radio.js \
+		js/aes.js js/ansix923.js js/pbkdf2.js js/jquery-ui/jquery-ui.min.css js/jquery-2.2.0.min.js \
+		js/jquery.get-word-by-event.js js/jquery-ui/images/*  js/jquery-ui/jquery-ui.min.js\
+		js/jquery-ui/jquery-ui.theme.min.css js/jquery-ui/jquery-ui.structure.min.css  >/tmp/js.go
+		mv /tmp/js.go js/js.go
+	*/
 	once.Do(start)
 }
 

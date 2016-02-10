@@ -112,7 +112,7 @@ func serveLoginFor(proceedto string) {
 		<script type="text/javascript" src="/js/aes.js"></script>
 		<script type="text/javascript" src="/js/ansix923.js"></script>
 		<script type="text/javascript" src="/js/pbkdf2.js"></script>
-		<script type="text/javascript" src="/js/jquery-2.2.0.js"></script>
+		<script type="text/javascript" src="/js/jquery-2.2.0.min.js"></script>
 		<p>
 		<script>
 		$(function(){
