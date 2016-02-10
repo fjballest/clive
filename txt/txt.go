@@ -190,6 +190,17 @@ func New(txt []rune) *Text {
 	return t
 }
 
+/*
+	Discard all the edits (drop undo/redo entries).
+*/
+func (t *Text) DropEdits() {
+	t.Lock()
+	defer t.Unlock()
+	t.edits = make([]*Edit, 0, 128)
+	t.nedits = 0
+	t.contd = false
+}
+
 func (t *Text) addEdit(op Tedit, pos int, data []rune, same bool) *Edit {
 	if t.edits == nil {
 		return &Edit{op, pos, data, same}

@@ -291,25 +291,6 @@ func (c *Cmd) getErrs(donec chan bool) {
 	donec <- true
 }
 
-func (ed *Ed) replDot(s string) {
-	some := false
-	if ed.dot.P1 > ed.dot.P0 {
-		some = true
-		ed.win.Del(ed.dot.P0, ed.dot.P1-ed.dot.P0)
-	}
-	rs := []rune(s)
-	if len(rs) > 0 {
-		some = true
-		ed.win.ContdEdit()
-		ed.win.Ins(rs, ed.dot.P0)
-	}
-	if some {
-		ed.dot.P1 = ed.dot.P0 + len(rs)
-		// sets p0 and p1 marks
-		ed.win.SetSel(ed.dot.P0, ed.dot.P1)
-	}
-}
-
 func (c *Cmd) pipeFrom(eds []*Ed, all bool, args ...string) {
 	for _, ed := range eds {
 		c.pipe(ed, false, all, args...)

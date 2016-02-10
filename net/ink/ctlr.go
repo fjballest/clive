@@ -230,19 +230,25 @@ func (e *Ev) reflects() bool {
 	return e.Args[0][0]>='A' && e.Args[0][0]<='Z'
 }
 
+func (c *Ctlr) getViews() []*view {
+	c.Lock()
+	defer c.Unlock()
+	var vs []*view
+	for v := range c.views {
+		vs = append(vs, v)
+	}
+	return vs
+}
+
 func (c *Ctlr) reflector() {
 	for ev := range c.out {
 		ev := ev
-		c.Lock()
-		for v := range c.views {
+		for _, v := range c.getViews() {
 			if ev.Src != v.Id {
-				cmd.Dprintf("%s: reflecting %v\n", v.Id, ev.Args)
-				go func(v *view) {
-					v.out <- ev
-				}(v)
+				// cmd.Dprintf("%s: reflecting %v\n", v.Id, ev.Args)
+				v.out <- ev
 			}
 		}
-		c.Unlock()
 	}
 	c.Lock()
 	err := cerror(c.out)
@@ -288,8 +294,8 @@ func (c *Ctlr) server(ws *websocket.Conn) {
 				close(v.out, err)
 				break
 			}
-			cmd.Dprintf("%s: update: %s...\n", c.Id, ev.Args[0])
-			if err := websocket.Message.Send(ws, string(m)); err != nil {
+			// cmd.Dprintf("%s: update: %s...\n", c.Id, ev.Args[0])
+			if err := websocket.Message.Send(ws, string(m)+"\r\n"); err != nil {
 				cmd.Dprintf("%s: update: %v wr: %s\n", c.Id, ev, err)
 				close(v.out, err)
 				break

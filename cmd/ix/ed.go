@@ -124,6 +124,44 @@ func (ed *Ed) menuLine() string {
 	}
 }
 
+func (ed *Ed) replDot(s string) {
+	some := false
+	t := ed.win.GetText()
+	defer ed.win.PutText()
+	rs := []rune(s)
+	if ed.dot.P1 > ed.dot.P0 {
+		t.Del(ed.dot.P0, ed.dot.P1-ed.dot.P0)
+	}
+	if len(rs) > 0 {
+		t.ContdEdit()
+		t.Ins(rs, ed.dot.P0)
+	}
+	ed.win.SetSel(ed.dot.P0, ed.dot.P0+len(rs))
+	return
+	// This is how we should do it, but it's quite slow
+	// Safari takes a very long time to post the ins events
+	// perhaps because we take some time in js to process
+	// them, although safari delay is like 30s (!!) and
+	// we take just a bit of time.
+	// It seems that a plain reload is a lot faster, because it
+	// just adds the data as it comes to the lines array in js
+	// and then updates everything.
+	if ed.dot.P1 > ed.dot.P0 {
+		some = true
+		ed.win.Del(ed.dot.P0, ed.dot.P1-ed.dot.P0)
+	}
+	if len(rs) > 0 {
+		some = true
+		ed.win.ContdEdit()
+		ed.win.Ins(rs, ed.dot.P0)
+	}
+	if some {
+		ed.dot.P1 = ed.dot.P0 + len(rs)
+		// sets p0 and p1 marks
+		ed.win.SetSel(ed.dot.P0, ed.dot.P1)
+	}
+}
+
 func (ed *Ed) newMark(pos int) string {
 	ed.markgen++
 	m := fmt.Sprintf("cmd%d", ed.markgen)
@@ -175,6 +213,7 @@ func (c *Cmd) io(hasnl bool) {
 	haderrors := false
 	_ = time.Second
 	cmd.Warn("merge... %v", time.Now())
+	first := true
 	for m := range ch.Merge(p.Out, p.Err) {
 		switch m := m.(type) {
 		case error:
@@ -185,6 +224,16 @@ func (c *Cmd) io(hasnl bool) {
 			c.printf("%s", s)
 		case zx.Dir:
 			c.printf("%s\n", m.Fmt())
+			first = true
+		case zx.Addr:
+			c.printf("%s\n", m)
+			if first {
+				if ed = ix.editFor(m.Name); ed != nil {
+					ed.win.Show()
+					ed.SetAddr(m)
+				}
+			}
+			first = false
 		default:
 			cmd.Dprintf("ix cmd io: got type %T\n", m)
 		}
@@ -349,10 +398,21 @@ func (ed *Ed) cmdLoop() {
 			cmd.Dprintf("%s terminated\n", ed)
 			close(c, "quit")
 			return
+		case "clear":
+			ed.clear()
 		}
 	}
 	cmd.Dprintf("%s terminated\n", ed)
 	ed.ix.delEd(ed)
+}
+
+func (ed *Ed) clear() {
+	ed.win.SetSel(0, 0)
+	t := ed.win.GetText()
+	defer ed.win.PutText()
+	t.DelAll()
+	t.Ins([]rune("\n"), 0)
+	t.DropEdits()
 }
 
 func (ed *Ed) save() bool {
@@ -367,10 +427,11 @@ func (ed *Ed) save() bool {
 func (ed *Ed) load() {
 	what := ed.tag
 	t := ed.win.GetText()
+	defer ed.win.PutText()
 	if t.Len() > 0 {
-		t.ContdEdit()
-		t.Del(0, t.Len())
+		t.DelAll()
 	}
+	t.DropEdits()
 	var dc <-chan []byte
 	if ed.d["type"] == "d" {
 		ed.temp = true
@@ -394,7 +455,6 @@ func (ed *Ed) load() {
 			cmd.Warn("%s: insert: %s", what, err)
 		}
 	}
-	ed.win.PutText()
 	if err := cerror(dc); err != nil {
 		cmd.Warn("%s: get: %s", what, err)
 	}
@@ -431,6 +491,8 @@ func (ed *Ed) editLoop() {
 			cmd.Dprintf("%s terminated\n", ed)
 			close(c, "quit")
 			return
+		case "clear":
+			ed.clear()
 		}
 	}
 	cmd.Dprintf("%s terminated\n", ed)

@@ -47,6 +47,8 @@ import (
 //	held
 //	rlse
 //	mark name pos
+//	markinsing name str
+//	markinsdone name
 //	delmark
 //	dirty
 //	clean
@@ -77,6 +79,7 @@ struct Txt {
 
 	owner string
 	held []*Ev
+	lastev string
 	ngets int
 	getslk sync.Mutex
 	dirty, istemp bool
@@ -219,15 +222,15 @@ func (t *Txt) update(toid string) {
 			return
 		}
 	}
+	ev = &Ev{Id: t.Id, Src: "", Args: []string{"reloaded", fmt.Sprintf("%d", t.t.Vers())}}
+	if ok := to <- ev; !ok {
+		return
+	}
 	m0 := t.t.Mark("p0")
 	m1 := t.t.Mark("p1")
 	if m0 != nil && m1 != nil {
 		ev = &Ev{Id: t.Id, Src: "", Args: []string{"sel", strconv.Itoa(m0.Off), strconv.Itoa(m1.Off)}}
 		to <- ev
-	}
-	ev = &Ev{Id: t.Id, Src: "", Args: []string{"reloaded", fmt.Sprintf("%d", t.t.Vers())}}
-	if ok := to <- ev; !ok {
-		return
 	}
 }
 
@@ -611,7 +614,11 @@ func (t *Txt) apply(wev *Ev) {
 		cmd.Dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
 		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 		t.post(wev)
+		if t.lastev == ev[0] {
+			t.post(&Ev{Id: t.Id, Src: wev.Src, Vers: t.t.Vers(), Args: []string{"clear"}})
+		}
 	}
+	t.lastev = ev[0]
 }
 
 // Is the text dirty (as indicated by calls to Dirty/Clean)?
@@ -725,6 +732,9 @@ func (t *Txt) Getc(off int) rune {
 
 // Insert
 func (t *Txt) Ins(data []rune, off int) error {
+	if len(data) == 0 {
+		return nil
+	}
 	t.getText()
 	defer t.putText()
 	if err := t.t.Ins(data, off); err != nil {
@@ -732,10 +742,21 @@ func (t *Txt) Ins(data []rune, off int) error {
 		return err
 	}
 	cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
-	wev := &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(),
-		Args: []string{"eins", string(data), strconv.Itoa(off)}}
-	t.out <- wev
-	t.post(wev)
+	// Sending 4k or so in a single event makes Safari
+	// take a very long time (30s) to post the event.
+	// It seems it's not prepared to handle ws messages that are not small.
+	// So send multiple chunks, which is faster.
+	v := t.t.Vers()
+	for tot, nw := 0, 0; tot < len(data); tot += nw {
+		nw = len(data) - tot
+		if nw > 128 {
+			nw = 128
+		}
+		dat := data[tot:tot+nw]
+		t.out <- &Ev{Id: t.Id, Src: "app", Args: []string{"einsing", string(dat)}}
+	}
+	t.out <- &Ev{Id: t.Id, Src: "app", Vers: v,
+			Args: []string{"einsdone", strconv.Itoa(off)}}
 	return nil
 }
 
@@ -826,6 +847,10 @@ func (t *Txt) Marks() []string {
 }
 
 func (t *Txt) MarkIns(mark string, data []rune) error {
+	// Sending 4k or so in a single event makes Safari
+	// take a very long time (30s) to post the event.
+	// It seems it's not prepared to handle ws messages that are not small.
+	// So send multiple chunks, which is faster.
 	t.getText()
 	defer t.putText()
 	if err := t.t.MarkIns(mark, data); err != nil {
@@ -833,12 +858,15 @@ func (t *Txt) MarkIns(mark string, data []rune) error {
 	}
 	for tot, nw := 0, 0; tot < len(data); tot += nw {
 		nw = len(data) - tot
-		if nw > 16*1024 {
-			nw = 16*1024
+		if nw > 128 {
+			nw = 128
 		}
 		t.out <- &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(),
-			Args: []string{"markins", mark, string(data[tot:tot+nw])},
+			Args: []string{"markinsing", mark, string(data[tot:tot+nw])},
 		}
+	}
+	t.out <- &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(),
+			Args: []string{"markinsdone", mark},
 	}
 	return nil
 }

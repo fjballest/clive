@@ -221,6 +221,32 @@ function tuntick() {
 	this.saved = null;
 }
 
+function tviewsel() {
+	if(!this.lines[this.ln0]) {
+		return;
+	}
+	var off = this.lines[this.ln0].off;
+	var eoff = off+this.frsize;
+	if(this.p0 >= off && this.p0 <= eoff) {
+		return;
+	}
+	for(var i = 0; i < this.lines.length; i++){
+		var xln = this.lines[i];
+		var xlnlen = xln.txt.length;
+		if(this.p0 >= xln.off && this.p0 <= xln.off+xlnlen){
+			var n = i - this.frlines/3;
+			if(n < 0) {
+				n = 0;
+			}
+			xln = this.lines[n];
+			this.ln0 = n;
+			this.froff = xln.off;
+			this.redrawtext();
+			return;
+		}
+	}
+}
+
 function ttsetsel(p0, p1, refreshall) {
 	var c = this;
 	var ctx = c.getContext("2d", {alpha: false});
@@ -245,6 +271,9 @@ function ttsetsel(p0, p1, refreshall) {
 	this.p0 = p0;
 	this.p1 = p1;
 	this.untick();
+	if(!this.lines[this.ln0]) {
+		return;
+	}
 	var froff = this.lines[this.ln0].off;
 	if(mp1 <froff || mp0 >froff+this.frsize)
 		return;
@@ -447,6 +476,9 @@ function tredrawtext() {
 		ctx.stroke();
 		ctx.lineWidth = x;
 		this.tick = ctx.getImageData(0, 0, 6, this.fontht);
+	}
+	if(!this.lines[this.ln0]) {
+		return;
 	}
 	var off = this.lines[this.ln0].off;
 	var froff = off;
@@ -816,14 +848,14 @@ function ttget(p0, p1) {
 /*
  * call tins for arbitrary text.
  */
-function ttinslines(x) {
+function ttinslines(x, dontscroll) {
 	try{
 		var ln = x.split('\n');
 		for(var i = 0; i < ln.length; i++) {
 			if(ln[i].length > 0)
-				this.tins(ln[i]);
+				this.tins(ln[i], dontscroll);
 			if(i < ln.length-1)
-				this.tins('\n');
+				this.tins('\n', dontscroll);
 		}
 	}catch(ex){
 		console.log("tinslines: " + ex);
@@ -1267,6 +1299,12 @@ function tkeydown(e) {
 			" " + e.ctrlKey + " " + e.metaKey);
 	
 		switch(key){
+		case 27:	/* escape */
+			this.post(["intr", "esc"]);
+			this.dump();
+			console.log("["+this.p0+","+this.p1+"]='" +
+				this.tget(this.p0, this.p1) + "'");
+			break;
 		case 8:		/* backspace */
 			if(this.noedits) {
 				return;
@@ -1286,12 +1324,6 @@ function tkeydown(e) {
 				this.Post(["edel", ""+this.p0, ""+this.p1]);
 			}
 			this.Post(["eins", "\t", ""+this.p0]);
-			break;
-		case 27:	/* escape */
-			this.post(["intr", "esc"]);
-			this.dump();
-			console.log("["+this.p0+","+this.p1+"]='" +
-				this.tget(this.p0, this.p1) + "'");
 			break;
 		case 32:	/* space */
 			this.Post(["eins", " ", ""+this.p0]);
@@ -1402,9 +1434,21 @@ function tapply(ev, fromserver) {
 		this.fixfont();
 		this.redrawtext();
 		break;
-	case "markins":
+	case "markinsing":
 		if(arg.length < 3){
-			console.log(this.divid, "apply: short markins");
+			console.log(this.divid, "apply: short markinsing");
+			break;
+		}
+		if (!this.markinsdata) {
+			console.log("markins evs...");
+			this.markinsdata = [];
+		}
+		this.markinsdata.push(arg[2]);
+		break;
+	case "markinsdone":
+		console.log("markins run...");
+		if(arg.length < 2){
+			console.log(this.divid, "apply: short markinsdone");
 			break;
 		}
 		var m = this.getmark(arg[1]);
@@ -1412,25 +1456,79 @@ function tapply(ev, fromserver) {
 			console.log(this.divid, "apply: no mark", arg[1]);
 			break;
 		}
-		console.log("markins...");
-		var nlen = arg[2].length;
-		var npos = m.pos + nlen;
-		var opos = m.pos;
 		var op0 = this.p0;
 		var op1 = this.p1;
 		if(op0 != op1) {
 			this.tsetsel(op0, op0);
 		}
-		this.p0 = m.pos;
-		this.p1 = m.pos;
-		this.tinslines(arg[2]);
-		m.pos = npos;
-		if(op0 > opos)
-			op0 += nlen;
-		if(op1 > opos)
-			op1 += nlen;
-		this.p0 = op0;
-		this.p1 = op1;
+		for(var i = 0; i < this.markinsdata.length; i++) {
+			var data = this.markinsdata[i];
+			var nlen = data.length;
+			var npos = m.pos + nlen;
+			var opos = m.pos;
+			op0 = this.p0;
+			op1 = this.p1;
+			this.p0 = m.pos;
+			this.p1 = m.pos;
+			this.tinslines(data, true);
+			m.pos = npos;
+			if(op0 > opos)
+				op0 += nlen;
+			if(op1 > opos)
+				op1 += nlen;
+			this.p0 = op0;
+			this.p1 = op1;
+			if(ev.Vers) {
+				this.vers = ev.Vers;
+			}
+		}
+		this.tsetsel(op0, op1);
+		delete this.markinsdata;
+		if(!this.userresized) {
+			this.autoresize();
+		} 
+		console.log("markins done");
+		break;
+	case "einsing":
+		if(arg.length < 2){
+			console.log(this.divid, "apply: short einsing");
+			break;
+		}
+		if (!this.einsdata) {
+			console.log("eins evs...");
+			this.einsdata = [];
+		}
+		this.einsdata.push(arg[1]);
+		break;
+	case "einsdone":
+		console.log("eins run...");
+		if(arg.length < 2){
+			console.log(this.divid, "apply: short ins");
+			break;
+		}
+		if(ev.Vers && fromserver && ev.Vers != this.vers+1){
+			console.log("OUT OF SYNC", ev.Args, "v", ev.Vers, this.vers);
+			this.post(["needreload"]);
+			delete this.einsdata;
+			break;
+		}
+		var p0 = parseInt(arg[1]);
+		var op0 = this.p0;
+		var op1 = this.p1;
+		if(op0 != op1) {
+			this.tsetsel(op0, op0);
+		}
+		this.p0 = p0;
+		this.p1 = p0;
+		for(var i = 0; i < this.einsdata.length; i++) {
+			var data = this.einsdata[i];
+			this.tinslines(data);
+			if(op0 > p0)
+				op0 += data.length;
+			if(op1 > p0)
+				op1 += data.length;
+		}
+		delete this.einsdata;
 		this.tsetsel(op0, op1);
 		if(ev.Vers) {
 			this.vers = ev.Vers;
@@ -1438,7 +1536,7 @@ function tapply(ev, fromserver) {
 		if(!this.userresized) {
 			this.autoresize();
 		} 
-		console.log("markins done");
+		console.log("eins done");
 		break;
 	case "eins":
 		if(arg.length < 3){
@@ -1448,6 +1546,7 @@ function tapply(ev, fromserver) {
 		if(ev.Vers && fromserver && ev.Vers != this.vers+1){
 			console.log("OUT OF SYNC", ev.Args, "v", ev.Vers, this.vers);
 			this.post(["needreload"]);
+			break;
 		}
 		var p0 = parseInt(arg[2]);
 		var op0 = this.p0;
@@ -1551,6 +1650,7 @@ function tapply(ev, fromserver) {
 		this.setmark("p0", pos0);
 		this.setmark("p1", pos1);
 		this.tsetsel(pos0, pos1, true);
+		this.viewsel();
 		console.log("setsel", pos0, pos1);
 		break;
 	case "delmark":
@@ -1850,6 +1950,7 @@ function mktxt(d, t, e, cid, id) {
 	e.tinslines = ttinslines;
 	e.tpos2pos = ttpos2pos;
 	e.tsetsel = ttsetsel;
+	e.viewsel = tviewsel;
 	e.untick = tuntick; 
 	e.updatescrl = tupdatescrl;
 
@@ -1977,9 +2078,11 @@ function mktxt(d, t, e, cid, id) {
 	e.ws.onopen = function() {
 		e.post(["id"]);
 	};
+	e.ws.onerror = function(ev) {
+		console.log("ws err", ev);
+	};
 	e.ws.onmessage = function(ev) {
-		e.ws.send("\n");
-		console.log("got msg", ev.data);
+		//console.log("got msg", ev.data);
 		var o = JSON.parse(ev.data);
 		if(!o || !o.Id) {
 			console.log("update: no objet id");
