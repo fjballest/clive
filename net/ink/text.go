@@ -76,7 +76,7 @@ struct Txt {
 	t *txt.Text
 	tag string		// NB: this is not the page element tag.
 	tagged, noedits bool	// It was a tag line but we no longer use it.
-
+	cundo bool
 	owner string
 	held []*Ev
 	lastev string
@@ -88,6 +88,12 @@ struct Txt {
 // Prevent t from getting dirty despite viewer or user calls.
 func (t *Txt) DoesntGetDirty() {
 	t.istemp = true
+}
+
+// If called, undo and redo events are not processed by the text, but
+// are forwarded to the client as events instead.
+func (t *Txt) ClientDoesUndoRedo() {
+	t.cundo = true
 }
 
 // Write the HTML for the text control to a page.
@@ -606,10 +612,12 @@ func (t *Txt) apply(wev *Ev) {
 		t.out <- nev
 		t.post(nev)
 
-	case "eundo":
-		t.undoRedo(false)
-	case "eredo":
-		t.undoRedo(true)
+	case "eundo", "eredo":
+		if t.cundo {
+			t.post(wev)
+		} else {
+			t.undoRedo(ev[0] == "eredo")
+		}
 	case "intr":
 		cmd.Dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
 		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())

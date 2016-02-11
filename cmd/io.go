@@ -42,7 +42,15 @@ func (cr *ioChan) close() {
 	if cr == nil {
 		return
 	}
-	if old := atomic.LoadInt32(&cr.ref); old >= 0 && atomic.AddInt32(&cr.ref, -1) <= 0 {
+
+	// If the ref counter is >= 0, we must close (and wait for outstanding I/O)
+	// only if a decref makes it 0.
+	// However, OS in/out/err have their ref set to -1 so they are never closed
+	// which means that we must wait from I/O if it's the main context the one
+	// exiting, because in that case the entire UNIX process will die.
+	mainexits := ctx() == mainctx
+
+	if old := atomic.LoadInt32(&cr.ref); mainexits || old >= 0 && atomic.AddInt32(&cr.ref, -1) <= 0 {
 		if old == 0 {
 			dbg.Warn("app: too many closes on chan refs")
 		}

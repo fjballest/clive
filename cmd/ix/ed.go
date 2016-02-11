@@ -11,7 +11,9 @@ import (
 	"strconv"
 	"net/url"
 	"clive/zx"
+	"clive/txt"
 	fpath "path"
+	"errors"
 )
 
 // command run within an edit
@@ -39,6 +41,8 @@ struct Ed {
 	markgen int
 	temp bool	// don't save, don't ever flag as dirty
 }
+
+var notDirty = errors.New("not dirty")
 
 func (d Dot) String() string {
 	return fmt.Sprintf(":#%d,#%d", d.P0, d.P1)
@@ -81,6 +85,7 @@ func (ix *IX) delCmd(c *Cmd) {
 func (ix *IX) newEd(tag string) *Ed {
 	win := ink.NewTxt();
 	win.SetTag(tag)
+	win.ClientDoesUndoRedo()
 	ed := &Ed{win: win, ix: ix, tag: tag}
 	return ed
 }
@@ -401,6 +406,8 @@ func (ed *Ed) cmdLoop() {
 			return
 		case "clear":
 			ed.clear()
+		case "eundo", "eredo":
+			ed.undoRedo(ev.Args[0] == "eredo")
 		}
 	}
 	cmd.Dprintf("%s terminated\n", ed)
@@ -416,16 +423,69 @@ func (ed *Ed) clear() {
 	t.DropEdits()
 }
 
-func (ed *Ed) save() bool {
-	s := ed.win.IsDirty()
-	if ed.win.IsDirty() {
-		// XXX: save it
+func (ed *Ed) undoRedo(isredo bool) {
+	t := ed.win.GetText()
+	some := false
+	for {
+		var e *txt.Edit
+		if !isredo {
+			e = t.Undo()
+		} else {
+			e = t.Redo()
+		}
+		if e == nil {
+			cmd.Dprintf("%s: no more undos/redos\n", ed)
+			break
+		}
+		some = true
+		cmd.Dprintf("%s: undo/redo\n", ed)
+		if !e.Contd {
+			break
+		}
 	}
-	ed.win.Clean()
-	return s
+	if some {
+		ed.win.PutText()
+	} else {
+		ed.win.UngetText()
+	}
 }
 
-func (ed *Ed) load() {
+func (ed *Ed) save() error {
+	defer ed.win.Clean()
+	if !ed.win.IsDirty() {
+		return notDirty
+	}
+	if dryrun {
+		cmd.Warn("not saving %s: dry run", ed)
+		return notDirty
+	}
+	if ed.d["type"] != "-" {
+		// not a regular file
+		return notDirty
+	}
+	dc := make(chan []byte)
+	rc := cmd.Put(ed.d["path"], zx.Dir{"type": "-"}, 0, dc)
+	tc := ed.win.Get(0, -1)
+	for rs := range tc {
+		dat := []byte(string(rs))
+		if ok := dc <- dat; !ok {
+			close(tc, cerror(dc))
+			break
+		}
+	}
+	close(dc)
+	rd := <-rc
+	if err := cerror(rc); err != nil {
+		cmd.Warn("save %s: %s", ed, err)
+		return err
+	}
+	for k, v := range rd {
+		ed.d[k] = v
+	}
+	return nil
+}
+
+func (ed *Ed) load() error {
 	what := ed.tag
 	t := ed.win.GetText()
 	defer ed.win.PutText()
@@ -456,10 +516,12 @@ func (ed *Ed) load() {
 			cmd.Warn("%s: insert: %s", what, err)
 		}
 	}
-	if err := cerror(dc); err != nil {
+	err := cerror(dc)
+	if err != nil {
 		cmd.Warn("%s: get: %s", what, err)
 	}
 	ed.win.Clean()
+	return err
 }
 
 func (ed *Ed) editLoop() {
@@ -478,16 +540,12 @@ func (ed *Ed) editLoop() {
 			if p1 := ed.win.Mark("p1"); p1 != nil {
 				ed.dot.P1 = p1.Off
 			}
-		case "eins", "edel":
-			ed.win.Dirty()
 		case "click2", "click4":
 			ed.click24(ev)
 		case "end":
 			if len(ed.win.Views()) == 0 {
 				cmd.Dprintf("%s w/o views\n", ed)
 			}
-		case "save":
-			ed.save()
 		case "quit":
 			ed.ix.delEd(ed)
 			cmd.Dprintf("%s terminated\n", ed)
@@ -495,6 +553,12 @@ func (ed *Ed) editLoop() {
 			return
 		case "clear":
 			ed.clear()
+		case "eundo", "eredo":
+			ed.undoRedo(ev.Args[0] == "eredo")
+		case "eins", "edel":
+			ed.win.Dirty()
+		case "save":
+			ed.save()
 		}
 	}
 	cmd.Dprintf("%s terminated\n", ed)

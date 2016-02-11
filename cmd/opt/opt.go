@@ -207,7 +207,7 @@ func (f *Flags) Usage() {
 		}
 	}
 	if f.xtra != "" {
-		cmd.Eprintf("%s", f.xtra)
+		cmd.Eprintf("\n%s", f.xtra)
 	}
 	cmd.Exit("usage")
 }

@@ -9,9 +9,9 @@ import (
 	"clive/cmd/opt"
 	"clive/net/ink"
 	"sync"
-	"clive/zx"
+	"clive/zx"   
 	fpath "path"
-	"strings"
+	"strings" 
 )
 
 struct IX {
@@ -25,6 +25,7 @@ struct IX {
 
 var (
 	ix *IX
+	dryrun bool
 )
 
 func newIX() *IX {
@@ -131,10 +132,27 @@ func main() {
 	opts := opt.New("")
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
+	opts.NewFlag("n", "dry run (don't ever save)", &dryrun)
 	cmd.UnixIO()
 	args := opts.Parse()
 	ix = newIX()
-	_ = args	// XXX: preload edits for args
+	done := make(chan bool)
 	go ink.Serve()
-	ix.loop()
+	go func() {
+		ix.loop()
+		close(done)
+	}()
+	if len(args) > 0 {
+		ds := cmd.Dirs(args...)
+		for m := range ds {
+			if err, ok := m.(error); ok {
+				cmd.Warn("%s", err)
+				continue
+			}
+			if d, ok := m.(zx.Dir); ok {
+				ix.lookFile(d["path"], "")
+			}
+		}
+	}
+	<-done
 }

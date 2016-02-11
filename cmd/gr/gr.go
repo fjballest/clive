@@ -1,3 +1,5 @@
+// +install gx gg gv
+
 /*
 	grep in input
 */
@@ -10,7 +12,15 @@ import (
 	"clive/sre"
 	"clive/zx"
 	"unicode/utf8"
+	"sort"
+	"fmt"
 )
+
+type rgRep struct {
+	name   string
+	p0, p1 int
+	b      bytes.Buffer
+}
 
 var (
 	opts = opt.New("rexp [rexp]")
@@ -21,10 +31,37 @@ var (
 	sflag, aflag, mflag, vflag, fflag, lflag, xflag, eflag bool
 )
 
-type rgRep struct {
-	name   string
-	p0, p1 int
-	b      bytes.Buffer
+// update ql/builtin.go bltin table if new aliases are added or some are removed.
+var alias = map[string]string{
+	"gg": "-xef",
+	"gv": "-xvef",
+	"gx": "-xf",
+}
+
+func aliases() {
+	c := cmd.AppCtx()
+	if len(c.Args) == 0 {
+		return
+	}
+	if v, ok := alias[c.Args[0]]; ok {
+		// old argv0 + "-aliased flags"  + "all other args"
+		nargs := []string{c.Args[0]}
+		c.Args[0] = v
+		c.Args = append(nargs, c.Args...)
+	}
+}
+
+func aliasUsage() string {
+	var names []string
+	for k := range alias {
+		names = append(names, k)
+	}
+	sort.Sort(sort.StringSlice(names))
+	out := ""
+	for _, n := range names {
+		out += fmt.Sprintf("\t%s is %s %s\n", n, "gr", alias[n])
+	}
+	return out
 }
 
 func rgreport(rg *rgRep) {
@@ -331,26 +368,6 @@ func chkFlags() {
 	}
 }
 
-// update ql/builtin.go bltin table if new aliases are added or some are removed.
-var alias = map[string]string{
-	"gg": "-xef",
-	"gv": "-xvef",
-	"gx": "-xf",
-}
-
-func aliases() {
-	c := cmd.AppCtx()
-	if len(c.Args) == 0 {
-		return
-	}
-	if v, ok := alias[c.Args[0]]; ok {
-		// old argv0 + "-aliased flags"  + "all other args"
-		nargs := []string{c.Args[0]}
-		c.Args[0] = v
-		c.Args = append(nargs, c.Args...)
-	}
-}
-
 // Run gr in the current app context.
 func main() {
 	c := cmd.AppCtx()
@@ -367,6 +384,7 @@ func main() {
 	ux := false
 	opts.NewFlag("u", "use unix out", &ux)
 	aliases()
+	opts.AddUsage(aliasUsage())
 	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")

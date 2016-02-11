@@ -18,15 +18,41 @@ var (
 )
 
 func init() {
-	btab["cmds"] = bcmds
-	btab["x"] = bX
-	btab["X"] = bX
 	btab["cd"] = bcd
+	btab["cmds"] = bcmds
 	btab["="] = beq
 	btab["w"] = bw
 	btab["r"] = br
 	btab["d"] = bd
+	btab["."] = bdot
+	btab[","] = bdot
+	btab["x"] = bX
+	btab["X"] = bX
 }
+
+// NB: All builtins must do a c.ed.win.DelMark(c.mark) once no
+// further I/O is expected from them.
+// In those that print something and die, they do it before returning.
+// In those that fire up commands and accept output from them, their
+// io() processes should del the mark when done.
+//
+// This is the command language:
+//	cd dir
+//	cmds	// print running commands
+//	=	// print dot
+//	w	// save
+//	r	// undo edits and get from disk
+//	d	// delete
+//	x	// list edits
+//	x expr	// list edits matching expr ("." means dot)
+//	x [expr] c	// apply cmd c to dots of matching edits.
+//		// where c is any of: = w r d X >... |... <...
+//	X [expr] c	// like x expr c, but apply to all the edit text
+//	. ...	// like x . ... (apply ... to dot)
+//	, ...	// like X . ... (apply ... to all text in dot's edit)
+//	>...	// like . > ...
+//	< ...	// like . > ...
+//	| ...	// like . | ...
 
 func builtin(arg0 string) func(*Cmd, ...string) {
 	if arg0 == "" {
@@ -44,6 +70,78 @@ func builtin(arg0 string) func(*Cmd, ...string) {
 		return bpipe
 	}
 	return nil
+}
+
+func bcd(c *Cmd, args ...string) {
+	defer c.ed.win.DelMark(c.mark)
+	if len(args) == 1 {
+		c.printf("missing destination dir\n")
+		return
+	}
+	if err := cmd.Cd(args[1]); err != nil {
+		c.printf("cd: %s\n", err)
+	} else {
+		c.printf("dot: %s\n", cmd.Dot())
+	}
+}
+
+func bcmds(c *Cmd, args ...string) {
+	ed := c.ed
+	ix := ed.ix
+	var out bytes.Buffer
+	ix.Lock()
+	if len(ix.cmds) == 0 {
+		fmt.Fprintf(&out, "no commands\n")
+	}
+	for i, c := range ix.cmds {
+		fmt.Fprintf(&out, "%d\t%s\n", i, c.name)
+	}
+	ix.Unlock()
+	s := out.String()
+	c.printf("%s", s)
+	c.ed.win.DelMark(c.mark)
+}
+
+func beq(c *Cmd, args ...string) {
+	if dot := c.ed.ix.dot; dot  != nil {
+		c.printf("%s\n", dot.Addr());
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+func bw(c *Cmd, args ...string) {
+	if dot := c.ed.ix.dot; dot  != nil {
+		if err := dot.save(); err == nil {
+			c.printf("saved %s\n", dot)
+		} else if err != notDirty {
+			c.printf("%s: %s\n", dot, err)
+		}
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+func br(c *Cmd, args ...string) {
+	if dot := c.ed.ix.dot; dot  != nil {
+		d, err := cmd.Stat(dot.tag)
+		if err != nil {
+			cmd.Warn("%s: look: %s", dot, err)
+		} else {
+			dot.d = d
+		}
+		go dot.load()
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+func bd(c *Cmd, args ...string) {
+	if dot := c.ed.ix.dot; dot  != nil && dot != c.ed {
+		if dot.win != nil {
+			dot.win.Close()
+		} else {
+			dot.ix.delEd(dot)
+		}
+	}
+	c.ed.win.DelMark(c.mark)
 }
 
 func bpipeTo(c *Cmd, args ...string) {
@@ -79,70 +177,6 @@ func bpipe(c *Cmd, args ...string) {
 	c.ed.win.DelMark(c.mark)
 }
 
-func beq(c *Cmd, args ...string) {
-	if dot := c.ed.ix.dot; dot  != nil {
-		c.printf("%s\n", dot.Addr());
-	}
-	c.ed.win.DelMark(c.mark)
-}
-
-func bw(c *Cmd, args ...string) {
-	if dot := c.ed.ix.dot; dot  != nil {
-		if dot.save() {
-			c.printf("saved %s\n", dot)
-		}
-	}
-	c.ed.win.DelMark(c.mark)
-}
-
-func br(c *Cmd, args ...string) {
-	if dot := c.ed.ix.dot; dot  != nil {
-		d, err := cmd.Stat(dot.tag)
-		if err != nil {
-			cmd.Warn("%s: look: %s", dot, err)
-		} else {
-			dot.d = d
-		}
-		go dot.load()
-	}
-	c.ed.win.DelMark(c.mark)
-}
-
-func bd(c *Cmd, args ...string) {
-	if dot := c.ed.ix.dot; dot  != nil && dot != c.ed {
-		if dot.win != nil {
-			dot.win.Close()
-		} else {
-			dot.ix.delEd(dot)
-		}
-	}
-	c.ed.win.DelMark(c.mark)
-}
-
-
-// NB: All builtins must do a c.ed.win.DelMark(c.mark) once no
-// further I/O is expected from them.
-// In those that print something and die, they do it before returning.
-// In those that fire up commands and accept output from them, their
-// io() processes should del the mark when done.
-
-func bcmds(c *Cmd, args ...string) {
-	ed := c.ed
-	ix := ed.ix
-	var out bytes.Buffer
-	ix.Lock()
-	if len(ix.cmds) == 0 {
-		fmt.Fprintf(&out, "no commands\n")
-	}
-	for i, c := range ix.cmds {
-		fmt.Fprintf(&out, "%d\t%s\n", i, c.name)
-	}
-	ix.Unlock()
-	s := out.String()
-	c.printf("%s", s)
-	c.ed.win.DelMark(c.mark)
-}
-
 func (ix *IX) edits(args ...string) []*Ed {
 	var eds []*Ed
 	ix.Lock()
@@ -154,7 +188,7 @@ func (ix *IX) edits(args ...string) []*Ed {
 		return eds
 	}
 	match := func(s string) bool { return true; }
-	if len(args) > 0 {
+	if len(args) > 0 && args[0] != ".*" {
 		x, err := sre.CompileStr(args[0], sre.Fwd)
 		if err != nil {
 			return nil
@@ -414,15 +448,20 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 		}()
 	case "w":
 		for _, ed := range eds {
-			if ed.save() {
+			if err := ed.save(); err == nil {
 				c.printf("%s saved\n", ed)
+			} else if err != notDirty {
+				c.printf("%s: %s\n", ed, err)
 			}
 		}
 	case "r":
 		go func() {
 			for _, ed := range eds {
-				c.printf("load %s\n", ed)
-				ed.load()
+				if err := ed.load(); err == nil {
+					c.printf("%s\n", ed)
+				} else {
+					c.printf("%s: %s\n", ed, err)
+				}
 			}
 		}()
 	default:
@@ -432,7 +471,17 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 
 func bX(c *Cmd, args ...string) {
 	var out bytes.Buffer
+	if len(args) > 1 {
+		isio := strings.ContainsRune("|><", rune(args[1][0]))
+		iscmd := args[1] == "r" ||
+			args[1] == "w" || args[1] == "=" ||
+			 args[1] == "d" || args[1] == "X"
+		if isio || iscmd {
+			args = append([]string{args[0], ".*"}, args[1:]...)
+		}
+	}
 	eds := ix.edits(args[1:]...)
+
 	c.all = args[0] == "X"
 	if len(args) < 3 || len(args[2]) == 0 {
 		for _, e := range eds {
@@ -462,15 +511,14 @@ func bX(c *Cmd, args ...string) {
 	c.edcmd(eds, args[2:]...)
 }
 
-func bcd(c *Cmd, args ...string) {
-	defer c.ed.win.DelMark(c.mark)
-	if len(args) == 1 {
-		c.printf("missing destination dir\n")
-		return
-	}
-	if err := cmd.Cd(args[1]); err != nil {
-		c.printf("cd: %s\n", err)
+// "." -> "x ."
+// "," -> "X ."
+func bdot(c *Cmd, args ...string) {
+	if args[0] == "." {
+		args = append([]string{"x"}, args...)
 	} else {
-		c.printf("dot: %s\n", cmd.Dot())
+		args[0] = "."
+		args = append([]string{"X"}, args...)
 	}
+	bX(c, args...)
 }
