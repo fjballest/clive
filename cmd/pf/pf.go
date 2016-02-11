@@ -22,7 +22,7 @@ var (
 	printf = cmd.Printf
 	odir string
 
-	notux, lflag, pflag, nflag, iflag, dflag, aflag, fflag, wflag, wwflag bool
+	notux, lflag, pflag, nflag, iflag, dflag, aflag, fflag, sflag, wflag, wwflag bool
 )
 
 func (w *wFile) start(d zx.Dir) error {
@@ -103,6 +103,7 @@ func main() {
 	opts.NewFlag("u", "don't use unix out", &notux)
 	opts.NewFlag("a", "print addresses", &aflag)
 	opts.NewFlag("o", "write destination path", &odir)
+	opts.NewFlag("s", "separate messages, print each message in its own line.", &sflag)
 	opts.NewFlag("w", "write file data back to disk (-d implied)", &wflag)
 	opts.NewFlag("W", "writeall file data back to disk (-d implied)", &wwflag)
 	args := opts.Parse()
@@ -172,6 +173,9 @@ func main() {
 			}
 			if dflag {
 				continue
+			}
+			if sflag && len(m) > 0 && m[len(m)-1] != '\n' {
+				m = append(m, '\n')
 			}
 			ok = out <- m
 		case ch.Ign:

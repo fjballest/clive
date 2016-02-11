@@ -116,6 +116,7 @@ func gr(in <-chan interface{}) {
 			ok = out <- m
 		case []byte:
 			s := string(d)
+			cmd.Dprintf("matching for <%s>\n", s)
 			nln += nlines(s)
 			matches := matching
 			if ere != nil {
@@ -282,9 +283,11 @@ func fullgr(in <-chan interface{}) {
 			ok = out <- d
 		case []byte:
 			s := string(d)
+			cmd.Dprintf("matching for <%s>\n", s)
 			rs := []rune(s)
 			matches := matches(rs)
 			for _, rg := range matches {
+			cmd.Dprintf("\tmatch %v\n", rg)
 				if vflag && rg.matches || !vflag && !rg.matches {
 					if xflag {
 						xreport(rs, rg.Range)
@@ -402,7 +405,7 @@ func main() {
 	if err := cerror(in); err != nil {
 		cmd.Fatal(err)
 	}
-	if !found {
+	if !found && !xflag {
 		if !sflag {
 			cmd.Fatal("no match")
 		}

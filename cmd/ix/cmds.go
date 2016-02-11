@@ -19,6 +19,7 @@ var (
 
 func init() {
 	btab["cmds"] = bcmds
+	btab["x"] = bX
 	btab["X"] = bX
 	btab["cd"] = bcd
 	btab["="] = beq
@@ -50,7 +51,7 @@ func bpipeTo(c *Cmd, args ...string) {
 		args[0] = args[0][1:]
 	}
 	if dot := c.ed.ix.dot; dot  != nil {
-		go c.pipeTo([]*Ed{dot}, false, args...)
+		go c.pipeTo([]*Ed{dot}, args...)
 		return
 	}
 	c.ed.win.DelMark(c.mark)
@@ -61,7 +62,7 @@ func bpipeFrom(c *Cmd, args ...string) {
 		args[0] = args[0][1:]
 	}
 	if dot := c.ed.ix.dot; dot  != nil {
-		go c.pipeFrom([]*Ed{dot}, false, args...)
+		go c.pipeFrom([]*Ed{dot}, args...)
 		return
 	}
 	c.ed.win.DelMark(c.mark)
@@ -72,7 +73,7 @@ func bpipe(c *Cmd, args ...string) {
 		args[0] = args[0][1:]
 	}
 	if dot := c.ed.ix.dot; dot  != nil {
-		go c.pipe(dot, true, false, args...)
+		go c.pipe(dot, true, args...)
 		return
 	}
 	c.ed.win.DelMark(c.mark)
@@ -178,31 +179,21 @@ func (ix *IX) edits(args ...string) []*Ed {
 	return eds
 }
 
-func (c *Cmd) pipeEdTo(ed *Ed, all bool) bool {
-	p  := c.p
-	d := ed.d.Dup()
-	// For the commant, the input is text
-	d["type"] = "-"
-	if ok := p.In <- d; !ok {
-		c.printf("output: %s\n", cerror(p.In))
-		return false
-	}
+func (c *Cmd) pipeEdBytesTo(t *txt.Text, p0, p1 int, asbytes bool) bool {
+	var ok bool
+	gc := t.Get(p0, p1-p0)
 	buf := &bytes.Buffer{}
-	t := ed.win.GetText()
-	defer ed.win.UngetText()
-	var gc <-chan []rune
-	if all {
-		gc = t.Get(0, txt.All)
-	} else if ed.dot.P1 == ed.dot.P0 {
-		return true
-	} else {
-		gc = t.Get(ed.dot.P0, ed.dot.P1-ed.dot.P0)
-	}
+	p  := c.p
 	for rs := range gc {
 		for _, r := range rs {
 			buf.WriteRune(r)
 			if r == '\n' {
-				if ok := p.In <- buf.Bytes(); !ok {
+				if asbytes {
+					ok = p.In <- buf.Bytes()
+				} else {
+					ok = p.In <- buf.String()
+				}
+				if !ok {
 					c.printf("output: %s\n", cerror(p.In))
 					close(gc, cerror(p.In))
 					return false
@@ -211,7 +202,12 @@ func (c *Cmd) pipeEdTo(ed *Ed, all bool) bool {
 			}
 		}
 		if buf.Len() > 0 {
-			if ok := p.In <- buf.Bytes(); !ok {
+			if asbytes {
+				ok = p.In <- buf.Bytes()
+			} else {
+				ok = p.In <- buf.String()
+			}
+			if !ok {
 				c.printf("output: %s\n", cerror(p.In))
 				close(gc, cerror(p.In))
 				return false
@@ -221,7 +217,43 @@ func (c *Cmd) pipeEdTo(ed *Ed, all bool) bool {
 	return true
 }
 
-func (c *Cmd) pipeTo(eds []*Ed, all bool, args ...string) {
+func (c *Cmd) pipeEdTo(ed *Ed) bool {
+	p  := c.p
+	d := ed.d.Dup()
+	// For the commant, the input is text
+	d["type"] = "-"
+	if ok := p.In <- d; !ok {
+		c.printf("output: %s\n", cerror(p.In))
+		return false
+	}
+	t := ed.win.GetText()
+	defer ed.win.UngetText()
+	if c.all {
+		return c.pipeEdBytesTo(t, 0, t.Len(), true)
+	}
+	if ed.dot.P1 == ed.dot.P0 {
+		return true
+	}
+	p0, p1 := ed.dot.P0, ed.dot.P1
+	if p0 > 0 {
+		if !c.pipeEdBytesTo(t, 0, ed.dot.P0, false) {
+			return false
+		}
+	}
+	if p1 > p0 {
+		if !c.pipeEdBytesTo(t, ed.dot.P0, ed.dot.P1, true) {
+			return false
+		}
+	}
+	if p1 < ed.win.Len() {
+		if !c.pipeEdBytesTo(t, ed.dot.P1, ed.win.Len(), false) {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *Cmd) pipeTo(eds []*Ed, args ...string) {
 	inkc := make(chan  face{})
 	setio := func(c *cmd.Ctx) {
 		c.ForkEnv()
@@ -246,7 +278,7 @@ func (c *Cmd) pipeTo(eds []*Ed, all bool, args ...string) {
 	go func() {
 		for _, ed := range eds {
 			cmd.Dprintf("pipe %s to %s\n", ed, args)
-			if !c.pipeEdTo(ed, all) {
+			if !c.pipeEdTo(ed) {
 				break
 			}
 		}
@@ -291,13 +323,13 @@ func (c *Cmd) getErrs(donec chan bool) {
 	donec <- true
 }
 
-func (c *Cmd) pipeFrom(eds []*Ed, all bool, args ...string) {
+func (c *Cmd) pipeFrom(eds []*Ed, args ...string) {
 	for _, ed := range eds {
-		c.pipe(ed, false, all, args...)
+		c.pipe(ed, false, args...)
 	}
 }
 
-func (c *Cmd) pipe(ed *Ed, sendin, all bool, args ...string) {
+func (c *Cmd) pipe(ed *Ed, sendin bool, args ...string) {
 	// we ignore all for pipeFrom, so it always replaces the dot.
 	// it's not ignored for pipeTo, so the input may be dot or all the file
 	inkc := make(chan  face{})
@@ -325,7 +357,7 @@ func (c *Cmd) pipe(ed *Ed, sendin, all bool, args ...string) {
 	go c.inkio(inkc)
 	go func() {
 		if sendin {
-			c.pipeEdTo(ed, all)
+			c.pipeEdTo(ed)
 		}
 		close(p.In)
 	}()
@@ -338,6 +370,10 @@ func (c *Cmd) pipe(ed *Ed, sendin, all bool, args ...string) {
 		}
 		s := buf.String()
 		cmd.Dprintf("pipe output %q\n", s)
+		if c.all {
+			ed.dot.P0 = 0
+			ed.dot.P1 = ed.win.Len()
+		}
 		ed.replDot(s)
 		c.ed.win.DelMark(c.mark)
 		c.ed.ix.delCmd(c)
@@ -367,13 +403,13 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 		c.ed.win.DelMark(c.mark)
 
 	case ">":
-		go c.pipeTo(eds, true, args[1:]...)
+		go c.pipeTo(eds, args[1:]...)
 	case "<":
-		go c.pipeFrom(eds, true, args[1:]...)
+		go c.pipeFrom(eds, args[1:]...)
 	case "|":
 		go func() {
 			for _, ed := range eds {
-				c.pipe(ed, true, true, args[1:]...)
+				c.pipe(ed, true, args[1:]...)
 			}
 		}()
 	case "w":
@@ -385,6 +421,7 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 	case "r":
 		go func() {
 			for _, ed := range eds {
+				c.printf("load %s\n", ed)
 				ed.load()
 			}
 		}()
@@ -393,15 +430,10 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 	}
 }
 
-// TODO: We could add a W (win) command reporting all elements in the page,
-// but then we must record tags for them in ix and make edits() accept a flag
-// to report also those.
-// The implementation should be bX, but taking care than only the D subcommand
-// and perhaps X (xerox) make sense for non-edit windows.
-
 func bX(c *Cmd, args ...string) {
 	var out bytes.Buffer
 	eds := ix.edits(args[1:]...)
+	c.all = args[0] == "X"
 	if len(args) < 3 || len(args[2]) == 0 {
 		for _, e := range eds {
 			fmt.Fprintf(&out, "%s%s\n", e.menuLine(), e.dot)

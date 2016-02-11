@@ -21,6 +21,7 @@ struct Cmd {
 	mark string
 	hasnl bool
 	p *run.Proc
+	all bool
 }
 
 struct Dot {
@@ -458,6 +459,7 @@ func (ed *Ed) load() {
 	if err := cerror(dc); err != nil {
 		cmd.Warn("%s: get: %s", what, err)
 	}
+	ed.win.Clean()
 }
 
 func (ed *Ed) editLoop() {

@@ -18,7 +18,7 @@ type count struct {
 }
 
 var (
-	lflag, wflag, rflag, bflag, nflag, mflag, ux bool
+	lflag, wflag, rflag, bflag, nflag, mflag, aflag, ux bool
 
 	tots                                     []*count
 	opts = opt.New("{file}")
@@ -86,12 +86,15 @@ func cnt(in <-chan interface{}) {
 			if m["type"] == "d" {
 				c = nil
 			}
+			if aflag {
+				c.msgs++
+			}
 		case []byte:
+			c.msgs++
 			cmd.Dprintf("got %T\n", m)
 			if c == nil {
 				c = &count{name: "in"}
 			}
-			c.msgs++
 			c.bytes += int64(len(m))
 			if len(saved) > 0 {
 				m = append(saved, m...)
@@ -116,8 +119,10 @@ func cnt(in <-chan interface{}) {
 				}
 			}
 		default:
+			if aflag {
+				c.msgs++
+			}
 			cmd.Dprintf("got %T\n", m)
-			c.msgs++
 		}
 	}
 	if c != nil {
@@ -137,6 +142,7 @@ func main() {
 	opts.NewFlag("c", "count just characters", &bflag)
 	opts.NewFlag("n", "print just totals", &nflag)
 	opts.NewFlag("u", "use unix output", &ux)
+	opts.NewFlag("a", "count all messages and not just data msgs", &aflag)
 	cmd.UnixIO("err")
 	args := opts.Parse()
 	if len(args) != 0 {
