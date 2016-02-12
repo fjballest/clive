@@ -11,14 +11,17 @@ IMPORTANT:
 	they might fail.
 	The dist tag is the last pushed tree that should be ok, so use that one.
 
+
+The fmt and doc tools have been modified for Clive in the lsub go compiler.
 To get documentation for packages you should, for example,
 
-	godoc -ex -notes 'BUG|REFERENCE' clive/nchan 
+	go doc -m ...
 
-so you get examples, and the BUGS and REFERENCES sections.
+and that prints the manual page for ...
 
-To install the compiler see ../../golang/guide
-We use the "lsub" branch.
+To fmt the code we use the -S flag (which leverages shorthands
+introduced by lsub go in some declarations).
 
-To install clive see ./guide
-We use the "master" branch.
+In the lsub go we use the lsub branch, but in clive, we use the
+master branch.
+
