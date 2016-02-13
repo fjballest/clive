@@ -83,6 +83,7 @@ struct Txt {
 	ngets int
 	getslk sync.Mutex
 	dirty, istemp bool
+	font string
 }
 
 // Prevent t from getting dirty despite viewer or user calls.
@@ -145,6 +146,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 		x.lines = [];
 		x.lines.push({txt: "", off: 0});
 		document.mktxt(d, t, x, "`+t.Id+`", "`+vid+`");
+		x.fontstyle="`+t.font+`";
 		`+ts+`
 	});
 </script>`)
@@ -163,6 +165,7 @@ func newTxt(tagged bool, tag string, lines ...string) *Txt {
 		t: txt.NewEditing([]rune(lns)),
 		tag: tag,
 		tagged: tagged,
+		font: "r",
 	}
 	t.t.SetMark("p0", 0)
 	t.t.SetMark("p1", 0)
@@ -179,6 +182,7 @@ func NewTxt(lines ...string) *Txt {
 // Known fonts are "r", "b", "i", "t".
 // Known combinations are "rb", "tb", and "ri".
 func (t *Txt) SetFont(f string) {
+	t.font = f
 	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"font", f}}
 }
 

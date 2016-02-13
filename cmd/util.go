@@ -109,6 +109,7 @@ func Dirs(names ...string) chan interface{} {
 	go func() {
 		var err error
 		for _, name := range names {
+			name = strings.TrimSpace(name)
 			if len(name) > 0 && name[0] == '|' {
 				d := zx.Dir{"path": name, "name": name,
 					"Upath": name, "Rpath": name, "type": "c"}
@@ -189,6 +190,7 @@ func Files(names ...string) chan interface{} {
 	go func() {
 		var err error
 		for _, name := range names {
+			name = strings.TrimSpace(name)
 			if len(name) > 2 && name[0] == '|' {
 				d := zx.Dir{"path": name, "name": name,
 					"Upath": name, "type": "c"}

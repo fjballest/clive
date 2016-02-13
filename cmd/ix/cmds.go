@@ -93,8 +93,13 @@ func bcmds(c *Cmd, args ...string) {
 	if len(ix.cmds) == 0 {
 		fmt.Fprintf(&out, "no commands\n")
 	}
-	for i, c := range ix.cmds {
-		fmt.Fprintf(&out, "%d\t%s\n", i, c.name)
+	for _, c := range ix.cmds {
+		p := c.p
+		id := 0
+		if p != nil {
+			id = p.Id
+		}
+		fmt.Fprintf(&out, "%d\t%s\n", id, c.name)
 	}
 	ix.Unlock()
 	s := out.String()
@@ -410,7 +415,9 @@ func (c *Cmd) pipe(ed *Ed, sendin bool, args ...string) {
 		}
 		ed.replDot(s)
 		c.ed.win.DelMark(c.mark)
-		c.ed.ix.delCmd(c)
+		if n := ed.ix.delCmd(c); n == 0 && ed.gone {
+			close(ed.waitc)
+		}
 	}()
 }
 

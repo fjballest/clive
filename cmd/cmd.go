@@ -94,7 +94,8 @@ func AppCtx() *Ctx {
 func ctx() *Ctx {
 	c := AppCtx()
 	if c == nil {
-		dbg.Fatal("no context for %d", runtime.AppId())
+		dbg.Warn("no context for %d", runtime.AppId())
+		panic("no context")
 	}
 	return c
 }

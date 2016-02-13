@@ -19,6 +19,7 @@ import (
 // The status is reported by closing the Err channel using it.
 // You can use ch.Merge() to merge Out and Err into a single stream.
 struct Proc {
+	Id int
 	Args []string
 	In chan<- interface{}		// process input
 	Out <-chan interface{}	// process output
@@ -280,6 +281,7 @@ func runCmd(adjust func(*cmd.Ctx), unix bool, in <-chan interface{}, args ...str
 			closeAll(closes)
 			cmd.Exit(fmt.Errorf("run %s: start: %s", args[0], err))
 		}
+		p.Id = p.x.Process.Pid
 		closeAll(iocloses)
 		go p.output(rfd, out, false)
 		go p.output(erfd, ec, true)

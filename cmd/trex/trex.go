@@ -129,7 +129,7 @@ func trex(in <-chan interface{}) error {
 			} else if lflag {
 				s = strings.ToLower(s)
 			} else if tflag {
-				s = strings.ToTitle(s)
+				s = strings.Title(s)
 			}
 			for i := 0; i < len(froms); i++ {
 				if res != nil {

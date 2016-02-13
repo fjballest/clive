@@ -39,6 +39,10 @@ struct Ed {
 	win *ink.Txt
 	winid string
 	markgen int
+	gone bool
+	ncmds int
+	waitc chan func()
+	ctx *cmd.Ctx
 	temp bool	// don't save, don't ever flag as dirty
 }
 
@@ -48,9 +52,10 @@ func (d Dot) String() string {
 	return fmt.Sprintf(":#%d,#%d", d.P0, d.P1)
 }
 
-func (ix *IX) delEd(ed *Ed) {
+func (ix *IX) delEd(ed *Ed) int {
 	ix.Lock()
 	defer ix.Unlock()
+	ed.gone = true
 	if ix.dot == ed {
 		ix.dot = nil
 	}
@@ -59,34 +64,45 @@ func (ix *IX) delEd(ed *Ed) {
 			copy(ix.eds[i:], ix.eds[i+1:])
 			ix.eds = ix.eds[:len(ix.eds)-1]
 			ix.pg.Del(ed.winid)
-			return
+			return ed.ncmds
 		}
 	}
+	return ed.ncmds
 }
 
 func (ix *IX) addCmd(c *Cmd) {
 	ix.Lock()
 	defer ix.Unlock()
 	ix.cmds = append(ix.cmds, c)
+	c.ed.ncmds++
 }
 
-func (ix *IX) delCmd(c *Cmd) {
+func (ix *IX) delCmd(c *Cmd) int {
 	ix.Lock()
 	defer ix.Unlock()
+	c.ed.ncmds--
 	for i, e := range ix.cmds {
 		if e == c {
 			copy(ix.cmds[i:], ix.cmds[i+1:])
 			ix.cmds = ix.cmds[:len(ix.cmds)-1]
-			return
+			break
 		}
 	}
+	return c.ed.ncmds
+}
+
+func (ix *IX) goneEd(ed *Ed) bool {
+	ix.Lock()
+	defer ix.Unlock()
+	return ed.gone
 }
 
 func (ix *IX) newEd(tag string) *Ed {
 	win := ink.NewTxt();
 	win.SetTag(tag)
 	win.ClientDoesUndoRedo()
-	ed := &Ed{win: win, ix: ix, tag: tag}
+	win.SetFont("t")
+	ed := &Ed{win: win, ix: ix, tag: tag, waitc: make(chan func())}
 	return ed
 }
 
@@ -97,7 +113,23 @@ func (ix *IX) newCmds() *Ed {
 	ix.Lock()
 	defer ix.Unlock()
 	ix.eds = append(ix.eds, ed)
-	cmd.New(ed.cmdLoop)
+
+	// We can't make the cmdLoop the new ctx main func because:
+	// 1. commands may reopen the window and
+	// recreate it while commands run. So the context must
+	// wait for all outstanding commands to die.
+	// 2. the new windows must have their event loops in the same
+	// context, or changes in the NS/env/... will be gone.
+	ed.ctx = cmd.New(func() {
+		ed.cmdLoop()
+		// new command loops are sent to waitc
+		for fn := range ed.waitc {
+			if fn != nil {
+				fn()
+			}
+		}
+		cmd.Dprintf("%s context done\n", ed)
+	})
 	return ed
 }
 
@@ -106,13 +138,46 @@ func (ix *IX) newEdit(path string) *Ed {
 	ix.Lock()
 	defer ix.Unlock()
 	ix.eds = append(ix.eds, ed)
-	cmd.New(func(){
+	ed.ctx = cmd.New(func(){
 		cmd.ForkDot()
 		cmd.Cd(fpath.Dir(ed.tag))
 		cmd.Dprintf("edit %s dot %s\n", ed.tag, cmd.Dot())
 		ed.editLoop()
+		// new command loops are sent to waitc
+		for fn := range ed.waitc {
+			if fn != nil {
+				fn()
+			}
+		}
+		cmd.Dprintf("%s context done\n", ed)
 	})
 	return ed
+}
+
+func (ix *IX) reopen(ed *Ed) {
+	ix.Lock()
+	defer ix.Unlock()
+	if !ed.gone {
+		return
+	}
+	ed.gone = false
+	for _, e := range ix.eds {
+		if e == ed {
+			return
+		}
+	}
+	win := ink.NewTxt()
+	win.SetTag(ed.tag)
+	win.ClientDoesUndoRedo()
+	win.SetFont("t")
+	for _, m := range ed.win.Marks() {
+		win.SetMark(m, 0)
+	}
+	ed.win = win
+	ed.temp = true
+	ix.eds = append(ix.eds, ed)
+	ed.waitc <- ed.cmdLoop
+	ed.winid, _ = ix.pg.Add(win)
 }
 
 func (ed *Ed) String() string {
@@ -206,6 +271,9 @@ func (c *Cmd) printf(f string, args ...interface{}) {
 		s = "\n" + s
 		c.hasnl = true
 	}
+	if c.ed.gone {
+		ix.reopen(c.ed)
+	}
 	if err := c.ed.win.MarkIns(c.mark, []rune(s)); err != nil {
 		cmd.Warn("mark ins: %s", err)
 	}
@@ -252,7 +320,9 @@ func (c *Cmd) io(hasnl bool) {
 		}
 	}
 	ed.win.DelMark(c.mark)
-	ed.ix.delCmd(c)
+	if n := ed.ix.delCmd(c); n == 0 && ed.gone {
+		close(ed.waitc)
+	}
 }
 
 func (c *Cmd) inkio(inkc <-chan face{}) {
@@ -400,9 +470,12 @@ func (ed *Ed) cmdLoop() {
 				cmd.Dprintf("%s w/o views\n", ed)
 			}
 		case "quit":
-			ed.ix.delEd(ed)
+			n := ed.ix.delEd(ed)
 			cmd.Dprintf("%s terminated\n", ed)
 			close(c, "quit")
+			if n == 0 {
+				close(ed.waitc)
+			}
 			return
 		case "clear":
 			ed.clear()
@@ -411,7 +484,10 @@ func (ed *Ed) cmdLoop() {
 		}
 	}
 	cmd.Dprintf("%s terminated\n", ed)
-	ed.ix.delEd(ed)
+	n := ed.ix.delEd(ed)
+	if n == 0 {
+		close(ed.waitc)
+	}
 }
 
 func (ed *Ed) clear() {
@@ -547,9 +623,12 @@ func (ed *Ed) editLoop() {
 				cmd.Dprintf("%s w/o views\n", ed)
 			}
 		case "quit":
-			ed.ix.delEd(ed)
+			n := ed.ix.delEd(ed)
 			cmd.Dprintf("%s terminated\n", ed)
 			close(c, "quit")
+			if n == 0 {
+				close(ed.waitc)
+			}
 			return
 		case "clear":
 			ed.clear()
@@ -562,5 +641,8 @@ func (ed *Ed) editLoop() {
 		}
 	}
 	cmd.Dprintf("%s terminated\n", ed)
-	ed.ix.delEd(ed)
+	n := ed.ix.delEd(ed)
+	if n == 0 {
+		close(ed.waitc)
+	}
 }

@@ -1192,147 +1192,7 @@ function tmdown(e) {
 	e.returnValue = false;
 }
 
-function tkeydown(e, deferred) {
-	try{
-		var key = e.keyCode;
-		if(!e.keyCode)
-			key = e.which;
-		var rune = String.fromCharCode(e.keyCode);
-		e.stopPropagation();
-		if(0)console.log("keydown which " + e.which + " key " + e.keyCode +
-			" '" + rune + "'" +
-			" " + e.ctrlKey + " " + e.metaKey);
-	
-		switch(key){
-		case 27:	/* escape */
-			if(deferred)
-				break;
-			this.post(["intr", "esc"]);
-			this.dump();
-			console.log("["+this.p0+","+this.p1+"]='" +
-				this.tget(this.p0, this.p1) + "'");
-			break;
-		case 8:		/* backspace */
-			if(this.noedits) {
-				return;
-			}
-			if(deferred)
-				break;
-			if(this.p0 != this.p1){
-				this.Post(["edel", ""+this.p0, ""+this.p1]);
-			}else if(this.p0 > 0){
-				var p0 = this.p0-1;
-				this.Post(["edel", ""+p0, ""+this.p1]);
-			}
-			break;
-		case 9:		/* tab */
-			if(this.noedits) {
-				return;
-			}
-			if(deferred)
-				break;
-			if(this.p0 != this.p1){
-				this.Post(["edel", ""+this.p0, ""+this.p1]);
-			}
-			this.Post(["eins", "\t", ""+this.p0]);
-			break;
-		case 32:	/* space */
-			if(deferred)
-				break;
-			this.Post(["eins", " ", ""+this.p0]);
-			break;
-		case 37:	/* left */
-			if(this.noedits) {
-				return;
-			}
-			this.post(["eundo"]);
-			break;
-		case 38:	/* up */
-			if(deferred)
-				break;
-			if(this.scrollup(3)){
-				this.untick();
-				this.redrawtext();
-			}
-			break;
-		case 39:	/* right */
-			if(this.noedits) {
-				return;
-			}
-			if(deferred)
-				break;
-			this.post(["eredo"]);
-			break;
-		case 40:	/* down */
-			if(deferred)
-				break;
-			this.untick();
-			if(this.scrolldown(3)){
-				this.untick();
-				this.redrawtext();
-			}
-			break;
-		case 46:	/* delete */
-			if(deferred)
-				break;
-			this.post(["intr", "del"]);
-			break;
-		case 112:	/* F1 */
-		case 113:	/* F2 */
-		case 114:	/* F3 */
-			if(deferred)
-				break;
-			var mev = {
-				fakex: this.lastx,
-				fakey: this.lasty,
-				which: key-112+1,
-			};
-			mev.preventDefault = function(){}
-			this.onmousedown(mev);
-			break;
-		default:
-			return true;
-		}
-		return false;
-	}catch(ex){
-		console.log("keydown: " + ex);
-	}
-}
-
-function tkeyup(e, deferred) {
-	try{
-		var key = e.keyCode;
-		if(!e.keyCode)
-			key = e.which;
-		var rune = String.fromCharCode(e.keyCode);
-		if(0)
-		console.log("keyup which " + e.which + " key " + e.keyCode +
-			" '" + rune + "'" +
-			" " + e.ctrlKey + " " + e.metaKey);
-		switch(key){
-		case 112:	/* F1 */
-		case 113:	/* F2 */
-		case 114:	/* F3 */
-			if(deferred)
-				break;
-			var mev = {
-				fakex: this.lastx,
-				fakey: this.lasty,
-				which: key-112+1,
-			};
-			mev.preventDefault = function(){}
-			this.onmouseup(mev);
-			break;
-		default:
-			return true;
-		}
-		return false;
-	}catch(ex){
-		console.log("keydown: " + ex);
-	}
-}
-
-function tevkey(e, deferred) {
+function tevkey(e) {
 	try {
 		// console.log("key");
 		var key = e.keyCode;
@@ -1352,8 +1212,6 @@ function tevkey(e, deferred) {
 		switch(rune){
 		case 'c':
 		case 'C':
-			if(deferred)
-				break;
 			if(e.ctrlKey || e.metaKey){
 				e.preventDefault();
 				this.post(["ecopy", ""+this.p0, ""+this.p1]);
@@ -1362,8 +1220,6 @@ function tevkey(e, deferred) {
 			break;
 		case 'v':
 		case 'V':
-			if(deferred)
-				break;
 			if(this.noedits) {
 				break;
 			}
@@ -1378,8 +1234,6 @@ function tevkey(e, deferred) {
 			break;
 		case 'x':
 		case 'X':
-			if(deferred)
-				break;
 			if(this.noedits) {
 				break;
 			}
@@ -1392,14 +1246,133 @@ function tevkey(e, deferred) {
 		}
 		if(e.metaKey || e.ctrlKey || this.noedits)
 			return;
-		if(deferred)
-			return;
 		if(this.p0 != this.p1){
 			this.Post(["edel", ""+this.p0, ""+this.p1]);
 		}
 		this.Post(["eins", rune, ""+this.p0]);
 	}catch(ex){
 		console.log("text: fixtab: " + ex);
+	}
+}
+
+
+function tkeyup(e) {
+	try{
+		var key = e.keyCode;
+		if(!e.keyCode)
+			key = e.which;
+		var rune = String.fromCharCode(e.keyCode);
+		if(0)
+		console.log("keyup which " + e.which + " key " + e.keyCode +
+			" '" + rune + "'" +
+			" " + e.ctrlKey + " " + e.metaKey);
+		switch(key){
+		case 112:	/* F1 */
+		case 113:	/* F2 */
+		case 114:	/* F3 */
+			var mev = {
+				fakex: this.lastx,
+				fakey: this.lasty,
+				which: key-112+1,
+			};
+			mev.preventDefault = function(){}
+			this.onmouseup(mev);
+			break;
+		default:
+			return true;
+		}
+		return false;
+	}catch(ex){
+		console.log("keydown: " + ex);
+	}
+}
+
+function tkeydown(e) {
+	try{
+		var key = e.keyCode;
+		if(!e.keyCode)
+			key = e.which;
+		var rune = String.fromCharCode(e.keyCode);
+		e.stopPropagation();
+		if(0)console.log("keydown which " + e.which + " key " + e.keyCode +
+			" '" + rune + "'" +
+			" " + e.ctrlKey + " " + e.metaKey);
+	
+		switch(key){
+		case 27:	/* escape */
+			this.post(["intr", "esc"]);
+			this.dump();
+			console.log("["+this.p0+","+this.p1+"]='" +
+				this.tget(this.p0, this.p1) + "'");
+			break;
+		case 8:		/* backspace */
+			if(this.noedits) {
+				return;
+			}
+			if(this.p0 != this.p1){
+				this.Post(["edel", ""+this.p0, ""+this.p1]);
+			}else if(this.p0 > 0){
+				var p0 = this.p0-1;
+				this.Post(["edel", ""+p0, ""+this.p1]);
+			}
+			break;
+		case 9:		/* tab */
+			if(this.noedits) {
+				return;
+			}
+			if(this.p0 != this.p1){
+				this.Post(["edel", ""+this.p0, ""+this.p1]);
+			}
+			this.Post(["eins", "\t", ""+this.p0]);
+			break;
+		case 32:	/* space */
+			this.Post(["eins", " ", ""+this.p0]);
+			break;
+		case 37:	/* left */
+			if(this.noedits) {
+				return;
+			}
+			this.post(["eundo"]);
+			break;
+		case 38:	/* up */
+			if(this.scrollup(3)){
+				this.untick();
+				this.redrawtext();
+			}
+			break;
+		case 39:	/* right */
+			if(this.noedits) {
+				return;
+			}
+			this.post(["eredo"]);
+			break;
+		case 40:	/* down */
+			this.untick();
+			if(this.scrolldown(3)){
+				this.untick();
+				this.redrawtext();
+			}
+			break;
+		case 46:	/* delete */
+			this.post(["intr", "del"]);
+			break;
+		case 112:	/* F1 */
+		case 113:	/* F2 */
+		case 114:	/* F3 */
+			var mev = {
+				fakex: this.lastx,
+				fakey: this.lasty,
+				which: key-112+1,
+			};
+			mev.preventDefault = function(){}
+			this.onmousedown(mev);
+			break;
+		default:
+			return true;
+		}
+		return false;
+	}catch(ex){
+		console.log("keydown: " + ex);
 	}
 }
 
@@ -1729,11 +1702,11 @@ function tlocknkeydown(e) {
 	xe.metaKey = e.metaKey;
 	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		console.log("held keydown");
+		console.log("holded keydown");
 		$(self).trigger(xe);
 		return false;
 	});
-	return tkeydown.call(this, e, true);
+	return false;
 }
 
 function tlocknevkey(e) {
@@ -1747,18 +1720,9 @@ function tlocknevkey(e) {
 		console.log("holding...");
 	}
 	var self = this;
-	var xe = jQuery.Event("keypress");
-	xe.which = e.which;
-	xe.keyCode = e.keyCode;
-	xe.ctrlKey = e.ctrlKey;
-	xe.metaKey = e.metaKey;
-	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		console.log("held keypress");
-		$(self).trigger(xe);
-		return false;
+		tevkey.call(self, e);
 	});
-	return tevkey.call(this, e, true);
 }
 
 function tlocknkeyup(e) {
@@ -1772,18 +1736,9 @@ function tlocknkeyup(e) {
 		console.log("holding...");
 	}
 	var self = this;
-	var xe = jQuery.Event("keyup");
-	xe.which = e.which;
-	xe.keyCode = e.keyCode;
-	xe.ctrlKey = e.ctrlKey;
-	xe.metaKey = e.metaKey;
-	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		console.log("held keyup");
-		$(self).trigger(xe);
-		return false;
+		tkeyup.call(self, e);
 	});
-	return tkeyup.call(this, e, true);
 }
 
 function tlocknmdown(e) {
@@ -1796,17 +1751,11 @@ function tlocknmdown(e) {
 		console.log("holding...");
 	}
 	var self = this;
-	var xe = jQuery.Event("mousedown");
-	xe.which = e.which;
-	xe.pageX = e.pageX;
-	xe.pageY = e.pageY;
-	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		console.log("held mousedown");
-		$(self).trigger(xe);
-		return false;
+		console.log("deferred push");
+		self.onmousedown(e)
+		self.onmouseup(e);
 	});
-	return false;
 }
 
 function tlocknmup(e) {
@@ -1819,17 +1768,9 @@ function tlocknmup(e) {
 		console.log("holding...");
 	}
 	var self = this;
-	var xe = jQuery.Event("mouseup");
-	xe.which = e.which;
-	xe.pageX = e.pageX;
-	xe.pageY = e.pageY;
-	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		console.log("held mouseup");
-		$(self).trigger(xe);
-		return false;
+		tmup.call(self, e);
 	});
-	return false;
 }
 
 function tlocked() {
@@ -2033,10 +1974,16 @@ function mktxt(d, t, e, cid, id) {
 	e.whenlocked = [];
 
 	e.tkeydown = tlocknkeydown;
+//	e.tkeydown = tkeydown;
 	e.tkeypress = tlocknevkey;
+//	e.tkeypress = tevkey;
 	e.tkeyup = tlocknkeyup;
+//	e.tkeyup = tkeyup;
+
 	e.onmousedown = tlocknmdown;
+//	e.onmousedown = tmdown;
 	e.onmouseup = tlocknmup;
+//	e.onmouseup = tmup;
 	e.onmouseenter = function(e) {
 		if(!selecting) {
 			$("#" + this.divid ).focus();
@@ -2048,25 +1995,9 @@ function mktxt(d, t, e, cid, id) {
 		this.post(["hold"]);
 		console.log("holding...");
 	};
-	e.onmousemove = function(e) {
-		if(this.islocked || this.locking) {
-			return tevxy.call(this, e);
-		}
-		this.locking = true;
-		this.post(["hold"]);
-		console.log("holding...");
-		return false;
-	};
-	e.onmousewheel = function(e) {
-		if(this.islocked || this.locking) {
-			return tmwheel.call(this, e);
-		}
-		this.locking = true;
-		this.post(["hold"]);
-		console.log("holding...");
-		return false;
-	};
 
+	e.onmousemove = tevxy;
+	e.onmousewheel = tmwheel;
 	e.onpaste = function(){return false;}
 	e.oncontextmenu = function(){return false;}
 	e.onclick = null;

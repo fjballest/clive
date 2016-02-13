@@ -106,18 +106,11 @@ func jsHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, p)
 }
 
+//go:generate mkjs
 // Serve the javascript files at /js.
 // Only needed if NewPg() is not used.
 func ServeJS() {
-	/*
-	   Generate the rom using:
-	   rom -u	-n js\
-		js/pg.js js/clive.js js/txt.js js/button.js js/radio.js \
-		js/aes.js js/ansix923.js js/pbkdf2.js js/jquery-ui/jquery-ui.min.css js/jquery-2.2.0.min.js \
-		js/jquery.get-word-by-event.js js/jquery-ui/images/*  js/jquery-ui/jquery-ui.min.js\
-		js/jquery-ui/jquery-ui.theme.min.css js/jquery-ui/jquery-ui.structure.min.css  >/tmp/js.go
-		mv /tmp/js.go js/js.go
-	*/
+	// Generate the js .go using mkjs
 	once.Do(start)
 }
 

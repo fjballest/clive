@@ -1,3 +1,5 @@
+// +install /bin/ql
+
 /*
 	Clive's shell
 */
@@ -12,6 +14,9 @@ import (
 	"errors"
 	"strings"
 	"clive/cmd/tty"
+	fpath "path"
+	"clive/u"
+	"io/ioutil"
 )
 
 type inRdr struct {
@@ -96,6 +101,24 @@ func parse() (err error) {
 	return nil
 }
 
+func dotql() {
+	qlpath := fpath.Join(u.Home, ".ql")
+	dat, err := ioutil.ReadFile(qlpath)
+	if err != nil {
+		return
+	}
+	inc := make(chan interface{}, 2)
+	inc <- zx.Dir{"path": qlpath, "Upath": qlpath, "type": "-"}
+	inc <- dat
+	close(inc)
+	in := &inRdr{name: "in", inc: inc}
+	yylex = newLex(in)
+	if err := parse(); err != nil {
+		cmd.Warn(".ql: %s", err)
+	}
+	
+}
+
 func main() {
 	cmd.UnixIO("err")
 	c := cmd.AppCtx()
@@ -136,6 +159,7 @@ func main() {
 	nddebug = nddebug || ydebug
 	cmd.SetEnv("argv0", c.Args[0])
 	cmd.SetEnvList("argv", c.Args[1:])
+	dotql()
 	in := &inRdr{name: "in", inc: cmd.In("in")}
 	yylex = newLex(in)
 	yylex.interactive = iflag
