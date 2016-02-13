@@ -1,0 +1,6 @@
+# elf cron
+# min hour dm m dw usr cmd
+0 0 * * *       cd /zx/sys/src/clive ; git pull >> $HOME/pull.log 2>&1; git push -v github >> $HOME/pull.log 2>&1
+0 1 * * *	/home/elf/zxsync >> $HOME/sync.log 2>&1
+0 5 * * *      /zx/bin/openbsd_amd64/zxdump -1 -d /dump -v 'lsub!/home/lsub' >>/home/elf/dump.log 2>&1
+

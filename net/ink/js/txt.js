@@ -393,8 +393,8 @@ function tdrawline(xln, i) {
 	   xln != this.lines[this.lines.length-1])
 		return true;
 	var dx = this.posdx(xln, this.p0 - xln.off);
-	dx += marginsz - 2;
-	this.saved = ctx.getImageData(dx, pos, 4, this.fontht);
+	dx += marginsz - 4;
+	this.saved = ctx.getImageData(dx, pos, 6, this.fontht);
 	this.tickx = dx;
 	this.ticky = pos;
 	ctx.putImageData(this.tick, dx, pos);
@@ -570,7 +570,7 @@ function ttins(t, dontscroll) {
 				this.reformat(i);
 				if(!dontscroll)
 				if(i >= this.ln0+this.nlines-1 &&
-				   i <= this.ln0+this.nlines+1)
+				   i <= this.ln0+this.nlines+1 && this.nlines > 1)
 					this.scrolldown(nscrl);
 				this.redrawtext();
 				return;
