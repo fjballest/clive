@@ -1,15 +1,15 @@
 package main
 
 import (
-	"strings"
-	"fmt"
-	"io"
 	"clive/ch"
 	"clive/cmd"
-	"errors"
-	fpath "path"
-	"os"
 	"clive/zx"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	fpath "path"
+	"strings"
 )
 
 func fields(s, sep string) []string {
@@ -30,7 +30,7 @@ func (nd *Nd) addRedirTo(set []*Redir) []*Redir {
 	if len(nd.Args) != 2 {
 		panic("addRedirTo: bad redir Args")
 	}
-	if len(nd.Child) >1 {
+	if len(nd.Child) > 1 {
 		panic("addRedirTo: bad redir children")
 	}
 	what, tag := nd.Args[0], nd.Args[1]
@@ -38,9 +38,9 @@ func (nd *Nd) addRedirTo(set []*Redir) []*Redir {
 	switch what {
 	case ">:":
 		bad = ";,$"
-	case ">", ">>" :
+	case ">", ">>":
 		bad = ":;$"
-	case  "<|", ">|":
+	case "<|", ">|":
 		bad = "$"
 	}
 	if strings.ContainsAny(tag, bad) {
@@ -91,7 +91,7 @@ func (nd *Nd) addPipeRedirs(stdin bool) {
 		// single command, not really a pipe
 		return
 	}
-	tags := nd.Args[1:]	// 1st arg is the bg tag
+	tags := nd.Args[1:] // 1st arg is the bg tag
 	for i, tag := range tags {
 		tags := fields(tag, ";")
 		for _, tag := range tags {
@@ -134,7 +134,7 @@ func newRedir(what, tag string, name *Nd) *Nd {
 			tag = "out"
 		}
 	}
-	nd := newNd(Nredir, what, tag);
+	nd := newNd(Nredir, what, tag)
 	if name != nil {
 		nd.Add(name)
 	}
@@ -155,7 +155,7 @@ func inFrom(path string) (*os.File, error) {
 			return nil, err
 		}
 		rc := cmd.Get(path, 0, -1)
-		go func () {
+		go func() {
 			defer wr.Close()
 			for m := range rc {
 				if _, err := ch.WriteMsg(wr, 1, m); err != nil {
@@ -251,7 +251,7 @@ func (c *Nd) applyRedirs(x, cx *xEnv, pipes map[string]pFd) ([]io.Closer, error)
 	var pcloses []io.Closer
 	for _, rd := range c.Redirs {
 		r := rd.nd
-		if r == nil {	// dup
+		if r == nil { // dup
 			flds := fields(rd.name, ":")
 			nfd, ofd := flds[0], flds[1]
 			xfd := cx.fds[ofd]

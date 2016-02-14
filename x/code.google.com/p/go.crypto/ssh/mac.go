@@ -12,14 +12,14 @@ import (
 	"hash"
 )
 
-type macMode struct {
+struct macMode {
 	keySize int
 	new     func(key []byte) hash.Hash
 }
 
 // truncatingMAC wraps around a hash.Hash and truncates the output digest to
 // a given size.
-type truncatingMAC struct {
+struct truncatingMAC {
 	length int
 	hmac   hash.Hash
 }

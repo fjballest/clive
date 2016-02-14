@@ -8,7 +8,7 @@ import (
 	"unicode"
 )
 
-type txtFmt struct {
+struct txtFmt {
 	lvl int
 	*par
 	hasSeeAlso bool // hacks for clive man

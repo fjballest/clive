@@ -18,14 +18,14 @@ func retsel(r []Range) []Range {
 /*
 	lists of states reached in the FNA and their selections
 */
-type states struct {
+struct states {
 	lst []state
 }
 
 /*
 	NFA state reached (executed by the virtual machine)
 */
-type state struct {
+struct state {
 	i   pinst   // instruction we start with
 	sel []Range // selection
 }

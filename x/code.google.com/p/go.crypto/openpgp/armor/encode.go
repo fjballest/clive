@@ -27,7 +27,7 @@ func writeSlices(out io.Writer, slices ...[]byte) (err error) {
 
 // lineBreaker breaks data across several lines, all of the same byte length
 // (except possibly the last). Lines are broken with a single '\n'.
-type lineBreaker struct {
+struct lineBreaker {
 	lineLength  int
 	line        []byte
 	used        int
@@ -97,7 +97,7 @@ func (l *lineBreaker) Close() (err error) {
 //
 // It's built into a stack of io.Writers:
 //    encoding -> base64 encoder -> lineBreaker -> out
-type encoding struct {
+struct encoding {
 	out       io.Writer
 	breaker   *lineBreaker
 	b64       io.WriteCloser

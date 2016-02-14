@@ -28,7 +28,7 @@ import (
 
 // Cipher contains an expanded key structure. It doesn't contain mutable state
 // and therefore can be used concurrently.
-type Cipher struct {
+struct Cipher {
 	k1, k2 cipher.Block
 }
 

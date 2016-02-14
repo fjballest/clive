@@ -14,15 +14,14 @@ import (
 )
 
 type line []string
-type file struct {
+struct file {
 	lines   map[string]line
 	nfields int
 }
 
-
 var (
-	opts = opt.New("{file}")
-	ux bool
+	opts       = opt.New("{file}")
+	ux         bool
 	fld1, fld2 = 1, 1
 	one        bool
 	seps       string
@@ -60,7 +59,7 @@ func fields(s string) []string {
 	})
 }
 
-func getFiles(in <-chan interface{}) error {
+func getFiles(in <-chan face{}) error {
 	var f *file
 	nfields := 0
 	fldno := fld1
@@ -205,7 +204,7 @@ func main() {
 	opts.NewFlag("i", "isep: input field separator character(s) or string under -1", &seps)
 	opts.NewFlag("1", "fields are separated by one run of the separator string", &one)
 	opts.NewFlag("o", "osep: output field delimiter string", &osep)
-	args:= opts.Parse()
+	args := opts.Parse()
 	if ux {
 		cmd.UnixIO("out")
 	}

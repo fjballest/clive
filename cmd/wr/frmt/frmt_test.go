@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	debug bool
+	debug   bool
 	dprintf = dbg.FlagPrintf(&debug)
 )
 

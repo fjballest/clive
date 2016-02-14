@@ -27,7 +27,7 @@ import (
 // interrupted.
 type Intr chan bool
 
-type Server struct {
+struct Server {
 	FS FS
 
 	// Function to send debug log messages to. If nil, use fuse.Debug.
@@ -36,7 +36,7 @@ type Server struct {
 	dprintf dbg.PrintFunc
 }
 
-type serveConn struct {
+struct serveConn {
 	meta       sync.Mutex
 	fs         FS
 	req        map[fuse.RequestID]*serveRequest
@@ -47,24 +47,24 @@ type serveConn struct {
 	nodeGen    uint64
 }
 
-type serveRequest struct {
+struct serveRequest {
 	Request fuse.Request
 	Intr    Intr
 }
 
-type serveNode struct {
+struct serveNode {
 	inode uint64
 	node  Node
 	refs  uint64
 }
 
-type serveHandle struct {
+struct serveHandle {
 	handle   Handle
 	readData []byte // used to cached packed dir entries
 	nodeID   fuse.NodeID
 }
 
-type nodeRef interface {
+interface nodeRef {
 	nodeRef() *NodeRef
 }
 
@@ -239,7 +239,7 @@ func (c *serveConn) saveHandle(handle Handle, nodeID fuse.NodeID) (id fuse.Handl
 	return
 }
 
-type nodeRefcountDropBug struct {
+struct nodeRefcountDropBug {
 	N    uint64
 	Refs uint64
 	Node fuse.NodeID
@@ -290,7 +290,7 @@ func (c *serveConn) dropHandle(id fuse.HandleID) {
 	c.meta.Unlock()
 }
 
-type missingHandle struct {
+struct missingHandle {
 	Handle    fuse.HandleID
 	MaxHandle fuse.HandleID
 }
@@ -315,17 +315,17 @@ func (c *serveConn) getHandle(id fuse.HandleID) (shandle *serveHandle) {
 	return
 }
 
-type request struct {
+struct request {
 	Op      string
 	Request *fuse.Header
-	In      interface{} `json:",omitempty"`
+	In      face{} `json:",omitempty"`
 }
 
 func (r request) String() string {
 	return fmt.Sprintf("<- %s", r.In)
 }
 
-type logResponseHeader struct {
+struct logResponseHeader {
 	ID fuse.RequestID
 }
 
@@ -333,10 +333,10 @@ func (m logResponseHeader) String() string {
 	return fmt.Sprintf("ID=%#x", m.ID)
 }
 
-type response struct {
+struct response {
 	Op      string
 	Request logResponseHeader
-	Out     interface{} `json:",omitempty"`
+	Out     face{} `json:",omitempty"`
 	// Errno contains the errno value as a string, for example "EPERM".
 	Errno string `json:",omitempty"`
 	// Error may contain a free form error message.
@@ -373,7 +373,7 @@ func (r response) String() string {
 	}
 }
 
-type logMissingNode struct {
+struct logMissingNode {
 	MaxNode fuse.NodeID
 }
 
@@ -384,7 +384,7 @@ func opName(req fuse.Request) string {
 	return s
 }
 
-type logLinkRequestOldNodeNotFound struct {
+struct logLinkRequestOldNodeNotFound {
 	Request *fuse.Header
 	In      *fuse.LinkRequest
 }
@@ -393,7 +393,7 @@ func (m *logLinkRequestOldNodeNotFound) String() string {
 	return fmt.Sprintf("In LinkRequest (request %#x), node %d not found", m.Request.Hdr().ID, m.In.OldNode)
 }
 
-type renameNewDirNodeNotFound struct {
+struct renameNewDirNodeNotFound {
 	Request *fuse.Header
 	In      *fuse.RenameRequest
 }
@@ -452,7 +452,7 @@ func (c *serveConn) serve(r fuse.Request) {
 	// Call this before responding.
 	// After responding is too late: we might get another request
 	// with the same ID and be very confused.
-	done := func(resp interface{}) {
+	done := func(resp face{}) {
 		msg := response{
 			Op:      opName(r),
 			Request: logResponseHeader{ID: hdr.ID},
@@ -957,7 +957,7 @@ func DataHandle(data []byte) Handle {
 	return &dataHandle{data}
 }
 
-type dataHandle struct {
+struct dataHandle {
 	data []byte
 }
 

@@ -22,13 +22,13 @@ import (
 
 // PrivateKey represents a possibly encrypted private key. See RFC 4880,
 // section 5.5.3.
-type PrivateKey struct {
+struct PrivateKey {
 	PublicKey
 	Encrypted     bool // if true then the private key is unavailable until Decrypt has been called.
 	encryptedData []byte
 	cipher        CipherFunction
 	s2k           func(out, in []byte)
-	PrivateKey    interface{} // An *rsa.PrivateKey or *dsa.PrivateKey.
+	PrivateKey    face{} // An *rsa.PrivateKey or *dsa.PrivateKey.
 	sha1Checksum  bool
 	iv            []byte
 }

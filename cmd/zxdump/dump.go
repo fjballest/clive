@@ -9,25 +9,25 @@ package main
 import (
 	"clive/cmd"
 	"clive/cmd/opt"
-	"clive/u"
 	"clive/dbg"
+	"clive/u"
 	"clive/zx/zux"
 	fpath "path"
 	"strings"
 )
 
 var (
-	Dump           string
-	Xcludes        []string
-	Once           bool
-	Skip           bool
+	Dump    string
+	Xcludes []string
+	Once    bool
+	Skip    bool
 
 	opts    = opt.New("{file|name!file}")
 	vprintf = cmd.VWarn
 	dprintf = cmd.Dprintf
 )
 
-func main() {	
+func main() {
 	cmd.UnixIO()
 	c := cmd.AppCtx()
 	dfltdump := Path(u.Home, "dump")

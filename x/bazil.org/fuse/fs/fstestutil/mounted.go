@@ -13,7 +13,7 @@ import (
 )
 
 // Mount contains information about the mount for the test to use.
-type Mount struct {
+struct Mount {
 	// Dir is the temporary directory where the filesystem is mounted.
 	Dir string
 
@@ -105,7 +105,7 @@ func MountedT(t testing.TB, filesys fs.FS) (*Mount, error) {
 		FS: filesys,
 	}
 	if debug {
-		srv.Debug = func(msg interface{}) {
+		srv.Debug = func(msg face{}) {
 			t.Logf("FUSE: %s", msg)
 		}
 	}

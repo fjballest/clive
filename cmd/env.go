@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"sync"
 	"os"
 	"strings"
+	"sync"
 )
 
-type envSet struct {
+struct envSet {
 	vars map[string]string
 	sync.Mutex
 }
@@ -31,7 +31,7 @@ func (e *envSet) set(n, v string) {
 	} else {
 		e.vars[n] = v
 	}
-	os.Setenv(n, v)	// in case someone execs...
+	os.Setenv(n, v) // in case someone execs...
 }
 
 func (e *envSet) get(n string) string {

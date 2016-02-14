@@ -37,12 +37,12 @@ func (Intr) String() string { return "fuse.Intr" }
 //
 // Other FUSE requests can be handled by implementing methods from the
 // FS* interfaces, for example FSIniter.
-type FS interface {
+interface FS {
 	// Root is called to obtain the Node for the file system root.
 	Root() (Node, fuse.Error)
 }
 
-type FSIniter interface {
+interface FSIniter {
 	// Init is called to initialize the FUSE connection.
 	// It can inspect the request and adjust the response as desired.
 	// The default response sets MaxReadahead to 0 and MaxWrite to 4096.
@@ -50,13 +50,13 @@ type FSIniter interface {
 	Init(*fuse.InitRequest, *fuse.InitResponse, Intr) fuse.Error
 }
 
-type FSStatfser interface {
+interface FSStatfser {
 	// Statfs is called to obtain file system metadata.
 	// It should write that data to resp.
 	Statfs(*fuse.StatfsRequest, *fuse.StatfsResponse, Intr) fuse.Error
 }
 
-type FSDestroyer interface {
+interface FSDestroyer {
 	// Destroy is called when the file system is shutting down.
 	//
 	// Linux only sends this request for block device backed (fuseblk)
@@ -68,7 +68,7 @@ type FSDestroyer interface {
 	Destroy()
 }
 
-type FSInodeGenerator interface {
+interface FSInodeGenerator {
 	// GenerateInode is called to pick a dynamic inode number when it
 	// would otherwise be 0.
 	//
@@ -93,11 +93,11 @@ type FSInodeGenerator interface {
 //
 // Other FUSE requests can be handled by implementing methods from the
 // Node* interfaces, for example NodeOpener.
-type Node interface {
+interface Node {
 	Attr() fuse.Attr
 }
 
-type NodeGetattrer interface {
+interface NodeGetattrer {
 	// Getattr obtains the standard metadata for the receiver.
 	// It should store that metadata in resp.
 	//
@@ -106,12 +106,12 @@ type NodeGetattrer interface {
 	Getattr(*fuse.GetattrRequest, *fuse.GetattrResponse, Intr) fuse.Error
 }
 
-type NodeSetattrer interface {
+interface NodeSetattrer {
 	// Setattr sets the standard metadata for the receiver.
 	Setattr(*fuse.SetattrRequest, *fuse.SetattrResponse, Intr) fuse.Error
 }
 
-type NodeSymlinker interface {
+interface NodeSymlinker {
 	// Symlink creates a new symbolic link in the receiver, which must be a directory.
 	//
 	// TODO is the above true about directories?
@@ -119,25 +119,25 @@ type NodeSymlinker interface {
 }
 
 // This optional request will be called only for symbolic link nodes.
-type NodeReadlinker interface {
+interface NodeReadlinker {
 	// Readlink reads a symbolic link.
 	Readlink(*fuse.ReadlinkRequest, Intr) (string, fuse.Error)
 }
 
-type NodeLinker interface {
+interface NodeLinker {
 	// Link creates a new directory entry in the receiver based on an
 	// existing Node. Receiver must be a directory.
 	Link(r *fuse.LinkRequest, old Node, intr Intr) (Node, fuse.Error)
 }
 
-type NodeRemover interface {
+interface NodeRemover {
 	// Remove removes the entry with the given name from
 	// the receiver, which must be a directory.  The entry to be removed
 	// may correspond to a file (unlink) or to a directory (rmdir).
 	Remove(*fuse.RemoveRequest, Intr) fuse.Error
 }
 
-type NodeAccesser interface {
+interface NodeAccesser {
 	// Access checks whether the calling context has permission for
 	// the given operations on the receiver. If so, Access should
 	// return nil. If not, Access should return EPERM.
@@ -149,7 +149,7 @@ type NodeAccesser interface {
 	Access(*fuse.AccessRequest, Intr) fuse.Error
 }
 
-type NodeStringLookuper interface {
+interface NodeStringLookuper {
 	// Lookup looks up a specific entry in the receiver,
 	// which must be a directory.  Lookup should return a Node
 	// corresponding to the entry.  If the name does not exist in
@@ -159,47 +159,47 @@ type NodeStringLookuper interface {
 	Lookup(string, Intr) (Node, fuse.Error)
 }
 
-type NodeRequestLookuper interface {
+interface NodeRequestLookuper {
 	// Lookup looks up a specific entry in the receiver.
 	// See NodeStringLookuper for more.
 	Lookup(*fuse.LookupRequest, *fuse.LookupResponse, Intr) (Node, fuse.Error)
 }
 
-type NodeMkdirer interface {
+interface NodeMkdirer {
 	Mkdir(*fuse.MkdirRequest, Intr) (Node, fuse.Error)
 }
 
-type NodeOpener interface {
+interface NodeOpener {
 	// Open opens the receiver.
 	// XXX note about access.  XXX OpenFlags.
 	// XXX note that the Node may be a file or directory.
 	Open(*fuse.OpenRequest, *fuse.OpenResponse, Intr) (Handle, fuse.Error)
 }
 
-type NodeCreater interface {
+interface NodeCreater {
 	// Create creates a new directory entry in the receiver, which
 	// must be a directory.
 	Create(*fuse.CreateRequest, *fuse.CreateResponse, Intr) (Node, Handle, fuse.Error)
 }
 
-type NodeForgetter interface {
+interface NodeForgetter {
 	Forget()
 }
 
-type NodeRenamer interface {
+interface NodeRenamer {
 	Rename(r *fuse.RenameRequest, newDir Node, intr Intr) fuse.Error
 }
 
-type NodeMknoder interface {
+interface NodeMknoder {
 	Mknod(r *fuse.MknodRequest, intr Intr) (Node, fuse.Error)
 }
 
 // TODO this should be on Handle not Node
-type NodeFsyncer interface {
+interface NodeFsyncer {
 	Fsync(r *fuse.FsyncRequest, intr Intr) fuse.Error
 }
 
-type NodeGetxattrer interface {
+interface NodeGetxattrer {
 	// Getxattr gets an extended attribute by the given name from the
 	// node.
 	//
@@ -209,18 +209,18 @@ type NodeGetxattrer interface {
 	Getxattr(req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse, intr Intr) fuse.Error
 }
 
-type NodeListxattrer interface {
+interface NodeListxattrer {
 	// Listxattr lists the extended attributes recorded for the node.
 	Listxattr(req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse, intr Intr) fuse.Error
 }
 
-type NodeSetxattrer interface {
+interface NodeSetxattrer {
 	// Setxattr sets an extended attribute with the given name and
 	// value for the node.
 	Setxattr(req *fuse.SetxattrRequest, intr Intr) fuse.Error
 }
 
-type NodeRemovexattrer interface {
+interface NodeRemovexattrer {
 	// Removexattr removes an extended attribute for the name.
 	//
 	// If there is no xattr by that name, returns fuse.ENODATA. This
@@ -260,43 +260,43 @@ func nodeAttr(n Node) (attr fuse.Attr) {
 // HandleReader, HandleReadDirer, and HandleWriter.
 //
 // TODO implement methods: Getlk, Setlk, Setlkw
-type Handle interface {
+interface Handle {
 }
 
-type HandleFlusher interface {
+interface HandleFlusher {
 	// Flush is called each time the file or directory is closed.
 	// Because there can be multiple file descriptors referring to a
 	// single opened file, Flush can be called multiple times.
 	Flush(*fuse.FlushRequest, Intr) fuse.Error
 }
 
-type HandleReadAller interface {
+interface HandleReadAller {
 	ReadAll(Intr) ([]byte, fuse.Error)
 }
 
-type HandleReadDirer interface {
+interface HandleReadDirer {
 	ReadDir(Intr) ([]fuse.Dirent, fuse.Error)
 }
 
-type HandleReader interface {
+interface HandleReader {
 	Read(*fuse.ReadRequest, *fuse.ReadResponse, Intr) fuse.Error
 }
 
-type HandleWriter interface {
+interface HandleWriter {
 	Write(*fuse.WriteRequest, *fuse.WriteResponse, Intr) fuse.Error
 }
 
-type HandleReleaser interface {
+interface HandleReleaser {
 	Release(*fuse.ReleaseRequest, Intr) fuse.Error
 }
 
-type Server struct {
+struct Server {
 	FS FS
 
 	// Function to send debug log messages to. If nil, use fuse.Debug.
 	// Note that changing this or fuse.Debug may not affect existing
 	// calls to Serve.
-	Debug func(msg interface{})
+	Debug func(msg face{})
 }
 
 // Serve serves the FUSE connection by making calls to the methods
@@ -346,9 +346,9 @@ func Serve(c *fuse.Conn, fs FS) error {
 	return server.Serve(c)
 }
 
-type nothing struct{}
+struct nothing {}
 
-type serveConn struct {
+struct serveConn {
 	meta         sync.Mutex
 	fs           FS
 	req          map[fuse.RequestID]*serveRequest
@@ -357,16 +357,16 @@ type serveConn struct {
 	freeNode     []fuse.NodeID
 	freeHandle   []fuse.HandleID
 	nodeGen      uint64
-	debug        func(msg interface{})
+	debug        func(msg face{})
 	dynamicInode func(parent uint64, name string) uint64
 }
 
-type serveRequest struct {
+struct serveRequest {
 	Request fuse.Request
 	Intr    Intr
 }
 
-type serveNode struct {
+struct serveNode {
 	inode uint64
 	node  Node
 	refs  uint64
@@ -380,7 +380,7 @@ func (sn *serveNode) attr() (attr fuse.Attr) {
 	return
 }
 
-type serveHandle struct {
+struct serveHandle {
 	handle   Handle
 	readData []byte
 	nodeID   fuse.NodeID
@@ -392,7 +392,7 @@ type serveHandle struct {
 // Without this, each Node will get a new NodeID, causing spurious
 // cache invalidations, extra lookups and aliasing anomalies. This may
 // not matter for a simple, read-only filesystem.
-type NodeRef struct {
+struct NodeRef {
 	id         fuse.NodeID
 	generation uint64
 }
@@ -402,7 +402,7 @@ func (n *NodeRef) nodeRef() *NodeRef {
 	return n
 }
 
-type nodeRef interface {
+interface nodeRef {
 	nodeRef() *NodeRef
 }
 
@@ -457,7 +457,7 @@ func (c *serveConn) saveHandle(handle Handle, nodeID fuse.NodeID) (id fuse.Handl
 	return
 }
 
-type nodeRefcountDropBug struct {
+struct nodeRefcountDropBug {
 	N    uint64
 	Refs uint64
 	Node fuse.NodeID
@@ -508,7 +508,7 @@ func (c *serveConn) dropHandle(id fuse.HandleID) {
 	c.meta.Unlock()
 }
 
-type missingHandle struct {
+struct missingHandle {
 	Handle    fuse.HandleID
 	MaxHandle fuse.HandleID
 }
@@ -533,17 +533,17 @@ func (c *serveConn) getHandle(id fuse.HandleID) (shandle *serveHandle) {
 	return
 }
 
-type request struct {
+struct request {
 	Op      string
 	Request *fuse.Header
-	In      interface{} `json:",omitempty"`
+	In      face{} `json:",omitempty"`
 }
 
 func (r request) String() string {
 	return fmt.Sprintf("<- %s", r.In)
 }
 
-type logResponseHeader struct {
+struct logResponseHeader {
 	ID fuse.RequestID
 }
 
@@ -551,10 +551,10 @@ func (m logResponseHeader) String() string {
 	return fmt.Sprintf("ID=%#x", m.ID)
 }
 
-type response struct {
+struct response {
 	Op      string
 	Request logResponseHeader
-	Out     interface{} `json:",omitempty"`
+	Out     face{} `json:",omitempty"`
 	// Errno contains the errno value as a string, for example "EPERM".
 	Errno string `json:",omitempty"`
 	// Error may contain a free form error message.
@@ -591,7 +591,7 @@ func (r response) String() string {
 	}
 }
 
-type logMissingNode struct {
+struct logMissingNode {
 	MaxNode fuse.NodeID
 }
 
@@ -602,7 +602,7 @@ func opName(req fuse.Request) string {
 	return s
 }
 
-type logLinkRequestOldNodeNotFound struct {
+struct logLinkRequestOldNodeNotFound {
 	Request *fuse.Header
 	In      *fuse.LinkRequest
 }
@@ -611,7 +611,7 @@ func (m *logLinkRequestOldNodeNotFound) String() string {
 	return fmt.Sprintf("In LinkRequest (request %#x), node %d not found", m.Request.Hdr().ID, m.In.OldNode)
 }
 
-type renameNewDirNodeNotFound struct {
+struct renameNewDirNodeNotFound {
 	Request *fuse.Header
 	In      *fuse.RenameRequest
 }
@@ -670,7 +670,7 @@ func (c *serveConn) serve(r fuse.Request) {
 	// Call this before responding.
 	// After responding is too late: we might get another request
 	// with the same ID and be very confused.
-	done := func(resp interface{}) {
+	done := func(resp face{}) {
 		msg := response{
 			Op:      opName(r),
 			Request: logResponseHeader{ID: hdr.ID},
@@ -1283,7 +1283,7 @@ func DataHandle(data []byte) Handle {
 	return &dataHandle{data}
 }
 
-type dataHandle struct {
+struct dataHandle {
 	data []byte
 }
 

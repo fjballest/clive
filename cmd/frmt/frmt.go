@@ -14,9 +14,9 @@ import (
 var (
 	opts = opt.New("{file}")
 
-	wid = 80
+	wid    = 80
 	tabwid int
-	right       bool
+	right  bool
 )
 
 func tabsOf(s []byte) int {
@@ -28,10 +28,10 @@ func tabsOf(s []byte) int {
 	return 0
 }
 
-type par struct {
+struct par {
 	lnc   <-chan []rune
 	ntabs int
-	x     interface{}
+	x     face{}
 }
 
 func fmt(parc chan par) {

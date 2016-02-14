@@ -4,15 +4,15 @@
 package main
 
 import (
+	"bytes"
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx"
-	"bytes"
 )
 
 var (
 	opts = opt.New("{file}")
-	one bool
+	one  bool
 )
 
 // Run print lines in the current app context.

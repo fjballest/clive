@@ -23,7 +23,7 @@ const (
 )
 
 // kexResult captures the outcome of a key exchange.
-type kexResult struct {
+struct kexResult {
 	// Session hash. See also RFC 4253, section 8.
 	H []byte
 
@@ -48,7 +48,7 @@ type kexResult struct {
 
 // handshakeMagics contains data that is always included in the
 // session hash.
-type handshakeMagics struct {
+struct handshakeMagics {
 	clientVersion, serverVersion []byte
 	clientKexInit, serverKexInit []byte
 }
@@ -61,7 +61,7 @@ func (m *handshakeMagics) write(w io.Writer) {
 }
 
 // kexAlgorithm abstracts different key exchange algorithms.
-type kexAlgorithm interface {
+interface kexAlgorithm {
 	// Server runs server-side key agreement, signing the result
 	// with a hostkey.
 	Server(p packetConn, rand io.Reader, magics *handshakeMagics, s Signer) (*kexResult, error)
@@ -72,7 +72,7 @@ type kexAlgorithm interface {
 }
 
 // dhGroup is a multiplicative group suitable for implementing Diffie-Hellman key agreement.
-type dhGroup struct {
+struct dhGroup {
 	g, p *big.Int
 }
 
@@ -193,7 +193,7 @@ func (group *dhGroup) Server(c packetConn, randSource io.Reader, magics *handsha
 
 // ecdh performs Elliptic Curve Diffie-Hellman key exchange as
 // described in RFC 5656, section 4.
-type ecdh struct {
+struct ecdh {
 	curve elliptic.Curve
 }
 

@@ -3,7 +3,7 @@
 	Not like the unix one.
 	mvf a b -> moves a to b (*not* to b/a if b exists and is a dir)
 	mvf d moves all dirs with paths .../name in stdin to be d/name, where d is the destination dir.
-	mv a b... c takes c as the target parent dir for a, b... 
+	mv a b... c takes c as the target parent dir for a, b...
 */
 package main
 
@@ -11,14 +11,14 @@ import (
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx"
-	fpath "path"
-	"strings"
 	"errors"
 	"fmt"
+	fpath "path"
+	"strings"
 )
 
 var (
-	opts = opt.New("[src] dst | src1 src2... dstdir")
+	opts           = opt.New("[src] dst | src1 src2... dstdir")
 	todir, dry, ux bool
 )
 
@@ -58,7 +58,7 @@ func mv1(src, dst zx.Dir) error {
 	return cmd.Move(src["path"], dst["path"])
 }
 
-func mvf(in <-chan interface{}, dst zx.Dir, todir bool) error {
+func mvf(in <-chan face{}, dst zx.Dir, todir bool) error {
 	var err error
 	dpath := dst["path"]
 	dupath := dst["Upath"]

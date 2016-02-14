@@ -14,10 +14,10 @@ import (
 
 var (
 	nflag, mflag bool
-	ux bool
-	oname = "out"
-	iname string
-	opts = opt.New("{arg}")
+	ux           bool
+	oname        = "out"
+	iname        string
+	opts         = opt.New("{arg}")
 )
 
 // Run echo in the current app context.

@@ -12,7 +12,7 @@ func NewCanonicalTextHash(h hash.Hash) hash.Hash {
 	return &canonicalTextHash{h, 0}
 }
 
-type canonicalTextHash struct {
+struct canonicalTextHash {
 	h hash.Hash
 	s int
 }

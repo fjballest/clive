@@ -33,7 +33,7 @@ struct lex {
 	in            []inText
 	saddr         []Addr
 	eofmet, wasnl bool
-	notfirst bool
+	notfirst      bool
 	saved         rune
 	val           []rune
 	Addr
@@ -48,8 +48,8 @@ var (
 		"for":   FOR,
 		"while": WHILE,
 		"func":  FUNC,
-		"cond": COND,
-		"or": OR,
+		"cond":  COND,
+		"or":    OR,
 	}
 )
 
@@ -66,10 +66,10 @@ func (b *bufRdr) Name() string {
 
 func newLex(in inText) *lex {
 	return &lex{
-		in:   []inText{in},
-		Addr: Addr{in, 1},
+		in:     []inText{in},
+		Addr:   Addr{in, 1},
 		prompt: "> ",
-		wasnl: true,
+		wasnl:  true,
 	}
 }
 
@@ -325,7 +325,7 @@ func isPunct(c rune) bool {
 	return unicode.IsSpace(c) || strings.ContainsRune("'←`<>{}&;[]|#^()", c)
 }
 
-func (l *lex) scanName(lval *yySymType,) int {
+func (l *lex) scanName(lval *yySymType) int {
 	for {
 		c := l.get()
 		if isPunct(c) || !l.notfirst && c == '=' {

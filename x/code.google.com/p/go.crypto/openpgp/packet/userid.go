@@ -13,7 +13,7 @@ import (
 // UserId contains text that is intended to represent the name and email
 // address of the key holder. See RFC 4880, section 5.11. By convention, this
 // takes the form "Full Name (Comment) <email@example.com>"
-type UserId struct {
+struct UserId {
 	Id string // By convention, this takes the form "Full Name (Comment) <email@example.com>" which is split out in the fields below.
 
 	Name, Comment, Email string

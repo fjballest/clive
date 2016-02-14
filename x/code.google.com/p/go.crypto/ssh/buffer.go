@@ -12,7 +12,7 @@ import (
 // buffer provides a linked list buffer for data exchange
 // between producer and consumer. Theoretically the buffer is
 // of unlimited capacity as it does no allocation of its own.
-type buffer struct {
+struct buffer {
 	// protects concurrent access to head, tail and closed
 	*sync.Cond
 
@@ -23,7 +23,7 @@ type buffer struct {
 }
 
 // An element represents a single link in a linked list.
-type element struct {
+struct element {
 	buf  []byte
 	next *element
 }

@@ -14,7 +14,7 @@ import "strconv"
 const BlockSize = 8
 
 // A Cipher is an instance of Blowfish encryption using a particular key.
-type Cipher struct {
+struct Cipher {
 	p              [18]uint32
 	s0, s1, s2, s3 [256]uint32
 }

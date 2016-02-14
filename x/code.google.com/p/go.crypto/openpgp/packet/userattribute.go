@@ -18,7 +18,7 @@ const UserAttrImageSubpacket = 1
 // beyond name, email and a text comment. In practice, user attributes are typically used
 // to store a signed thumbnail photo JPEG image of the user.
 // See RFC 4880, section 5.12.
-type UserAttribute struct {
+struct UserAttribute {
 	Contents []*OpaqueSubpacket
 }
 

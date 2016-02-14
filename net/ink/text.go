@@ -1,15 +1,15 @@
 package ink
 
 import (
-	"errors"
-	"strconv"
-	"clive/txt"
-	"clive/cmd"
 	"bytes"
-	"fmt"
+	"clive/cmd"
 	"clive/snarf"
-	"io"
+	"clive/txt"
+	"errors"
+	"fmt"
 	"html"
+	"io"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -73,17 +73,17 @@ import (
 //
 struct Txt {
 	*Ctlr
-	t *txt.Text
-	tag string		// NB: this is not the page element tag.
-	tagged, noedits bool	// It was a tag line but we no longer use it.
-	cundo bool
-	owner string
-	held []*Ev
-	lastev string
-	ngets int
-	getslk sync.Mutex
-	dirty, istemp bool
-	font string
+	t               *txt.Text
+	tag             string // NB: this is not the page element tag.
+	tagged, noedits bool   // It was a tag line but we no longer use it.
+	cundo           bool
+	owner           string
+	held            []*Ev
+	lastev          string
+	ngets           int
+	getslk          sync.Mutex
+	dirty, istemp   bool
+	font            string
 }
 
 // Prevent t from getting dirty despite viewer or user calls.
@@ -108,8 +108,8 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 		return tot, err
 	}
 	if t.tagged {
-		n, err := io.WriteString(w, `<div id="`+vid+`t" class="ui-widget-header">`+ 
-			html.EscapeString(t.tag) + `</div>`)
+		n, err := io.WriteString(w, `<div id="`+vid+`t" class="ui-widget-header">`+
+			html.EscapeString(t.tag)+`</div>`)
 		tot += int64(n)
 		if err != nil {
 			return tot, err
@@ -121,7 +121,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 		ctag = html.EscapeString(ctag)
 		ts = `
 			if(document.settag) {
-				document.settag(x, "`+ctag+`");
+				document.settag(x, "` + ctag + `");
 			}
 		`
 	}
@@ -132,7 +132,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 			}
 		`
 	}
-	wsaddr := `wss://localhost:`+servePort
+	wsaddr := `wss://localhost:` + servePort
 	n, err = io.WriteString(w, `
 <canvas id="`+vid+`c" class="`+t.Id+`c" width="100%" height="100%" style="border:1px;"></canvas>
 </div>
@@ -156,16 +156,16 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 
 // Create a new text control with the given tag line and body lines.
 func newTxt(tagged bool, tag string, lines ...string) *Txt {
-	lns := strings.Join(lines, "\n");
+	lns := strings.Join(lines, "\n")
 	if len(lns) == 0 || lns[len(lns)-1] != '\n' {
 		lns += "\n"
 	}
-	t := &Txt {
-		Ctlr: newCtlr("text"),
-		t: txt.NewEditing([]rune(lns)),
-		tag: tag,
+	t := &Txt{
+		Ctlr:   newCtlr("text"),
+		t:      txt.NewEditing([]rune(lns)),
+		tag:    tag,
 		tagged: tagged,
-		font: "r",
+		font:   "r",
 	}
 	t.t.SetMark("p0", 0)
 	t.t.SetMark("p1", 0)
@@ -183,7 +183,7 @@ func NewTxt(lines ...string) *Txt {
 // Known combinations are "rb", "tb", and "ri".
 func (t *Txt) SetFont(f string) {
 	t.font = f
-	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"font", f}}
+	t.out <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"font", f}}
 }
 
 func (t *Txt) sendLine(toid string, to chan<- *Ev, buf *bytes.Buffer) bool {
@@ -197,9 +197,9 @@ func (t *Txt) sendLine(toid string, to chan<- *Ev, buf *bytes.Buffer) bool {
 func (t *Txt) update(toid string) {
 	to := t.viewOut(toid)
 	if t.noedits {
-		to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"noedits"}}
+		to <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"noedits"}}
 	} else {
-		to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"edits"}}
+		to <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"edits"}}
 	}
 	ev := &Ev{Id: t.Id, Src: "", Args: []string{"reload"}}
 	if ok := to <- ev; !ok {
@@ -296,7 +296,7 @@ type handler func(*Ev) handler
 //	locked -> releasing
 //	releasing - > unlocked
 //
-// Held events are kept in t.held. 
+// Held events are kept in t.held.
 func (t *Txt) handler() {
 	h := t.handleUnlocked
 	for {
@@ -347,7 +347,7 @@ func (t *Txt) discard(src string) {
 		if t.held[i].Src == src {
 			copy(t.held[i:], t.held[i+1:])
 			t.held = t.held[:len(t.held)-1]
-		} else  {
+		} else {
 			i++
 		}
 	}
@@ -363,7 +363,7 @@ func (t *Txt) handleUnlocked(wev *Ev) handler {
 		t.owner = wev.Src
 		if wev.Src != "" && wev.Src != "app" {
 			to := t.viewOut(wev.Src)
-			to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"held"}}
+			to <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"held"}}
 		}
 		cmd.Dprintf("%s: locked by %s (%d)\n", t.Id, wev.Src, len(t.held))
 		return t.handleLocked
@@ -378,8 +378,8 @@ func (t *Txt) handleLocked(wev *Ev) handler {
 		panic("no owner for a locked text")
 	}
 	if wev.Src != t.owner {
-		if ev[0] == "end" || ev[0] == "quit"  || ev[0] == "start" || ev[0] == "intr" {
-			t.apply(wev);
+		if ev[0] == "end" || ev[0] == "quit" || ev[0] == "start" || ev[0] == "intr" {
+			t.apply(wev)
 			return t.handleLocked
 		}
 		if ev[0] == "tick" {
@@ -390,7 +390,7 @@ func (t *Txt) handleLocked(wev *Ev) handler {
 		if ev[0] == "hold" {
 			if t.owner != "app" {
 				to := t.viewOut(t.owner)
-				to <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"rlse"}}
+				to <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"rlse"}}
 			}
 			cmd.Dprintf("%s: releasing %s for %s\n", t.Id, t.owner, wev.Src)
 			return t.handleReleasing
@@ -399,7 +399,7 @@ func (t *Txt) handleLocked(wev *Ev) handler {
 	}
 	if ev[0] == "rlsed" || ev[0] == "end" || ev[0] == "quit" {
 		t.owner = ""
-		if ev[0] == "end"  || ev[0] == "quit" {
+		if ev[0] == "end" || ev[0] == "quit" {
 			t.apply(wev)
 		}
 		cmd.Dprintf("%s: unlocked\n", t.Id)
@@ -415,12 +415,12 @@ func (t *Txt) handleReleasing(wev *Ev) handler {
 		panic("no owner for a releasing text")
 	}
 	if wev.Src != t.owner {
-		if ev[0] == "end" || ev[0] == "quit"  || ev[0] == "start" || ev[0] == "intr" {
+		if ev[0] == "end" || ev[0] == "quit" || ev[0] == "start" || ev[0] == "intr" {
 			t.apply(wev)
 		} else {
 			t.held = append(t.held, wev)
 		}
-		return  t.handleReleasing
+		return t.handleReleasing
 	}
 	if ev[0] == "rlsed" {
 		t.owner = ""
@@ -428,7 +428,7 @@ func (t *Txt) handleReleasing(wev *Ev) handler {
 		return t.handleUnlocked
 	}
 	t.apply(wev)
-	if ev[0] == "end"  || ev[0] == "quit" {
+	if ev[0] == "end" || ev[0] == "quit" {
 		t.owner = ""
 		cmd.Dprintf("%s: unlocked\n", t.Id)
 		return t.handleUnlocked
@@ -504,14 +504,14 @@ func (t *Txt) apply(wev *Ev) {
 		t.update(wev.Src)
 	case "end":
 		cmd.Dprintf("%s: end %v\n", t.Id, wev.Src)
-		t.t.DelMark(wev.Src+"p0")
-		t.t.DelMark(wev.Src+"p1")
+		t.t.DelMark(wev.Src + "p0")
+		t.t.DelMark(wev.Src + "p1")
 		t.post(wev)
 		t.out <- &Ev{Id: t.Id, Src: wev.Src, Args: []string{
-			"delmark", wev.Src+"p0",
+			"delmark", wev.Src + "p0",
 		}}
 		t.out <- &Ev{Id: t.Id, Src: wev.Src, Args: []string{
-			"delmark", wev.Src+"p1",
+			"delmark", wev.Src + "p1",
 		}}
 		t.discard(wev.Src)
 	case "tick":
@@ -520,12 +520,12 @@ func (t *Txt) apply(wev *Ev) {
 			return
 		}
 		p0, err := strconv.Atoi(ev[1])
-		if err!=nil {
+		if err != nil {
 			cmd.Dprintf("%s: ins: %s\n", t.Id, err)
 			return
 		}
 		p1, err := strconv.Atoi(ev[2])
-		if err!=nil {
+		if err != nil {
 			cmd.Dprintf("%s: ins: %s\n", t.Id, err)
 			return
 		}
@@ -534,10 +534,10 @@ func (t *Txt) apply(wev *Ev) {
 		t.t.SetMark("p0", p0)
 		t.t.SetMark("p1", p1)
 		t.out <- &Ev{Id: t.Id, Src: wev.Src, Args: []string{
-			"mark", wev.Src+"p0", ev[1],
+			"mark", wev.Src + "p0", ev[1],
 		}}
 		t.out <- &Ev{Id: t.Id, Src: wev.Src, Args: []string{
-			"mark", wev.Src+"p1", ev[2],
+			"mark", wev.Src + "p1", ev[2],
 		}}
 		t.post(wev)
 	case "eins":
@@ -546,7 +546,7 @@ func (t *Txt) apply(wev *Ev) {
 			return
 		}
 		p0, err := strconv.Atoi(ev[2])
-		if err!=nil || t.wrongVers(ev[0], wev) {
+		if err != nil || t.wrongVers(ev[0], wev) {
 			cmd.Dprintf("%s: ins: %s\n", t.Id, err)
 			return
 		}
@@ -564,7 +564,7 @@ func (t *Txt) apply(wev *Ev) {
 		t.post(wev)
 	case "edel", "ecut":
 		p0, p1, err := t.p0p1(ev)
-		if err!=nil || t.wrongVers(ev[0], wev) {
+		if err != nil || t.wrongVers(ev[0], wev) {
 			return
 		}
 		if p1 <= p0 {
@@ -584,7 +584,7 @@ func (t *Txt) apply(wev *Ev) {
 		t.post(wev)
 	case "ecopy":
 		p0, p1, err := t.p0p1(ev)
-		if err!=nil || t.wrongVers(ev[0], wev) {
+		if err != nil || t.wrongVers(ev[0], wev) {
 			return
 		}
 		s := ""
@@ -596,7 +596,7 @@ func (t *Txt) apply(wev *Ev) {
 		}
 	case "epaste":
 		p0, _, err := t.p0p1(ev)
-		if err!=nil || t.wrongVers(ev[0], wev) {
+		if err != nil || t.wrongVers(ev[0], wev) {
 			return
 		}
 		s, err := snarf.Get()
@@ -649,7 +649,7 @@ func (t *Txt) Dirty() {
 	}
 	t.dirty = true
 	t.Unlock()
-	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"dirty"}}
+	t.out <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"dirty"}}
 }
 
 // Flag the text as clean
@@ -657,7 +657,7 @@ func (t *Txt) Clean() {
 	t.Lock()
 	t.dirty = false
 	t.Unlock()
-	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"clean"}}
+	t.out <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"clean"}}
 }
 
 // Prevent user edits
@@ -665,7 +665,7 @@ func (t *Txt) NoEdits() {
 	t.Lock()
 	t.noedits = true
 	t.Unlock()
-	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"noedits"}}
+	t.out <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"noedits"}}
 }
 
 // Permit user edits (default)
@@ -673,7 +673,7 @@ func (t *Txt) Edits() {
 	t.Lock()
 	t.noedits = false
 	t.Unlock()
-	t.out <- &Ev{Id: t.Id, Src: t.Id+"u", Args: []string{"edits"}}
+	t.out <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"edits"}}
 }
 
 func (t *Txt) getText() {
@@ -685,7 +685,7 @@ func (t *Txt) getText() {
 		done := func() {
 			c <- true
 		}
-		t.in <- &Ev{Id: t.Id, Src: "app", Args:[]string{"hold"}, fn: done}
+		t.in <- &Ev{Id: t.Id, Src: "app", Args: []string{"hold"}, fn: done}
 		<-c
 	}
 	t.ngets++
@@ -700,7 +700,7 @@ func (t *Txt) putText() {
 		done := func() {
 			c <- true
 		}
-		t.in <- &Ev{Id: t.Id, Src: "app", Args:[]string{"rlsed"}, fn: done}
+		t.in <- &Ev{Id: t.Id, Src: "app", Args: []string{"rlsed"}, fn: done}
 		<-c
 	}
 }
@@ -764,11 +764,11 @@ func (t *Txt) Ins(data []rune, off int) error {
 		if nw > 128 {
 			nw = 128
 		}
-		dat := data[tot:tot+nw]
+		dat := data[tot : tot+nw]
 		t.out <- &Ev{Id: t.Id, Src: "app", Args: []string{"einsing", string(dat)}}
 	}
 	t.out <- &Ev{Id: t.Id, Src: "app", Vers: v,
-			Args: []string{"einsdone", strconv.Itoa(off)}}
+		Args: []string{"einsdone", strconv.Itoa(off)}}
 	return nil
 }
 
@@ -779,7 +779,7 @@ func (t *Txt) Del(off, n int) []rune {
 	rs := t.t.Del(off, n)
 	cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 	wev := &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(),
-		Args: []string{"edel", strconv.Itoa(off), strconv.Itoa(off+len(rs))}}
+		Args: []string{"edel", strconv.Itoa(off), strconv.Itoa(off + len(rs))}}
 	t.out <- wev
 	t.post(wev)
 	return nil
@@ -874,11 +874,11 @@ func (t *Txt) MarkIns(mark string, data []rune) error {
 			nw = 128
 		}
 		t.out <- &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(),
-			Args: []string{"markinsing", mark, string(data[tot:tot+nw])},
+			Args: []string{"markinsing", mark, string(data[tot : tot+nw])},
 		}
 	}
 	t.out <- &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(),
-			Args: []string{"markinsdone", mark},
+		Args: []string{"markinsdone", mark},
 	}
 	return nil
 }

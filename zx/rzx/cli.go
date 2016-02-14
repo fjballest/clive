@@ -159,7 +159,7 @@ func (fs *Fs) getTrees() error {
 			fs.trees[s] = true
 		}
 	}
-	fs.trees["main"] = true	// by convention
+	fs.trees["main"] = true // by convention
 	return cerror(c.In)
 }
 

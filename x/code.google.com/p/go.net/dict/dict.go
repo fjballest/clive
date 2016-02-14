@@ -13,7 +13,7 @@ import (
 )
 
 // A Client represents a client connection to a dictionary server.
-type Client struct {
+struct Client {
 	text *textproto.Conn
 }
 
@@ -38,7 +38,7 @@ func (c *Client) Close() error {
 }
 
 // A Dict represents a dictionary available on the server.
-type Dict struct {
+struct Dict {
 	Name string // short name of dictionary
 	Desc string // long description
 }
@@ -77,7 +77,7 @@ func (c *Client) Dicts() ([]Dict, error) {
 }
 
 // A Defn represents a definition.
-type Defn struct {
+struct Defn {
 	Dict Dict   // Dict where definition was found
 	Word string // Word being defined
 	Text []byte // Definition text, typically multiple lines

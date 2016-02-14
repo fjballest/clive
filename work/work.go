@@ -9,13 +9,13 @@ import (
 	"sync"
 )
 
-type call struct {
+struct call {
 	fn    func()
 	donec chan bool
 }
 
 // A pool of work to do.
-type Pool struct {
+struct Pool {
 	calls  chan call
 	wg     sync.WaitGroup
 	closed bool

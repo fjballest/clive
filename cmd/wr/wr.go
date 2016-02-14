@@ -12,29 +12,28 @@ import (
 	"clive/zx"
 	"fmt"
 	"io"
-	"path/filepath"
 	fpath "path"
+	"path/filepath"
 )
 
-type xCmd struct {
+struct xCmd {
 	*opt.Flags
 	*cmd.Ctx
-
 }
 
 var (
-	opts = opt.New("{file}")
-	debugPars                                 bool
-	debugIndent                               bool
-	debugSplit                                bool
+	opts                                             = opt.New("{file}")
+	debugPars                                        bool
+	debugIndent                                      bool
+	debugSplit                                       bool
 	hflag, tflag, lflag, mflag, pflag, psflag, notux bool
-	outdir = "."
-	outfig = "./wrfig"
-	outpdf                    string
-	uname, oname, oext                        string
-	max  = 70
-	refsdir      = refs.Dir
-	wrs = map[string]func(*Text, int, io.Writer, string){
+	outdir                                           = "."
+	outfig                                           = "./wrfig"
+	outpdf                                           string
+	uname, oname, oext                               string
+	max                                              = 70
+	refsdir                                          = refs.Dir
+	wrs                                              = map[string]func(*Text, int, io.Writer, string){
 		".man":  wrtxt,
 		".ms":   wrroff,
 		".ps":   wrps,
@@ -164,7 +163,7 @@ func endFile(lnc chan<- string, tc <-chan *Text) error {
 	return out(t)
 }
 
-func wr(in <-chan interface{}) error {
+func wr(in <-chan face{}) error {
 	var lnc chan<- string
 	var tc <-chan *Text
 	singleout := oname != ""

@@ -16,7 +16,7 @@ const (
 
 // packetConn represents a transport that implements packet based
 // operations.
-type packetConn interface {
+interface packetConn {
 	// Encrypt and send a packet of data to the remote peer.
 	writePacket(packet []byte) error
 
@@ -29,7 +29,7 @@ type packetConn interface {
 
 // transport is the keyingTransport that implements the SSH packet
 // protocol.
-type transport struct {
+struct transport {
 	reader connectionState
 	writer connectionState
 
@@ -55,7 +55,7 @@ func (t *transport) getSessionID() []byte {
 
 // packetCipher represents a combination of SSH encryption/MAC
 // protocol.  A single instance should be used for one direction only.
-type packetCipher interface {
+interface packetCipher {
 	// writePacket encrypts the packet and writes it to w. The
 	// contents of the packet are generally scrambled.
 	writePacket(seqnum uint32, w io.Writer, rand io.Reader, packet []byte) error
@@ -69,7 +69,7 @@ type packetCipher interface {
 // connectionState represents one side (read or write) of the
 // connection. This is necessary because each direction has its own
 // keys, and can even have its own algorithms
-type connectionState struct {
+struct connectionState {
 	packetCipher
 	seqNum           uint32
 	dir              direction
@@ -182,7 +182,7 @@ func newTransport(rwc io.ReadWriteCloser, rand io.Reader, isClient bool) *transp
 	return t
 }
 
-type direction struct {
+struct direction {
 	ivTag     []byte
 	keyTag    []byte
 	macKeyTag []byte

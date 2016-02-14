@@ -10,7 +10,7 @@ import (
 )
 
 // A packetHandler represents the IPv4 datagram handler.
-type packetHandler struct {
+struct packetHandler {
 	c *net.IPConn
 	rawOpt
 }

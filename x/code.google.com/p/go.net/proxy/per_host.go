@@ -11,7 +11,7 @@ import (
 
 // A PerHost directs connections to a default Dialer unless the hostname
 // requested matches one of a number of exceptions.
-type PerHost struct {
+struct PerHost {
 	def, bypass Dialer
 
 	bypassNetworks []*net.IPNet

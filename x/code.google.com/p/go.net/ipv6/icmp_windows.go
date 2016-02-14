@@ -4,7 +4,7 @@
 
 package ipv6
 
-type sysICMPFilter struct {
+struct sysICMPFilter {
 	// TODO(mikio): Implement this
 }
 

@@ -38,8 +38,8 @@ package main
 import (
 	"bytes"
 	"clive/cmd/opt"
-	"clive/u"
 	"clive/dbg"
+	"clive/u"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -53,7 +53,7 @@ import (
 )
 
 // A command to be run under xcmd control.
-type Cmd struct {
+struct Cmd {
 	Ln      string // command line
 	Restart bool   // restart if the command dies
 	At      string // run at time times (cron format: min hour day month wday)

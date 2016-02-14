@@ -1,18 +1,18 @@
 package ink
 
 import (
-	"io"
+	"clive/cmd"
 	"fmt"
 	"html"
-	"clive/cmd"
+	"io"
 	"strconv"
 )
 
 // A single button
 struct Button {
-	Name string	// reported in events
-	Tag string		// shown in the button
-	Value *bool	// nil, or on/off value for check buttons
+	Name  string // reported in events
+	Tag   string // shown in the button
+	Value *bool  // nil, or on/off value for check buttons
 	value bool
 }
 
@@ -44,9 +44,9 @@ struct ButtonSet {
 // Create a Button Set
 // The buttons are check buttons if they have a pointer to a bool
 func NewButtonSet(button ...*Button) *ButtonSet {
-	bs := &ButtonSet {
+	bs := &ButtonSet{
 		Ctlr: newCtlr("buttons"),
-		els: button,
+		els:  button,
 	}
 	go func() {
 		for e := range bs.in {
@@ -70,24 +70,24 @@ func (bs *ButtonSet) WriteTo(w io.Writer) (tot int64, err error) {
 		bid := fmt.Sprintf("%s_b%d", vid, i)
 		bids = append(bids, bid)
 		if b.Value != nil {
-			n, err = io.WriteString(w, `<input type="checkbox" id="`+bid+`">` +
-				`<label for = "`+bid+`">` + 
-				html.EscapeString(b.Tag) + `</label>` + "\n")
+			n, err = io.WriteString(w, `<input type="checkbox" id="`+bid+`">`+
+				`<label for = "`+bid+`">`+
+				html.EscapeString(b.Tag)+`</label>`+"\n")
 		} else {
-			n, err = io.WriteString(w, `<button id="`+bid+`">` +
-				html.EscapeString(b.Tag) + `</button>` + "\n")
+			n, err = io.WriteString(w, `<button id="`+bid+`">`+
+				html.EscapeString(b.Tag)+`</button>`+"\n")
 		}
 		tot += int64(n)
 		if err != nil {
 			return tot, err
 		}
 	}
-	wsaddr := `wss://localhost:`+servePort
+	wsaddr := `wss://localhost:` + servePort
 	n, err = io.WriteString(w, `</div><script>
 		$(function(){
 			var d = $("#`+vid+`");
 			d.wsaddr = "`+wsaddr+`";
-			document.mkbuttons(d, "`+bs.Id+`", "`+vid+`");` + "\n")
+			document.mkbuttons(d, "`+bs.Id+`", "`+vid+`");`+"\n")
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -128,14 +128,14 @@ func (bs *ButtonSet) update(id string) {
 		if !b.value {
 			v = "off"
 		}
-		ev := &Ev{Id: bs.Id, Src: id+"u", Args: []string{
+		ev := &Ev{Id: bs.Id, Src: id + "u", Args: []string{
 			"Set", b.Name, fmt.Sprintf("%d", i), v}}
 		out <- ev
 	}
 }
 
 func (bs *ButtonSet) handle(wev *Ev) {
-	if wev==nil || len(wev.Args)<1 {
+	if wev == nil || len(wev.Args) < 1 {
 		return
 	}
 	ev := wev.Args

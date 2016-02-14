@@ -56,7 +56,7 @@ const (
 )
 
 // A Header represents an IPv4 header.
-type Header struct {
+struct Header {
 	Version  int         // protocol version
 	Len      int         // header length
 	TOS      int         // type-of-service

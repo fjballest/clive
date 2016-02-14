@@ -1,22 +1,22 @@
 package main
 
 import (
+	"clive/ch"
 	"clive/cmd"
-	"fmt"
-	"strings"
-	"strconv"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"io"
+	"strconv"
+	"strings"
 	"sync"
-	"clive/ch"
 )
 
 struct xFd {
 	sync.Mutex
-	ref int
-	fd *os.File
+	ref  int
+	fd   *os.File
 	path string
 	isIn bool
 }
@@ -27,9 +27,9 @@ struct pFd {
 
 struct bgCmds {
 	sync.Mutex
-	cmds map[*xEnv]bool
+	cmds  map[*xEnv]bool
 	waits map[string]chan bool
-	wall chan bool
+	wall  chan bool
 }
 
 // Execution environment for nodes.
@@ -39,17 +39,17 @@ struct bgCmds {
 // other names can be passed using environment variables that map
 // the name to the unix file descriptor.
 struct xEnv {
-	fds map[string]*xFd
+	fds   map[string]*xFd
 	waits []chan bool
 	bgtag string
-	isbg bool		// this cmd is a child of a bg command
-	xctx *cmd.Ctx
+	isbg  bool // this cmd is a child of a bg command
+	xctx  *cmd.Ctx
 }
 
-var bgcmds = bgCmds {
-	cmds: map[*xEnv]bool{},
+var bgcmds = bgCmds{
+	cmds:  map[*xEnv]bool{},
 	waits: map[string]chan bool{},
-	wall: make(chan bool),
+	wall:  make(chan bool),
 }
 
 func (xfd *xFd) addref() {
@@ -140,7 +140,7 @@ func (b *bgCmds) wait(tag string) {
 func newEnv() *xEnv {
 	return &xEnv{
 		fds: map[string]*xFd{
-			"in": &xFd{fd: os.Stdin, path: "in", ref: -1, isIn: true},
+			"in":  &xFd{fd: os.Stdin, path: "in", ref: -1, isIn: true},
 			"out": &xFd{fd: os.Stdout, path: "out", ref: -1, isIn: false},
 			"err": &xFd{fd: os.Stderr, path: "err", ref: -1, isIn: false},
 		},
@@ -149,7 +149,7 @@ func newEnv() *xEnv {
 
 func (x *xEnv) dup() *xEnv {
 	ne := &xEnv{
-		fds: map[string]*xFd{},
+		fds:  map[string]*xFd{},
 		isbg: x.isbg,
 	}
 	for k, f := range x.fds {
@@ -384,13 +384,13 @@ func (nd *Nd) varValue(x *xEnv) (names []string) {
 	}
 	v := cmd.GetEnv(nd.Args[0])
 	switch len(nd.Child) {
-	case 0:	// $a
+	case 0: // $a
 		if cmd.IsEnvMap(v) {
 			names = mapKeys(cmd.EnvMap(v))
 		} else {
 			names = cmd.EnvList(v)
 		}
-	case 1:	// $a[b]
+	case 1: // $a[b]
 		c := nd.Child[0]
 		names, err = c.expand1(x)
 		if err != nil {
@@ -584,7 +584,7 @@ func (nd *Nd) expandIO(x *xEnv) ([]string, error) {
 			fd.Close()
 		}
 		x.fds[nname] = pfd
-		return []string{"|>"+nname}, nil
+		return []string{"|>" + nname}, nil
 	case "<":
 		tag := nd.Args[1]
 		if strings.ContainsAny(tag, ";,") {
@@ -610,7 +610,7 @@ func (nd *Nd) expandIO(x *xEnv) ([]string, error) {
 			fd.Close()
 		}
 		x.fds[nname] = pfd
-		return []string{"|<"+nname}, nil
+		return []string{"|<" + nname}, nil
 	default:
 		panic("bad ioblk arg")
 	}
@@ -669,7 +669,7 @@ func (nd *Nd) eval(x *xEnv, argv ...string) error {
 func cleanenv(env []string) []string {
 	for i := 0; i < len(env); {
 		if /* strings.HasPrefix(env[i], "dot=") || strings.HasPrefix(env[i], "cliveio#") ||
-		   */	strings.HasPrefix(env[i], "clivebg") {
+		 */strings.HasPrefix(env[i], "clivebg") {
 			copy(env[i:], env[i+1:])
 			env = env[:len(env)-1]
 		} else {
@@ -728,7 +728,7 @@ func (nd *Nd) runCmd(x *xEnv) error {
 			if xfd.isIn {
 				dir = "<"
 			}
-			no := 3+len(xc.ExtraFiles)
+			no := 3 + len(xc.ExtraFiles)
 			ev := fmt.Sprintf("cliveio#%s=%s%d", cname, dir, no)
 			xc.Env = append(xc.Env, ev)
 			xc.ExtraFiles = append(xc.ExtraFiles, xfd.fd)
@@ -928,7 +928,7 @@ func (nd *Nd) runSet(x *xEnv) error {
 	}
 	name := nd.Args[0]
 	switch len(nd.Child) {
-	case 1:	// $name = ...
+	case 1: // $name = ...
 		c0 := nd.Child[0]
 		vals, err := c0.expand(x)
 		if err != nil {
@@ -936,7 +936,7 @@ func (nd *Nd) runSet(x *xEnv) error {
 		}
 		cmd.VWarn("set %s = %s", name, dnames(vals))
 		cmd.SetEnvList(name, vals)
-	case 2:	// $name[name] = ...
+	case 2: // $name[name] = ...
 		c0, c1 := nd.Child[0], nd.Child[1]
 		idxs, err := c0.expand1(x)
 		if err != nil {

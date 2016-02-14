@@ -6,12 +6,12 @@ package run
 import (
 	"clive/ch"
 	"clive/cmd"
+	"errors"
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"io"
-	"errors"
 	"strings"
-	"fmt"
 )
 
 // A running command.
@@ -19,16 +19,16 @@ import (
 // The status is reported by closing the Err channel using it.
 // You can use ch.Merge() to merge Out and Err into a single stream.
 struct Proc {
-	Id int
-	Args []string
-	In chan<- interface{}		// process input
-	Out <-chan interface{}	// process output
-	Err <-chan interface{}	// process errors
-	in <-chan interface{}
+	Id    int
+	Args  []string
+	In    chan<- face{} // process input
+	Out   <-chan face{} // process output
+	Err   <-chan face{} // process errors
+	in    <-chan face{}
 	donec chan bool
-	unix bool
-	x *exec.Cmd
-	ctx *cmd.Ctx
+	unix  bool
+	x     *exec.Cmd
+	ctx   *cmd.Ctx
 }
 
 func forkall(c *cmd.Ctx) {
@@ -43,7 +43,7 @@ func forkall(c *cmd.Ctx) {
 //	"out" set to a new Proc.Out chan
 //	"err" set to a new Proc.Err chan
 func PipeToUnix(args ...string) (*Proc, error) {
-	in := make(chan interface{})
+	in := make(chan face{})
 	c, err := runCmd(forkall, true, in, args...)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func PipeToUnix(args ...string) (*Proc, error) {
 //	"out" set to a new Proc.Out chan
 //	"err" set to a new Proc.Err chan
 func PipeTo(args ...string) (*Proc, error) {
-	in := make(chan interface{})
+	in := make(chan face{})
 	c, err := runCmd(forkall, false, in, args...)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func PipeTo(args ...string) (*Proc, error) {
 // the command, to let it adjust the context at will,
 // but in, out, and err are set as said no matter what adjust does.
 func PipeToCtx(adjust func(*cmd.Ctx), args ...string) (*Proc, error) {
-	in := make(chan interface{})
+	in := make(chan face{})
 	c, err := runCmd(adjust, false, in, args...)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func CtxCmd(adjust func(*cmd.Ctx), args ...string) (*Proc, error) {
 	return runCmd(adjust, false, nil, args...)
 }
 
-func (p *Proc) input(c <-chan interface{}, w io.WriteCloser) {
+func (p *Proc) input(c <-chan face{}, w io.WriteCloser) {
 	if p.unix {
 		ch.WriteBytes(w, c)
 	} else {
@@ -133,9 +133,9 @@ func (p *Proc) Wait() error {
 	return cerror(p.donec)
 }
 
-func (p *Proc) output(r io.Reader, c chan<-interface{}, iserr bool) {
+func (p *Proc) output(r io.Reader, c chan<- face{}, iserr bool) {
 	var err error
-	if p.unix || iserr {	// by now we use unix IO for stderr
+	if p.unix || iserr { // by now we use unix IO for stderr
 		_, _, err = ch.ReadBytes(r, c)
 	} else {
 		_, _, err = ch.ReadMsgs(r, c)
@@ -166,7 +166,7 @@ func (p *Proc) addIn(name string) io.Closer {
 		return nil
 	}
 	xc := p.x
-	no := 3+len(xc.ExtraFiles)
+	no := 3 + len(xc.ExtraFiles)
 	ev := fmt.Sprintf("cliveio#%s=<%d", name, no)
 	xc.Env = append(xc.Env, ev)
 	xc.ExtraFiles = append(xc.ExtraFiles, rfd)
@@ -187,7 +187,7 @@ func (p *Proc) addOut(name string) io.Closer {
 		return nil
 	}
 	xc := p.x
-	no := 3+len(xc.ExtraFiles)
+	no := 3 + len(xc.ExtraFiles)
 	ev := fmt.Sprintf("cliveio#%s=>%d", name, no)
 	xc.Env = append(xc.Env, ev)
 	xc.ExtraFiles = append(xc.ExtraFiles, wfd)
@@ -195,18 +195,18 @@ func (p *Proc) addOut(name string) io.Closer {
 	return wfd
 }
 
-func runCmd(adjust func(*cmd.Ctx), unix bool, in <-chan interface{}, args ...string) (*Proc, error) {
+func runCmd(adjust func(*cmd.Ctx), unix bool, in <-chan face{}, args ...string) (*Proc, error) {
 	if len(args) == 0 || len(args[0]) == 0 {
 		return nil, errors.New("no command name")
 	}
-	out := make(chan interface{})
-	ec := make(chan interface{})
+	out := make(chan face{})
+	ec := make(chan face{})
 	p := &Proc{
-		Args: args,
-		Out: out,
-		Err: ec,
-		in: in,
-		unix: unix,
+		Args:  args,
+		Out:   out,
+		Err:   ec,
+		in:    in,
+		unix:  unix,
 		donec: make(chan bool),
 	}
 	p.x = exec.Command(args[0], args[1:]...)
@@ -290,5 +290,5 @@ func runCmd(adjust func(*cmd.Ctx), unix bool, in <-chan interface{}, args ...str
 	adjust(p.ctx)
 	close(startc)
 	return p, nil
-	
+
 }

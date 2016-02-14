@@ -13,11 +13,11 @@ import (
 // A Conn represents a network endpoint that uses the IPv4 transport.
 // It is used to control basic IP-level socket options such as TOS and
 // TTL.
-type Conn struct {
+struct Conn {
 	genericOpt
 }
 
-type genericOpt struct {
+struct genericOpt {
 	net.Conn
 }
 
@@ -35,13 +35,13 @@ func NewConn(c net.Conn) *Conn {
 // options including multicasting.  It also provides datagram based
 // network I/O methods specific to the IPv4 and higher layer protocols
 // such as UDP.
-type PacketConn struct {
+struct PacketConn {
 	genericOpt
 	dgramOpt
 	payloadHandler
 }
 
-type dgramOpt struct {
+struct dgramOpt {
 	net.PacketConn
 }
 
@@ -109,7 +109,7 @@ func NewPacketConn(c net.PacketConn) *PacketConn {
 // including IPv4 header manipulation.  It also provides datagram
 // based network I/O methods specific to the IPv4 and higher layer
 // protocols that handle IPv4 datagram directly such as OSPF, GRE.
-type RawConn struct {
+struct RawConn {
 	genericOpt
 	dgramOpt
 	packetHandler

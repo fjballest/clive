@@ -11,7 +11,7 @@ import (
 	"unicode/utf8"
 )
 
-type count struct {
+struct count {
 	name string
 
 	msgs, lines, words, runes, bytes int64
@@ -20,7 +20,7 @@ type count struct {
 var (
 	lflag, wflag, rflag, bflag, nflag, mflag, aflag, ux bool
 
-	tots                                     []*count
+	tots []*count
 	opts = opt.New("{file}")
 )
 
@@ -66,7 +66,7 @@ func add(c *count) {
 	}
 }
 
-func cnt(in <-chan interface{}) {
+func cnt(in <-chan face{}) {
 	var c *count
 	var saved []byte
 	inword := false

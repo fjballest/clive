@@ -35,7 +35,7 @@ const (
 	smpState4
 )
 
-type smpState struct {
+struct smpState {
 	state                  int
 	a2, a3, b2, b3, pb, qb *big.Int
 	g2a, g3a               *big.Int

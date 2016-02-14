@@ -15,21 +15,21 @@ var (
 	debugYacc bool
 )
 
-func yprintf(x string, args ...interface{}) {
+func yprintf(x string, args ...face{}) {
 	if debugYacc {
 		cmd.Dprintf(x, args...)
 	}
 }
 
 //line parse.y:28
-type yySymType struct {
+struct yySymType {
 	yys  int
 	ival int64
 	uval uint64
 	fval float64
 	sval string
 	tval time.Time
-	vval interface{}
+	vval face{}
 }
 
 const INT = 57346
@@ -89,7 +89,6 @@ const yyErrCode = 2
 const yyInitialStackSize = 16
 
 //line parse.y:178
-
 var funcs = map[string]func(float64) float64{
 	"abs":   math.Abs,
 	"acos":  math.Acos,
@@ -232,17 +231,17 @@ var (
 	yyErrorVerbose = false
 )
 
-type yyLexer interface {
+interface yyLexer {
 	Lex(lval *yySymType) int
 	Error(s string)
 }
 
-type yyParser interface {
+interface yyParser {
 	Parse(yyLexer) int
 	Lookahead() int
 }
 
-type yyParserImpl struct {
+struct yyParserImpl {
 	lval  yySymType
 	stack [yyInitialStackSize]yySymType
 	char  int

@@ -9,6 +9,6 @@ func stack() string {
 	return string(buf[:runtime.Stack(buf, false)])
 }
 
-func nop(msg interface{}) {}
+func nop(msg face{}) {}
 
-var Debug func(msg interface{}) = nop
+var Debug func(msg face{}) = nop

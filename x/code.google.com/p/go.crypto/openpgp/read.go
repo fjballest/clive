@@ -35,7 +35,7 @@ func readArmored(r io.Reader, expectedType string) (body io.Reader, err error) {
 
 // MessageDetails contains the result of parsing an OpenPGP encrypted and/or
 // signed message.
-type MessageDetails struct {
+struct MessageDetails {
 	IsEncrypted              bool                // true if the message was encrypted.
 	EncryptedToKeyIds        []uint64            // the list of recipient key ids.
 	IsSymmetricallyEncrypted bool                // true if a passphrase could have decrypted the message.
@@ -72,7 +72,7 @@ type PromptFunction func(keys []Key, symmetric bool) ([]byte, error)
 
 // A keyEnvelopePair is used to store a private key with the envelope that
 // contains a symmetric key, encrypted with that key.
-type keyEnvelopePair struct {
+struct keyEnvelopePair {
 	key          Key
 	encryptedKey *packet.EncryptedKey
 }
@@ -294,7 +294,7 @@ func hashForSignature(hashId crypto.Hash, sigType packet.SignatureType) (hash.Ha
 // checkReader wraps an io.Reader from a LiteralData packet. When it sees EOF
 // it closes the ReadCloser from any SymmetricallyEncrypted packet to trigger
 // MDC checks.
-type checkReader struct {
+struct checkReader {
 	md *MessageDetails
 }
 
@@ -312,7 +312,7 @@ func (cr checkReader) Read(buf []byte) (n int, err error) {
 // signatureCheckReader wraps an io.Reader from a LiteralData packet and hashes
 // the data as it is read. When it sees an EOF from the underlying io.Reader
 // it parses and checks a trailing Signature packet and triggers any MDC checks.
-type signatureCheckReader struct {
+struct signatureCheckReader {
 	packets        *packet.Reader
 	h, wrappedHash hash.Hash
 	md             *MessageDetails

@@ -21,12 +21,12 @@ import (
 )
 
 // PublicKey represents an ElGamal public key.
-type PublicKey struct {
+struct PublicKey {
 	G, P, Y *big.Int
 }
 
 // PrivateKey represents an ElGamal private key.
-type PrivateKey struct {
+struct PrivateKey {
 	PublicKey
 	X *big.Int
 }

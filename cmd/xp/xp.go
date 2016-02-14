@@ -15,12 +15,12 @@ import (
 )
 
 var (
-	opts = opt.New("[expr]")
-	result interface{}
+	opts   = opt.New("[expr]")
+	result face{}
 	quiet  bool
 )
 
-func expr(s string) (result interface{}, err error) {
+func expr(s string) (result face{}, err error) {
 	defer func() {
 		if x := recover(); x != nil {
 			result = nil
@@ -38,11 +38,11 @@ func expr(s string) (result interface{}, err error) {
 	return l.result, nil
 }
 
-func xp(in <-chan interface{}) error {
+func xp(in <-chan face{}) error {
 	out := cmd.Out("out")
 	d := zx.Dir{"uname": "stdin"}
 	var sts, err error
-	var res interface{}
+	var res face{}
 	nln := 0
 	for m := range in {
 		ok := true
@@ -118,7 +118,7 @@ func main() {
 		cmd.Exit(nil)
 	}
 	if len(args) != 0 {
-		in := make(chan interface{}, 1)
+		in := make(chan face{}, 1)
 		in <- []byte(strings.Join(args, " ")+"\n")
 		close(in)
 		cmd.SetIn("in", in)

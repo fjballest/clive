@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-type chk struct {
+struct chk {
 	argv        []string
 	flags, args string
 }

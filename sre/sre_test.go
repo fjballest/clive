@@ -109,7 +109,7 @@ z`
 	}
 )
 
-type lexOut struct {
+struct lexOut {
 	tok rune
 	val []rune
 }

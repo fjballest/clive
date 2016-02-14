@@ -2,20 +2,20 @@ package main
 
 import (
 	"clive/cmd"
-	"strconv"
-	"sort"
-	"sync"
 	"clive/u"
 	"errors"
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
+	"sync"
 )
 
 var (
-	fnslk sync.Mutex
-	builtins = map[string]func(x*xEnv, args ...string)error{}
-	fns = map[string]*Nd{}
-	xpath []string
+	fnslk    sync.Mutex
+	builtins = map[string]func(x *xEnv, args ...string) error{}
+	fns      = map[string]*Nd{}
+	xpath    []string
 
 	errBreak = errors.New("break")
 )
@@ -93,7 +93,7 @@ func bcd(x *xEnv, args ...string) error {
 			err = cmd.Cd(d["path"])
 		}
 	case 0:
-		err = errors.New("missing argument");
+		err = errors.New("missing argument")
 	}
 	if err != nil {
 		cmd.Eprintf("cd: %s", err)
@@ -107,7 +107,7 @@ func bcd(x *xEnv, args ...string) error {
 func bpwd(x *xEnv, args ...string) error {
 	var err error
 	if len(args) > 1 {
-		err = errors.New("too many arguments");
+		err = errors.New("too many arguments")
 		cmd.Eprintf("cd: %s", err)
 		cmd.SetEnv("sts", err.Error())
 	} else {

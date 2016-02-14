@@ -38,7 +38,6 @@ interface Fataler {
 
 type TestFunc func(t Fataler, fs zx.Fs)
 
-
 var (
 	Verb   bool
 	Printf = dbg.FlagPrintf(&Verb)

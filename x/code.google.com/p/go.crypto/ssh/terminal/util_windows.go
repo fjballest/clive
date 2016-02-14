@@ -67,7 +67,7 @@ type (
 	}
 )
 
-type State struct {
+struct State {
 	mode uint32
 }
 

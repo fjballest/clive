@@ -20,7 +20,7 @@ import (
 // PublicSuffix function.
 var List cookiejar.PublicSuffixList = list{}
 
-type list struct{}
+struct list {}
 
 func (list) PublicSuffix(domain string) string {
 	ps, _ := PublicSuffix(domain)

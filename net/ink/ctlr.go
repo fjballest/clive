@@ -4,32 +4,32 @@
 package ink
 
 import (
-	"net/http"
 	"clive/cmd"
-	"golang.org/x/net/websocket"
 	"encoding/json"
-	"sync"
-	"html"
 	"errors"
 	"fmt"
+	"golang.org/x/net/websocket"
+	"html"
+	"net/http"
 	"os"
+	"sync"
 )
 
 // Events to/from a control
 // Args[0] is the event name
 // If the name starts with uppercase, it does reflect and all views
 // get an automatic copy of the event.
-struct Ev  {
+struct Ev {
 	Id, Src string   // element id and source view id (eg txt1, txt1_3)
 	Vers    int      // version of the control the event is for
 	Args    []string // events with string arguments
 	Data    []byte   // all other events
-	fn func()	// to run fn synchronously in even handlers
+	fn      func()   // to run fn synchronously in even handlers
 }
 
 struct view {
-	Id string		// set by the eid event
-	out chan *Ev	// events from/to this view
+	Id  string   // set by the eid event
+	out chan *Ev // events from/to this view
 }
 
 // Element controler, provides a chan interface for a page interface element,
@@ -37,19 +37,19 @@ struct view {
 // Supports multiple views and reflects events to synchronize them.
 // All controls export this public interface.
 struct Ctlr {
-	tag string
-	Id string	// unique id for the controlled element
-	closec chan bool
-	in, out chan *Ev	// input events (from the page), and output events
-	evs chan *Ev
+	tag     string
+	Id      string // unique id for the controlled element
+	closec  chan bool
+	in, out chan *Ev // input events (from the page), and output events
+	evs     chan *Ev
 	sync.Mutex
-	nb int
+	nb    int
 	views map[*view]bool
 }
 
 var (
 	idgen int
-	idlk sync.Mutex
+	idlk  sync.Mutex
 )
 
 func newId() int {
@@ -70,13 +70,13 @@ func parseEv(data []byte) (*Ev, error) {
 // This is done by all controls during their creation.
 func newCtlr(tag string) *Ctlr {
 	c := &Ctlr{
-		Id: fmt.Sprintf("%sx%dx%d", tag, os.Getpid(), newId()),
-		in: make(chan *Ev, 16),
-		out: make(chan *Ev, 16),
-		views: make(map[*view]bool), 
+		Id:     fmt.Sprintf("%sx%dx%d", tag, os.Getpid(), newId()),
+		in:     make(chan *Ev, 16),
+		out:    make(chan *Ev, 16),
+		views:  make(map[*view]bool),
 		closec: make(chan bool),
 	}
-	http.Handle("/ws/" + c.Id, AuthWebSocketHandler(c.server))
+	http.Handle("/ws/"+c.Id, AuthWebSocketHandler(c.server))
 	go c.reflector()
 	return c
 }
@@ -89,7 +89,7 @@ func (c *Ctlr) SetTag(s string) {
 	c.Lock()
 	defer c.Unlock()
 	c.tag = s
-	ev := &Ev{Id: c.Id, Src: "app", Args:[]string{"tag", html.EscapeString(s)}}
+	ev := &Ev{Id: c.Id, Src: "app", Args: []string{"tag", html.EscapeString(s)}}
 	// may deadlock if we don't post it in another proc
 	go func() {
 		c.out <- ev
@@ -109,14 +109,13 @@ func (c *Ctlr) Tag() string {
 	return c.tag
 }
 
-
 // Terminate the operation of the control and remove it from pages.
 func (c *Ctlr) Close() error {
 	close(c.closec)
 	close(c.in, "closed")
 	close(c.out, "closed")
 	close(c.evs, "closed")
-	http.Handle("/ws" + c.Id, nil)
+	http.Handle("/ws"+c.Id, nil)
 	return nil
 }
 
@@ -220,14 +219,14 @@ func (c *Ctlr) newViewId() string {
 	c.Lock()
 	defer c.Unlock()
 	c.nb++
-	return  fmt.Sprintf("%s_%d", c.Id, c.nb)
+	return fmt.Sprintf("%s_%d", c.Id, c.nb)
 }
 
 func (e *Ev) reflects() bool {
-	if e==nil || len(e.Args)==0 || len(e.Args[0])==0 {
+	if e == nil || len(e.Args) == 0 || len(e.Args[0]) == 0 {
 		return false
 	}
-	return e.Args[0][0]>='A' && e.Args[0][0]<='Z'
+	return e.Args[0][0] >= 'A' && e.Args[0][0] <= 'Z'
 }
 
 func (c *Ctlr) getViews() []*view {
@@ -302,7 +301,7 @@ func (c *Ctlr) server(ws *websocket.Conn) {
 			}
 		}
 	}()
-	var buf [8*1024]byte
+	var buf [8 * 1024]byte
 	for {
 		n, err := ws.Read(buf[0:])
 		if err != nil {
@@ -338,4 +337,3 @@ func (c *Ctlr) server(ws *websocket.Conn) {
 		c.in <- &Ev{Id: c.Id, Src: v.Id, Args: []string{"end"}}
 	}
 }
-

@@ -39,7 +39,7 @@ const (
 	Terr          // error string
 	Taddr         // file address (name, ln, ch)
 	Tdir          // map[string]string, directory entry
-	Tzx	// zx protocol msg
+	Tzx           // zx protocol msg
 	Tusr          // first user defined type value
 )
 
@@ -115,7 +115,6 @@ func UnpackString(b []byte) ([]byte, string, error) {
 	}
 	return b[sz:], string(b[:sz]), nil
 }
-
 
 func writeBytes(w io.Writer, tag uint32, typ uint16, b []byte) (int64, error) {
 	var hdr [hdrSz]byte
@@ -262,9 +261,9 @@ func WriteMsgs(w io.Writer, tag uint32, c <-chan face{}) (nbytes int64, nmsgs in
 			rerr = nil
 		}
 		err = rerr
-		if err == nil  && fl != nil {
+		if err == nil && fl != nil {
 			err = fl.Flush()
-		} 
+		}
 		if err != nil {
 			return
 		}

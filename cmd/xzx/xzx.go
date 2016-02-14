@@ -11,9 +11,9 @@ import (
 	"clive/dbg"
 	"clive/net/auth"
 	"clive/zx"
-	"clive/zx/zxc"
 	"clive/zx/rzx"
 	"clive/zx/zux"
+	"clive/zx/zxc"
 	fpath "path"
 	"path/filepath"
 	"strings"
@@ -21,12 +21,12 @@ import (
 
 var (
 	noauth, wsync bool
-	Zdebug bool
-	dprintf = cmd.Dprintf
-	vprintf = cmd.VWarn
+	Zdebug        bool
+	dprintf       = cmd.Dprintf
+	vprintf       = cmd.VWarn
 
-	opts  = opt.New("{spec}")
-	port, addr  string
+	opts       = opt.New("{spec}")
+	port, addr string
 )
 
 func main() {

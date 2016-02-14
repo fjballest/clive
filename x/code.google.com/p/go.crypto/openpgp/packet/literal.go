@@ -10,7 +10,7 @@ import (
 )
 
 // LiteralData represents an encrypted file. See RFC 4880, section 5.9.
-type LiteralData struct {
+struct LiteralData {
 	IsBinary bool
 	FileName string
 	Time     uint32 // Unix epoch time. Either creation time or modification time. 0 means undefined.

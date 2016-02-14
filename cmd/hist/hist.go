@@ -10,16 +10,16 @@ import (
 	"clive/zx"
 	"errors"
 	"fmt"
+	fpath "path"
 	"strings"
 	"time"
-	fpath "path"
 )
 
 var (
-	opts = opt.New("{file}")
+	opts                = opt.New("{file}")
 	force, all          bool
 	lflag, cflag, dflag bool
-	xcmd, dump           string
+	xcmd, dump          string
 
 	lastyear, lastday string
 
@@ -129,7 +129,7 @@ func report(dc chan zx.Dir, donec chan bool) {
 	close(donec, cerror(dc))
 }
 
-func hist(in <-chan interface{}) error {
+func hist(in <-chan face{}) error {
 	dc := make(chan zx.Dir)
 	ec := make(chan bool)
 	go report(dc, ec)

@@ -99,4 +99,3 @@ func PathCmp(path0, path1 string) int {
 	}
 	return 0
 }
-

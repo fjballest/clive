@@ -23,7 +23,7 @@ import (
 // should not be used for signing or encrypting. They are supported here only for
 // parsing version 3 key material and validating signatures.
 // See RFC 4880, section 5.5.2.
-type PublicKeyV3 struct {
+struct PublicKeyV3 {
 	CreationTime time.Time
 	DaysToExpire uint16
 	PubKeyAlgo   PublicKeyAlgorithm

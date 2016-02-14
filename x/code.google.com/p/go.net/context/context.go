@@ -61,7 +61,7 @@ import (
 //     foo, ok := ctx.Value(contextKey).(*Foo)
 //     return foo, ok
 //   }
-type Key struct {
+struct Key {
 	name string
 }
 
@@ -91,7 +91,7 @@ func (k Key) String() string {
 // across API boundaries.
 //
 // Context's methods may be called by multiple goroutines simultaneously.
-type Context interface {
+interface Context {
 	// Deadline returns the time when work done on behalf of this context
 	// should be canceled.  Deadline returns ok==false when no deadline is
 	// set.  Successive calls to Deadline return the same results.
@@ -130,7 +130,7 @@ type Context interface {
 	// Value returns the value associated with this context for key, or nil
 	// if no value is associated with key.  Successive calls to Value with
 	// the same key returns the same result.
-	Value(key Key) interface{}
+	Value(key Key) face{}
 }
 
 // Canceled is the error returned by Context.Err when the context is canceled.
@@ -143,12 +143,12 @@ var DeadlineExceeded = errors.New("context deadline exceeded")
 // A ctx is a Context that automatically propagates cancellation signals to
 // other ctxs (those created using this ctx as their parent).  A ctx also
 // manages its own deadline timer.
-type ctx struct {
+struct ctx {
 	parent Context       // set by newCtx
 	done   chan struct{} // closed by the first cancel call.  nil if uncancelable.
 
-	key Key         // set by WithValue
-	val interface{} // set by WithValue
+	key Key    // set by WithValue
+	val face{} // set by WithValue
 
 	deadline    time.Time // set by WithDeadline
 	deadlineSet bool      // set by WithDeadline
@@ -174,7 +174,7 @@ func (c *ctx) Err() error {
 	return c.err
 }
 
-func (c *ctx) Value(key Key) interface{} {
+func (c *ctx) Value(key Key) face{} {
 	if c.key == key {
 		return c.val
 	}
@@ -273,7 +273,7 @@ func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc) {
 //
 // Use context Values only for request-scoped data that transits processes and
 // APIs, not for passing optional parameters to functions.
-func WithValue(parent Context, k Key, v interface{}) Context {
+func WithValue(parent Context, k Key, v face{}) Context {
 	c := newCtx(parent, neverCanceled)
 	c.key, c.val = k, v
 	return c

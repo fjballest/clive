@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
-	"path"
 )
 
-type texFmt struct {
+struct texFmt {
 	lvl int
 	ps  int
 	*par

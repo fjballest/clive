@@ -1,12 +1,11 @@
 package ink
 
-
 import (
 	"clive/cmd"
 	"clive/net/auth"
 	"fmt"
-	"net/http"
 	"golang.org/x/net/websocket"
+	"net/http"
 	"strings"
 )
 
@@ -32,6 +31,7 @@ func checkOrigin(config *websocket.Config, req *http.Request) (err error) {
 	}
 	return err
 }
+
 // Authenticate a websocket before servicing it.
 func AuthWebSocketHandler(h websocket.Handler) http.HandlerFunc {
 	hndler := func(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +66,7 @@ func AuthWebSocketHandler(h websocket.Handler) http.HandlerFunc {
 // When TLS is disabled, or there's no key file, auth is considered ok.
 func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if auth.TLSserver==nil || !auth.Enabled {
+		if auth.TLSserver == nil || !auth.Enabled {
 			fn(w, r)
 			return
 		}
@@ -143,5 +143,4 @@ func serveLoginFor(proceedto string) {
 		fmt.Fprintf(w, "%s\n<p>\n", js)
 		fmt.Fprintf(w, `</body></html>`+"\n")
 	})
-} 
-
+}

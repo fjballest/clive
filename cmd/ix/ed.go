@@ -1,29 +1,29 @@
 package main
 
 import (
-	"fmt"
 	"clive/ch"
 	"clive/cmd"
 	"clive/cmd/run"
 	"clive/net/ink"
-	"time"
-	"strings"
-	"strconv"
-	"net/url"
-	"clive/zx"
 	"clive/txt"
-	fpath "path"
+	"clive/zx"
 	"errors"
+	"fmt"
+	"net/url"
+	fpath "path"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // command run within an edit
 struct Cmd {
-	ed *Ed
-	name string
-	mark string
+	ed    *Ed
+	name  string
+	mark  string
 	hasnl bool
-	p *run.Proc
-	all bool
+	p     *run.Proc
+	all   bool
 }
 
 struct Dot {
@@ -32,18 +32,19 @@ struct Dot {
 
 // edit
 struct Ed {
-	tag string
-	d zx.Dir
-	dot Dot
-	ix *IX
-	win *ink.Txt
-	winid string
+	tag     string
+	d       zx.Dir
+	dot     Dot
+	ix      *IX
+	win     *ink.Txt
+	winid   string
 	markgen int
-	gone bool
-	ncmds int
-	waitc chan func()
-	ctx *cmd.Ctx
-	temp bool	// don't save, don't ever flag as dirty
+	gone    bool
+	ncmds   int
+	waitc   chan func()
+	ctx     *cmd.Ctx
+	temp    bool // don't save, don't ever flag as dirty
+	iscmd   bool // it's a command win, used by the event loop
 }
 
 var notDirty = errors.New("not dirty")
@@ -98,7 +99,7 @@ func (ix *IX) goneEd(ed *Ed) bool {
 }
 
 func (ix *IX) newEd(tag string) *Ed {
-	win := ink.NewTxt();
+	win := ink.NewTxt()
 	win.SetTag(tag)
 	win.ClientDoesUndoRedo()
 	win.SetFont("t")
@@ -110,18 +111,19 @@ func (ix *IX) newCmds() *Ed {
 	tag := fmt.Sprintf("/ql/%d", ix.newId())
 	ed := ix.newEd(tag)
 	ed.temp = true
+	ed.iscmd = true
 	ix.Lock()
 	defer ix.Unlock()
 	ix.eds = append(ix.eds, ed)
 
-	// We can't make the cmdLoop the new ctx main func because:
+	// We can't make the editLoop the new ctx main func because:
 	// 1. commands may reopen the window and
 	// recreate it while commands run. So the context must
 	// wait for all outstanding commands to die.
 	// 2. the new windows must have their event loops in the same
 	// context, or changes in the NS/env/... will be gone.
 	ed.ctx = cmd.New(func() {
-		ed.cmdLoop()
+		ed.editLoop()
 		// new command loops are sent to waitc
 		for fn := range ed.waitc {
 			if fn != nil {
@@ -138,7 +140,7 @@ func (ix *IX) newEdit(path string) *Ed {
 	ix.Lock()
 	defer ix.Unlock()
 	ix.eds = append(ix.eds, ed)
-	ed.ctx = cmd.New(func(){
+	ed.ctx = cmd.New(func() {
 		cmd.ForkDot()
 		cmd.Cd(fpath.Dir(ed.tag))
 		cmd.Dprintf("edit %s dot %s\n", ed.tag, cmd.Dot())
@@ -176,7 +178,7 @@ func (ix *IX) reopen(ed *Ed) {
 	ed.win = win
 	ed.temp = true
 	ix.eds = append(ix.eds, ed)
-	ed.waitc <- ed.cmdLoop
+	ed.waitc <- ed.editLoop
 	ed.winid, _ = ix.pg.Add(win)
 }
 
@@ -244,10 +246,10 @@ func (ed *Ed) Addr() zx.Addr {
 	ln0, ln1 := ed.win.LinesAt(ed.dot.P0, ed.dot.P1)
 	return zx.Addr{
 		Name: ed.tag,
-		Ln0: ln0,
-		Ln1: ln1,
-		P0: ed.dot.P0,
-		P1: ed.dot.P1,
+		Ln0:  ln0,
+		Ln1:  ln1,
+		P0:   ed.dot.P0,
+		P1:   ed.dot.P1,
 	}
 }
 
@@ -262,12 +264,9 @@ func (ed *Ed) SetAddr(a zx.Addr) {
 	ed.win.SetSel(p0, p1)
 }
 
-func (c *Cmd) printf(f string, args ...interface{}) {
-	// XXX: TODO: if the win has no views, we must add
-	// a new view to show the output from the command.
-	// Or else, we might stop the command.
+func (c *Cmd) printf(f string, args ...face{}) {
 	s := fmt.Sprintf(f, args...)
-	if (!c.hasnl) {
+	if !c.hasnl {
 		s = "\n" + s
 		c.hasnl = true
 	}
@@ -355,22 +354,21 @@ func (ed *Ed) runCmd(at int, line string) {
 	}
 	args := strings.Fields(ln)
 	c := &Cmd{
-		name: args[0],
-		ed: ed,
-		mark: ed.newMark(at),
+		name:  args[0],
+		ed:    ed,
+		mark:  ed.newMark(at),
 		hasnl: hasnl,
 	}
 	if b := builtin(args[0]); b != nil {
 		cmd.Warn("run: %s", args)
 		b(c, args...)
 		// We don't del the output mark for builtins,
-		// Some will keep bg processes and their io()
-		// procs will del their marks,
-		// Those who don't, del the marks before they return
+		// Some will keep bg processes and must defer that.
+		// Thus builtins del their mark.
 		return
 	}
 	args = append([]string{"ql", "-uc"}, args...)
-	inkc := make(chan  face{})
+	inkc := make(chan face{})
 	setio := func(c *cmd.Ctx) {
 		c.ForkEnv()
 		c.ForkNS()
@@ -442,51 +440,6 @@ func (ed *Ed) click24(ev *ink.Ev) {
 		go ed.runCmd(pos, ev.Args[1])
 	} else {
 		go ed.look(ev.Args[1])
-	}
-}
-
-func (ed *Ed) cmdLoop() {
-	cmd.ForkDot()
-	cmd.ForkNS()
-	cmd.ForkEnv()
-	cmd.Dprintf("%s started\n", ed)
-	c := ed.win.Events()
-	for ev := range c {
-		ev := ev
-		switch ev.Args[0] {
-		case "focus":
-			ed.ix.dot = ed
-		case "tick":
-			if p0 := ed.win.Mark("p0"); p0 != nil {
-				ed.dot.P0 = p0.Off
-			}
-			if p1 := ed.win.Mark("p1"); p1 != nil {
-				ed.dot.P1 = p1.Off
-			}
-		case "click2", "click4":
-			ed.click24(ev)
-		case "end":
-			if len(ed.win.Views()) == 0 {
-				cmd.Dprintf("%s w/o views\n", ed)
-			}
-		case "quit":
-			n := ed.ix.delEd(ed)
-			cmd.Dprintf("%s terminated\n", ed)
-			close(c, "quit")
-			if n == 0 {
-				close(ed.waitc)
-			}
-			return
-		case "clear":
-			ed.clear()
-		case "eundo", "eredo":
-			ed.undoRedo(ev.Args[0] == "eredo")
-		}
-	}
-	cmd.Dprintf("%s terminated\n", ed)
-	n := ed.ix.delEd(ed)
-	if n == 0 {
-		close(ed.waitc)
 	}
 }
 
@@ -601,6 +554,11 @@ func (ed *Ed) load() error {
 }
 
 func (ed *Ed) editLoop() {
+	if ed.iscmd {
+		cmd.ForkDot()
+		cmd.ForkNS()
+		cmd.ForkEnv()
+	}
 	cmd.Dprintf("%s started\n", ed)
 	c := ed.win.Events()
 	for ev := range c {
@@ -634,10 +592,14 @@ func (ed *Ed) editLoop() {
 			ed.clear()
 		case "eundo", "eredo":
 			ed.undoRedo(ev.Args[0] == "eredo")
-		case "eins", "edel":
-			ed.win.Dirty()
-		case "save":
-			ed.save()
+		}
+		if !ed.iscmd {
+			switch ev.Args[0] {
+			case "eins", "edel":
+				ed.win.Dirty()
+			case "save":
+				ed.save()
+			}
 		}
 	}
 	cmd.Dprintf("%s terminated\n", ed)

@@ -25,7 +25,7 @@ const (
 
 // NewChannel represents an incoming request to a channel. It must either be
 // accepted for use by calling Accept, or rejected by calling Reject.
-type NewChannel interface {
+interface NewChannel {
 	// Accept accepts the channel creation request. It returns the Channel
 	// and a Go channel containing SSH requests. The Go channel must be
 	// serviced otherwise the Channel will hang.
@@ -46,7 +46,7 @@ type NewChannel interface {
 
 // A Channel is an ordered, reliable, flow-controlled, duplex stream
 // that is multiplexed over an SSH connection.
-type Channel interface {
+interface Channel {
 	// Read reads up to len(data) bytes from the channel.
 	Read(data []byte) (int, error)
 
@@ -77,7 +77,7 @@ type Channel interface {
 // Request is a request sent outside of the normal stream of
 // data. Requests can either be specific to an SSH channel, or they
 // can be global.
-type Request struct {
+struct Request {
 	Type      string
 	WantReply bool
 	Payload   []byte
@@ -143,7 +143,7 @@ const (
 
 // channel is an implementation of the Channel interface that works
 // with the mux class.
-type channel struct {
+struct channel {
 	// R/O after creation
 	chanType          string
 	extraData         []byte
@@ -167,7 +167,7 @@ type channel struct {
 	direction channelDirection
 
 	// Pending internal channel messages.
-	msg chan interface{}
+	msg chan face{}
 
 	// Since requests have no ID, there can be only one request
 	// with WantReply=true outstanding.  This lock is held by a
@@ -209,7 +209,7 @@ func (c *channel) writePacket(packet []byte) error {
 	return err
 }
 
-func (c *channel) sendMessage(msg interface{}) error {
+func (c *channel) sendMessage(msg face{}) error {
 	if debugMux {
 		log.Printf("send %d: %#v", c.mux.chanList.offset, msg)
 	}
@@ -438,7 +438,7 @@ func (m *mux) newChannel(chanType string, direction channelDirection, extraData 
 		extPending:       newBuffer(),
 		direction:        direction,
 		incomingRequests: make(chan *Request, 16),
-		msg:              make(chan interface{}, 16),
+		msg:              make(chan face{}, 16),
 		chanType:         chanType,
 		extraData:        extraData,
 		mux:              m,
@@ -450,7 +450,7 @@ func (m *mux) newChannel(chanType string, direction channelDirection, extraData 
 var errUndecided = errors.New("ssh: must Accept or Reject channel")
 var errDecidedAlready = errors.New("ssh: can call Accept or Reject only once")
 
-type extChannel struct {
+struct extChannel {
 	code uint32
 	ch   *channel
 }
@@ -586,7 +586,7 @@ func (ch *channel) ackRequest(ok bool) error {
 		return errUndecided
 	}
 
-	var msg interface{}
+	var msg face{}
 	if !ok {
 		msg = channelRequestFailureMsg{
 			PeersId: ch.remoteId,

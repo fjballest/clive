@@ -1,14 +1,14 @@
 package net
 
 import (
-	"testing"
-	"os"
-	"crypto/tls"
 	"clive/dbg"
+	"crypto/tls"
+	"os"
+	"testing"
 	"time"
 )
 
-type as struct {
+struct as {
 	addr, net, mach, svc string
 }
 
@@ -271,4 +271,3 @@ func TestTLSMux(t *testing.T) {
 		time.Sleep(60 * time.Second)
 	}
 }
-

@@ -1,34 +1,34 @@
 package cmd
 
 import (
-	"sync"
-	"io"
-	"sync/atomic"
-	"clive/dbg"
 	"clive/ch"
-	"runtime"
+	"clive/dbg"
+	"io"
 	"os"
-	"strings"
-	"strconv"
+	"runtime"
 	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
 )
 
-type ioChan struct {
+struct ioChan {
 	sync.Mutex
-	isIn bool
-	inc  <-chan interface{}
-	outc chan<- interface{}
+	isIn  bool
+	inc   <-chan face{}
+	outc  chan<- face{}
 	donec chan bool
-	fd io.Closer // will go in the future
-	ref  int32     // <0 means it's never closed.
-	name string
-	ux bool
-	uxfd int
+	fd    io.Closer // will go in the future
+	ref   int32     // <0 means it's never closed.
+	name  string
+	ux    bool
+	uxfd  int
 }
 
-type ioSet struct {
+struct ioSet {
 	sync.Mutex
-	ref  int32
+	ref int32
 	set map[string]*ioChan
 }
 
@@ -75,7 +75,7 @@ func (cr *ioChan) close() {
 // But It's worth considering.
 
 func (cr *ioChan) start() {
-	c := make(chan interface{})
+	c := make(chan face{})
 	if cr.uxfd < 0 {
 		close(c)
 		if cr.isIn {
@@ -131,7 +131,7 @@ func (cr *ioChan) start() {
 	}
 }
 
-func (io *ioSet) addIn(name string, c <-chan interface{}) *ioChan {
+func (io *ioSet) addIn(name string, c <-chan face{}) *ioChan {
 	io.Lock()
 	defer io.Unlock()
 	oc, ok := io.set[name]
@@ -139,13 +139,13 @@ func (io *ioSet) addIn(name string, c <-chan interface{}) *ioChan {
 		oc.close()
 	}
 	nc := &ioChan{name: name, ref: 1, inc: c, isIn: true, uxfd: -1}
-	nc.outc = make(chan interface{})
+	nc.outc = make(chan face{})
 	close(nc.outc, "not for output")
 	io.set[name] = nc
 	return nc
 }
 
-func (io *ioSet) addOut(name string, c chan<- interface{}) *ioChan {
+func (io *ioSet) addOut(name string, c chan<- face{}) *ioChan {
 	io.Lock()
 	defer io.Unlock()
 	oc, ok := io.set[name]
@@ -153,7 +153,7 @@ func (io *ioSet) addOut(name string, c chan<- interface{}) *ioChan {
 		oc.close()
 	}
 	nc := &ioChan{name: name, ref: 1, outc: c, isIn: false, uxfd: -1}
-	nc.inc = make(chan interface{})
+	nc.inc = make(chan face{})
 	close(nc.inc, "not for input")
 	io.set[name] = nc
 	return nc
@@ -167,7 +167,7 @@ func (io *ioSet) addUXIn(name string, fd int) *ioChan {
 		oc.close()
 	}
 	nc := &ioChan{name: name, ref: 1, isIn: true, uxfd: fd}
-	nc.outc = make(chan interface{})
+	nc.outc = make(chan face{})
 	close(nc.outc, "not for output")
 	io.set[name] = nc
 	return nc
@@ -182,13 +182,13 @@ func (io *ioSet) addUXOut(name string, fd int) *ioChan {
 		oc.close()
 	}
 	nc := &ioChan{name: name, ref: 1, isIn: false, uxfd: fd}
-	nc.inc = make(chan interface{})
+	nc.inc = make(chan face{})
 	close(nc.inc, "not for input")
 	io.set[name] = nc
 	return nc
 }
 
-func (io *ioSet) del(name string)  {
+func (io *ioSet) del(name string) {
 	io.Lock()
 	defer io.Unlock()
 	if c, ok := io.set[name]; ok {
@@ -277,7 +277,7 @@ func (io *ioSet) unixIO(name ...string) {
 		cr.ux = true
 		cr.Unlock()
 	}
-	
+
 }
 
 func (io *ioSet) addUXio() {
@@ -324,7 +324,7 @@ func mkIO() *ioSet {
 	nc.ref = -1
 	nc = io.addUXOut("err", 2)
 	nc.ref = -1
-	c := make(chan interface{})
+	c := make(chan face{})
 	close(c)
 	nc = io.addIn("null", c)
 	nc.outc = c

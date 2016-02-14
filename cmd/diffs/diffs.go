@@ -4,20 +4,20 @@
 package main
 
 import (
+	"bytes"
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx"
 	"errors"
 	"fmt"
-	"bytes"
 )
 
-type hash struct {
+struct hash {
 	lines  map[string]int
 	hlines []string
 }
 
-type file struct {
+struct file {
 	name  string
 	lines []int
 }
@@ -28,11 +28,11 @@ const (
 	oDel
 )
 
-type rep struct {
+struct rep {
 	what, i, j int
 }
 
-type xFiles struct {
+struct xFiles {
 	rpath  string
 	f      [2]file
 	h      hash
@@ -43,7 +43,7 @@ type xFiles struct {
 }
 
 var (
-	opts = opt.New("file [file]")
+	opts         = opt.New("file [file]")
 	lflag, qflag bool
 
 	errDiffs = errors.New("diffs")
@@ -137,17 +137,17 @@ func (x *xFiles) showreport() error {
 		case oEq:
 			if buf.Len() > 0 {
 				if a1.Ln0 == 0 {
-					a1.Ln0 = r.i+1+len(x.prefix)
+					a1.Ln0 = r.i + 1 + len(x.prefix)
 					n1 = 1
 				}
 				if a2.Ln0 == 0 {
-					a2.Ln0 = r.j+1+len(x.prefix)
+					a2.Ln0 = r.j + 1 + len(x.prefix)
 					n2 = 1
 				}
-				a1.Ln1 = a1.Ln0+n1-1
-				a2.Ln1 = a2.Ln0+n2-1
+				a1.Ln1 = a1.Ln0 + n1 - 1
+				a2.Ln1 = a2.Ln0 + n2 - 1
 				out <- []byte(fmt.Sprintf("#diff\t%s\t%s\n", a1, a2))
-				
+
 				if ok := out <- buf.Bytes(); !ok {
 					err = cerror(out)
 				}
@@ -161,7 +161,7 @@ func (x *xFiles) showreport() error {
 			}
 		case oAdd:
 			if a2.Ln0 == 0 {
-				a2.Ln0 = r.j+1+len(x.prefix)
+				a2.Ln0 = r.j + 1 + len(x.prefix)
 				n2++
 			} else {
 				n2++
@@ -170,7 +170,7 @@ func (x *xFiles) showreport() error {
 			err = errDiffs
 		case oDel:
 			if a1.Ln0 == 0 {
-				a1.Ln0= r.i+1+len(x.prefix)
+				a1.Ln0 = r.i + 1 + len(x.prefix)
 				n1++
 			} else {
 				n1++
@@ -181,15 +181,15 @@ func (x *xFiles) showreport() error {
 	}
 	if buf.Len() > 0 {
 		if a1.Ln0 == 0 {
-			a1.Ln0 = r.i+len(x.prefix)
+			a1.Ln0 = r.i + len(x.prefix)
 			n1 = 1
 		}
 		if a2.Ln0 == 0 {
-			a2.Ln0 = r.j+len(x.prefix)
+			a2.Ln0 = r.j + len(x.prefix)
 			n2 = 1
 		}
-		a1.Ln1 = a1.Ln0+n1-1
-		a2.Ln1 = a2.Ln0+n2-1
+		a1.Ln1 = a1.Ln0 + n1 - 1
+		a2.Ln1 = a2.Ln0 + n2 - 1
 		cmd.Printf("#diff\t%s\t%s\n", a1, a2)
 		if ok := out <- buf.Bytes(); !ok {
 			return err
@@ -249,7 +249,7 @@ func (x *xFiles) diff() error {
 	return err
 }
 
-func (x *xFiles) getFile(in <-chan interface{}, fno int) zx.Dir {
+func (x *xFiles) getFile(in <-chan face{}, fno int) zx.Dir {
 	cmd.Dprintf("getfile %d\n", fno)
 	for m := range in {
 		if e, ok := m.(error); ok {
@@ -269,7 +269,7 @@ func (x *xFiles) getFile(in <-chan interface{}, fno int) zx.Dir {
 	return nil
 }
 
-func (x *xFiles) getFiles(i1, i2 <-chan interface{}) (zx.Dir, zx.Dir) {
+func (x *xFiles) getFiles(i1, i2 <-chan face{}) (zx.Dir, zx.Dir) {
 	cmd.Dprintf("getfiles\n")
 	doselect {
 	case m, ok := <-i1:
@@ -309,7 +309,7 @@ func (x *xFiles) getFiles(i1, i2 <-chan interface{}) (zx.Dir, zx.Dir) {
 	}
 }
 
-func (x *xFiles) getDir(in <-chan interface{}) zx.Dir {
+func (x *xFiles) getDir(in <-chan face{}) zx.Dir {
 	for m := range in {
 		if e, ok := m.(error); ok {
 			cmd.Warn("%s", e)
@@ -325,7 +325,7 @@ func (x *xFiles) getDir(in <-chan interface{}) zx.Dir {
 	return nil
 }
 
-func (x *xFiles) getDirs(i1, i2 <-chan interface{}) (zx.Dir, zx.Dir) {
+func (x *xFiles) getDirs(i1, i2 <-chan face{}) (zx.Dir, zx.Dir) {
 	cmd.Dprintf("getdirs\n")
 	var d1, d2 zx.Dir
 	doselect {
@@ -381,7 +381,7 @@ func main() {
 	if ux {
 		cmd.UnixIO("out")
 	}
-	var i1, i2 <-chan interface{}
+	var i1, i2 <-chan face{}
 	switch len(args) {
 	case 1:
 		i1 = cmd.In("in")
@@ -415,7 +415,7 @@ func main() {
 			continue
 		case d1 == nil || (d2 != nil && cmp > 0):
 			d2["path"] = d2["Upath"]
-			_, err := cmd.Printf("#only %s\n",  d2.Fmt())
+			_, err := cmd.Printf("#only %s\n", d2.Fmt())
 			if err != nil {
 				close(i1, err)
 				close(i2, err)

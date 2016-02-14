@@ -4,20 +4,20 @@
 package test
 
 import (
-	"os/exec"
 	"bytes"
-	"testing"
 	"clive/dbg"
 	"clive/zx/fstest"
-	"strings"
 	"os"
+	"os/exec"
+	"strings"
+	"testing"
 )
 
 struct Run {
-	Line string
+	Line     string
 	Out, Err string
-	Fails bool
-	Ok bool	// if set, out, err and fails are ignored
+	Fails    bool
+	Ok       bool // if set, out, err and fails are ignored
 }
 
 var tdir = "/tmp/cmdtest"
@@ -67,7 +67,7 @@ func Cmd(t *testing.T, cmd string) (cout, cerr string, fails bool) {
 	if testing.Verbose() {
 		dbg.Printf("run %s\n", cmd)
 	}
-	x := exec.Command("sh", "-c", "cd "+tdir+"; " + cmd)
+	x := exec.Command("sh", "-c", "cd "+tdir+"; "+cmd)
 	x.Stdout = &bout
 	x.Stderr = &berr
 	if err := x.Start(); err != nil {

@@ -14,7 +14,7 @@ import (
 )
 
 // DialError is an error that occurs while dialling a websocket server.
-type DialError struct {
+struct DialError {
 	*Config
 	Err error
 }

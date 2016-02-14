@@ -54,13 +54,13 @@ const headerValueSeparator = "\x00"
 
 // Frame is a single SPDY frame in its unpacked in-memory representation. Use
 // Framer to read and write it.
-type Frame interface {
+interface Frame {
 	write(f *Framer) error
 }
 
 // ControlFrameHeader contains all the fields in a control frame header,
 // in its unpacked in-memory representation.
-type ControlFrameHeader struct {
+struct ControlFrameHeader {
 	// Note, high bit is the "Control" bit.
 	version   uint16 // spdy version number
 	frameType ControlFrameType
@@ -68,7 +68,7 @@ type ControlFrameHeader struct {
 	length    uint32 // length of data field
 }
 
-type controlFrame interface {
+interface controlFrame {
 	Frame
 	read(h ControlFrameHeader, f *Framer) error
 }
@@ -78,7 +78,7 @@ type StreamId uint32
 
 // SynStreamFrame is the unpacked, in-memory representation of a SYN_STREAM
 // frame.
-type SynStreamFrame struct {
+struct SynStreamFrame {
 	CFHeader             ControlFrameHeader
 	StreamId             StreamId
 	AssociatedToStreamId StreamId // stream id for a stream which this stream is associated to
@@ -88,7 +88,7 @@ type SynStreamFrame struct {
 }
 
 // SynReplyFrame is the unpacked, in-memory representation of a SYN_REPLY frame.
-type SynReplyFrame struct {
+struct SynReplyFrame {
 	CFHeader ControlFrameHeader
 	StreamId StreamId
 	Headers  http.Header
@@ -113,7 +113,7 @@ const (
 
 // RstStreamFrame is the unpacked, in-memory representation of a RST_STREAM
 // frame.
-type RstStreamFrame struct {
+struct RstStreamFrame {
 	CFHeader ControlFrameHeader
 	StreamId StreamId
 	Status   RstStreamStatus
@@ -143,7 +143,7 @@ const (
 
 // SettingsFlagIdValue is the unpacked, in-memory representation of the
 // combined flag/id/value for a setting in a SETTINGS frame.
-type SettingsFlagIdValue struct {
+struct SettingsFlagIdValue {
 	Flag  SettingsFlag
 	Id    SettingsId
 	Value uint32
@@ -151,13 +151,13 @@ type SettingsFlagIdValue struct {
 
 // SettingsFrame is the unpacked, in-memory representation of a SPDY
 // SETTINGS frame.
-type SettingsFrame struct {
+struct SettingsFrame {
 	CFHeader     ControlFrameHeader
 	FlagIdValues []SettingsFlagIdValue
 }
 
 // PingFrame is the unpacked, in-memory representation of a PING frame.
-type PingFrame struct {
+struct PingFrame {
 	CFHeader ControlFrameHeader
 	Id       uint32 // unique id for this ping, from server is even, from client is odd.
 }
@@ -172,14 +172,14 @@ const (
 )
 
 // GoAwayFrame is the unpacked, in-memory representation of a GOAWAY frame.
-type GoAwayFrame struct {
+struct GoAwayFrame {
 	CFHeader         ControlFrameHeader
 	LastGoodStreamId StreamId // last stream id which was accepted by sender
 	Status           GoAwayStatus
 }
 
 // HeadersFrame is the unpacked, in-memory representation of a HEADERS frame.
-type HeadersFrame struct {
+struct HeadersFrame {
 	CFHeader ControlFrameHeader
 	StreamId StreamId
 	Headers  http.Header
@@ -187,7 +187,7 @@ type HeadersFrame struct {
 
 // WindowUpdateFrame is the unpacked, in-memory representation of a
 // WINDOW_UPDATE frame.
-type WindowUpdateFrame struct {
+struct WindowUpdateFrame {
 	CFHeader        ControlFrameHeader
 	StreamId        StreamId
 	DeltaWindowSize uint32 // additional number of bytes to existing window size
@@ -196,7 +196,7 @@ type WindowUpdateFrame struct {
 // TODO: Implement credential frame and related methods.
 
 // DataFrame is the unpacked, in-memory representation of a DATA frame.
-type DataFrame struct {
+struct DataFrame {
 	// Note, high bit is the "Control" bit. Should be 0 for data frames.
 	StreamId StreamId
 	Flags    DataFlags
@@ -219,7 +219,7 @@ const (
 
 // Error contains both the type of error and additional values. StreamId is 0
 // if Error is not associated with a stream.
-type Error struct {
+struct Error {
 	Err      ErrorCode
 	StreamId StreamId
 }
@@ -245,7 +245,7 @@ var invalidRespHeaders = map[string]bool{
 
 // Framer handles serializing/deserializing SPDY frames, including compressing/
 // decompressing payloads.
-type Framer struct {
+struct Framer {
 	headerCompressionDisabled bool
 	w                         io.Writer
 	headerBuf                 *bytes.Buffer

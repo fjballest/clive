@@ -24,19 +24,19 @@ import (
 	"unicode/utf8"
 )
 
-type def struct {
+struct def {
 	name, help string
-	valp       interface{}
+	valp       face{}
 	argname    string
 }
 
 // A set of command line options
-type Flags struct {
+struct Flags {
 	Argv0       string // program name from the last call to Parse
 	usage       string // usage string w/o program name
 	defs        map[string]*def
-	plus, minus *def // defs for +int -int
-	xtra string	// extra usage info
+	plus, minus *def   // defs for +int -int
+	xtra        string // extra usage info
 }
 
 // Use Counter as the value for counting flags, which are bool flags
@@ -52,7 +52,7 @@ type Hexa int
 // A range: items are counted starting from 1
 // and neg. values are used to count backwards from the end:
 // 1,1 means everything.
-type Range struct {
+struct Range {
 	P0, P1 int
 }
 
@@ -239,7 +239,7 @@ func (f *Flags) Usage() {
 // argument, and should be something like "dir: do this with dir"
 // if the flag accepts a "dir" argument. This convention is used to generate
 // a good usage diagnostic.
-func (f *Flags) NewFlag(name, help string, vp interface{}) {
+func (f *Flags) NewFlag(name, help string, vp face{}) {
 	if vp == nil {
 		cmd.Fatal("flag %s: nil value", name)
 	}

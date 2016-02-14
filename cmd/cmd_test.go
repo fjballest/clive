@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"testing"
 	"clive/u"
 	"os"
+	"testing"
 )
 
 func TestCmd(t *testing.T) {

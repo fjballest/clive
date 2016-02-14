@@ -1,15 +1,15 @@
 package main
 
 import (
+	"clive/cmd"
 	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"time"
-	"clive/cmd"
 )
 
-type value interface{}
+interface value {}
 
 func Bval(v value) bool {
 	if n, ok := v.(bool); ok {

@@ -10,7 +10,7 @@ import (
 	"crypto/cipher"
 )
 
-type ocfbEncrypter struct {
+struct ocfbEncrypter {
 	b       cipher.Block
 	fre     []byte
 	outUsed int
@@ -76,7 +76,7 @@ func (x *ocfbEncrypter) XORKeyStream(dst, src []byte) {
 	}
 }
 
-type ocfbDecrypter struct {
+struct ocfbDecrypter {
 	b       cipher.Block
 	fre     []byte
 	outUsed int

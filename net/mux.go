@@ -1,14 +1,14 @@
 package net
 
 import (
-	"os"
-	"strings"
-	"net"
 	"clive/ch"
 	"clive/dbg"
 	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
+	"os"
+	"strings"
 	"sync"
 )
 
@@ -24,20 +24,20 @@ func MuxDial(addr string, tlscfg ...*tls.Config) (m *ch.Mux, err error) {
 		m = ch.NewMux(nc, true)
 		m.Tag = addr
 		go func() {
-			for _ = range m.In {}
+			for _ = range m.In {
+			}
 		}()
 		return m, nil
 	}
 	return nil, err
 }
 
-
 func serveMuxLoop(l net.Listener, rc chan *ch.Mux, ec chan bool,
-		addr, tag string, tlscfg *tls.Config) {
+	addr, tag string, tlscfg *tls.Config) {
 	if strings.HasPrefix(addr, "/tmp/") {
 		defer os.Remove(addr)
 	}
-	closes := map[io.Closer] bool{}
+	closes := map[io.Closer]bool{}
 	var closeslk sync.Mutex
 	go func() {
 		<-ec
@@ -72,7 +72,7 @@ func serveMuxLoop(l net.Listener, rc chan *ch.Mux, ec chan bool,
 		}
 		if tlscfg != nil {
 			fd = tls.Server(fd, tlscfg)
-		}		
+		}
 		mux := ch.NewMux(fd, false)
 		mux.Tag = raddr
 		if ok := rc <- mux; !ok {
@@ -99,7 +99,7 @@ func serveMux1(nw, host, port string, tlscfg *tls.Config) (c <-chan *ch.Mux, ec 
 	if nw == "tcp" && (host == "local" || host == "*" || host == "localhost") {
 		host = ""
 	}
-	addr := host+":"+port
+	addr := host + ":" + port
 	if nw == "unix" {
 		addr = port
 		tlscfg = nil
@@ -116,8 +116,8 @@ func serveMux1(nw, host, port string, tlscfg *tls.Config) (c <-chan *ch.Mux, ec 
 	return rc, rec, nil
 }
 
-func serveMuxBoth(c1 <-chan *ch.Mux, ec1 chan<-bool,
-		c2 <-chan *ch.Mux, ec2 chan bool) (c <-chan *ch.Mux, ec chan bool, err error) {
+func serveMuxBoth(c1 <-chan *ch.Mux, ec1 chan<- bool,
+	c2 <-chan *ch.Mux, ec2 chan bool) (c <-chan *ch.Mux, ec chan bool, err error) {
 	xc := make(chan *ch.Mux)
 	xec := make(chan bool)
 	go func() {
@@ -198,4 +198,3 @@ func MuxServe(addr string, tlscfg ...*tls.Config) (c <-chan *ch.Mux, ec chan boo
 		return nil, nil, ErrBadAddr
 	}
 }
-

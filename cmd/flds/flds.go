@@ -36,7 +36,7 @@ func parseRanges() error {
 	return nil
 }
 
-func flds(in <-chan interface{}, out chan<- interface{}) {
+func flds(in <-chan face{}, out chan<- face{}) {
 	osep := "\t"
 	if osep != "" {
 		osep = osep

@@ -54,7 +54,7 @@ var (
 	dontremove bool      // set during testing to prevent removes
 	_fs        zx.FullFs = &Fs{}
 
-	paranoia = false	// if true, would panic if removing outside /tmp/...
+	paranoia = false // if true, would panic if removing outside /tmp/...
 )
 
 func (fs *Fs) String() string {
@@ -93,11 +93,11 @@ func new(root string, attrs bool) (*Fs, error) {
 	}
 	tag := fpath.Base(root)
 	fs := &Fs{
-		root:   p,
-		attrs:  attrs,
-		Flag:   &dbg.Flag{Tag: tag},
-		Flags:  &zx.Flags{},
-		Stats:  &zx.Stats{},
+		root:  p,
+		attrs: attrs,
+		Flag:  &dbg.Flag{Tag: tag},
+		Flags: &zx.Flags{},
+		Stats: &zx.Stats{},
 	}
 	fs.Flags.Add("debug", &fs.Debug)
 	fs.Flags.AddRO("attrs", &fs.attrs)

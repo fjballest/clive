@@ -189,7 +189,7 @@ func MarshalAuthorizedKey(key PublicKey) []byte {
 }
 
 // PublicKey is an abstraction of different types of public keys.
-type PublicKey interface {
+interface PublicKey {
 	// Type returns the key's type, e.g. "ssh-rsa".
 	Type() string
 
@@ -203,7 +203,7 @@ type PublicKey interface {
 }
 
 // A Signer can create signatures that verify against a public key.
-type Signer interface {
+interface Signer {
 	// PublicKey returns an associated PublicKey instance.
 	PublicKey() PublicKey
 
@@ -267,7 +267,7 @@ func (r *rsaPublicKey) Verify(data []byte, sig *Signature) error {
 	return rsa.VerifyPKCS1v15((*rsa.PublicKey)(r), crypto.SHA1, digest, sig.Blob)
 }
 
-type rsaPrivateKey struct {
+struct rsaPrivateKey {
 	*rsa.PrivateKey
 }
 
@@ -355,7 +355,7 @@ func (k *dsaPublicKey) Verify(data []byte, sig *Signature) error {
 	return errors.New("ssh: signature did not verify")
 }
 
-type dsaPrivateKey struct {
+struct dsaPrivateKey {
 	*dsa.PrivateKey
 }
 
@@ -496,7 +496,7 @@ func (key *ecdsaPublicKey) Verify(data []byte, sig *Signature) error {
 	return errors.New("ssh: signature did not verify")
 }
 
-type ecdsaPrivateKey struct {
+struct ecdsaPrivateKey {
 	*ecdsa.PrivateKey
 }
 
@@ -525,7 +525,7 @@ func (k *ecdsaPrivateKey) Sign(rand io.Reader, data []byte) (*Signature, error) 
 // NewSignerFromKey takes a pointer to rsa, dsa or ecdsa PrivateKey
 // returns a corresponding Signer instance. EC keys should use P256,
 // P384 or P521.
-func NewSignerFromKey(k interface{}) (Signer, error) {
+func NewSignerFromKey(k face{}) (Signer, error) {
 	var sshKey Signer
 	switch t := k.(type) {
 	case *rsa.PrivateKey:
@@ -546,7 +546,7 @@ func NewSignerFromKey(k interface{}) (Signer, error) {
 
 // NewPublicKey takes a pointer to rsa, dsa or ecdsa PublicKey
 // and returns a corresponding ssh PublicKey instance. EC keys should use P256, P384 or P521.
-func NewPublicKey(k interface{}) (PublicKey, error) {
+func NewPublicKey(k face{}) (PublicKey, error) {
 	var sshKey PublicKey
 	switch t := k.(type) {
 	case *rsa.PublicKey:
@@ -577,7 +577,7 @@ func ParsePrivateKey(pemBytes []byte) (Signer, error) {
 
 // ParseRawPrivateKey returns a private key from a PEM encoded private key. It
 // supports RSA (PKCS#1), DSA (OpenSSL), and ECDSA private keys.
-func ParseRawPrivateKey(pemBytes []byte) (interface{}, error) {
+func ParseRawPrivateKey(pemBytes []byte) (face{}, error) {
 	block, _ := pem.Decode(pemBytes)
 	if block == nil {
 		return nil, errors.New("ssh: no key found")

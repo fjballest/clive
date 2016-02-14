@@ -37,7 +37,7 @@ const stateSize = laneSize * numLanes
 // capacity = 2*outputSize to ensure that finding a collision of size outputSize requires
 // O(2^{outputSize/2}) computations (the birthday lower bound). Future standards may modify the
 // capacity/outputSize ratio to allow for more output with lower cryptographic security.
-type digest struct {
+struct digest {
 	a          [numLanes]uint64 // main state of the hash
 	outputSize int              // desired output size in bytes
 	capacity   int              // number of bytes to leave untouched during squeeze/absorb

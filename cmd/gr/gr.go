@@ -11,22 +11,22 @@ import (
 	"clive/cmd/opt"
 	"clive/sre"
 	"clive/zx"
-	"unicode/utf8"
-	"sort"
 	"fmt"
+	"sort"
+	"unicode/utf8"
 )
 
-type rgRep struct {
+struct rgRep {
 	name   string
 	p0, p1 int
 	b      bytes.Buffer
 }
 
 var (
-	opts = opt.New("rexp [rexp]")
+	opts    = opt.New("rexp [rexp]")
 	found   bool
 	re, ere *sre.ReProg
-	out     chan<- interface{}
+	out     chan<- face{}
 
 	sflag, aflag, mflag, vflag, fflag, lflag, xflag, eflag bool
 )
@@ -129,7 +129,7 @@ func nlines(s string) int {
 	return n
 }
 
-func gr(in <-chan interface{}) {
+func gr(in <-chan face{}) {
 	nln := 0
 	ffound := false
 	name := "stdin"
@@ -176,7 +176,7 @@ func gr(in <-chan interface{}) {
 				if xflag {
 					ok = out <- s // fwd as a string
 					if !ok {
-						break;
+						break
 					}
 				}
 				continue
@@ -207,7 +207,7 @@ func gr(in <-chan interface{}) {
 		}
 	}
 	rgreport(rg)
-	
+
 }
 
 func okp(p, n int) int {
@@ -264,7 +264,7 @@ func xreport(rs []rune, rg sre.Range) {
 	}
 }
 
-type gRange struct {
+struct gRange {
 	sre.Range
 	matches bool
 }
@@ -303,7 +303,7 @@ func matches(rs []rune) []gRange {
 	return rgs
 }
 
-func fullgr(in <-chan interface{}) {
+func fullgr(in <-chan face{}) {
 	ffound := false
 	name := "stdin"
 	off := 0
@@ -324,7 +324,7 @@ func fullgr(in <-chan interface{}) {
 			rs := []rune(s)
 			matches := matches(rs)
 			for _, rg := range matches {
-			cmd.Dprintf("\tmatch %v\n", rg)
+				cmd.Dprintf("\tmatch %v\n", rg)
 				if vflag && rg.matches || !vflag && !rg.matches {
 					if xflag {
 						xreport(rs, rg.Range)
@@ -410,7 +410,7 @@ func main() {
 			cmd.Fatal(err)
 		}
 	}
-	var in <-chan interface{}
+	var in <-chan face{}
 	out = cmd.Out("out")
 	if !fflag {
 		in = cmd.Lines(cmd.In("in"))

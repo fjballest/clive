@@ -33,7 +33,7 @@ const (
 )
 
 // digest represents the partial evaluation of a checksum.
-type digest struct {
+struct digest {
 	s  [5]uint32       // running context
 	x  [BlockSize]byte // temporary buffer
 	nx int             // index into x

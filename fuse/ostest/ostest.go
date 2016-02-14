@@ -6,15 +6,15 @@ package ostest
 
 import (
 	"bytes"
-	"clive/mblk/rwtest"
 	"clive/dbg"
+	"clive/mblk/rwtest"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	fpath "path"
 	"sort"
 	"strings"
-	fpath "path"
 	"testing"
 	"time"
 )
@@ -37,14 +37,14 @@ import (
 */
 
 // Usually testing.T or testing.B
-type Fataler interface {
-	Fatalf(format string, args ...interface{})
-	Logf(format string, args ...interface{})
+interface Fataler {
+	Fatalf(format string, args ...face{})
+	Logf(format string, args ...face{})
 	Fail()
 }
 
 var (
-	xt     int64
+	xt int64
 
 	// directories created
 	Dirs = [...]string{"/a", "/a/b", "/a/b/c", "/d", "/e", "/e/f"}
@@ -58,7 +58,7 @@ var (
 	Repeats = 1
 )
 
-func printf(x string, arg ...interface{}) {
+func printf(x string, arg ...face{}) {
 	if testing.Verbose() {
 		dbg.Printf(x, arg...)
 	}
@@ -306,7 +306,7 @@ func AsAFile(t Fataler, dirs ...string) {
 	}
 }
 
-type StatTest struct {
+struct StatTest {
 	Path  string
 	Res   string
 	Fails bool
@@ -401,7 +401,7 @@ func Gets(t Fataler, dirs ...string) {
 	}
 }
 
-type PutTest struct {
+struct PutTest {
 	Path  string
 	Mode  string
 	Fails bool
@@ -536,7 +536,7 @@ func Removes(t Fataler, dirs ...string) {
 	}
 }
 
-type WstatTest struct {
+struct WstatTest {
 	Path  string
 	Mode  os.FileMode
 	Mtime int64

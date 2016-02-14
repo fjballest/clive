@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type par struct {
+struct par {
 	sc     chan<- string
 	dc     chan bool
 	right  bool
@@ -18,7 +18,7 @@ type par struct {
 	i0, in string
 }
 
-type roffFmt struct {
+struct roffFmt {
 	lvl int
 	*par
 }

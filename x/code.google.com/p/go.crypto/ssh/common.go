@@ -107,13 +107,13 @@ func findCommonCipher(clientCiphers []string, serverCiphers []string) (commonCip
 	return
 }
 
-type directionAlgorithms struct {
+struct directionAlgorithms {
 	Cipher      string
 	MAC         string
 	Compression string
 }
 
-type algorithms struct {
+struct algorithms {
 	kex     string
 	hostKey string
 	w       directionAlgorithms
@@ -172,7 +172,7 @@ const minRekeyThreshold uint64 = 256
 
 // Config contains configuration data common to both ServerConfig and
 // ClientConfig.
-type Config struct {
+struct Config {
 	// Rand provides the source of entropy for cryptographic
 	// primitives. If Rand is nil, the cryptographic random reader
 	// in package crypto/rand will be used.
@@ -286,7 +286,7 @@ func newCond() *sync.Cond { return sync.NewCond(new(sync.Mutex)) }
 
 // window represents the buffer available to clients
 // wishing to write to a channel.
-type window struct {
+struct window {
 	*sync.Cond
 	win          uint32 // RFC 4254 5.2 says the window size can grow to 2^32-1
 	writeWaiters int

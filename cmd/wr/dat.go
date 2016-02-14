@@ -71,12 +71,12 @@ const (
 	CodeMark = "[code"
 )
 
-type eKeys struct {
+struct eKeys {
 	el   *Elem
 	keys map[string]bool
 }
 
-type Text struct {
+struct Text {
 	*scan
 	Elems   []*Elem
 	bib     *refs.Bib
@@ -93,7 +93,7 @@ type Text struct {
 	pprintf, iprintf, sprintf dbg.PrintFunc
 }
 
-type Elem struct {
+struct Elem {
 	Kind      Kind
 	Data      string  // in figs the file name, in pics the pic text
 	Textchild []*Elem // child text for inlined formats
@@ -110,7 +110,7 @@ type Elem struct {
 	lno   int
 }
 
-type scan struct {
+struct scan {
 	lnc   chan string
 	last  string
 	saved bool

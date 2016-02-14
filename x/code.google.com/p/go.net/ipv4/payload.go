@@ -7,7 +7,7 @@ package ipv4
 import "net"
 
 // A payloadHandler represents the IPv4 datagram payload handler.
-type payloadHandler struct {
+struct payloadHandler {
 	net.PacketConn
 	rawOpt
 }

@@ -8,7 +8,7 @@ import (
 	"net"
 )
 
-type direct struct{}
+struct direct {}
 
 // Direct is a direct proxy: one that makes network connections directly.
 var Direct = direct{}

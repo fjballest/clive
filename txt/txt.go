@@ -7,8 +7,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"sync"
 	"sort"
+	"sync"
 )
 
 // edit type
@@ -29,7 +29,7 @@ const (
 /*
 	Edition operation
 */
-type Edit struct {
+struct Edit {
 	Op    Tedit  // Eins | Edel
 	Off   int    // offset for the edit
 	Data  []rune // data inserted or deleted
@@ -39,8 +39,8 @@ type Edit struct {
 /*
 	A position kept in text despite insertions/removals
 */
-type Mark struct {
-	Name string
+struct Mark {
+	Name     string
 	Off      int
 	equaltoo bool
 }
@@ -48,7 +48,7 @@ type Mark struct {
 /*
 	The basic text interface as supplied by this package.
 */
-type Interface interface {
+interface Interface {
 	Len() int
 	Ins(data []rune, off int) error
 	Del(off, n int) []rune
@@ -60,7 +60,7 @@ type Interface interface {
 /*
 	Undoable text
 */
-type Edition interface {
+interface Edition {
 	Interface
 	Undo() *Edit
 	Redo() *Edit
@@ -71,20 +71,20 @@ type Edition interface {
 	Text kept in a series of rune slices with insert, delete,
 	marks, undo, and redo.
 */
-type Text struct {
+struct Text {
 	data   [][]rune
 	edits  []*Edit
 	nedits int // edits applied in edits
 	sz     int
 	marks  map[string]*Mark
-	mark *Mark
+	mark   *Mark
 	seek   seek
 	contd  bool
 	vers   int
 	sync.Mutex
 }
 
-type seek struct {
+struct seek {
 	off, i, n int
 }
 
@@ -456,7 +456,7 @@ func (t *Text) Marks() []string {
 		ms = append(ms, k)
 	}
 	sort.Sort(sort.StringSlice(ms))
-	return ms	
+	return ms
 }
 
 /*
@@ -649,7 +649,6 @@ func (t *Text) Getc(off int) rune {
 	return d[t.seek.i][t.seek.n]
 }
 
-
 /*
 	Return the line number at the given offset
 */
@@ -675,7 +674,8 @@ func (t *Text) LinesAt(p0, p1 int) (int, int) {
 	tot, ln := 0, 1
 	ln0, ln1 := 1, 1
 	wasnl := false
-Loop:	for _, d := range t.data {
+Loop:
+	for _, d := range t.data {
 		for _, r := range d {
 			if tot == p1 {
 				break Loop
@@ -723,7 +723,8 @@ func (t *Text) LinesOffs(ln0, ln1 int) (int, int) {
 	if ln == ln0 {
 		off0 = 0
 	}
-Loop:	for _, d := range t.data {
+Loop:
+	for _, d := range t.data {
 		for _, r := range d {
 			tot++
 			if r == '\n' {

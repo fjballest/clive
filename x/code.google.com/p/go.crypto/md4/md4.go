@@ -29,7 +29,7 @@ const (
 )
 
 // digest represents the partial evaluation of a checksum.
-type digest struct {
+struct digest {
 	s   [4]uint32
 	x   [_Chunk]byte
 	nx  int

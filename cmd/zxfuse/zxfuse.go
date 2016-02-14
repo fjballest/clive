@@ -4,29 +4,31 @@
 package main
 
 import (
-	"clive/cmd/opt"
 	"clive/cmd"
-	"clive/zx"
-	"clive/zx/zxc"
-	"clive/zx/zux"
-	"clive/zx/rzx"
-	"clive/zx/zxfs"
-	"strings"
-	"clive/net/auth"
+	"clive/cmd/opt"
 	fs "clive/fuse"
+	"clive/net/auth"
 	"clive/x/bazil.org/fuse"
+	"clive/zx"
+	"clive/zx/rzx"
+	"clive/zx/zux"
+	"clive/zx/zxc"
+	"clive/zx/zxfs"
+	"io"
+	"strings"
+	"time"
 )
 
 var (
-	addr         string
-	mntdir       = "/n/zx"
-	rflag bool
+	addr   string
+	mntdir = "/n/zx"
+	rflag  bool
 
 	verb, xdebug bool
 
-	nocache             bool
-	xaddr               string
-	opts                = opt.New("addr|dir [mntdir] &")
+	nocache bool
+	xaddr   string
+	opts    = opt.New("addr|dir [mntdir] &")
 )
 
 func main() {
@@ -40,7 +42,7 @@ func main() {
 	opts.NewFlag("n", "no caching", &nocache)
 	opts.NewFlag("x", "addr: re-export locally the mounted tree to this address", &xaddr)
 	args := opts.Parse()
-	fuse.Debug = func(m interface{}) {
+	fuse.Debug = func(m face{}) {
 		if fs.Debug {
 			cmd.Eprintf("fuse: %v\n", m)
 		}
@@ -89,7 +91,7 @@ func main() {
 	if err != nil {
 		cmd.Fatal("serve: %s", err)
 	}
-	srv.Debug  = xdebug
+	srv.Debug = xdebug
 	if err := srv.Serve("main", xfs); err != nil {
 		cmd.Warn("serve: %s: %s", xaddr, err)
 	}
@@ -98,7 +100,23 @@ func main() {
 	cmd.Warn("mount %s: %s %s %s %s", mntdir, addr, method, rs[rflag], cs[!nocache])
 	err = zxfs.MountServer(xfs, mntdir)
 	if err != nil {
-		cmd.Fatal("mount error: %s", err)
+		cmd.Warn("%s %s: mount error: %s", mntdir, addr, err)
+	} else {
+		cmd.Warn("%s %s: unmounted: exiting", mntdir, addr)
 	}
-	cmd.Warn("%s %s unmounted: exiting", mntdir, addr)
+	if cfs := xfs.(io.Closer); cfs != nil {
+		wc := make(chan bool)
+		go func() {
+			cmd.Warn("%s %s: closing", mntdir, addr)
+			cfs.Close()
+			wc <- true
+		}()
+		select {
+		case <-wc:
+			cmd.Warn("%s %s: closed", mntdir, addr)
+		case <-time.After(5 * time.Second):
+			cmd.Warn("%s %s: close timed out", mntdir, addr)
+		}
+	}
+	cmd.Exit(err)
 }

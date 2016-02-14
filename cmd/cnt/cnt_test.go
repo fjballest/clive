@@ -1,22 +1,22 @@
 package main
 
 import (
-	"testing"
-	"clive/dbg"
 	"clive/cmd/test"
+	"clive/dbg"
+	"testing"
 )
 
 var (
-	debug bool
+	debug   bool
 	dprintf = dbg.FlagPrintf(&debug)
 
 	runs = []test.Run{
-		test.Run {
+		test.Run{
 			Line: `echo ☺ | rf | cnt -u`,
 			Out: `       1        1        1        2        4  in
 `,
 		},
-		test.Run {
+		test.Run{
 			Line: `(echo z☺ ; echo a b) | rf | cnt -u`,
 			Out: `       1        2        3        7        9  in
 `,

@@ -14,13 +14,13 @@ import (
 )
 
 // A Dialer is a means to establish a connection.
-type Dialer interface {
+interface Dialer {
 	// Dial connects to the given address via the proxy.
 	Dial(network, addr string) (c net.Conn, err error)
 }
 
 // Auth contains authentication parameters that specific Dialers may require.
-type Auth struct {
+struct Auth {
 	User, Password string
 }
 

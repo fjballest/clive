@@ -66,7 +66,7 @@ func (f *par) printParCmd(ss ...string) {
 	}
 }
 
-func (f *par) printCmd(fmts string, arg ...interface{}) {
+func (f *par) printCmd(fmts string, arg ...face{}) {
 	f.closePar()
 	fmt.Fprintf(f.out, fmts, arg...)
 }

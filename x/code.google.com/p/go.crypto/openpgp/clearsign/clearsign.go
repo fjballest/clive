@@ -25,7 +25,7 @@ import (
 
 // A Block represents a clearsigned message. A signature on a Block can
 // be checked by passing Bytes into openpgp.CheckDetachedSignature.
-type Block struct {
+struct Block {
 	Headers          textproto.MIMEHeader // Optional message headers
 	Plaintext        []byte               // The original message text
 	Bytes            []byte               // The signed message
@@ -167,7 +167,7 @@ func Decode(data []byte) (b *Block, rest []byte) {
 //
 // When closed, an armored signature is created and written to complete the
 // message.
-type dashEscaper struct {
+struct dashEscaper {
 	buffered *bufio.Writer
 	h        hash.Hash
 	hashType crypto.Hash

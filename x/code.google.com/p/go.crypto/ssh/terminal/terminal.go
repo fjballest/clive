@@ -12,7 +12,7 @@ import (
 
 // EscapeCodes contains escape sequences that can be written to the terminal in
 // order to achieve different styles of text.
-type EscapeCodes struct {
+struct EscapeCodes {
 	// Foreground colors
 	Black, Red, Green, Yellow, Blue, Magenta, Cyan, White []byte
 
@@ -35,7 +35,7 @@ var vt100EscapeCodes = EscapeCodes{
 
 // Terminal contains the state for running a VT100 terminal that is capable of
 // reading lines of input.
-type Terminal struct {
+struct Terminal {
 	// AutoCompleteCallback, if non-null, is called for each keypress with
 	// the full input line and the current position of the cursor (in
 	// bytes, as an index into |line|). If it returns ok=false, the key
@@ -659,7 +659,7 @@ func (t *Terminal) SetSize(width, height int) {
 }
 
 // stRingBuffer is a ring buffer of strings.
-type stRingBuffer struct {
+struct stRingBuffer {
 	// entries contains max elements.
 	entries []string
 	max     int

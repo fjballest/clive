@@ -1,17 +1,17 @@
 package cmd
 
 import (
-	"clive/u"
-	"clive/ns"
 	"clive/dbg"
-	"sync"
+	"clive/ns"
+	"clive/u"
+	"clive/zx"
+	"fmt"
 	"os"
 	fpath "path"
-	"fmt"
-	"clive/zx"
+	"sync"
 )
 
-type cwd struct {
+struct cwd {
 	path string // "" means use the OS one.
 	sync.Mutex
 }
@@ -48,7 +48,7 @@ func (c *cwd) set(d string) error {
 	c.Lock()
 	defer c.Unlock()
 	c.path = d
-	os.Chdir(d)	// in case it exists and we exec...
+	os.Chdir(d) // in case it exists and we exec...
 	return nil
 }
 
@@ -67,7 +67,7 @@ func (c *cwd) dup() *cwd {
 
 func mkNS() *ns.NS {
 	s := GetEnv("NS")
-	if s == ""  {
+	if s == "" {
 		nsf := fpath.Join(u.Home, "NS")
 		if fi, err := os.Stat(nsf); err == nil && !fi.IsDir() {
 			s = nsf

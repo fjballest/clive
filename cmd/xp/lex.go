@@ -44,24 +44,23 @@ const (
 	tSright  tok = SRIGHT
 )
 
-type lex struct {
+struct lex {
 	in     []rune
 	p0, p1 int
 
 	wasfunc, wasattr bool
-	result           interface{}
+	result           face{}
 }
 
 var (
 	debugLex bool
 )
 
-func lprintf(x string, args ...interface{}) {
+func lprintf(x string, args ...face{}) {
 	if debugLex {
 		cmd.Dprintf(x, args...)
 	}
 }
-
 
 func newLex(input string) *lex {
 	return &lex{

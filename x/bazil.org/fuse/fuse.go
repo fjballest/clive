@@ -94,7 +94,7 @@ import (
 )
 
 // A Conn represents a connection to a mounted FUSE file system.
-type Conn struct {
+struct Conn {
 	// Ready is closed when the mount is complete or has failed.
 	Ready <-chan struct{}
 
@@ -134,7 +134,7 @@ func Mount(dir string) (*Conn, error) {
 // A Request represents a single FUSE request received from the kernel.
 // Use a type switch to determine the specific kind.
 // A request of unrecognized type will have concrete type *Header.
-type Request interface {
+interface Request {
 	// Hdr returns the Header associated with this request.
 	Hdr() *Header
 
@@ -160,7 +160,7 @@ type HandleID uint64
 const RootID NodeID = rootID
 
 // A Header describes the basic information sent in every request.
-type Header struct {
+struct Header {
 	Conn *Conn     `json:"-"` // connection this request was received on
 	ID   RequestID // unique ID for request
 	Node NodeID    // file or directory the request is about
@@ -193,7 +193,7 @@ type Error error
 //
 // Operations may return an error value that implements ErrorNumber to
 // control what specific error number (errno) to return.
-type ErrorNumber interface {
+interface ErrorNumber {
 	// Errno returns the the error number (errno) for this error.
 	Errno() Errno
 }
@@ -270,7 +270,7 @@ var maxWrite = 64 * 1024
 var bufSize = 4096 + maxWrite
 
 // a message represents the bytes of a single FUSE message
-type message struct {
+struct message {
 	conn *Conn
 	buf  []byte    // all bytes
 	hdr  *inHeader // header
@@ -335,7 +335,7 @@ func fileMode(unixMode uint32) os.FileMode {
 	return mode
 }
 
-type noOpcode struct {
+struct noOpcode {
 	Opcode uint32
 }
 
@@ -343,7 +343,7 @@ func (m noOpcode) String() string {
 	return fmt.Sprintf("No opcode %v", m.Opcode)
 }
 
-type malformedMessage struct {
+struct malformedMessage {
 }
 
 func (malformedMessage) String() string {
@@ -802,7 +802,7 @@ unrecognized:
 	return &h, fmt.Errorf("unrecognized mesage")
 }
 
-type bugShortKernelWrite struct {
+struct bugShortKernelWrite {
 	Written int64
 	Length  int64
 	Error   string
@@ -849,7 +849,7 @@ func (c *Conn) respondData(out *outHeader, n uintptr, data []byte) {
 }
 
 // An InitRequest is the first request sent on a FUSE file system.
-type InitRequest struct {
+struct InitRequest {
 	Header       `json:"-"`
 	Major        uint32
 	Minor        uint32
@@ -862,7 +862,7 @@ func (r *InitRequest) String() string {
 }
 
 // An InitResponse is the response to an InitRequest.
-type InitResponse struct {
+struct InitResponse {
 	MaxReadahead uint32
 	Flags        InitFlags
 	MaxWrite     uint32
@@ -886,7 +886,7 @@ func (r *InitRequest) Respond(resp *InitResponse) {
 }
 
 // A StatfsRequest requests information about the mounted file system.
-type StatfsRequest struct {
+struct StatfsRequest {
 	Header `json:"-"`
 }
 
@@ -912,7 +912,7 @@ func (r *StatfsRequest) Respond(resp *StatfsResponse) {
 }
 
 // A StatfsResponse is the response to a StatfsRequest.
-type StatfsResponse struct {
+struct StatfsResponse {
 	Blocks  uint64 // Total data blocks in file system.
 	Bfree   uint64 // Free blocks in file system.
 	Bavail  uint64 // Free blocks in file system if you're not root.
@@ -929,7 +929,7 @@ func (r *StatfsResponse) String() string {
 
 // An AccessRequest asks whether the file can be accessed
 // for the purpose specified by the mask.
-type AccessRequest struct {
+struct AccessRequest {
 	Header `json:"-"`
 	Mask   uint32
 }
@@ -946,7 +946,7 @@ func (r *AccessRequest) Respond() {
 }
 
 // An Attr is the metadata for a single file or directory.
-type Attr struct {
+struct Attr {
 	Inode  uint64      // inode number
 	Size   uint64      // size in bytes
 	Blocks uint64      // size in blocks
@@ -1015,7 +1015,7 @@ func (a *Attr) attr() (out attr) {
 }
 
 // A GetattrRequest asks for the metadata for the file denoted by r.Node.
-type GetattrRequest struct {
+struct GetattrRequest {
 	Header `json:"-"`
 }
 
@@ -1035,7 +1035,7 @@ func (r *GetattrRequest) Respond(resp *GetattrResponse) {
 }
 
 // A GetattrResponse is the response to a GetattrRequest.
-type GetattrResponse struct {
+struct GetattrResponse {
 	AttrValid time.Duration // how long Attr can be cached
 	Attr      Attr          // file attributes
 }
@@ -1045,7 +1045,7 @@ func (r *GetattrResponse) String() string {
 }
 
 // A GetxattrRequest asks for the extended attributes associated with r.Node.
-type GetxattrRequest struct {
+struct GetxattrRequest {
 	Header `json:"-"`
 
 	// Maximum size to return.
@@ -1085,7 +1085,7 @@ func (r *GetxattrRequest) RespondError(err Error) {
 }
 
 // A GetxattrResponse is the response to a GetxattrRequest.
-type GetxattrResponse struct {
+struct GetxattrResponse {
 	Xattr []byte
 }
 
@@ -1094,7 +1094,7 @@ func (r *GetxattrResponse) String() string {
 }
 
 // A ListxattrRequest asks to list the extended attributes associated with r.Node.
-type ListxattrRequest struct {
+struct ListxattrRequest {
 	Header   `json:"-"`
 	Size     uint32 // maximum size to return
 	Position uint32 // offset within attribute list
@@ -1119,7 +1119,7 @@ func (r *ListxattrRequest) Respond(resp *ListxattrResponse) {
 }
 
 // A ListxattrResponse is the response to a ListxattrRequest.
-type ListxattrResponse struct {
+struct ListxattrResponse {
 	Xattr []byte
 }
 
@@ -1136,7 +1136,7 @@ func (r *ListxattrResponse) Append(names ...string) {
 }
 
 // A RemovexattrRequest asks to remove an extended attribute associated with r.Node.
-type RemovexattrRequest struct {
+struct RemovexattrRequest {
 	Header `json:"-"`
 	Name   string // name of extended attribute
 }
@@ -1157,7 +1157,7 @@ func (r *RemovexattrRequest) RespondError(err Error) {
 }
 
 // A SetxattrRequest asks to set an extended attribute associated with a file.
-type SetxattrRequest struct {
+struct SetxattrRequest {
 	Header `json:"-"`
 
 	// Flags can make the request fail if attribute does/not already
@@ -1197,7 +1197,7 @@ func (r *SetxattrRequest) RespondError(err Error) {
 }
 
 // A LookupRequest asks to look up the given name in the directory named by r.Node.
-type LookupRequest struct {
+struct LookupRequest {
 	Header `json:"-"`
 	Name   string
 }
@@ -1222,7 +1222,7 @@ func (r *LookupRequest) Respond(resp *LookupResponse) {
 }
 
 // A LookupResponse is the response to a LookupRequest.
-type LookupResponse struct {
+struct LookupResponse {
 	Node       NodeID
 	Generation uint64
 	EntryValid time.Duration
@@ -1235,7 +1235,7 @@ func (r *LookupResponse) String() string {
 }
 
 // An OpenRequest asks to open a file or directory
-type OpenRequest struct {
+struct OpenRequest {
 	Header `json:"-"`
 	Dir    bool // is this Opendir?
 	Flags  OpenFlags
@@ -1256,7 +1256,7 @@ func (r *OpenRequest) Respond(resp *OpenResponse) {
 }
 
 // A OpenResponse is the response to a OpenRequest.
-type OpenResponse struct {
+struct OpenResponse {
 	Handle HandleID
 	Flags  OpenResponseFlags
 }
@@ -1266,7 +1266,7 @@ func (r *OpenResponse) String() string {
 }
 
 // A CreateRequest asks to create and open a file (not a directory).
-type CreateRequest struct {
+struct CreateRequest {
 	Header `json:"-"`
 	Name   string
 	Flags  OpenFlags
@@ -1298,7 +1298,7 @@ func (r *CreateRequest) Respond(resp *CreateResponse) {
 
 // A CreateResponse is the response to a CreateRequest.
 // It describes the created node and opened handle.
-type CreateResponse struct {
+struct CreateResponse {
 	LookupResponse
 	OpenResponse
 }
@@ -1308,7 +1308,7 @@ func (r *CreateResponse) String() string {
 }
 
 // A MkdirRequest asks to create (but not open) a directory.
-type MkdirRequest struct {
+struct MkdirRequest {
 	Header `json:"-"`
 	Name   string
 	Mode   os.FileMode
@@ -1334,7 +1334,7 @@ func (r *MkdirRequest) Respond(resp *MkdirResponse) {
 }
 
 // A MkdirResponse is the response to a MkdirRequest.
-type MkdirResponse struct {
+struct MkdirResponse {
 	LookupResponse
 }
 
@@ -1343,7 +1343,7 @@ func (r *MkdirResponse) String() string {
 }
 
 // A ReadRequest asks to read from an open file.
-type ReadRequest struct {
+struct ReadRequest {
 	Header `json:"-"`
 	Dir    bool // is this Readdir?
 	Handle HandleID
@@ -1362,7 +1362,7 @@ func (r *ReadRequest) Respond(resp *ReadResponse) {
 }
 
 // A ReadResponse is the response to a ReadRequest.
-type ReadResponse struct {
+struct ReadResponse {
 	Data []byte
 }
 
@@ -1370,7 +1370,7 @@ func (r *ReadResponse) String() string {
 	return fmt.Sprintf("Read %d", len(r.Data))
 }
 
-type jsonReadResponse struct {
+struct jsonReadResponse {
 	Len uint64
 }
 
@@ -1382,7 +1382,7 @@ func (r *ReadResponse) MarshalJSON() ([]byte, error) {
 }
 
 // A ReleaseRequest asks to release (close) an open file handle.
-type ReleaseRequest struct {
+struct ReleaseRequest {
 	Header       `json:"-"`
 	Dir          bool // is this Releasedir?
 	Handle       HandleID
@@ -1404,7 +1404,7 @@ func (r *ReleaseRequest) Respond() {
 // A DestroyRequest is sent by the kernel when unmounting the file system.
 // No more requests will be received after this one, but it should still be
 // responded to.
-type DestroyRequest struct {
+struct DestroyRequest {
 	Header `json:"-"`
 }
 
@@ -1420,7 +1420,7 @@ func (r *DestroyRequest) Respond() {
 
 // A ForgetRequest is sent by the kernel when forgetting about r.Node
 // as returned by r.N lookup requests.
-type ForgetRequest struct {
+struct ForgetRequest {
 	Header `json:"-"`
 	N      uint64
 }
@@ -1435,7 +1435,7 @@ func (r *ForgetRequest) Respond() {
 }
 
 // A Dirent represents a single directory entry.
-type Dirent struct {
+struct Dirent {
 	// Inode this entry names.
 	Inode uint64
 
@@ -1516,7 +1516,7 @@ func AppendDirent(data []byte, dir Dirent) []byte {
 }
 
 // A WriteRequest asks to write to an open file.
-type WriteRequest struct {
+struct WriteRequest {
 	Header
 	Handle HandleID
 	Offset int64
@@ -1528,7 +1528,7 @@ func (r *WriteRequest) String() string {
 	return fmt.Sprintf("Write [%s] %#x %d @%d fl=%v", &r.Header, r.Handle, len(r.Data), r.Offset, r.Flags)
 }
 
-type jsonWriteRequest struct {
+struct jsonWriteRequest {
 	Handle HandleID
 	Offset int64
 	Len    uint64
@@ -1555,7 +1555,7 @@ func (r *WriteRequest) Respond(resp *WriteResponse) {
 }
 
 // A WriteResponse replies to a write indicating how many bytes were written.
-type WriteResponse struct {
+struct WriteResponse {
 	Size int
 }
 
@@ -1565,7 +1565,7 @@ func (r *WriteResponse) String() string {
 
 // A SetattrRequest asks to change one or more attributes associated with a file,
 // as indicated by Valid.
-type SetattrRequest struct {
+struct SetattrRequest {
 	Header `json:"-"`
 	Valid  SetattrValid
 	Handle HandleID
@@ -1646,7 +1646,7 @@ func (r *SetattrRequest) Respond(resp *SetattrResponse) {
 }
 
 // A SetattrResponse is the response to a SetattrRequest.
-type SetattrResponse struct {
+struct SetattrResponse {
 	AttrValid time.Duration // how long Attr can be cached
 	Attr      Attr          // file attributes
 }
@@ -1658,7 +1658,7 @@ func (r *SetattrResponse) String() string {
 // A FlushRequest asks for the current state of an open file to be flushed
 // to storage, as when a file descriptor is being closed.  A single opened Handle
 // may receive multiple FlushRequests over its lifetime.
-type FlushRequest struct {
+struct FlushRequest {
 	Header    `json:"-"`
 	Handle    HandleID
 	Flags     uint32
@@ -1676,7 +1676,7 @@ func (r *FlushRequest) Respond() {
 }
 
 // A RemoveRequest asks to remove a file or directory.
-type RemoveRequest struct {
+struct RemoveRequest {
 	Header `json:"-"`
 	Name   string // name of extended attribute
 	Dir    bool   // is this rmdir?
@@ -1693,7 +1693,7 @@ func (r *RemoveRequest) Respond() {
 }
 
 // A SymlinkRequest is a request to create a symlink making NewName point to Target.
-type SymlinkRequest struct {
+struct SymlinkRequest {
 	Header          `json:"-"`
 	NewName, Target string
 }
@@ -1718,12 +1718,12 @@ func (r *SymlinkRequest) Respond(resp *SymlinkResponse) {
 }
 
 // A SymlinkResponse is the response to a SymlinkRequest.
-type SymlinkResponse struct {
+struct SymlinkResponse {
 	LookupResponse
 }
 
 // A ReadlinkRequest is a request to read a symlink's target.
-type ReadlinkRequest struct {
+struct ReadlinkRequest {
 	Header `json:"-"`
 }
 
@@ -1737,7 +1737,7 @@ func (r *ReadlinkRequest) Respond(target string) {
 }
 
 // A LinkRequest is a request to create a hard link.
-type LinkRequest struct {
+struct LinkRequest {
 	Header  `json:"-"`
 	OldNode NodeID
 	NewName string
@@ -1762,7 +1762,7 @@ func (r *LinkRequest) Respond(resp *LookupResponse) {
 }
 
 // A RenameRequest is a request to rename a file.
-type RenameRequest struct {
+struct RenameRequest {
 	Header           `json:"-"`
 	NewDir           NodeID
 	OldName, NewName string
@@ -1777,7 +1777,7 @@ func (r *RenameRequest) Respond() {
 	r.Conn.respond(out, unsafe.Sizeof(*out))
 }
 
-type MknodRequest struct {
+struct MknodRequest {
 	Header `json:"-"`
 	Name   string
 	Mode   os.FileMode
@@ -1802,7 +1802,7 @@ func (r *MknodRequest) Respond(resp *LookupResponse) {
 	r.Conn.respond(&out.outHeader, unsafe.Sizeof(*out))
 }
 
-type FsyncRequest struct {
+struct FsyncRequest {
 	Header `json:"-"`
 	Handle HandleID
 	// TODO bit 1 is datasync, not well documented upstream
@@ -1821,7 +1821,7 @@ func (r *FsyncRequest) Respond() {
 
 // An InterruptRequest is a request to interrupt another pending request. The
 // response to that request should return an error status of EINTR.
-type InterruptRequest struct {
+struct InterruptRequest {
 	Header `json:"-"`
 	IntrID RequestID // ID of the request to be interrupt.
 }

@@ -25,7 +25,7 @@ const (
 
 const sysSizeofPacketInfo = 0x8
 
-type sysPacketInfo struct {
+struct sysPacketInfo {
 	IP      [4]byte
 	IfIndex int32
 }

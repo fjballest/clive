@@ -4,29 +4,29 @@
 package net
 
 import (
-	"sync"
-	"os"
-	"strings"
-	"net"
 	"clive/ch"
 	"clive/dbg"
-	"errors"
-	"strconv"
-	"time"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 var (
-	lk    sync.Mutex
-	svcs  = map[string]string{
+	lk   sync.Mutex
+	svcs = map[string]string{
 		"ns":  "8000",
 		"sns": "8001",
 		"zx":  "8002",
 	}
 
-	ErrBadAddr = errors.New("bad address")
+	ErrBadAddr  = errors.New("bad address")
 	ErrNotLocal = errors.New("not a local address")
 	ErrNoTLSCfg = errors.New("TLS not configured")
 
@@ -113,7 +113,7 @@ func IsLocal(host string) bool {
 		return true
 	}
 	if host[0] == '[' && len(host) > 2 && host[len(host)-1] == ']' {
-		host = host[1:len(host)-1]
+		host = host[1 : len(host)-1]
 	}
 	if addrs, err := net.InterfaceAddrs(); err == nil {
 		for _, a := range addrs {
@@ -194,7 +194,7 @@ func Dial(addr string, tlscfg ...*tls.Config) (c ch.Conn, err error) {
 	if len(tlscfg) > 0 {
 		cfg = tlscfg[0]
 	}
-	if nc, err := dial(addr, cfg) ; err == nil {
+	if nc, err := dial(addr, cfg); err == nil {
 		c = ch.NewConn(nc, 0, nil)
 		c.Tag = addr
 		return c, nil
@@ -203,11 +203,11 @@ func Dial(addr string, tlscfg ...*tls.Config) (c ch.Conn, err error) {
 }
 
 func serveLoop(l net.Listener, rc chan ch.Conn, ec chan bool,
-		addr, tag string, tlscfg *tls.Config) {
+	addr, tag string, tlscfg *tls.Config) {
 	if strings.HasPrefix(addr, "/tmp/") {
 		defer os.Remove(addr)
 	}
-	closes := map[io.Closer] bool{}
+	closes := map[io.Closer]bool{}
 	var closeslk sync.Mutex
 	go func() {
 		<-ec
@@ -242,7 +242,7 @@ func serveLoop(l net.Listener, rc chan ch.Conn, ec chan bool,
 		}
 		if tlscfg != nil {
 			fd = tls.Server(fd, tlscfg)
-		}		
+		}
 		cn := ch.NewConn(fd, 0, nil)
 		cn.Tag = raddr
 		if ok := rc <- cn; !ok {
@@ -268,7 +268,7 @@ func serve1(nw, host, port string, tlscfg *tls.Config) (c <-chan ch.Conn, ec cha
 	if nw == "tcp" && (host == "local" || host == "*" || host == "localhost") {
 		host = ""
 	}
-	addr := host+":"+port
+	addr := host + ":" + port
 	if nw == "unix" {
 		addr = port
 		tlscfg = nil
@@ -285,8 +285,8 @@ func serve1(nw, host, port string, tlscfg *tls.Config) (c <-chan ch.Conn, ec cha
 	return rc, rec, nil
 }
 
-func serveBoth(c1 <-chan ch.Conn, ec1 chan<-bool,
-		c2 <-chan ch.Conn, ec2 chan bool) (c <-chan ch.Conn, ec chan bool, err error) {
+func serveBoth(c1 <-chan ch.Conn, ec1 chan<- bool,
+	c2 <-chan ch.Conn, ec2 chan bool) (c <-chan ch.Conn, ec chan bool, err error) {
 	xc := make(chan ch.Conn)
 	xec := make(chan bool)
 	go func() {
@@ -370,7 +370,7 @@ func Serve(addr string, tlscfg ...*tls.Config) (c <-chan ch.Conn, ec chan bool, 
 
 // Build a TLS config for use with dialing functions provided by others.
 func TLSCfg(name string) (*tls.Config, error) {
-	cert, err := tls.LoadX509KeyPair(name + ".pem", name+".key")
+	cert, err := tls.LoadX509KeyPair(name+".pem", name+".key")
 	if err != nil {
 		return nil, err
 	}

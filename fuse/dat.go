@@ -11,7 +11,7 @@ import (
 // FS* interfaces, for example FSIniter.
 // On normal FUSE filesystems, use Forget of the root Node to
 // do actions at unmount time.
-type FS interface {
+interface FS {
 	// Root is called to obtain the Node for the file system root.
 	Root() (Node, fuse.Error)
 }
@@ -22,7 +22,7 @@ type FS interface {
 //
 // Other FUSE requests can be handled by implementing methods from the
 // Node* interfaces, for example NodeOpener.
-type Node interface {
+interface Node {
 	Attr() (*fuse.Attr, fuse.Error)
 	Open(fuse.OpenFlags, Intr) (Handle, fuse.Error)
 }
@@ -33,18 +33,18 @@ type Node interface {
 // Without this, each Node will get a new NodeID, causing spurious
 // cache invalidations, extra lookups and aliasing anomalies. This may
 // not matter for a simple, read-only filesystem.
-type NodeRef struct {
+struct NodeRef {
 	id         fuse.NodeID
 	generation uint64
 }
 
-type NodeSetAttrer interface {
+interface NodeSetAttrer {
 	// Setattr sets the standard metadata for the receiver.
 	// EPERM otherwise
 	SetAttr(*fuse.SetattrRequest, Intr) fuse.Error
 }
 
-type NodeXAttrer interface {
+interface NodeXAttrer {
 	// get the named attribute
 	Xattr(name string) ([]byte, fuse.Error)
 	// set the named attribute (use nil val to remove)
@@ -53,14 +53,14 @@ type NodeXAttrer interface {
 	Xattrs() []string
 }
 
-type NodeRemover interface {
+interface NodeRemover {
 	// Remove removes the entry with the given name from
 	// the receiver, which must be a directory.  The entry to be removed
 	// may correspond to a file (unlink) or to a directory (rmdir).
 	Remove(elem string, i Intr) fuse.Error
 }
 
-type NodeLookuper interface {
+interface NodeLookuper {
 	// Lookup looks up a specific entry in the receiver,
 	// which must be a directory.  Lookup should return a Node
 	// corresponding to the entry.  If the name does not exist in
@@ -70,30 +70,30 @@ type NodeLookuper interface {
 	Lookup(string, Intr) (Node, fuse.Error)
 }
 
-type NodeMkdirer interface {
+interface NodeMkdirer {
 	// Create dir name with the given mode
 	Mkdir(name string, mode os.FileMode, i Intr) (Node, fuse.Error)
 }
 
-type NodeCreater interface {
+interface NodeCreater {
 	// Create creates a new directory entry in the receiver, which
 	// must be a directory.
 	Create(name string, flag fuse.OpenFlags, mode os.FileMode, i Intr) (Node, Handle, fuse.Error)
 }
 
-type NodePuter interface {
+interface NodePuter {
 	// Kernel says we can forget node and put it back to where it was.
 	PutNode()
 }
 
-type NodeRenamer interface {
+interface NodeRenamer {
 	// Move to the directory node newDir (which is the type implementing Node)
 	// so
 	Rename(oldelem, newelem string, newDir Node, intr Intr) fuse.Error
 }
 
 // TODO this should be on Handle not Node
-type NodeFsyncer interface {
+interface NodeFsyncer {
 	Fsync(intr Intr) fuse.Error
 }
 
@@ -111,7 +111,7 @@ type NodeFsyncer interface {
 // aligned buffers or execve will fail.
 // However, this might affect append. In a previous version, in some cases,
 // append would work only with directIO.
-type Handle interface {
+interface Handle {
 	ReadDir(Intr) ([]fuse.Dirent, fuse.Error)
 	Read(off int64, sz int, i Intr) ([]byte, fuse.Error)
 	// Close is called each time the file or directory is closed.
@@ -120,11 +120,11 @@ type Handle interface {
 	Close(Intr) fuse.Error
 }
 
-type HandleWriter interface {
+interface HandleWriter {
 	Write([]byte, int64, Intr) (int, fuse.Error)
 }
 
-type HandlePuter interface {
+interface HandlePuter {
 	// Put back the handle to where it was and forget about it.
 	PutHandle()
 }
@@ -134,6 +134,6 @@ type HandlePuter interface {
 // That usually prevents exec() from working on the file but on the other hand
 // does not let UNIX assume which one is the file size until the file has been read.
 // File trees with control files should implement this and return true for ctl files.
-type HandleIsCtler interface {
+interface HandleIsCtler {
 	IsCtl() bool
 }

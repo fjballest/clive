@@ -18,7 +18,7 @@ import (
 const debugMux = false
 
 // chanList is a thread safe channel list.
-type chanList struct {
+struct chanList {
 	// protects concurrent access to chans
 	sync.Mutex
 
@@ -85,14 +85,14 @@ func (c *chanList) dropAll() []*channel {
 
 // mux represents the state for the SSH connection protocol, which
 // multiplexes many channels onto a single packet transport.
-type mux struct {
+struct mux {
 	conn     packetConn
 	chanList chanList
 
 	incomingChannels chan NewChannel
 
 	globalSentMu     sync.Mutex
-	globalResponses  chan interface{}
+	globalResponses  chan face{}
 	incomingRequests chan *Request
 
 	errCond *sync.Cond
@@ -117,7 +117,7 @@ func newMux(p packetConn) *mux {
 	m := &mux{
 		conn:             p,
 		incomingChannels: make(chan NewChannel, 16),
-		globalResponses:  make(chan interface{}, 1),
+		globalResponses:  make(chan face{}, 1),
 		incomingRequests: make(chan *Request, 16),
 		errCond:          newCond(),
 	}
@@ -129,7 +129,7 @@ func newMux(p packetConn) *mux {
 	return m
 }
 
-func (m *mux) sendMessage(msg interface{}) error {
+func (m *mux) sendMessage(msg face{}) error {
 	p := Marshal(msg)
 	return m.conn.writePacket(p)
 }

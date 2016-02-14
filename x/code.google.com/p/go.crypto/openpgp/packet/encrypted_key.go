@@ -18,7 +18,7 @@ const encryptedKeyVersion = 3
 
 // EncryptedKey represents a public-key encrypted session key. See RFC 4880,
 // section 5.1.
-type EncryptedKey struct {
+struct EncryptedKey {
 	KeyId      uint64
 	Algo       PublicKeyAlgorithm
 	CipherFunc CipherFunction // only valid after a successful Decrypt

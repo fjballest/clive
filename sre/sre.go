@@ -37,7 +37,7 @@ import (
 /*
 	Interface for a rune provider to match a regexp against it.
 */
-type Text interface {
+interface Text {
 	Len() int
 	Getc(at int) rune
 }
@@ -74,7 +74,7 @@ const (
 )
 
 // A selection in the string implied by a regexp.
-type Range struct {
+struct Range {
 	P0, P1 int
 }
 
@@ -85,7 +85,7 @@ type pinst int
 	NFA instruction.
 	It might continue through left, right, or both.
 */
-type inst struct {
+struct inst {
 	op    rune   // op code
 	class []rune // opt. char class
 	subid int    // expr. subid used (\0, \1, ...)
@@ -94,12 +94,12 @@ type inst struct {
 }
 
 // parsing node
-type node struct {
+struct node {
 	first, last pinst
 }
 
 // entry in operator stack
-type opRec struct {
+struct opRec {
 	op    rune // operator
 	subid int  // expr. subid for it
 }
@@ -107,7 +107,7 @@ type opRec struct {
 /*
 	A compiled regexp
 */
-type ReProg struct {
+struct ReProg {
 	// for the compiler
 	code       []*inst // program
 	opstk      []opRec // operator stack

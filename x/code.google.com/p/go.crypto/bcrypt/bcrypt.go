@@ -73,7 +73,7 @@ var magicCipherData = []byte{
 	0x6f, 0x75, 0x62, 0x74,
 }
 
-type hashed struct {
+struct hashed {
 	hash  []byte
 	salt  []byte
 	cost  int // allowed range is MinCost to MaxCost

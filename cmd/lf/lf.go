@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	opts = opt.New("{file}")
+	opts      = opt.New("{file}")
 	ux, gflag bool
-	printf = cmd.Printf
+	printf    = cmd.Printf
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 		args = append(args, ".,1")
 	}
 
-	var dc <-chan interface{}
+	var dc <-chan face{}
 	if !gflag {
 		dc = cmd.Dirs(args...)
 	} else {

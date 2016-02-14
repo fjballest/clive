@@ -15,7 +15,7 @@ const BlockSize = 8
 
 // A Cipher is an instance of an XTEA cipher using a particular key.
 // table contains a series of precalculated values that are used each round.
-type Cipher struct {
+struct Cipher {
 	table [64]uint32
 }
 

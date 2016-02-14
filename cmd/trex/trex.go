@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	opts = opt.New("to | {from to}")
+	opts       = opt.New("to | {from to}")
 	res        []*sre.ReProg
 	froms, tos []string
 	all        bool
@@ -107,7 +107,7 @@ Loop:
 	return string(rs)
 }
 
-func trex(in <-chan interface{}) error {
+func trex(in <-chan face{}) error {
 	nrepl := 1
 	if gflag {
 		nrepl = -1

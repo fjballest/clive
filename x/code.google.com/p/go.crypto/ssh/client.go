@@ -13,7 +13,7 @@ import (
 
 // Client implements a traditional SSH client that supports shells,
 // subprocesses, port forwarding and tunneled dialing.
-type Client struct {
+struct Client {
 	Conn
 
 	forwards        forwardList // forwarded tcpip connections from the remote side
@@ -197,7 +197,7 @@ func Dial(network, addr string, config *ClientConfig) (*Client, error) {
 
 // A ClientConfig structure is used to configure a Client. It must not be
 // modified after having been passed to an SSH function.
-type ClientConfig struct {
+struct ClientConfig {
 	// Config contains configuration that is shared between clients and
 	// servers.
 	Config

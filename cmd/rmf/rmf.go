@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	opts = opt.New("{file}")
+	opts                    = opt.New("{file}")
 	aflag, fflag, dry, verb bool
 	dirs                    []zx.Dir
 

@@ -161,7 +161,7 @@ func init() {
 // Conversation.Receive and all outbound messages to Conversation.Send. The
 // Conversation will take care of maintaining the encryption state and
 // negotiating encryption as needed.
-type Conversation struct {
+struct Conversation {
 	// PrivateKey contains the private key to use to sign key exchanges.
 	PrivateKey *PrivateKey
 
@@ -210,7 +210,7 @@ type Conversation struct {
 }
 
 // A keySlot contains key material for a specific (their keyid, my keyid) pair.
-type keySlot struct {
+struct keySlot {
 	// used is true if this slot is valid. If false, it's free for reuse.
 	used                   bool
 	theirKeyId             uint32
@@ -223,7 +223,7 @@ type keySlot struct {
 // akeKeys are generated during key exchange. There's one set for the reveal
 // signature message and another for the signature message. In the protocol
 // spec the latter are indicated with a prime mark.
-type akeKeys struct {
+struct akeKeys {
 	c      [16]byte
 	m1, m2 [32]byte
 }
@@ -245,7 +245,7 @@ func (c *Conversation) randMPI(buf []byte) *big.Int {
 }
 
 // tlv represents the type-length value from the protocol.
-type tlv struct {
+struct tlv {
 	typ, length uint16
 	data        []byte
 }
@@ -1162,7 +1162,7 @@ func (c *Conversation) encode(msg []byte) [][]byte {
 	return ret
 }
 
-type PublicKey struct {
+struct PublicKey {
 	dsa.PublicKey
 }
 
@@ -1216,7 +1216,7 @@ func (pk *PublicKey) Verify(hashed, sig []byte) ([]byte, bool) {
 	return sig[dsaSubgroupBytes*2:], ok
 }
 
-type PrivateKey struct {
+struct PrivateKey {
 	PublicKey
 	dsa.PrivateKey
 }

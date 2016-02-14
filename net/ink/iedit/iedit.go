@@ -6,24 +6,24 @@
 package main
 
 import (
+	"bytes"
 	"clive/cmd"
-	"clive/zx"
 	"clive/cmd/opt"
 	"clive/net/ink"
-	"time"
+	"clive/zx"
 	"fmt"
-	"bytes"
+	"time"
 )
 
 // Example of how to update the text from the API while the user edits it,
 // again, mostly for testing.
 func edits(t *ink.Txt) {
-	time.Sleep(5*time.Second)
+	time.Sleep(5 * time.Second)
 	t.Ins([]rune("ZZZ\n"), 3)
-	time.Sleep(1*time.Second)
+	time.Sleep(1 * time.Second)
 	rs := t.Del(3, 4)
 	cmd.Dprintf("did del %s\n", string(rs))
-	time.Sleep(1*time.Second)
+	time.Sleep(1 * time.Second)
 	x := t.GetText()
 	x.Ins([]rune("XXX\n"), 2)
 	x.Ins([]rune("XXX\n"), x.Len())
@@ -81,15 +81,15 @@ func buttons(bs *ink.ButtonSet, rs *ink.RadioSet, t *ink.Txt) {
 			if italic {
 				s += "i"
 			}
-			t.SetFont(s);
+			t.SetFont(s)
 		}
 	}
 }
 
 var (
 	bold, italic bool
-	style = "r"
-	doedits = false
+	style        = "r"
+	doedits      = false
 )
 
 func main() {
@@ -113,7 +113,7 @@ func main() {
 		if err != nil {
 			cmd.Fatal(err)
 		}
-		t = ink.NewTxt(args[0] + " Del", string(dat))
+		t = ink.NewTxt(args[0]+" Del", string(dat))
 	}
 	go edit(t)
 	if rdonly {

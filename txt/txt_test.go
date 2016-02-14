@@ -1,23 +1,23 @@
 package txt
 
 import (
-	"testing"
 	"clive/dbg"
 	"fmt"
+	"testing"
 )
 
 struct test {
-	op Tedit
-	p0 int
-	n int
-	txt string
-	out string
+	op    Tedit
+	p0    int
+	n     int
+	txt   string
+	out   string
 	fails bool
-	m string
+	m     string
 }
 
 var (
-	debug bool
+	debug  bool
 	printf = dbg.FlagPrintf(&debug)
 
 	tests = []test{
@@ -35,7 +35,7 @@ var (
 		},
 		test{
 			op: Eins, p0: 20, n: 0, txt: "xx",
-			out: `xyqwertyz12345`,
+			out:   `xyqwertyz12345`,
 			fails: true,
 		},
 		test{
@@ -60,7 +60,7 @@ struct pair {
 func TestLineAt(t *testing.T) {
 	debug = testing.Verbose()
 	tx := NewEditing([]rune("abc\ndef\n\nghi\n"))
-	nbs := [...]int{1,1,1,1,2,2,2,2,3,4,4,4,4,5}
+	nbs := [...]int{1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 4, 4, 5}
 	printf("=>\n%s\n", tx.Sprint())
 	for o := 0; o <= tx.Len(); o++ {
 		n := tx.LineAt(o)
@@ -69,8 +69,8 @@ func TestLineAt(t *testing.T) {
 			t.Fatalf("bad line number")
 		}
 	}
-	lns := [...]pair{{1,1}, {0, 0}, {0, 3}, {0, 4}, {1, 5}, {4, 4}}
-	bs := [...]pair{{1,1}, {1,1}, {1,1}, {1,1}, {1,2}, {2,2}}
+	lns := [...]pair{{1, 1}, {0, 0}, {0, 3}, {0, 4}, {1, 5}, {4, 4}}
+	bs := [...]pair{{1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 2}, {2, 2}}
 	for i, p := range lns {
 		a, b := tx.LinesAt(p.a, p.b)
 		printf("\t%v-> %d %d\n", p, a, b)
@@ -97,7 +97,7 @@ func TestLineOff(t *testing.T) {
 			t.Fatalf("bad ln")
 		}
 	}
-	ps := [...]pair{{1,1}, {1,2}, {2,2}, {2, 3}, {3, 3}, {4, 4}, {4, 5}, {6, 6}}
+	ps := [...]pair{{1, 1}, {1, 2}, {2, 2}, {2, 3}, {3, 3}, {4, 4}, {4, 5}, {6, 6}}
 	os := [...]pair{{0, 0}, {0, 8}, {4, 8}, {4, 9}, {8, 9}, {9, 13}, {9, 13}, {13, 13}}
 	for i, p := range ps {
 		a, b := tx.LinesOffs(p.a, p.b)
@@ -142,66 +142,66 @@ func TestInsDel(t *testing.T) {
 }
 
 var tests2 = []test{
-		test{
-			op: Eins, p0: 0, n: 0, txt: "ABC",
-			out: `[[m0 0] [m1 7] [m2 11] [m3 17]]`,
-		},
-		test{
-			op: Eins, p0: 5, n: 0, txt: "DE",
-			out: `[[m0 0] [m1 9] [m2 13] [m3 19]]`,
-		},
-		test{
-			op: Eins, p0: 13, n: 0, txt: "FG",
-			out: `[[m0 0] [m1 9] [m2 13] [m3 21]]`,
-		},
-		test{
-			op: Eins, p0: 21, n: 0, txt: "HI",
-			out: `[[m0 0] [m1 9] [m2 13] [m3 21]]`,
-		},
-		test{
-			op: Edel, p0: 22, n: 2, 
-			out: `[[m0 0] [m1 9] [m2 13] [m3 21]]`,
-		},
-		test{
-			op: Edel, p0: 16, n: 2, 
-			out: `[[m0 0] [m1 9] [m2 13] [m3 19]]`,
-		},
-		test{
-			op: Edel, p0: 18, n: 2, 
-			out: `[[m0 0] [m1 9] [m2 13] [m3 18]]`,
-		},
-		test{
-			op: Edel, p0: 7, n: 4, 
-			out: `[[m0 0] [m1 7] [m2 9] [m3 14]]`,
-		},
-		test{
-			op: Eins, m: "m0" ,txt: "12",
-			out: `[[m0 2] [m1 9] [m2 11] [m3 16]]`,
-		},
-		test{
-			op: Eins, m: "m0" ,txt: "34",
-			out: `[[m0 4] [m1 11] [m2 13] [m3 18]]`,
-		},
-		test{
-			op: Eins, m: "m2" ,txt: "12",
-			out: `[[m0 4] [m1 11] [m2 15] [m3 20]]`,
-		},
-		test{
-			op: Eins, m: "m3" ,txt: "ab",
-			out: `[[m0 4] [m1 11] [m2 15] [m3 22]]`,
-		},
-		test{
-			op: Edel, m: "m3" , n: 2, 
-			out: `[[m0 4] [m1 11] [m2 15] [m3 20]]`,
-		},
-		test{
-			op: Edel, m: "m0" , n: 6, 
-			out: `[[m0 0] [m1 7] [m2 11] [m3 16]]`,
-		},
-		test{
-			op: Edel, m: "m2" , n: 6, 
-			out: `[[m0 0] [m1 5] [m2 5] [m3 10]]`,
-		},
+	test{
+		op: Eins, p0: 0, n: 0, txt: "ABC",
+		out: `[[m0 0] [m1 7] [m2 11] [m3 17]]`,
+	},
+	test{
+		op: Eins, p0: 5, n: 0, txt: "DE",
+		out: `[[m0 0] [m1 9] [m2 13] [m3 19]]`,
+	},
+	test{
+		op: Eins, p0: 13, n: 0, txt: "FG",
+		out: `[[m0 0] [m1 9] [m2 13] [m3 21]]`,
+	},
+	test{
+		op: Eins, p0: 21, n: 0, txt: "HI",
+		out: `[[m0 0] [m1 9] [m2 13] [m3 21]]`,
+	},
+	test{
+		op: Edel, p0: 22, n: 2,
+		out: `[[m0 0] [m1 9] [m2 13] [m3 21]]`,
+	},
+	test{
+		op: Edel, p0: 16, n: 2,
+		out: `[[m0 0] [m1 9] [m2 13] [m3 19]]`,
+	},
+	test{
+		op: Edel, p0: 18, n: 2,
+		out: `[[m0 0] [m1 9] [m2 13] [m3 18]]`,
+	},
+	test{
+		op: Edel, p0: 7, n: 4,
+		out: `[[m0 0] [m1 7] [m2 9] [m3 14]]`,
+	},
+	test{
+		op: Eins, m: "m0", txt: "12",
+		out: `[[m0 2] [m1 9] [m2 11] [m3 16]]`,
+	},
+	test{
+		op: Eins, m: "m0", txt: "34",
+		out: `[[m0 4] [m1 11] [m2 13] [m3 18]]`,
+	},
+	test{
+		op: Eins, m: "m2", txt: "12",
+		out: `[[m0 4] [m1 11] [m2 15] [m3 20]]`,
+	},
+	test{
+		op: Eins, m: "m3", txt: "ab",
+		out: `[[m0 4] [m1 11] [m2 15] [m3 22]]`,
+	},
+	test{
+		op: Edel, m: "m3", n: 2,
+		out: `[[m0 4] [m1 11] [m2 15] [m3 20]]`,
+	},
+	test{
+		op: Edel, m: "m0", n: 6,
+		out: `[[m0 0] [m1 7] [m2 11] [m3 16]]`,
+	},
+	test{
+		op: Edel, m: "m2", n: 6,
+		out: `[[m0 0] [m1 5] [m2 5] [m3 10]]`,
+	},
 }
 
 func TestMark(t *testing.T) {
@@ -251,5 +251,3 @@ func TestMark(t *testing.T) {
 		}
 	}
 }
-
-

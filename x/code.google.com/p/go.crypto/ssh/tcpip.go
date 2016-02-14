@@ -77,7 +77,7 @@ func (c *Client) autoPortListenWorkaround(laddr *net.TCPAddr) (net.Listener, err
 }
 
 // RFC 4254 7.1
-type channelForwardMsg struct {
+struct channelForwardMsg {
 	addr  string
 	rport uint32
 }
@@ -123,14 +123,14 @@ func (c *Client) ListenTCP(laddr *net.TCPAddr) (net.Listener, error) {
 
 // forwardList stores a mapping between remote
 // forward requests and the tcpListeners.
-type forwardList struct {
+struct forwardList {
 	sync.Mutex
 	entries []forwardEntry
 }
 
 // forwardEntry represents an established mapping of a laddr on a
 // remote ssh server to a channel connected to a tcpListener.
-type forwardEntry struct {
+struct forwardEntry {
 	laddr net.TCPAddr
 	c     chan forward
 }
@@ -138,7 +138,7 @@ type forwardEntry struct {
 // forward represents an incoming forwarded tcpip connection. The
 // arguments to add/remove/lookup should be address as specified in
 // the original forward-request.
-type forward struct {
+struct forward {
 	newCh NewChannel   // the ssh client channel underlying this forward
 	raddr *net.TCPAddr // the raddr of the incoming connection
 }
@@ -215,7 +215,7 @@ func (l *forwardList) forward(laddr, raddr net.TCPAddr, ch NewChannel) bool {
 	return false
 }
 
-type tcpListener struct {
+struct tcpListener {
 	laddr *net.TCPAddr
 
 	conn *Client
@@ -312,7 +312,7 @@ func (c *Client) DialTCP(n string, laddr, raddr *net.TCPAddr) (net.Conn, error) 
 }
 
 // RFC 4254 7.2
-type channelOpenDirectMsg struct {
+struct channelOpenDirectMsg {
 	raddr string
 	rport uint32
 	laddr string
@@ -331,13 +331,13 @@ func (c *Client) dial(laddr string, lport int, raddr string, rport int) (Channel
 	return ch, err
 }
 
-type tcpChan struct {
+struct tcpChan {
 	Channel // the backing channel
 }
 
 // tcpChanConn fulfills the net.Conn interface without
 // the tcpChan having to hold laddr or raddr directly.
-type tcpChanConn struct {
+struct tcpChanConn {
 	Channel
 	laddr, raddr net.Addr
 }

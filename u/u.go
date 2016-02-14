@@ -4,20 +4,20 @@
 package u
 
 import (
-	"strings"
 	"os"
 	"os/user"
 	"runtime"
+	"strings"
 )
 
 // Variables initialized at init time with the user, system, home directory
 // and temporary directory names.
 var (
-	cwd string
-	Uid = "none"
-	Sys = "sargazos"
+	cwd  string
+	Uid  = "none"
+	Sys  = "sargazos"
 	Home = "/tmp"
-	Tmp = "/tmp"
+	Tmp  = "/tmp"
 )
 
 func init() {
@@ -37,4 +37,3 @@ func init() {
 		Tmp = t
 	}
 }
-

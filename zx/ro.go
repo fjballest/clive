@@ -1,9 +1,9 @@
 package zx
 
 import (
-	"fmt"
-	"errors"
 	"clive/net/auth"
+	"errors"
+	"fmt"
 	"io"
 )
 
@@ -31,7 +31,7 @@ func (ro rofs) Get(path string, off, count int64) <-chan []byte {
 	if fs, ok := ro.fs.(Getter); ok {
 		return fs.Get(path, off, count)
 	}
-	rc :=  make(chan []byte)
+	rc := make(chan []byte)
 	close(rc, errors.New("RO fs is not not a "))
 	return rc
 }
@@ -40,16 +40,16 @@ func (ro rofs) Find(path, pred string, spref, dpref string, depth0 int) <-chan D
 	if fs, ok := ro.fs.(Finder); ok {
 		return fs.Find(path, pred, spref, dpref, depth0)
 	}
-	rc :=  make(chan Dir)
+	rc := make(chan Dir)
 	close(rc, errors.New("RO fs is not not a finder"))
 	return rc
 }
 
-func (ro rofs) FindGet(path, pred string, spref, dpref string, depth0 int) <-chan interface{} {
+func (ro rofs) FindGet(path, pred string, spref, dpref string, depth0 int) <-chan face{} {
 	if fs, ok := ro.fs.(FindGetter); ok {
 		return fs.FindGet(path, pred, spref, dpref, depth0)
 	}
-	rc :=  make(chan interface{})
+	rc := make(chan face{})
 	close(rc, errors.New("RO fs is not not a findgetter"))
 	return rc
 }
@@ -74,4 +74,3 @@ func (ro rofs) Close() error {
 	}
 	return nil
 }
-

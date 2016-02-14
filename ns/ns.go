@@ -16,12 +16,12 @@ import (
 	"clive/zx"
 	"clive/zx/rzx"
 	"fmt"
+	"io/ioutil"
 	"path"
+	fpath "path"
 	"sort"
 	"strings"
 	"sync"
-	"io/ioutil"
-	fpath "path"
 )
 
 // Mount flags
@@ -61,7 +61,7 @@ struct prefix {
 // It implements both the binder and finder interfaces.
 struct NS {
 	dbg.Flag
-	Verb bool	// verbose debug diags
+	Verb bool // verbose debug diags
 
 	lk   sync.RWMutex
 	pref []*prefix
@@ -80,12 +80,12 @@ func New() *NS {
 	return ns
 }
 
-func (ns *NS) vprintf(f string, args ...interface{}) (n int, err error) {
+func (ns *NS) vprintf(f string, args ...face{}) (n int, err error) {
 	if !ns.Verb {
 		return 0, nil
 	}
 	return ns.Dprintf(f, args...)
-	
+
 }
 
 func (f Flag) String() string {
@@ -208,15 +208,15 @@ func specialForm(ln string) zx.Dir {
 			}
 		} else {
 			switch len(els) {
-			case 6:	// zx!unix!localhost!zx!main!/
-			case 5:	// zx!unix!localhost!zx!main
+			case 6: // zx!unix!localhost!zx!main!/
+			case 5: // zx!unix!localhost!zx!main
 				addr += "!/"
-			case 4:	// zx!unix!localhost!zx
+			case 4: // zx!unix!localhost!zx
 				addr += "!main!/"
 			case 3, 2:
 				oaddr := strings.Join(els[1:], "!")
 				naddr := rzx.FillAddr(oaddr)
-				addr = els[0] +"!"+ naddr + "!main!/"
+				addr = els[0] + "!" + naddr + "!main!/"
 			}
 		}
 	}
@@ -430,7 +430,7 @@ func (ns *NS) Resolve(name string) (pref string, mnts []zx.Dir, err error) {
 			if suff != "/" && suff != "" {
 				if a := d["addr"]; len(a) > 0 && a[len(a)-1] == '/' {
 					if suff[0] == '/' {
-						d["addr"] = a+suff[1:]
+						d["addr"] = a + suff[1:]
 					} else {
 						d["addr"] += suff
 					}

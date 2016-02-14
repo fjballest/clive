@@ -14,11 +14,17 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
+
+struct client {
+	uid string
+	when time.Time
+}
 
 struct clients {
 	sync.Mutex
-	set map[string]string
+	set map[string]client
 }
 
 struct Server {
@@ -40,7 +46,7 @@ struct Server {
 
 func (c *clients) add(addr, uid string) {
 	c.Lock()
-	c.set[addr] = uid
+	c.set[addr] = client{uid, time.Now()}
 	c.Unlock()
 }
 
@@ -55,7 +61,8 @@ func (c *clients) list() []string {
 	defer c.Unlock()
 	out := make([]string, 0, len(c.set))
 	for k, v := range c.set {
-		out = append(out, fmt.Sprintf("%s %s", v, k))
+		out = append(out, fmt.Sprintf("%s %s %v", v.uid, k,
+			time.Since(v.when)))
 	}
 	sort.Sort(sort.StringSlice(out))
 	return out
@@ -97,7 +104,7 @@ func newServer(addr string, tc *tls.Config, ro bool) (*Server, error) {
 		addr:    addr,
 		rdonly:  ro,
 		fs:      map[string]zx.Fs{},
-		clients: &clients{set: map[string]string{}},
+		clients: &clients{set: map[string]client{}},
 	}
 	s.Tag = addr
 	go s.loop()

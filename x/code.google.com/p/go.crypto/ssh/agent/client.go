@@ -28,7 +28,7 @@ import (
 )
 
 // Agent represents the capabilities of an ssh-agent.
-type Agent interface {
+interface Agent {
 	// List returns the identities known to the agent.
 	List() ([]*Key, error)
 
@@ -38,7 +38,7 @@ type Agent interface {
 
 	// Insert adds a private key to the agent. If a certificate
 	// is given, that certificate is added as public key.
-	Add(s interface{}, cert *ssh.Certificate, comment string) error
+	Add(s face{}, cert *ssh.Certificate, comment string) error
 
 	// Remove removes all identities with the given public key.
 	Remove(key ssh.PublicKey) error
@@ -89,21 +89,21 @@ const maxAgentResponseBytes = 16 << 20
 // 3.4 Generic replies from agent to client
 const agentFailure = 5
 
-type failureAgentMsg struct{}
+struct failureAgentMsg {}
 
 const agentSuccess = 6
 
-type successAgentMsg struct{}
+struct successAgentMsg {}
 
 // See [PROTOCOL.agent], section 2.5.2.
 const agentRequestIdentities = 11
 
-type requestIdentitiesAgentMsg struct{}
+struct requestIdentitiesAgentMsg {}
 
 // See [PROTOCOL.agent], section 2.5.2.
 const agentIdentitiesAnswer = 12
 
-type identitiesAnswerAgentMsg struct {
+struct identitiesAnswerAgentMsg {
 	NumKeys uint32 `sshtype:"12"`
 	Keys    []byte `ssh:"rest"`
 }
@@ -111,7 +111,7 @@ type identitiesAnswerAgentMsg struct {
 // See [PROTOCOL.agent], section 2.6.2.
 const agentSignRequest = 13
 
-type signRequestAgentMsg struct {
+struct signRequestAgentMsg {
 	KeyBlob []byte `sshtype:"13"`
 	Data    []byte
 	Flags   uint32
@@ -122,18 +122,18 @@ type signRequestAgentMsg struct {
 // 3.6 Replies from agent to client for protocol 2 key operations
 const agentSignResponse = 14
 
-type signResponseAgentMsg struct {
+struct signResponseAgentMsg {
 	SigBlob []byte `sshtype:"14"`
 }
 
-type publicKey struct {
+struct publicKey {
 	Format string
 	Rest   []byte `ssh:"rest"`
 }
 
 // Key represents a protocol 2 public key as defined in
 // [PROTOCOL.agent], section 2.5.2.
-type Key struct {
+struct Key {
 	Format  string
 	Blob    []byte
 	Comment string
@@ -171,7 +171,7 @@ func (k *Key) Verify(data []byte, sig *ssh.Signature) error {
 	return errors.New("agent: agent key does not know how to verify")
 }
 
-type wireKey struct {
+struct wireKey {
 	Format string
 	Rest   []byte `ssh:"rest"`
 }
@@ -200,7 +200,7 @@ func parseKey(in []byte) (out *Key, rest []byte, err error) {
 }
 
 // client is a client for an ssh-agent process.
-type client struct {
+struct client {
 	// conn is typically a *net.UnixConn
 	conn io.ReadWriter
 	// mu is used to prevent concurrent access to the agent
@@ -216,7 +216,7 @@ func NewClient(rw io.ReadWriter) Agent {
 // call sends an RPC to the agent. On success, the reply is
 // unmarshaled into reply and replyType is set to the first byte of
 // the reply, which contains the type of the message.
-func (c *client) call(req []byte) (reply interface{}, err error) {
+func (c *client) call(req []byte) (reply face{}, err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -344,11 +344,11 @@ func (c *client) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) {
 
 // unmarshal parses an agent message in packet, returning the parsed
 // form and the message type of packet.
-func unmarshal(packet []byte) (interface{}, error) {
+func unmarshal(packet []byte) (face{}, error) {
 	if len(packet) < 1 {
 		return nil, errors.New("agent: empty packet")
 	}
-	var msg interface{}
+	var msg face{}
 	switch packet[0] {
 	case agentFailure:
 		return new(failureAgentMsg), nil
@@ -367,7 +367,7 @@ func unmarshal(packet []byte) (interface{}, error) {
 	return msg, nil
 }
 
-type rsaKeyMsg struct {
+struct rsaKeyMsg {
 	Type     string `sshtype:"17"`
 	N        *big.Int
 	E        *big.Int
@@ -378,7 +378,7 @@ type rsaKeyMsg struct {
 	Comments string
 }
 
-type dsaKeyMsg struct {
+struct dsaKeyMsg {
 	Type     string `sshtype:"17"`
 	P        *big.Int
 	Q        *big.Int
@@ -388,7 +388,7 @@ type dsaKeyMsg struct {
 	Comments string
 }
 
-type ecdsaKeyMsg struct {
+struct ecdsaKeyMsg {
 	Type     string `sshtype:"17"`
 	Curve    string
 	KeyBytes []byte
@@ -397,7 +397,7 @@ type ecdsaKeyMsg struct {
 }
 
 // Insert adds a private key to the agent.
-func (c *client) insertKey(s interface{}, comment string) error {
+func (c *client) insertKey(s face{}, comment string) error {
 	var req []byte
 	switch k := s.(type) {
 	case *rsa.PrivateKey:
@@ -447,7 +447,7 @@ func (c *client) insertKey(s interface{}, comment string) error {
 	return errors.New("agent: failure")
 }
 
-type rsaCertMsg struct {
+struct rsaCertMsg {
 	Type      string `sshtype:"17"`
 	CertBytes []byte
 	D         *big.Int
@@ -457,14 +457,14 @@ type rsaCertMsg struct {
 	Comments  string
 }
 
-type dsaCertMsg struct {
+struct dsaCertMsg {
 	Type      string `sshtype:"17"`
 	CertBytes []byte
 	X         *big.Int
 	Comments  string
 }
 
-type ecdsaCertMsg struct {
+struct ecdsaCertMsg {
 	Type      string `sshtype:"17"`
 	CertBytes []byte
 	D         *big.Int
@@ -473,7 +473,7 @@ type ecdsaCertMsg struct {
 
 // Insert adds a private key to the agent. If a certificate is given,
 // that certificate is added instead as public key.
-func (c *client) Add(s interface{}, cert *ssh.Certificate, comment string) error {
+func (c *client) Add(s face{}, cert *ssh.Certificate, comment string) error {
 	if cert == nil {
 		return c.insertKey(s, comment)
 	} else {
@@ -481,7 +481,7 @@ func (c *client) Add(s interface{}, cert *ssh.Certificate, comment string) error
 	}
 }
 
-func (c *client) insertCert(s interface{}, cert *ssh.Certificate, comment string) error {
+func (c *client) insertCert(s face{}, cert *ssh.Certificate, comment string) error {
 	var req []byte
 	switch k := s.(type) {
 	case *rsa.PrivateKey:
@@ -548,7 +548,7 @@ func (c *client) Signers() ([]ssh.Signer, error) {
 	return result, nil
 }
 
-type agentKeyringSigner struct {
+struct agentKeyringSigner {
 	agent *client
 	pub   ssh.PublicKey
 }

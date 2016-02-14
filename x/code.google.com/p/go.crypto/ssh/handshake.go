@@ -22,7 +22,7 @@ const debugHandshake = false
 // keyingTransport is a packet based transport that supports key
 // changes. It need not be thread-safe. It should pass through
 // msgNewKeys in both directions.
-type keyingTransport interface {
+interface keyingTransport {
 	packetConn
 
 	// prepareKeyChange sets up a key change. The key change for a
@@ -37,7 +37,7 @@ type keyingTransport interface {
 
 // rekeyingTransport is the interface of handshakeTransport that we
 // (internally) expose to ClientConn and ServerConn.
-type rekeyingTransport interface {
+interface rekeyingTransport {
 	packetConn
 
 	// requestKeyChange asks the remote side to change keys. All
@@ -52,7 +52,7 @@ type rekeyingTransport interface {
 
 // handshakeTransport implements rekeying on top of a keyingTransport
 // and offers a thread-safe writePacket() interface.
-type handshakeTransport struct {
+struct handshakeTransport {
 	conn   keyingTransport
 	config *Config
 

@@ -46,14 +46,14 @@ func main() {
 }
 
 // FS implements the hello world file system.
-type FS struct{}
+struct FS {}
 
 func (FS) Root() (fs.Node, fuse.Error) {
 	return Dir{}, nil
 }
 
 // Dir implements both Node and Handle for the root directory.
-type Dir struct{}
+struct Dir {}
 
 func (Dir) Attr() fuse.Attr {
 	return fuse.Attr{Inode: 1, Mode: os.ModeDir | 0555}
@@ -75,7 +75,7 @@ func (Dir) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 }
 
 // File implements both Node and Handle for the hello file.
-type File struct{}
+struct File {}
 
 func (File) Attr() fuse.Attr {
 	return fuse.Attr{Inode: 2, Mode: 0444}

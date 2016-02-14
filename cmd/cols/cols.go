@@ -4,22 +4,22 @@
 package main
 
 import (
+	"bytes"
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/cmd/tty"
 	"clive/zx"
-	"unicode/utf8"
-	"strings"
-	"bytes"
 	"fmt"
+	"strings"
+	"unicode/utf8"
 )
 
 var (
-	opts = opt.New("{file}")
+	opts       = opt.New("{file}")
 	wid, ncols int
 	words      []string
 	maxwid     int
-	ux bool
+	ux         bool
 )
 
 func col() {
@@ -49,7 +49,7 @@ func col() {
 		}
 	}
 	if len(words)%ncols != 0 {
-		fmt.Fprintf(&buf,"\n")
+		fmt.Fprintf(&buf, "\n")
 	}
 	cmd.Out("out") <- buf.Bytes()
 }

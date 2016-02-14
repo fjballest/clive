@@ -38,10 +38,10 @@ interface flusher {
 // cease reading for a while, and to stream a bunch of data,
 // other connections will be able to stream their data at the same time.
 struct Mux {
-	In   <-chan Conn      // new connections are sent here
-	Hup  <-chan bool      // closed upon device hang up
-	rw   io.ReadWriter    // underlying device
-	fl flusher
+	In   <-chan Conn   // new connections are sent here
+	Hup  <-chan bool   // closed upon device hang up
+	rw   io.ReadWriter // underlying device
+	fl   flusher
 	in   chan Conn        // In, for the implementation
 	tag  uint32           // tag generator
 	tags map[uint32]*conn // muxed chans

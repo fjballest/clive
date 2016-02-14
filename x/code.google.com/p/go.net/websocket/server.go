@@ -52,7 +52,7 @@ func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Requ
 }
 
 // Server represents a server of a WebSocket.
-type Server struct {
+struct Server {
 	// Config is a WebSocket configuration for new WebSocket connection.
 	Config
 

@@ -41,7 +41,7 @@ const (
 )
 
 var (
-	cacheTout = 5*time.Minute
+	cacheTout = 5 * time.Minute
 	syncIval  = time.Minute
 )
 
@@ -323,9 +323,10 @@ func (mf *mFile) wstat(nd zx.Dir) error {
 		mf.wd = zx.Dir{}
 	}
 	if mf.d["type"] != "d" && nd["size"] != "" {
+		mf.dirtyData()
 		if sz := nd.Size(); sz != int64(mf.data.Len()) {
-			mf.dirtyData()
 			mf.data.Truncate(sz)
+			mf.d.SetSize(sz)
 		}
 	}
 	some := false
@@ -334,11 +335,11 @@ func (mf *mFile) wstat(nd zx.Dir) error {
 			continue
 		}
 		switch k {
-		case "path", "addr", "type", "name":
+		case "path", "addr", "type", "name", "size":
 			// ignored
 		case "wuid":
 			fallthrough
-		case "mode", "size", "uid", "gid":
+		case "mode", "uid", "gid":
 			fallthrough
 		default:
 			mf.d[k] = v
@@ -468,7 +469,7 @@ func (mf *mFile) getData(off, count int64, c chan<- []byte) error {
 	mf.Unlock()
 	// Data is locked and we have GC, it can't just go
 	n, nm, err := data.SendTo(off, count, c)
-	mf.Dprintf("get sent %d bytes %d msgs sts %v\n", n, nm, err)
+	mf.Dprintf("get %d at %d sent %d bytes %d msgs sts %v\n", count, off, n, nm, err)
 	if err == io.EOF {
 		err = nil
 	}
@@ -483,7 +484,7 @@ func (mf *mFile) putData(off int64, c <-chan []byte, umtime string) error {
 	mf.Unlock()
 	// Data is locked and we have GC, it can't just go
 	n, nm, err := data.RecvFrom(off, c)
-	mf.Dprintf("put data %d bytes %d msgs sts %v\n", n, nm, err)
+	mf.Dprintf("put data at %d: %d bytes %d msgs sts %v\n", off, n, nm, err)
 	mf.Lock()
 	mf.dirtyData()
 	mf.d.SetSize(int64(mf.data.Len()))
@@ -601,6 +602,7 @@ func (mf *mFile) sync(fs zx.Fs) error {
 		if mf.d["type"] == "d" {
 			close(c)
 		}
+		mf.d.SetSize(int64(mf.data.Len()))
 		rc := rfs.Put(mf.d["path"], mf.d, 0, c)
 		if mf.d["type"] != "d" {
 			// NB: we don't unlock to sync a single version.

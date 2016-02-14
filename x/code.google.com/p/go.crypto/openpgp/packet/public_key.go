@@ -38,7 +38,7 @@ const maxOIDLength = 8
 
 // ecdsaKey stores the algorithm-specific fields for ECDSA keys.
 // as defined in RFC 6637, Section 9.
-type ecdsaKey struct {
+struct ecdsaKey {
 	// oid contains the OID byte sequence identifying the elliptic curve used
 	oid []byte
 	// p contains the elliptic curve point that represents the public key
@@ -106,7 +106,7 @@ type kdfAlgorithm byte
 
 // ecdhKdf stores key derivation function parameters
 // used for ECDH encryption. See RFC 6637, Section 9.
-type ecdhKdf struct {
+struct ecdhKdf {
 	KdfHash kdfHashFunction
 	KdfAlgo kdfAlgorithm
 }
@@ -149,10 +149,10 @@ func (f *ecdhKdf) byteLen() int {
 }
 
 // PublicKey represents an OpenPGP public key. See RFC 4880, section 5.5.2.
-type PublicKey struct {
+struct PublicKey {
 	CreationTime time.Time
 	PubKeyAlgo   PublicKeyAlgorithm
-	PublicKey    interface{} // *rsa.PublicKey, *dsa.PublicKey or *ecdsa.PublicKey
+	PublicKey    face{} // *rsa.PublicKey, *dsa.PublicKey or *ecdsa.PublicKey
 	Fingerprint  [20]byte
 	KeyId        uint64
 	IsSubkey     bool
@@ -166,7 +166,7 @@ type PublicKey struct {
 
 // signingKey provides a convenient abstraction over signature verification
 // for v3 and v4 public keys.
-type signingKey interface {
+interface signingKey {
 	SerializeSignaturePrefix(io.Writer)
 	serializeWithoutHeaders(io.Writer) error
 }
@@ -654,7 +654,7 @@ func (pk *PublicKey) KeyIdShortString() string {
 // A parsedMPI is used to store the contents of a big integer, along with the
 // bit length that was specified in the original input. This allows the MPI to
 // be reserialized exactly.
-type parsedMPI struct {
+struct parsedMPI {
 	bytes     []byte
 	bitLength uint16
 }

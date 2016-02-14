@@ -18,7 +18,7 @@ import (
 // the server application layer, after successful authentication. The
 // Permissions are passed on in ServerConn so a server implementation
 // can honor them.
-type Permissions struct {
+struct Permissions {
 	// Critical options restrict default permissions. Common
 	// restrictions are "source-address" and "force-command". If
 	// the server cannot enforce the restriction, or does not
@@ -34,7 +34,7 @@ type Permissions struct {
 }
 
 // ServerConfig holds server specific configuration data.
-type ServerConfig struct {
+struct ServerConfig {
 	// Config contains configuration shared between client and server.
 	Config
 
@@ -83,7 +83,7 @@ func (s *ServerConfig) AddHostKey(key Signer) {
 
 // cachedPubKey contains the results of querying whether a public key is
 // acceptable for a user.
-type cachedPubKey struct {
+struct cachedPubKey {
 	user       string
 	pubKeyData []byte
 	result     error
@@ -96,7 +96,7 @@ const maxCachedPubKeys = 16
 // will query whether a public key is acceptable before attempting to
 // authenticate with it, we end up with duplicate queries for public
 // key validity.  The cache only applies to a single ServerConn.
-type pubKeyCache struct {
+struct pubKeyCache {
 	keys []cachedPubKey
 }
 
@@ -119,7 +119,7 @@ func (c *pubKeyCache) add(candidate cachedPubKey) {
 
 // ServerConn is an authenticated SSH connection, as seen from the
 // server
-type ServerConn struct {
+struct ServerConn {
 	Conn
 
 	// If the succeeding authentication callback returned a
@@ -423,7 +423,7 @@ userAuthLoop:
 
 // sshClientKeyboardInteractive implements a ClientKeyboardInteractive by
 // asking the client on the other side of a ServerConn.
-type sshClientKeyboardInteractive struct {
+struct sshClientKeyboardInteractive {
 	*connection
 }
 

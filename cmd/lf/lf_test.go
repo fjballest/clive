@@ -1,13 +1,13 @@
 package main
 
 import (
-	"testing"
-	"clive/dbg"
 	"clive/cmd/test"
+	"clive/dbg"
+	"testing"
 )
 
 var (
-	debug bool
+	debug   bool
 	dprintf = dbg.FlagPrintf(&debug)
 
 	runs = []test.Run{
@@ -22,14 +22,14 @@ d rwxr-xr-x      0 /tmp/cmdtest/e
 `,
 			Err: ``,
 		},
-		test.Run {
+		test.Run{
 			Line: `lf -u /fsdfsd`,
-			Out: ``,
+			Out:  ``,
 			Err: `lf: stat /fsdfsd: no such file or directory
 `,
 			Fails: true,
 		},
-		test.Run {
+		test.Run{
 			Line: `lf -gu 2 |sed 10q`,
 			Out: `- rw-r--r--  30.9k /tmp/cmdtest/2
 /2 0
@@ -44,7 +44,7 @@ d rwxr-xr-x      0 /tmp/cmdtest/e
 `,
 			Err: ``,
 		},
-		test.Run {
+		test.Run{
 			Line: `lf -gu 2 |tail -10`,
 			Out: `/2 4086
 /2 4087

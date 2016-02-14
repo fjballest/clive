@@ -13,12 +13,12 @@ import (
 )
 
 var (
-	opts = opt.New("{pred}")
-	ux bool
+	opts  = opt.New("{pred}")
+	ux    bool
 	preds []*pred.Pred
 )
 
-func gp(in <-chan interface{}, out chan<- interface{}) error {
+func gp(in <-chan face{}, out chan<- face{}) error {
 	matched := true
 	some := false
 	ok := true
@@ -70,7 +70,7 @@ func main() {
 	cmd.UnixIO("err")
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("u", "use unix out", &ux)
-	args:= opts.Parse()
+	args := opts.Parse()
 	if len(args) == 0 {
 		cmd.Warn("missing predicate")
 		opts.Usage()

@@ -15,12 +15,12 @@ import (
 	"clive/x/code.google.com/p/go.crypto/ssh"
 )
 
-type privKey struct {
+struct privKey {
 	signer  ssh.Signer
 	comment string
 }
 
-type keyring struct {
+struct keyring {
 	mu   sync.Mutex
 	keys []privKey
 
@@ -126,7 +126,7 @@ func (r *keyring) List() ([]*Key, error) {
 
 // Insert adds a private key to the keyring. If a certificate
 // is given, that certificate is added as public key.
-func (r *keyring) Add(priv interface{}, cert *ssh.Certificate, comment string) error {
+func (r *keyring) Add(priv face{}, cert *ssh.Certificate, comment string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.locked {

@@ -27,7 +27,7 @@ func SOCKS5(network, addr string, auth *Auth, forward Dialer) (Dialer, error) {
 	return s, nil
 }
 
-type socks5 struct {
+struct socks5 {
 	user, password string
 	network, addr  string
 	forward        Dialer

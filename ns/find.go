@@ -36,11 +36,11 @@ func (ns *NS) exclSuffixes(name string, fpred *pred.Pred) *pred.Pred {
 // f.pred is f.upred with prunes for all suffixes mounted.
 struct finder {
 	ns           *NS
-	name         string            // where the find starts, as given by the user
-	upred        *pred.Pred        // predicate, as given by the user
-	spref, dpref string            // replace spref with dpref in resulting paths
-	depth        int               // depth at name is this
-	c            chan<- zx.Dir     // send replies here
+	name         string        // where the find starts, as given by the user
+	upred        *pred.Pred    // predicate, as given by the user
+	spref, dpref string        // replace spref with dpref in resulting paths
+	depth        int           // depth at name is this
+	c            chan<- zx.Dir // send replies here
 	gc           chan<- face{} // send replies here
 
 	p      *prefix    // where currently finding
@@ -141,7 +141,7 @@ func (f *finder) find1get(d zx.Dir) error {
 					}
 				}
 			}
-			delete(f.suffs, rpath)  // don't repeat the find
+			delete(f.suffs, rpath) // don't repeat the find
 			continue
 		}
 		if f.spref != f.dpref {

@@ -1,19 +1,19 @@
 package ink
 
 import (
-	"sync"
-	"io"
-	fpath "path"
-	"net/http"
+	"bytes"
 	"clive/cmd"
 	"clive/net/auth"
-	"html"
-	"fmt"
-	"strings"
-	"strconv"
-	"net/url"
-	"bytes"
 	"clive/net/ink/js"
+	"fmt"
+	"html"
+	"io"
+	"net/http"
+	"net/url"
+	fpath "path"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 // The layout event is sent from the viewer to the page and it goes over
@@ -29,22 +29,22 @@ import (
 //
 struct Pg {
 	*Ctlr
-	Tag string
-	Cmds []string	// If set, these commands are added to the top
+	Tag  string
+	Cmds []string // If set, these commands are added to the top
 	sync.Mutex
-	Path string
-	NoAuth bool	// set to true to disable auth
-	els [][]io.WriterTo	// of [] of string, Html, io.WriterTo
-	idgen int
+	Path   string
+	NoAuth bool            // set to true to disable auth
+	els    [][]io.WriterTo // of [] of string, Html, io.WriterTo
+	idgen  int
 }
 
 // Elements implementing this may provide the tag as the tittle for the tag bar.
-type Tagger interface {
+interface Tagger {
 	Tag() string
 }
 
 // used on layout changes to locate elements by id
-type idder interface {
+interface idder {
 	GetId() string
 }
 
@@ -56,7 +56,7 @@ type Url string
 
 var (
 	jspath = "/zx/sys/src/clive/net/ink"
-	once sync.Once
+	once   sync.Once
 
 	servePort = "8181"
 )
@@ -158,16 +158,16 @@ func (pg *Pg) mkiframe(s string) urlEl {
 	defer pg.Unlock()
 	pg.idgen++
 	id := fmt.Sprintf("page%d", pg.idgen)
-	s = ` <iframe id="`+id+`frame" src="`+u+`" style="width: 95%; height: 100%;"></iframe>` +
-	`<script>
+	s = ` <iframe id="` + id + `frame" src="` + u + `" style="width: 95%; height: 100%;"></iframe>` +
+		`<script>
 		$(function(){
-			$("#`+id+`_0").resizable({handles: "s"});
+			$("#` + id + `_0").resizable({handles: "s"});
 		});
 	</script>`
 	return urlEl{rawEl: rawEl{id: id, s: s}, tag: html.EscapeString(n)}
 }
 
-func (pg *Pg) mkel(el interface{}) io.WriterTo {
+func (pg *Pg) mkel(el face{}) io.WriterTo {
 	switch el := el.(type) {
 	case io.WriterTo:
 		return el
@@ -189,12 +189,12 @@ func (pg *Pg) mkel(el interface{}) io.WriterTo {
 // Elements can be strings, Html, Url, or io.WriterTo that know how to write the
 // HTML for them (controls implement this interface).
 // The tag line for each element comes from its Tag method if it's a Tagger.
-func NewColsPg(path string, cols ...[]interface{}) *Pg {
+func NewColsPg(path string, cols ...[]face{}) *Pg {
 	once.Do(start)
-	pg := &Pg {
+	pg := &Pg{
 		Ctlr: newCtlr("pg"),
 		Path: path,
-		els: make([][]io.WriterTo, len(cols)),
+		els:  make([][]io.WriterTo, len(cols)),
 	}
 	for i, c := range cols {
 		for _, el := range c {
@@ -210,8 +210,8 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 			tag = "Clive"
 		}
 		title := html.EscapeString(tag)
-		fmt.Fprintln(w, `<html><head><title>`+title+`</title>`);
-		WriteHeaders(w);
+		fmt.Fprintln(w, `<html><head><title>`+title+`</title>`)
+		WriteHeaders(w)
 
 		values, _ := url.ParseQuery(r.URL.RawQuery)
 		if v := values["ncol"]; len(v) > 0 {
@@ -221,8 +221,8 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 				pg.setNumCols(nc)
 			}
 		}
-		fmt.Fprintln(w, `<script type="text/javascript" src="/js/pg.js"></script>`);
-		pcent := 96/len(pg.els)
+		fmt.Fprintln(w, `<script type="text/javascript" src="/js/pg.js"></script>`)
+		pcent := 96 / len(pg.els)
 		fmt.Fprintln(w, `
 		<style>
 		body {
@@ -240,7 +240,7 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 		.ui-icon.inline { display:inline-block; }
 		.ui-widget-header.center { text-align:center; }
 		</style>`)
-		fmt.Fprintln(w, `</head><body>`);
+		fmt.Fprintln(w, `</head><body>`)
 		pg.Lock()
 		defer pg.Unlock()
 		cmds := map[string]string{}
@@ -253,7 +253,7 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 					c = html.EscapeString(c)
 					id := fmt.Sprintf("pgcmd%d", i)
 					cmds[id] = c
-					pre += `<span id="`+id+`"><tt>`+c+`</tt></span> `
+					pre += `<span id="` + id + `"><tt>` + c + `</tt></span> `
 				}
 				pre += `<p>`
 			} else {
@@ -278,7 +278,7 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 				});
 				</script>`)
 		}
-		fmt.Fprintln(w, `</body></html>`);
+		fmt.Fprintln(w, `</body></html>`)
 	}
 	go func() {
 		for e := range pg.in {
@@ -292,23 +292,23 @@ func NewColsPg(path string, cols ...[]interface{}) *Pg {
 // Create a new single column UI page, authenticated.
 // Elements can be strings, Html, or io.WriterTo that know how to write the
 // HTML for them (controls implement this interface).
-func NewPg(path string, els ...interface{}) *Pg {
+func NewPg(path string, els ...face{}) *Pg {
 	return NewColsPg(path, els)
 }
 
 func (r rawEl) WriteTo(w io.Writer) (tot int64, err error) {
-	n ,err := fmt.Fprintln(w, `<div id="`+r.id+`_0" class="ui-widget-content `+r.id+`">`)
-	tot += int64(n);
+	n, err := fmt.Fprintln(w, `<div id="`+r.id+`_0" class="ui-widget-content `+r.id+`">`)
+	tot += int64(n)
 	if err != nil {
 		return tot, err
 	}
-	n ,err = fmt.Fprintln(w, r.s)
-	tot += int64(n);
+	n, err = fmt.Fprintln(w, r.s)
+	tot += int64(n)
 	if err != nil {
 		return tot, err
 	}
-	n ,err = fmt.Fprintln(w, `</div>`)
-	tot += int64(n);
+	n, err = fmt.Fprintln(w, `</div>`)
+	tot += int64(n)
 	return tot, err
 }
 
@@ -341,7 +341,7 @@ func writeEl(w io.Writer, el io.WriterTo, pre, mid, post string) {
 
 func writeEls(w io.Writer, els []io.WriterTo, pre, elpre, elmid, elpost, post string) []io.WriterTo {
 	fmt.Fprintln(w, pre)
-	for i := 0; i < len(els);  {
+	for i := 0; i < len(els); {
 		el := els[i]
 		if el, ok := el.(closeder); ok {
 			if el.Closed() {
@@ -366,7 +366,7 @@ func writeEls(w io.Writer, els []io.WriterTo, pre, elpre, elmid, elpost, post st
 // The string returned can be used to remove the element later.
 // If it's a Url, the string can be the url or "url|name" where name is
 // the name to be shown as the tag.
-func (pg *Pg) Add(el interface{}) (string, error) {
+func (pg *Pg) Add(el face{}) (string, error) {
 	nel := pg.mkel(el)
 	if nel == nil {
 		return "", fmt.Errorf("unknown element type %T", el)
@@ -382,7 +382,7 @@ func (pg *Pg) Add(el interface{}) (string, error) {
 		updportlets();
 		</script>
 	`)
-	pg.out <- &Ev{Id: pg.Id, Src: "app", Args:[]string{"load", buf.String()}}
+	pg.out <- &Ev{Id: pg.Id, Src: "app", Args: []string{"load", buf.String()}}
 	pg.Lock()
 	defer pg.Unlock()
 	col := pg.els[len(pg.els)-1]
@@ -478,13 +478,13 @@ func (pg *Pg) setNumCols(n int) {
 		i := 0
 		for _, el := range last {
 			pg.els[i] = append(pg.els[i], el)
-			i = (i+1)%len(pg.els)
+			i = (i + 1) % len(pg.els)
 		}
 	}
 }
 
 func (pg *Pg) handle(wev *Ev) {
-	if wev==nil || len(wev.Args)<1 {
+	if wev == nil || len(wev.Args) < 1 {
 		return
 	}
 	ev := wev.Args

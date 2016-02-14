@@ -1,28 +1,28 @@
 package ns
 
 import (
-	"os"
-	"testing"
-	"clive/zx"
-	"clive/net"
-	"clive/dbg"
-	"clive/zx/fstest"
-	"fmt"
-	"strings"
 	"bytes"
-	"clive/zx/zux"
+	"clive/dbg"
+	"clive/net"
+	"clive/zx"
+	"clive/zx/fstest"
 	"clive/zx/rzx"
+	"clive/zx/zux"
 	"clive/zx/zxc"
+	"fmt"
+	"os"
 	fpath "path"
+	"strings"
+	"testing"
 )
 
 const tdir = "/tmp/ns_test"
 
 var (
-	verb = false
+	verb     = false
 	printf   = dbg.FlagPrintf(&verb)
 	moreverb = false
-	ns1 = `/ /
+	ns1      = `/ /
 /tmp
 /tmp	lfs!/!/tmp
 /tmp	lfs!/tmp
@@ -76,100 +76,100 @@ func mkns(t *testing.T, lns string) *NS {
 }
 
 struct nsTest {
-	path string
-	d zx.Dir
+	path     string
+	d        zx.Dir
 	isumount bool
-	flag Flag 
-	fails bool
-	res string
+	flag     Flag
+	fails    bool
+	res      string
 }
 
 var nstests = [...]nsTest{
-	nsTest {
-		flag: After,
-		d: zx.Dir{"path": "foo", "addr": "fooaddr"},
+	nsTest{
+		flag:  After,
+		d:     zx.Dir{"path": "foo", "addr": "fooaddr"},
 		fails: true,
 	},
-	nsTest {
+	nsTest{
 		flag: After,
-		d: zx.Dir{"path": "/foo", "addr": "fooaddr"},
+		d:    zx.Dir{"path": "/foo", "addr": "fooaddr"},
 		res: `/	/tmp/ns_test
 /foo	fooaddr
 `,
 	},
-	nsTest {
+	nsTest{
 		flag: After,
-		d: zx.Dir{"path": "/foo", "addr": "fooaddr2"},
+		d:    zx.Dir{"path": "/foo", "addr": "fooaddr2"},
 		res: `/	/tmp/ns_test
 /foo	fooaddr
 /foo	fooaddr2
 `,
 	},
-	nsTest {
+	nsTest{
 		flag: Before,
-		d: zx.Dir{"path": "/foo", "addr": "fooaddr0"},
+		d:    zx.Dir{"path": "/foo", "addr": "fooaddr0"},
 		res: `/	/tmp/ns_test
 /foo	fooaddr0
 /foo	fooaddr
 /foo	fooaddr2
 `,
 	},
-	nsTest {
+	nsTest{
 		flag: Repl,
-		d: zx.Dir{"path": "/foo", "addr": "fooaddrx"},
+		d:    zx.Dir{"path": "/foo", "addr": "fooaddrx"},
 		res: `/	/tmp/ns_test
 /foo	fooaddrx
 `,
 	},
-	nsTest {
+	nsTest{
 		flag: Repl,
-		d: zx.Dir{"path": "/foo/bar", "addr": "baraddr1"},
+		d:    zx.Dir{"path": "/foo/bar", "addr": "baraddr1"},
 		res: `/	/tmp/ns_test
 /foo	fooaddrx
 /foo/bar	baraddr1
 `,
 	},
-	nsTest {
-		path: "/foo",
+	nsTest{
+		path:     "/foo",
 		isumount: true,
 		res: `/	/tmp/ns_test
 /foo/bar	baraddr1
 `,
 	},
-	nsTest {
+	nsTest{
 		flag: After,
-		d: zx.Dir{"path": "/foo", "addr": "fooaddrx1"},
+		d:    zx.Dir{"path": "/foo", "addr": "fooaddrx1"},
 		res: `/	/tmp/ns_test
 /foo	fooaddrx1
 /foo/bar	baraddr1
 `,
 	},
-	nsTest {
+	nsTest{
 		flag: Before,
-		d: zx.Dir{"path": "/foo", "addr": "1staddr"},
+		d:    zx.Dir{"path": "/foo", "addr": "1staddr"},
 		res: `/	/tmp/ns_test
 /foo	1staddr
 /foo	fooaddrx1
 /foo/bar	baraddr1
 `,
 	},
-	nsTest {
-		path: "/foxo",
+	nsTest{
+		path:     "/foxo",
 		isumount: true,
-		fails: true,
+		fails:    true,
 	},
 
-	nsTest {
-		path: "/foo",
+	nsTest{
+		path:     "/foo",
 		isumount: true,
-		d: zx.Dir{"path": "/foo", "addr": "1staddr"},
+		d:        zx.Dir{"path": "/foo", "addr": "1staddr"},
 		res: `/	/tmp/ns_test
 /foo	fooaddrx1
 /foo/bar	baraddr1
 `,
 	},
-	nsTest {
-		path: "/foo",
+	nsTest{
+		path:     "/foo",
 		isumount: true,
 		res: `/	/tmp/ns_test
 /foo/bar	baraddr1
@@ -178,7 +178,7 @@ var nstests = [...]nsTest{
 }
 
 func TestNS(t *testing.T) {
-	lns := `/ `+tdir
+	lns := `/ ` + tdir
 	ns := mkns(t, lns)
 	printf("ns is `%s`\n", ns)
 	for _, nst := range nstests {
@@ -205,15 +205,15 @@ func TestNS(t *testing.T) {
 }
 
 struct resTest {
-	path string
-	pref string
-	mout string
+	path  string
+	pref  string
+	mout  string
 	fails bool
 }
 
 var restests = [...]resTest{
 	resTest{
-		path: ".",
+		path:  ".",
 		fails: true,
 	},
 	resTest{
@@ -277,7 +277,7 @@ func TestResolve(t *testing.T) {
 	}
 }
 
-type findTest struct {
+struct findTest {
 	path         string
 	pred         string
 	spref, dpref string
@@ -289,90 +289,90 @@ type findTest struct {
 var finds = []findTest{
 	findTest{
 		path: "/",
-		res: []string {
-	`d rwxr-xr-x      0 /           addr lfs!/tmp/ns_test!/`,
-	`c rw-r--r--      0 /Ctl        addr lfs!/tmp/ns_test!/Ctl`,
-	`- rw-r--r--      0 /1          addr lfs!/tmp/ns_test!/1`,
-	`- rw-r--r--  30.9k /2          addr lfs!/tmp/ns_test!/2`,
-	`d rwxr-xr-x      0 /a          addr lfs!/tmp/ns_test!/a`,
-	`- rw-r--r--   9.9k /a/a1       addr lfs!/tmp/ns_test!/a/a1`,
-	`- rw-r--r--  20.9k /a/a2       addr lfs!/tmp/ns_test!/a/a2`,
-	`d rwxr-xr-x      0 /a/b        addr lfs!/tmp/ns_test!/a/b`,
-	`d rwxr-xr-x      0 /a/b/c      addr lfs!/tmp/ns_test!/`,
-	`c rw-r--r--      0 /a/b/c/Ctl  addr lfs!/tmp/ns_test!/Ctl`,
-	`- rw-r--r--      0 /a/b/c/1    addr lfs!/tmp/ns_test!/1`,
-	`- rw-r--r--  30.9k /a/b/c/2    addr lfs!/tmp/ns_test!/2`,
-	`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
-	`- rw-r--r--   9.9k /a/b/c/a/a1 addr lfs!/tmp/ns_test!/a/a1`,
-	`- rw-r--r--  20.9k /a/b/c/a/a2 addr lfs!/tmp/ns_test!/a/a2`,
-	`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
-	`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
-	`- rw-r--r--  43.9k /a/b/c/a/b/c/c3 addr lfs!/tmp/ns_test!/a/b/c/c3`,
-	`d rwxr-xr-x      0 /a/b/c/d    addr lfs!/tmp/ns_test!/d`,
-	`d rwxr-xr-x      0 /a/b/c/e    addr lfs!/tmp/ns_test!/e`,
-	`d rwxr-xr-x      0 /a/b/c/e/f  addr lfs!/tmp/ns_test!/e/f`,
-	`d rwxr-xr-x      0 /a/b/c      addr lfs!/tmp/ns_test!/`,
-	`c rw-r--r--      0 /a/b/c/Ctl  addr lfs!/tmp/ns_test!/Ctl`,
-	`- rw-r--r--      0 /a/b/c/1    addr lfs!/tmp/ns_test!/1`,
-	`- rw-r--r--  30.9k /a/b/c/2    addr lfs!/tmp/ns_test!/2`,
-	`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
-	`- rw-r--r--   9.9k /a/b/c/a/a1 addr lfs!/tmp/ns_test!/a/a1`,
-	`- rw-r--r--  20.9k /a/b/c/a/a2 addr lfs!/tmp/ns_test!/a/a2`,
-	`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
-	`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
-	`- rw-r--r--  43.9k /a/b/c/a/b/c/c3 addr lfs!/tmp/ns_test!/a/b/c/c3`,
-	`d rwxr-xr-x      0 /a/b/c/d    addr lfs!/tmp/ns_test!/d`,
-	`d rwxr-xr-x      0 /a/b/c/e    addr lfs!/tmp/ns_test!/e`,
-	`d rwxr-xr-x      0 /a/b/c/e/f  addr lfs!/tmp/ns_test!/e/f`,
-	`d rwxr-xr-x      0 /d          addr lfs!/tmp/ns_test!/d`,
-	`d rwxr-xr-x      0 /e          addr lfs!/tmp/ns_test!/e`,
-	`d rwxr-xr-x      0 /e/f        addr lfs!/tmp/ns_test!/e/f`,
+		res: []string{
+			`d rwxr-xr-x      0 /           addr lfs!/tmp/ns_test!/`,
+			`c rw-r--r--      0 /Ctl        addr lfs!/tmp/ns_test!/Ctl`,
+			`- rw-r--r--      0 /1          addr lfs!/tmp/ns_test!/1`,
+			`- rw-r--r--  30.9k /2          addr lfs!/tmp/ns_test!/2`,
+			`d rwxr-xr-x      0 /a          addr lfs!/tmp/ns_test!/a`,
+			`- rw-r--r--   9.9k /a/a1       addr lfs!/tmp/ns_test!/a/a1`,
+			`- rw-r--r--  20.9k /a/a2       addr lfs!/tmp/ns_test!/a/a2`,
+			`d rwxr-xr-x      0 /a/b        addr lfs!/tmp/ns_test!/a/b`,
+			`d rwxr-xr-x      0 /a/b/c      addr lfs!/tmp/ns_test!/`,
+			`c rw-r--r--      0 /a/b/c/Ctl  addr lfs!/tmp/ns_test!/Ctl`,
+			`- rw-r--r--      0 /a/b/c/1    addr lfs!/tmp/ns_test!/1`,
+			`- rw-r--r--  30.9k /a/b/c/2    addr lfs!/tmp/ns_test!/2`,
+			`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
+			`- rw-r--r--   9.9k /a/b/c/a/a1 addr lfs!/tmp/ns_test!/a/a1`,
+			`- rw-r--r--  20.9k /a/b/c/a/a2 addr lfs!/tmp/ns_test!/a/a2`,
+			`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
+			`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
+			`- rw-r--r--  43.9k /a/b/c/a/b/c/c3 addr lfs!/tmp/ns_test!/a/b/c/c3`,
+			`d rwxr-xr-x      0 /a/b/c/d    addr lfs!/tmp/ns_test!/d`,
+			`d rwxr-xr-x      0 /a/b/c/e    addr lfs!/tmp/ns_test!/e`,
+			`d rwxr-xr-x      0 /a/b/c/e/f  addr lfs!/tmp/ns_test!/e/f`,
+			`d rwxr-xr-x      0 /a/b/c      addr lfs!/tmp/ns_test!/`,
+			`c rw-r--r--      0 /a/b/c/Ctl  addr lfs!/tmp/ns_test!/Ctl`,
+			`- rw-r--r--      0 /a/b/c/1    addr lfs!/tmp/ns_test!/1`,
+			`- rw-r--r--  30.9k /a/b/c/2    addr lfs!/tmp/ns_test!/2`,
+			`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
+			`- rw-r--r--   9.9k /a/b/c/a/a1 addr lfs!/tmp/ns_test!/a/a1`,
+			`- rw-r--r--  20.9k /a/b/c/a/a2 addr lfs!/tmp/ns_test!/a/a2`,
+			`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
+			`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
+			`- rw-r--r--  43.9k /a/b/c/a/b/c/c3 addr lfs!/tmp/ns_test!/a/b/c/c3`,
+			`d rwxr-xr-x      0 /a/b/c/d    addr lfs!/tmp/ns_test!/d`,
+			`d rwxr-xr-x      0 /a/b/c/e    addr lfs!/tmp/ns_test!/e`,
+			`d rwxr-xr-x      0 /a/b/c/e/f  addr lfs!/tmp/ns_test!/e/f`,
+			`d rwxr-xr-x      0 /d          addr lfs!/tmp/ns_test!/d`,
+			`d rwxr-xr-x      0 /e          addr lfs!/tmp/ns_test!/e`,
+			`d rwxr-xr-x      0 /e/f        addr lfs!/tmp/ns_test!/e/f`,
 		},
 	},
 	findTest{
 		path: "/",
 		pred: "1",
-		res: []string {
-	`d rwxr-xr-x      0 /           addr lfs!/tmp/ns_test!/`,
-	`c rw-r--r--      0 /Ctl        addr lfs!/tmp/ns_test!/Ctl`,
-	`- rw-r--r--      0 /1          addr lfs!/tmp/ns_test!/1`,
-	`- rw-r--r--  30.9k /2          addr lfs!/tmp/ns_test!/2`,
-	`d rwxr-xr-x      0 /a          addr lfs!/tmp/ns_test!/a`,
-	`d rwxr-xr-x      0 /d          addr lfs!/tmp/ns_test!/d`,
-	`d rwxr-xr-x      0 /e          addr lfs!/tmp/ns_test!/e`,
+		res: []string{
+			`d rwxr-xr-x      0 /           addr lfs!/tmp/ns_test!/`,
+			`c rw-r--r--      0 /Ctl        addr lfs!/tmp/ns_test!/Ctl`,
+			`- rw-r--r--      0 /1          addr lfs!/tmp/ns_test!/1`,
+			`- rw-r--r--  30.9k /2          addr lfs!/tmp/ns_test!/2`,
+			`d rwxr-xr-x      0 /a          addr lfs!/tmp/ns_test!/a`,
+			`d rwxr-xr-x      0 /d          addr lfs!/tmp/ns_test!/d`,
+			`d rwxr-xr-x      0 /e          addr lfs!/tmp/ns_test!/e`,
 		},
 	},
 	findTest{
 		path: "/a/b",
 		pred: "d",
-		res: []string {
-	`d rwxr-xr-x      0 /a/b        addr lfs!/tmp/ns_test!/a/b`,
-	`d rwxr-xr-x      0 /a/b/c      addr lfs!/tmp/ns_test!/`,
-	`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
-	`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
-	`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
-	`d rwxr-xr-x      0 /a/b/c/d    addr lfs!/tmp/ns_test!/d`,
-	`d rwxr-xr-x      0 /a/b/c/e    addr lfs!/tmp/ns_test!/e`,
-	`d rwxr-xr-x      0 /a/b/c/e/f  addr lfs!/tmp/ns_test!/e/f`,
-	`d rwxr-xr-x      0 /a/b/c      addr lfs!/tmp/ns_test!/`,
-	`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
-	`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
-	`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
-	`d rwxr-xr-x      0 /a/b/c/d    addr lfs!/tmp/ns_test!/d`,
-	`d rwxr-xr-x      0 /a/b/c/e    addr lfs!/tmp/ns_test!/e`,
-	`d rwxr-xr-x      0 /a/b/c/e/f  addr lfs!/tmp/ns_test!/e/f`,
+		res: []string{
+			`d rwxr-xr-x      0 /a/b        addr lfs!/tmp/ns_test!/a/b`,
+			`d rwxr-xr-x      0 /a/b/c      addr lfs!/tmp/ns_test!/`,
+			`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
+			`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
+			`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
+			`d rwxr-xr-x      0 /a/b/c/d    addr lfs!/tmp/ns_test!/d`,
+			`d rwxr-xr-x      0 /a/b/c/e    addr lfs!/tmp/ns_test!/e`,
+			`d rwxr-xr-x      0 /a/b/c/e/f  addr lfs!/tmp/ns_test!/e/f`,
+			`d rwxr-xr-x      0 /a/b/c      addr lfs!/tmp/ns_test!/`,
+			`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
+			`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
+			`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
+			`d rwxr-xr-x      0 /a/b/c/d    addr lfs!/tmp/ns_test!/d`,
+			`d rwxr-xr-x      0 /a/b/c/e    addr lfs!/tmp/ns_test!/e`,
+			`d rwxr-xr-x      0 /a/b/c/e/f  addr lfs!/tmp/ns_test!/e/f`,
 		},
 	},
 	findTest{
 		path: "/a/b/c/a",
 		pred: "d",
-		res: []string {
-	`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
-	`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
-	`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
-	`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
-	`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
-	`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
+		res: []string{
+			`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
+			`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
+			`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
+			`d rwxr-xr-x      0 /a/b/c/a    addr lfs!/tmp/ns_test!/a`,
+			`d rwxr-xr-x      0 /a/b/c/a/b  addr lfs!/tmp/ns_test!/a/b`,
+			`d rwxr-xr-x      0 /a/b/c/a/b/c addr lfs!/tmp/ns_test!/a/b/c`,
 		},
 	},
 }
@@ -574,7 +574,7 @@ func runRfsTest(t *testing.T, fn fstest.TestFunc) {
 		t.Fatal(err)
 	}
 	defer cfs.Close()
-	
+
 	ccfg, err := net.TLSCfg("/Users/nemo/.ssh/client")
 	if err != nil {
 		t.Logf("no certs found, no tls conn")
@@ -623,16 +623,16 @@ func TestRfsFinds(t *testing.T) {
 
 func TestPaths(t *testing.T) {
 	verb = testing.Verbose()
-	os.RemoveAll(tdir+"empty")
+	os.RemoveAll(tdir + "empty")
 	os.RemoveAll(tdir)
 	os.MkdirAll(tdir+"empty/mnt", 0755)
 	fstest.MkTree(t, tdir)
 	defer os.RemoveAll(tdir)
-	defer os.RemoveAll(tdir+"empty")
+	defer os.RemoveAll(tdir + "empty")
 	AddLfsPath(tdir+"empty", nil)
 	AddLfsPath(tdir, nil)
-	lns := `/ `+tdir+`empty
-	/mnt	`+tdir
+	lns := `/ ` + tdir + `empty
+	/mnt	` + tdir
 	ns := mkns(t, lns)
 	ns.Debug = testing.Verbose()
 	printf("ns is `%s`\n", ns)

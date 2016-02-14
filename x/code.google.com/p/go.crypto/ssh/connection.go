@@ -11,7 +11,7 @@ import (
 
 // OpenChannelError is returned if the other side rejects an
 // OpenChannel request.
-type OpenChannelError struct {
+struct OpenChannelError {
 	Reason  RejectionReason
 	Message string
 }
@@ -21,7 +21,7 @@ func (e *OpenChannelError) Error() string {
 }
 
 // ConnMetadata holds metadata for the connection.
-type ConnMetadata interface {
+interface ConnMetadata {
 	// User returns the user ID for this connection.
 	// It is empty if no authentication is used.
 	User() string
@@ -48,7 +48,7 @@ type ConnMetadata interface {
 // Conn is the basis for implementing an application layer, such
 // as ClientConn, which implements the traditional shell access for
 // clients.
-type Conn interface {
+interface Conn {
 	ConnMetadata
 
 	// SendRequest sends a global request, and returns the
@@ -86,7 +86,7 @@ func DiscardRequests(in <-chan *Request) {
 }
 
 // A connection represents an incoming connection.
-type connection struct {
+struct connection {
 	transport *handshakeTransport
 	sshConn
 
@@ -100,7 +100,7 @@ func (c *connection) Close() error {
 
 // sshconn provides net.Conn metadata, but disallows direct reads and
 // writes.
-type sshConn struct {
+struct sshConn {
 	conn net.Conn
 
 	user          string

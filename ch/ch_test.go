@@ -44,7 +44,7 @@ var out = []byte{0xc, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x1, 0x0, 0x61, 0x20, 0
 func TestMsgs(t *testing.T) {
 	var buf bytes.Buffer
 	b1 := []byte("a byte array")
-	b2 := Ign{666,[]byte("another byte array")}
+	b2 := Ign{666, []byte("another byte array")}
 	s1 := "a string"
 	s2 := "another string"
 	var b3 []byte

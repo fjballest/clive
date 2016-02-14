@@ -13,11 +13,11 @@ import (
 // A Conn represents a network endpoint that uses IPv6 transport.
 // It allows to set basic IP-level socket options such as traffic
 // class and hop limit.
-type Conn struct {
+struct Conn {
 	genericOpt
 }
 
-type genericOpt struct {
+struct genericOpt {
 	net.Conn
 }
 
@@ -48,13 +48,13 @@ func NewConn(c net.Conn) *Conn {
 // including IPv6 header manipulation.  It also provides datagram
 // based network I/O methods specific to the IPv6 and higher layer
 // protocols such as OSPF, GRE, and UDP.
-type PacketConn struct {
+struct PacketConn {
 	genericOpt
 	dgramOpt
 	payloadHandler
 }
 
-type dgramOpt struct {
+struct dgramOpt {
 	net.PacketConn
 }
 

@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	opts = opt.New("{file}")
+	opts            = opt.New("{file}")
 	all             bool
 	pflag, nflag    bool
 	nhd, ntl, nfrom int

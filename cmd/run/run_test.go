@@ -1,18 +1,18 @@
 package run
 
 import (
-	"testing"
-	"clive/cmd"
-	"clive/ch"
-	"clive/dbg"
 	"bytes"
+	"clive/ch"
+	"clive/cmd"
+	"clive/dbg"
 	"fmt"
-	"time"
 	"strings"
+	"testing"
+	"time"
 )
 
 var (
-	debug bool
+	debug  bool
 	printf = dbg.FlagPrintf(&debug)
 )
 
@@ -124,7 +124,7 @@ func TestUnixGroup(t *testing.T) {
 func TestCliveCmd(t *testing.T) {
 	debug = testing.Verbose()
 
-	c, err := Cmd("eco", "-m",  "a", "b", "c")
+	c, err := Cmd("eco", "-m", "a", "b", "c")
 	if err != nil {
 		t.Fatalf("sts %v", err)
 	}
@@ -181,7 +181,7 @@ func TestCliveOutChan(t *testing.T) {
 		c.ForkDot()
 		c.SetOut("out2", out2)
 	}
-	c, err := CtxCmd(adj, "eco", "-o", "out2", "-m",  "a", "b", "c")
+	c, err := CtxCmd(adj, "eco", "-o", "out2", "-m", "a", "b", "c")
 	if err != nil {
 		t.Fatalf("sts %v", err)
 	}
@@ -211,7 +211,7 @@ func TestCliveIn2Chan(t *testing.T) {
 		c.ForkDot()
 		c.SetIn("in2", in)
 	}
-	c, err := CtxCmd(adj, "eco", "-i", "in2", "-m",  "a", "b", "c")
+	c, err := CtxCmd(adj, "eco", "-i", "in2", "-m", "a", "b", "c")
 	if err != nil {
 		t.Fatalf("sts %v", err)
 	}
@@ -246,7 +246,7 @@ func TestCliveInChan(t *testing.T) {
 		c.ForkNS()
 		c.ForkDot()
 	}
-	c, err := PipeToCtx(adj, "eco", "-i", "in", "-m",  "a", "b", "c")
+	c, err := PipeToCtx(adj, "eco", "-i", "in", "-m", "a", "b", "c")
 	if err != nil {
 		t.Fatalf("sts %v", err)
 	}

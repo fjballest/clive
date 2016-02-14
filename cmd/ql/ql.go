@@ -6,28 +6,27 @@
 package main
 
 import (
-	"io"
-	"os"
-	"clive/zx"
 	"clive/cmd"
 	"clive/cmd/opt"
-	"errors"
-	"strings"
 	"clive/cmd/tty"
-	fpath "path"
 	"clive/u"
+	"clive/zx"
+	"errors"
+	"io"
 	"io/ioutil"
+	"os"
+	fpath "path"
+	"strings"
 )
 
-type inRdr struct {
+struct inRdr {
 	name string
-	inc  <-chan interface{}
+	inc  <-chan face{}
 	left []rune
 }
 
-
 var (
-	yylex *lex
+	yylex                                      *lex
 	ldebug, ydebug, nddebug, dry, cflag, iflag bool
 
 	intrc <-chan os.Signal
@@ -35,9 +34,8 @@ var (
 	yprintf = cmd.FlagPrintf(&ydebug)
 	nprintf = cmd.FlagPrintf(&nddebug)
 
-	opts = opt.New("[file] ...")
+	opts     = opt.New("[file] ...")
 	parseErr = errors.New("parse error")
-
 )
 
 func (ir *inRdr) Name() string {
@@ -107,7 +105,7 @@ func dotql() {
 	if err != nil {
 		return
 	}
-	inc := make(chan interface{}, 2)
+	inc := make(chan face{}, 2)
 	inc <- zx.Dir{"path": qlpath, "Upath": qlpath, "type": "-"}
 	inc <- dat
 	close(inc)
@@ -116,7 +114,7 @@ func dotql() {
 	if err := parse(); err != nil {
 		cmd.Warn(".ql: %s", err)
 	}
-	
+
 }
 
 func main() {
@@ -145,7 +143,7 @@ func main() {
 		if c[len(c)-1] != '\n' {
 			c += "\n"
 		}
-		in := make(chan interface{}, 2)
+		in := make(chan face{}, 2)
 		in <- zx.Dir{"path": "-c", "Upath": "-c", "type": "c"}
 		in <- []byte(c)
 		close(in)
@@ -170,9 +168,9 @@ func main() {
 	}
 	if ldebug {
 		cmd.Warn("debug lex")
-		justLex()	// does not return
+		justLex() // does not return
 	}
-	if ydebug  {
+	if ydebug {
 		yylex.interactive = true
 		cmd.Warn("debug yacc")
 	}

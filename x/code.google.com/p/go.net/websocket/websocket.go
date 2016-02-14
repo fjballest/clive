@@ -35,7 +35,7 @@ const (
 )
 
 // ProtocolError represents WebSocket protocol errors.
-type ProtocolError struct {
+struct ProtocolError {
 	ErrorString string
 }
 
@@ -59,7 +59,7 @@ var (
 )
 
 // Addr is an implementation of net.Addr for WebSocket.
-type Addr struct {
+struct Addr {
 	*url.URL
 }
 
@@ -67,7 +67,7 @@ type Addr struct {
 func (addr *Addr) Network() string { return "websocket" }
 
 // Config is a WebSocket configuration
-type Config struct {
+struct Config {
 	// A WebSocket server address.
 	Location *url.URL
 
@@ -90,7 +90,7 @@ type Config struct {
 }
 
 // serverHandshaker is an interface to handle WebSocket server side handshake.
-type serverHandshaker interface {
+interface serverHandshaker {
 	// ReadHandshake reads handshake request message from client.
 	// Returns http response code and error if any.
 	ReadHandshake(buf *bufio.Reader, req *http.Request) (code int, err error)
@@ -104,7 +104,7 @@ type serverHandshaker interface {
 }
 
 // frameReader is an interface to read a WebSocket frame.
-type frameReader interface {
+interface frameReader {
 	// Reader is to read payload of the frame.
 	io.Reader
 
@@ -123,28 +123,28 @@ type frameReader interface {
 }
 
 // frameReaderFactory is an interface to creates new frame reader.
-type frameReaderFactory interface {
+interface frameReaderFactory {
 	NewFrameReader() (r frameReader, err error)
 }
 
 // frameWriter is an interface to write a WebSocket frame.
-type frameWriter interface {
+interface frameWriter {
 	// Writer is to write payload of the frame.
 	io.WriteCloser
 }
 
 // frameWriterFactory is an interface to create new frame writer.
-type frameWriterFactory interface {
+interface frameWriterFactory {
 	NewFrameWriter(payloadType byte) (w frameWriter, err error)
 }
 
-type frameHandler interface {
+interface frameHandler {
 	HandleFrame(frame frameReader) (r frameReader, err error)
 	WriteClose(status int) (err error)
 }
 
 // Conn represents a WebSocket connection.
-type Conn struct {
+struct Conn {
 	config  *Config
 	request *http.Request
 
@@ -277,13 +277,13 @@ func (ws *Conn) Config() *Config { return ws.config }
 func (ws *Conn) Request() *http.Request { return ws.request }
 
 // Codec represents a symmetric pair of functions that implement a codec.
-type Codec struct {
-	Marshal   func(v interface{}) (data []byte, payloadType byte, err error)
-	Unmarshal func(data []byte, payloadType byte, v interface{}) (err error)
+struct Codec {
+	Marshal   func(v face{}) (data []byte, payloadType byte, err error)
+	Unmarshal func(data []byte, payloadType byte, v face{}) (err error)
 }
 
 // Send sends v marshaled by cd.Marshal as single frame to ws.
-func (cd Codec) Send(ws *Conn, v interface{}) (err error) {
+func (cd Codec) Send(ws *Conn, v face{}) (err error) {
 	data, payloadType, err := cd.Marshal(v)
 	if err != nil {
 		return err
@@ -300,7 +300,7 @@ func (cd Codec) Send(ws *Conn, v interface{}) (err error) {
 }
 
 // Receive receives single frame from ws, unmarshaled by cd.Unmarshal and stores in v.
-func (cd Codec) Receive(ws *Conn, v interface{}) (err error) {
+func (cd Codec) Receive(ws *Conn, v face{}) (err error) {
 	ws.rio.Lock()
 	defer ws.rio.Unlock()
 	if ws.frameReader != nil {
@@ -330,7 +330,7 @@ again:
 	return cd.Unmarshal(data, payloadType, v)
 }
 
-func marshal(v interface{}) (msg []byte, payloadType byte, err error) {
+func marshal(v face{}) (msg []byte, payloadType byte, err error) {
 	switch data := v.(type) {
 	case string:
 		return []byte(data), TextFrame, nil
@@ -340,7 +340,7 @@ func marshal(v interface{}) (msg []byte, payloadType byte, err error) {
 	return nil, UnknownFrame, ErrNotSupported
 }
 
-func unmarshal(msg []byte, payloadType byte, v interface{}) (err error) {
+func unmarshal(msg []byte, payloadType byte, v face{}) (err error) {
 	switch data := v.(type) {
 	case *string:
 		*data = string(msg)
@@ -380,12 +380,12 @@ Trivial usage:
 */
 var Message = Codec{marshal, unmarshal}
 
-func jsonMarshal(v interface{}) (msg []byte, payloadType byte, err error) {
+func jsonMarshal(v face{}) (msg []byte, payloadType byte, err error) {
 	msg, err = json.Marshal(v)
 	return msg, TextFrame, err
 }
 
-func jsonUnmarshal(msg []byte, payloadType byte, v interface{}) (err error) {
+func jsonUnmarshal(msg []byte, payloadType byte, v face{}) (err error) {
 	return json.Unmarshal(msg, v)
 }
 

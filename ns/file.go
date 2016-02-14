@@ -1,23 +1,23 @@
 package ns
 
 import (
-	"clive/zx"
-	"clive/zx/zux"
-	"clive/zx/rzx"
 	"clive/net/auth"
-	fpath "path"
-	"sync"
-	"io"
+	"clive/zx"
+	"clive/zx/rzx"
+	"clive/zx/zux"
 	"fmt"
+	"io"
+	fpath "path"
 	"strings"
+	"sync"
 )
 
 var (
-	lfs = map[string]zx.Fs{}
+	lfs   = map[string]zx.Fs{}
 	lfslk sync.Mutex
 
-	_fs zx.RWFs = &NS{}
-	_fs2 zx.Finder = &NS{}
+	_fs  zx.RWFs       = &NS{}
+	_fs2 zx.Finder     = &NS{}
 	_fs3 zx.FindGetter = &NS{}
 )
 
@@ -89,7 +89,7 @@ func DirFs(d zx.Dir) (zx.Fs, error) {
 	switch p := d.Proto(); p {
 	case "lfs":
 		addr := d["addr"]
-		toks := strings.Split(d["addr"], "!")	// lfs!root!/path
+		toks := strings.Split(d["addr"], "!") // lfs!root!/path
 		if len(toks) != 3 {
 			return nil, fmt.Errorf("ns: no zux tree for addr %q", addr)
 		}
@@ -105,7 +105,7 @@ func DirFs(d zx.Dir) (zx.Fs, error) {
 		if len(addr) < 3 {
 			panic("DirFs bug")
 		}
-		addr = addr[3:]	// remove zx!
+		addr = addr[3:] // remove zx!
 		// rzx does cache dials, no need to do it again here.
 		return rzx.Dial(addr, auth.TLSclient)
 	default:
@@ -275,4 +275,3 @@ func (ns *NS) Move(from, to string) <-chan error {
 	}
 	return xfs.Move(fromd.SPath(), tod.SPath())
 }
-

@@ -30,13 +30,13 @@ const (
 	sysSizeofPacketInfo      = 0xc
 )
 
-type sysNewMulticastReq struct {
+struct sysNewMulticastReq {
 	IP        [4]byte
 	Interface [4]byte
 	IfIndex   int32
 }
 
-type sysPacketInfo struct {
+struct sysPacketInfo {
 	IfIndex  int32
 	RoutedIP [4]byte
 	IP       [4]byte

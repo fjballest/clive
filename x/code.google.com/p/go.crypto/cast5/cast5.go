@@ -11,7 +11,7 @@ import "errors"
 const BlockSize = 8
 const KeySize = 16
 
-type Cipher struct {
+struct Cipher {
 	masking [16]uint32
 	rotate  [16]uint8
 }
@@ -120,7 +120,7 @@ type keyScheduleB [4][5]uint8
 // elements are the S-box indexes. They use the same form as in keyScheduleA,
 // above.
 
-type keyScheduleRound struct{}
+struct keyScheduleRound {}
 type keySchedule []keyScheduleRound
 
 var schedule = []struct {

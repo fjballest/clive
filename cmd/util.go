@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"clive/zx"
-	fpath "path"
-	"strings"
 	"bytes"
-	"unicode/utf8"
+	"clive/zx"
 	"errors"
 	"fmt"
+	fpath "path"
+	"strings"
+	"unicode/utf8"
 )
 
 func Stat(path string) (zx.Dir, error) {
@@ -103,9 +103,9 @@ func CleanName(name string) (string, string) {
 // specified by the user.
 // If one argument is "|...", it names an IO chan and a dir entry is sent for it, type "c",
 // With the path (and Upath/Rpath) set to the name
-func Dirs(names ...string) chan interface{} {
+func Dirs(names ...string) chan face{} {
 	ns := NS()
-	rc := make(chan interface{})
+	rc := make(chan face{})
 	go func() {
 		var err error
 		for _, name := range names {
@@ -184,9 +184,9 @@ func Dir(name string) (zx.Dir, error) {
 // Like Dirs(), but sends also file contents
 // If one argument is "|...", it names an IO chan and a dir entry is sent for it, type "c",
 // With the path (and Upath/Rpath) set to the name, then its contents.
-func Files(names ...string) chan interface{} {
+func Files(names ...string) chan face{} {
 	ns := NS()
-	rc := make(chan interface{})
+	rc := make(chan face{})
 	go func() {
 		var err error
 		for _, name := range names {
@@ -300,9 +300,9 @@ func ByteLines(c <-chan []byte) <-chan []byte {
 }
 
 // Process a stream of input file data and send one line at a time.
-func Lines(c <-chan interface{}) <-chan interface{} {
+func Lines(c <-chan face{}) <-chan face{} {
 	sep := '\n'
-	rc := make(chan interface{})
+	rc := make(chan face{})
 	go func() {
 		var buf bytes.Buffer
 		saved := []byte{}
@@ -356,8 +356,8 @@ func Lines(c <-chan interface{}) <-chan interface{} {
 // pipe an input chan and make sure the output
 // issues one message per file in the input containing all data.
 // non []byte messages forwarded as-is.
-func FullFiles(c <-chan interface{}) <-chan interface{} {
-	rc := make(chan interface{})
+func FullFiles(c <-chan face{}) <-chan face{} {
+	rc := make(chan face{})
 	go func() {
 		var b *bytes.Buffer
 		for m := range c {
@@ -390,4 +390,3 @@ func FullFiles(c <-chan interface{}) <-chan interface{} {
 	}()
 	return rc
 }
-

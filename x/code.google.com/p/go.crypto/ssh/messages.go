@@ -40,7 +40,7 @@ const msgDisconnect = 1
 
 // disconnectMsg is the message that signals a disconnect. It is also
 // the error type returned from mux.Wait()
-type disconnectMsg struct {
+struct disconnectMsg {
 	Reason   uint32 `sshtype:"1"`
 	Message  string
 	Language string
@@ -53,7 +53,7 @@ func (d *disconnectMsg) Error() string {
 // See RFC 4253, section 7.1.
 const msgKexInit = 20
 
-type kexInitMsg struct {
+struct kexInitMsg {
 	Cookie                  [16]byte `sshtype:"20"`
 	KexAlgos                []string
 	ServerHostKeyAlgos      []string
@@ -74,19 +74,19 @@ type kexInitMsg struct {
 // Diffie-Helman
 const msgKexDHInit = 30
 
-type kexDHInitMsg struct {
+struct kexDHInitMsg {
 	X *big.Int `sshtype:"30"`
 }
 
 const msgKexECDHInit = 30
 
-type kexECDHInitMsg struct {
+struct kexECDHInitMsg {
 	ClientPubKey []byte `sshtype:"30"`
 }
 
 const msgKexECDHReply = 31
 
-type kexECDHReplyMsg struct {
+struct kexECDHReplyMsg {
 	HostKey         []byte `sshtype:"31"`
 	EphemeralPubKey []byte
 	Signature       []byte
@@ -94,7 +94,7 @@ type kexECDHReplyMsg struct {
 
 const msgKexDHReply = 31
 
-type kexDHReplyMsg struct {
+struct kexDHReplyMsg {
 	HostKey   []byte `sshtype:"31"`
 	Y         *big.Int
 	Signature []byte
@@ -103,21 +103,21 @@ type kexDHReplyMsg struct {
 // See RFC 4253, section 10.
 const msgServiceRequest = 5
 
-type serviceRequestMsg struct {
+struct serviceRequestMsg {
 	Service string `sshtype:"5"`
 }
 
 // See RFC 4253, section 10.
 const msgServiceAccept = 6
 
-type serviceAcceptMsg struct {
+struct serviceAcceptMsg {
 	Service string `sshtype:"6"`
 }
 
 // See RFC 4252, section 5.
 const msgUserAuthRequest = 50
 
-type userAuthRequestMsg struct {
+struct userAuthRequestMsg {
 	User    string `sshtype:"50"`
 	Service string
 	Method  string
@@ -127,7 +127,7 @@ type userAuthRequestMsg struct {
 // See RFC 4252, section 5.1
 const msgUserAuthFailure = 51
 
-type userAuthFailureMsg struct {
+struct userAuthFailureMsg {
 	Methods        []string `sshtype:"51"`
 	PartialSuccess bool
 }
@@ -136,7 +136,7 @@ type userAuthFailureMsg struct {
 const msgUserAuthInfoRequest = 60
 const msgUserAuthInfoResponse = 61
 
-type userAuthInfoRequestMsg struct {
+struct userAuthInfoRequestMsg {
 	User               string `sshtype:"60"`
 	Instruction        string
 	DeprecatedLanguage string
@@ -147,7 +147,7 @@ type userAuthInfoRequestMsg struct {
 // See RFC 4254, section 5.1.
 const msgChannelOpen = 90
 
-type channelOpenMsg struct {
+struct channelOpenMsg {
 	ChanType         string `sshtype:"90"`
 	PeersId          uint32
 	PeersWindow      uint32
@@ -161,7 +161,7 @@ const msgChannelData = 94
 // See RFC 4254, section 5.1.
 const msgChannelOpenConfirm = 91
 
-type channelOpenConfirmMsg struct {
+struct channelOpenConfirmMsg {
 	PeersId          uint32 `sshtype:"91"`
 	MyId             uint32
 	MyWindow         uint32
@@ -172,7 +172,7 @@ type channelOpenConfirmMsg struct {
 // See RFC 4254, section 5.1.
 const msgChannelOpenFailure = 92
 
-type channelOpenFailureMsg struct {
+struct channelOpenFailureMsg {
 	PeersId  uint32 `sshtype:"92"`
 	Reason   RejectionReason
 	Message  string
@@ -181,7 +181,7 @@ type channelOpenFailureMsg struct {
 
 const msgChannelRequest = 98
 
-type channelRequestMsg struct {
+struct channelRequestMsg {
 	PeersId             uint32 `sshtype:"98"`
 	Request             string
 	WantReply           bool
@@ -191,35 +191,35 @@ type channelRequestMsg struct {
 // See RFC 4254, section 5.4.
 const msgChannelSuccess = 99
 
-type channelRequestSuccessMsg struct {
+struct channelRequestSuccessMsg {
 	PeersId uint32 `sshtype:"99"`
 }
 
 // See RFC 4254, section 5.4.
 const msgChannelFailure = 100
 
-type channelRequestFailureMsg struct {
+struct channelRequestFailureMsg {
 	PeersId uint32 `sshtype:"100"`
 }
 
 // See RFC 4254, section 5.3
 const msgChannelClose = 97
 
-type channelCloseMsg struct {
+struct channelCloseMsg {
 	PeersId uint32 `sshtype:"97"`
 }
 
 // See RFC 4254, section 5.3
 const msgChannelEOF = 96
 
-type channelEOFMsg struct {
+struct channelEOFMsg {
 	PeersId uint32 `sshtype:"96"`
 }
 
 // See RFC 4254, section 4
 const msgGlobalRequest = 80
 
-type globalRequestMsg struct {
+struct globalRequestMsg {
 	Type      string `sshtype:"80"`
 	WantReply bool
 	Data      []byte `ssh:"rest"`
@@ -228,21 +228,21 @@ type globalRequestMsg struct {
 // See RFC 4254, section 4
 const msgRequestSuccess = 81
 
-type globalRequestSuccessMsg struct {
+struct globalRequestSuccessMsg {
 	Data []byte `ssh:"rest" sshtype:"81"`
 }
 
 // See RFC 4254, section 4
 const msgRequestFailure = 82
 
-type globalRequestFailureMsg struct {
+struct globalRequestFailureMsg {
 	Data []byte `ssh:"rest" sshtype:"82"`
 }
 
 // See RFC 4254, section 5.2
 const msgChannelWindowAdjust = 93
 
-type windowAdjustMsg struct {
+struct windowAdjustMsg {
 	PeersId         uint32 `sshtype:"93"`
 	AdditionalBytes uint32
 }
@@ -250,7 +250,7 @@ type windowAdjustMsg struct {
 // See RFC 4252, section 7
 const msgUserAuthPubKeyOk = 60
 
-type userAuthPubKeyOkMsg struct {
+struct userAuthPubKeyOkMsg {
 	Algo   string `sshtype:"60"`
 	PubKey []byte
 }
@@ -282,7 +282,7 @@ var errShortRead = errors.New("ssh: short read")
 // struct has the "sshtype" tag set to a number in decimal, the packet
 // must start that number.  In case of error, Unmarshal returns a
 // ParseError or UnexpectedMessageError.
-func Unmarshal(data []byte, out interface{}) error {
+func Unmarshal(data []byte, out face{}) error {
 	v := reflect.ValueOf(out).Elem()
 	structType := v.Type()
 	expectedType := typeTag(structType)
@@ -391,12 +391,12 @@ func Unmarshal(data []byte, out interface{}) error {
 // member has the "sshtype" tag set to a number in decimal, that
 // number is prepended to the result. If the last of member has the
 // "ssh" tag set to "rest", its contents are appended to the output.
-func Marshal(msg interface{}) []byte {
+func Marshal(msg face{}) []byte {
 	out := make([]byte, 0, 64)
 	return marshalStruct(out, msg)
 }
 
-func marshalStruct(out []byte, msg interface{}) []byte {
+func marshalStruct(out []byte, msg face{}) []byte {
 	v := reflect.Indirect(reflect.ValueOf(msg))
 	msgType := typeTag(v.Type())
 	if msgType > 0 {
@@ -669,8 +669,8 @@ func marshalString(to []byte, s []byte) []byte {
 var bigIntType = reflect.TypeOf((*big.Int)(nil))
 
 // Decode a packet into its corresponding message.
-func decode(packet []byte) (interface{}, error) {
-	var msg interface{}
+func decode(packet []byte) (face{}, error) {
+	var msg face{}
 	switch packet[0] {
 	case msgDisconnect:
 		msg = new(disconnectMsg)

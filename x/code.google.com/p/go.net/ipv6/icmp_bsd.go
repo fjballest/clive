@@ -6,7 +6,7 @@
 
 package ipv6
 
-type sysICMPFilter struct {
+struct sysICMPFilter {
 	Filt [8]uint32
 }
 

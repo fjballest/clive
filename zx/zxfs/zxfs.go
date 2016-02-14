@@ -240,6 +240,22 @@ func (zd *Dir) Open(flg fuse.OpenFlags, _ fs.Intr) (fs.Handle, fuse.Error) {
 	zd.Lock()
 	zd.fds = append(zd.fds, fd)
 	zd.Unlock()
+	if int(flg)&os.O_TRUNC != 0 {
+		wfs, ok := zd.fs.(zx.Wstater)
+		if !ok {
+			vprintf("%s: O_TRUNC: not a rw tree\n", zd.d["path"])
+			return fd, nil
+		}
+		errc := wfs.Wstat(zd.d["path"], zx.Dir{"size": "0"})
+		<-errc
+		if err := cerror(errc); err != nil {
+			vprintf("%s: O_TRUNC: %s\n", zd.d["path"], err)
+			return fd, nil
+		}
+		zd.Lock()
+		zd.d["size"] = "0"
+		zd.Unlock()
+	}
 	return fd, nil
 }
 

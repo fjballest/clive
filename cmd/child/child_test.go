@@ -1,8 +1,8 @@
 package child
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 func TestChild(t *testing.T) {

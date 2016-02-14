@@ -2,20 +2,18 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	"clive/ch"
 	"clive/cmd"
 	"clive/cmd/run"
 	"clive/sre"
 	"clive/txt"
-	"strings"
+	"fmt"
 	"io"
-	"clive/ch"
+	"strings"
 	"time"
 )
 
-var (
-	btab = map[string] func(*Cmd, ...string) {}
-)
+var btab = map[string]func(*Cmd, ...string){}
 
 func init() {
 	btab["cd"] = bcd
@@ -108,14 +106,14 @@ func bcmds(c *Cmd, args ...string) {
 }
 
 func beq(c *Cmd, args ...string) {
-	if dot := c.ed.ix.dot; dot  != nil {
-		c.printf("%s\n", dot.Addr());
+	if dot := c.ed.ix.dot; dot != nil {
+		c.printf("%s\n", dot.Addr())
 	}
 	c.ed.win.DelMark(c.mark)
 }
 
 func bw(c *Cmd, args ...string) {
-	if dot := c.ed.ix.dot; dot  != nil {
+	if dot := c.ed.ix.dot; dot != nil {
 		if err := dot.save(); err == nil {
 			c.printf("saved %s\n", dot)
 		} else if err != notDirty {
@@ -126,7 +124,7 @@ func bw(c *Cmd, args ...string) {
 }
 
 func br(c *Cmd, args ...string) {
-	if dot := c.ed.ix.dot; dot  != nil {
+	if dot := c.ed.ix.dot; dot != nil {
 		d, err := cmd.Stat(dot.tag)
 		if err != nil {
 			cmd.Warn("%s: look: %s", dot, err)
@@ -139,7 +137,7 @@ func br(c *Cmd, args ...string) {
 }
 
 func bd(c *Cmd, args ...string) {
-	if dot := c.ed.ix.dot; dot  != nil && dot != c.ed {
+	if dot := c.ed.ix.dot; dot != nil && dot != c.ed {
 		if dot.win != nil {
 			dot.win.Close()
 		} else {
@@ -150,10 +148,10 @@ func bd(c *Cmd, args ...string) {
 }
 
 func bpipeTo(c *Cmd, args ...string) {
-	if(args[0][0] == '>') {
+	if args[0][0] == '>' {
 		args[0] = args[0][1:]
 	}
-	if dot := c.ed.ix.dot; dot  != nil {
+	if dot := c.ed.ix.dot; dot != nil {
 		go c.pipeTo([]*Ed{dot}, args...)
 		return
 	}
@@ -161,10 +159,10 @@ func bpipeTo(c *Cmd, args ...string) {
 }
 
 func bpipeFrom(c *Cmd, args ...string) {
-	if(args[0][0] == '<') {
+	if args[0][0] == '<' {
 		args[0] = args[0][1:]
 	}
-	if dot := c.ed.ix.dot; dot  != nil {
+	if dot := c.ed.ix.dot; dot != nil {
 		go c.pipeFrom([]*Ed{dot}, args...)
 		return
 	}
@@ -172,10 +170,10 @@ func bpipeFrom(c *Cmd, args ...string) {
 }
 
 func bpipe(c *Cmd, args ...string) {
-	if(args[0][0] == '|') {
+	if args[0][0] == '|' {
 		args[0] = args[0][1:]
 	}
-	if dot := c.ed.ix.dot; dot  != nil {
+	if dot := c.ed.ix.dot; dot != nil {
 		go c.pipe(dot, true, args...)
 		return
 	}
@@ -192,7 +190,7 @@ func (ix *IX) edits(args ...string) []*Ed {
 		}
 		return eds
 	}
-	match := func(s string) bool { return true; }
+	match := func(s string) bool { return true }
 	if len(args) > 0 && args[0] != ".*" {
 		x, err := sre.CompileStr(args[0], sre.Fwd)
 		if err != nil {
@@ -222,7 +220,7 @@ func (c *Cmd) pipeEdBytesTo(t *txt.Text, p0, p1 int, asbytes bool) bool {
 	var ok bool
 	gc := t.Get(p0, p1-p0)
 	buf := &bytes.Buffer{}
-	p  := c.p
+	p := c.p
 	for rs := range gc {
 		for _, r := range rs {
 			buf.WriteRune(r)
@@ -257,7 +255,7 @@ func (c *Cmd) pipeEdBytesTo(t *txt.Text, p0, p1 int, asbytes bool) bool {
 }
 
 func (c *Cmd) pipeEdTo(ed *Ed) bool {
-	p  := c.p
+	p := c.p
 	d := ed.d.Dup()
 	// For the commant, the input is text
 	d["type"] = "-"
@@ -293,7 +291,7 @@ func (c *Cmd) pipeEdTo(ed *Ed) bool {
 }
 
 func (c *Cmd) pipeTo(eds []*Ed, args ...string) {
-	inkc := make(chan  face{})
+	inkc := make(chan face{})
 	setio := func(c *cmd.Ctx) {
 		c.ForkEnv()
 		c.ForkNS()
@@ -371,7 +369,7 @@ func (c *Cmd) pipeFrom(eds []*Ed, args ...string) {
 func (c *Cmd) pipe(ed *Ed, sendin bool, args ...string) {
 	// we ignore all for pipeFrom, so it always replaces the dot.
 	// it's not ignored for pipeTo, so the input may be dot or all the file
-	inkc := make(chan  face{})
+	inkc := make(chan face{})
 	setio := func(c *cmd.Ctx) {
 		c.ForkEnv()
 		c.ForkNS()
@@ -421,7 +419,6 @@ func (c *Cmd) pipe(ed *Ed, sendin bool, args ...string) {
 	}()
 }
 
-
 func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 	switch args[0] {
 	case "d":
@@ -436,13 +433,12 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 	case "=":
 		var buf bytes.Buffer
 		for _, ed := range eds {
-			fmt.Fprintf(&buf, "%s\n", ed.Addr());
+			fmt.Fprintf(&buf, "%s\n", ed.Addr())
 		}
 		if buf.Len() > 0 {
 			c.printf("%s\n", buf.String())
 		}
 		c.ed.win.DelMark(c.mark)
-
 	case ">":
 		go c.pipeTo(eds, args[1:]...)
 	case "<":
@@ -482,7 +478,7 @@ func bX(c *Cmd, args ...string) {
 		isio := strings.ContainsRune("|><", rune(args[1][0]))
 		iscmd := args[1] == "r" ||
 			args[1] == "w" || args[1] == "=" ||
-			 args[1] == "d" || args[1] == "X"
+			args[1] == "d" || args[1] == "X"
 		if isio || iscmd {
 			args = append([]string{args[0], ".*"}, args[1:]...)
 		}

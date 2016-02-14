@@ -7,7 +7,7 @@ package ipv6
 import "net"
 
 // A payloadHandler represents the IPv6 datagram payload handler.
-type payloadHandler struct {
+struct payloadHandler {
 	net.PacketConn
 	rawOpt
 }

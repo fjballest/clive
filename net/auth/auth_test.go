@@ -3,9 +3,9 @@ package auth
 import (
 	"clive/ch"
 	"clive/dbg"
+	"clive/net"
 	"encoding/binary"
 	"testing"
-	"clive/net"
 )
 
 var debug = testing.Verbose()
@@ -110,7 +110,7 @@ func TestMuxAuth(t *testing.T) {
 			mx.Debug = testing.Verbose()
 			printf("new muxed client %q\n", mx.Tag)
 			mx := mx
-			c := <- mx.In
+			c := <-mx.In
 			printf("new muxed conn %s\n", c.Tag)
 			ai, err := AtServer(c, "", "foo")
 			if err != nil {
@@ -165,7 +165,7 @@ func TestMuxDisabledAuth(t *testing.T) {
 			mx.Debug = testing.Verbose()
 			printf("new muxed client %q\n", mx.Tag)
 			mx := mx
-			c := <- mx.In
+			c := <-mx.In
 			printf("new muxed conn %s\n", c.Tag)
 			ai, err := NoneAtServer(c, "", "foo")
 			if err == nil || err.Error() != "auth disabled" {
@@ -204,4 +204,3 @@ func TestMuxDisabledAuth(t *testing.T) {
 	close(ec)
 	<-donec
 }
-

@@ -379,7 +379,7 @@ var children=[...]uint32{
 	return nil
 }
 
-type node struct {
+struct node {
 	label    string
 	nodeType int
 	icann    bool

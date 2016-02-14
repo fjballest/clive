@@ -22,7 +22,7 @@ var PrivateKeyType = "PGP PRIVATE KEY BLOCK"
 // An Entity represents the components of an OpenPGP key: a primary public key
 // (which must be a signing key), one or more identities claimed by that key,
 // and zero or more subkeys, which may be encryption keys.
-type Entity struct {
+struct Entity {
 	PrimaryKey  *packet.PublicKey
 	PrivateKey  *packet.PrivateKey
 	Identities  map[string]*Identity // indexed by Identity.Name
@@ -32,7 +32,7 @@ type Entity struct {
 
 // An Identity represents an identity claimed by an Entity and zero or more
 // assertions by other entities about that claim.
-type Identity struct {
+struct Identity {
 	Name          string // by convention, has the form "Full Name (comment) <email@example.com>"
 	UserId        *packet.UserId
 	SelfSignature *packet.Signature
@@ -41,7 +41,7 @@ type Identity struct {
 
 // A Subkey is an additional public key in an Entity. Subkeys can be used for
 // encryption.
-type Subkey struct {
+struct Subkey {
 	PublicKey  *packet.PublicKey
 	PrivateKey *packet.PrivateKey
 	Sig        *packet.Signature
@@ -49,7 +49,7 @@ type Subkey struct {
 
 // A Key identifies a specific public key in an Entity. This is either the
 // Entity's primary key or a subkey.
-type Key struct {
+struct Key {
 	Entity        *Entity
 	PublicKey     *packet.PublicKey
 	PrivateKey    *packet.PrivateKey
@@ -57,7 +57,7 @@ type Key struct {
 }
 
 // A KeyRing provides access to public and private keys.
-type KeyRing interface {
+interface KeyRing {
 	// KeysById returns the set of keys that have the given key id.
 	KeysById(id uint64) []Key
 	// KeysByIdAndUsage returns the set of keys with the given id

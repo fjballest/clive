@@ -84,7 +84,7 @@ func parseDSCPRegistry(w io.Writer, r io.Reader) error {
 	return nil
 }
 
-type dscpRegistry struct {
+struct dscpRegistry {
 	XMLName     xml.Name `xml:"registry"`
 	Title       string   `xml:"title"`
 	Updated     string   `xml:"updated"`
@@ -100,7 +100,7 @@ type dscpRegistry struct {
 	} `xml:"registry>registry>record"`
 }
 
-type canonDSCPRecord struct {
+struct canonDSCPRecord {
 	OrigName string
 	Name     string
 	Value    int
@@ -145,7 +145,7 @@ func parseTOSTCByte(w io.Writer, r io.Reader) error {
 	return nil
 }
 
-type tosTCByte struct {
+struct tosTCByte {
 	XMLName  xml.Name `xml:"registry"`
 	Title    string   `xml:"title"`
 	Updated  string   `xml:"updated"`
@@ -157,7 +157,7 @@ type tosTCByte struct {
 	} `xml:"registry>record"`
 }
 
-type canonTOSTCByteRecord struct {
+struct canonTOSTCByteRecord {
 	OrigKeyword string
 	Keyword     string
 	Value       int

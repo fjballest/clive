@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// We could have used a series of 
+// We could have used a series of
 type NdType int
 
 // we use (...) to mean args and {...} to mean children nodes
@@ -78,7 +78,7 @@ struct NdAddr {
 
 struct Redir {
 	name string
-	nd *Nd
+	nd   *Nd
 }
 
 struct Nd {

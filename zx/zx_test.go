@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"testing"
 	fpath "path"
+	"testing"
 )
 
 var (
@@ -196,13 +196,13 @@ func TestConn(t *testing.T) {
 }
 
 func TestDir(t *testing.T) {
-	d := Dir {
-		"name": "f3",
-		"type": "-",
-		"mode": "0644",
-		"size": "23",
+	d := Dir{
+		"name":  "f3",
+		"type":  "-",
+		"mode":  "0644",
+		"size":  "23",
 		"mtime": "4000000000",
-		"foo": `quoted "bar"`,
+		"foo":   `quoted "bar"`,
 		"foo 2": "quoted` `bar2",
 	}
 	ds := d.String()
@@ -232,4 +232,3 @@ func TestDir(t *testing.T) {
 	}
 
 }
-

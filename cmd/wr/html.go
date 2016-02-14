@@ -1,9 +1,9 @@
 package main
 
 import (
-	"clive/zx"
 	"clive/cmd"
 	"clive/sre"
+	"clive/zx"
 	"fmt"
 	"html"
 	"io"
@@ -20,7 +20,7 @@ const (
 var cliveMan bool
 var sect string
 
-type htmlFmt struct {
+struct htmlFmt {
 	lvl  int
 	ps   int
 	fnts []int

@@ -105,12 +105,12 @@ const (
 var BibTexOk = true
 
 // A reference maps from the key (eg. 'A') to values (eg. authors)
-type Ref struct {
+struct Ref {
 	Keys map[rune][]string
 }
 
 // A bib maps from words found in references to references
-type Bib struct {
+struct Bib {
 	refs map[string]map[*Ref]bool
 	All  []*Ref // once loaded, can be used to iterate over the references.
 }

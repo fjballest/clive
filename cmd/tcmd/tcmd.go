@@ -2,8 +2,8 @@ package main
 
 import (
 	"clive/cmd"
-	"time"
 	"strconv"
+	"time"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 	if len(args) > 1 {
 		n, _ := strconv.Atoi(args[1])
 		ns := time.Duration(n)
-		time.Sleep(ns*time.Second)
+		time.Sleep(ns * time.Second)
 	} else {
 		time.Sleep(time.Second)
 	}

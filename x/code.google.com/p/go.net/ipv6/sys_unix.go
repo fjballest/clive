@@ -20,7 +20,7 @@ const (
 
 const sysSizeofMTUInfo = 0x20
 
-type sysMTUInfo struct {
+struct sysMTUInfo {
 	Addr syscall.RawSockaddrInet6
 	MTU  uint32
 }

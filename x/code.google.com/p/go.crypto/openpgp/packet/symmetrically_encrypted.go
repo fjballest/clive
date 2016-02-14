@@ -17,7 +17,7 @@ import (
 // SymmetricallyEncrypted represents a symmetrically encrypted byte string. The
 // encrypted contents will consist of more OpenPGP packets. See RFC 4880,
 // sections 5.7 and 5.13.
-type SymmetricallyEncrypted struct {
+struct SymmetricallyEncrypted {
 	MDC      bool // true iff this is a type 18 packet and thus has an embedded MAC.
 	contents io.Reader
 	prefix   []byte
@@ -88,7 +88,7 @@ func (se *SymmetricallyEncrypted) Decrypt(c CipherFunction, key []byte) (io.Read
 }
 
 // seReader wraps an io.Reader with a no-op Close method.
-type seReader struct {
+struct seReader {
 	in io.Reader
 }
 
@@ -106,7 +106,7 @@ const mdcTrailerSize = 1 /* tag byte */ + 1 /* length byte */ + sha1.Size
 // of the most recent 22 bytes (mdcTrailerSize). Upon EOF, those bytes form an
 // MDC packet containing a hash of the previous contents which is checked
 // against the running hash. See RFC 4880, section 5.13.
-type seMDCReader struct {
+struct seMDCReader {
 	in          io.Reader
 	h           hash.Hash
 	trailer     [mdcTrailerSize]byte
@@ -210,7 +210,7 @@ func (ser *seMDCReader) Close() error {
 // An seMDCWriter writes through to an io.WriteCloser while maintains a running
 // hash of the data written. On close, it emits an MDC packet containing the
 // running hash.
-type seMDCWriter struct {
+struct seMDCWriter {
 	w io.WriteCloser
 	h hash.Hash
 }
@@ -237,7 +237,7 @@ func (w *seMDCWriter) Close() (err error) {
 }
 
 // noOpCloser is like an ioutil.NopCloser, but for an io.Writer.
-type noOpCloser struct {
+struct noOpCloser {
 	w io.Writer
 }
 

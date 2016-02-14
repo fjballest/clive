@@ -33,46 +33,46 @@
 	The name space is constructed by the first method that works:
 		1. Using $NS as the description (see ns.Parse).
 		2. Using the contents of $HOME/NS as the description.
-		3. Using "/" 
+		3. Using "/"
 	Methods 2 and 3 set $NS to the resulting name space.
 */
 package cmd
 
 import (
-	"sync"
-	"runtime"
+	"bytes"
 	"clive/dbg"
 	"clive/ns"
+	"errors"
+	"fmt"
 	"os"
 	"os/signal"
-	"bytes"
-	"fmt"
-	"errors"
 	fpath "path"
+	"runtime"
 	"strings"
+	"sync"
 )
 
 // Command context.
 // In, Out, and Err carry []byte as data, but may carry other pieces of
 // data as context (eg., zx.Dir)
 // When fed into external processes, non []byte messages are discarded.
-type Ctx struct {
-	lk sync.Mutex
-	id   int64       // AppId() for this ctx
-	Args []string    // command line arguments
-	wc chan error
+struct Ctx {
+	lk   sync.Mutex
+	id   int64    // AppId() for this ctx
+	Args []string // command line arguments
+	wc   chan error
 
-	ns  *ns.NS // name space
-	dot *cwd      // dot
-	env *envSet   // environment
-	io  *ioSet    // io chans
+	ns  *ns.NS  // name space
+	dot *cwd    // dot
+	env *envSet // environment
+	io  *ioSet  // io chans
 
 	Debug, Verb bool
 }
 
 var (
-	ctxs        = map[int64]*Ctx{}
-	ctxlk       sync.Mutex
+	ctxs  = map[int64]*Ctx{}
+	ctxlk sync.Mutex
 
 	ErrIO = errors.New("no such IO chan")
 
@@ -118,16 +118,16 @@ func mkCtx() *Ctx {
 	wc := make(chan error)
 	c := &Ctx{
 		Args: os.Args,
-		wc: wc,
-		env: mkEnv(),
-		io: mkIO(),
-		dot: mkDot(),
+		wc:   wc,
+		env:  mkEnv(),
+		io:   mkIO(),
+		dot:  mkDot(),
 	}
 	if len(c.Args) > 0 {
 		c.Args[0] = fpath.Base(c.Args[0])
 	}
 	ctxlk.Lock()
-	runtime.NewApp()	// we use the main AtExit for our main proc
+	runtime.NewApp() // we use the main AtExit for our main proc
 	c.id = runtime.AppId()
 	ctxs[c.id] = c
 	ctxlk.Unlock()
@@ -166,19 +166,19 @@ func New(fun func(), wc ...chan bool) *Ctx {
 		old.lk.Unlock()
 		wc := make(chan error)
 		c := &Ctx{
-			Args:  args,
-			wc: wc,
-			env: env,
-			io: io,
-			dot: dot,
-			ns: ns,
+			Args: args,
+			wc:   wc,
+			env:  env,
+			io:   io,
+			dot:  dot,
+			ns:   ns,
 		}
 		c.Debug, c.Verb = dbg, verb
 		c.id = runtime.NewApp()
 		ctxlk.Lock()
 		ctxs[c.id] = c
 		ctxlk.Unlock()
-		ctxc <-c
+		ctxc <- c
 		if w != nil {
 			<-w
 		}
@@ -431,7 +431,7 @@ func (c *Ctx) Chans() (in []string, out []string) {
 	return io.chans()
 }
 
-func (c *Ctx) In(name string) <-chan interface{} {
+func (c *Ctx) In(name string) <-chan face{} {
 	c.lk.Lock()
 	io := c.io
 	c.lk.Unlock()
@@ -442,7 +442,7 @@ func (c *Ctx) In(name string) <-chan interface{} {
 	return cc.inc
 }
 
-func (c *Ctx) Out(name string) chan<- interface{} {
+func (c *Ctx) Out(name string) chan<- face{} {
 	c.lk.Lock()
 	io := c.io
 	c.lk.Unlock()
@@ -453,11 +453,11 @@ func (c *Ctx) Out(name string) chan<- interface{} {
 	return cc.outc
 }
 
-func In(name string) <-chan interface{} {
+func In(name string) <-chan face{} {
 	return ctx().In(name)
 }
 
-func Out(name string) chan<- interface{} {
+func Out(name string) chan<- face{} {
 	return ctx().Out(name)
 }
 
@@ -480,9 +480,9 @@ func CloseIO(name string) {
 	ctx().CloseIO(name)
 }
 
-func (c *Ctx) SetIn(name string, ioc <-chan interface{}) {
+func (c *Ctx) SetIn(name string, ioc <-chan face{}) {
 	if ioc == nil {
-		ioc = make(chan interface{})
+		ioc = make(chan face{})
 		close(ioc)
 	}
 	c.lk.Lock()
@@ -491,9 +491,9 @@ func (c *Ctx) SetIn(name string, ioc <-chan interface{}) {
 	io.addIn(name, ioc)
 }
 
-func (c *Ctx) SetOut(name string, ioc chan<- interface{}) {
+func (c *Ctx) SetOut(name string, ioc chan<- face{}) {
 	if ioc == nil {
-		ioc = make(chan interface{})
+		ioc = make(chan face{})
 		close(ioc)
 	}
 	c.lk.Lock()
@@ -502,7 +502,7 @@ func (c *Ctx) SetOut(name string, ioc chan<- interface{}) {
 	io.addOut(name, ioc)
 }
 
-func (c *Ctx) cprintf(name, f string, args ...interface{}) (n int, err error) {
+func (c *Ctx) cprintf(name, f string, args ...face{}) (n int, err error) {
 	out := c.Out(name)
 	if out == nil {
 		return 0, ErrIO
@@ -512,22 +512,22 @@ func (c *Ctx) cprintf(name, f string, args ...interface{}) (n int, err error) {
 	if ok := out <- buf.Bytes(); !ok {
 		return 0, cerror(out)
 	}
-	return n, nil	
+	return n, nil
 }
 
-func Printf(f string, args ...interface{}) (n int, err error) {
+func Printf(f string, args ...face{}) (n int, err error) {
 	return ctx().cprintf("out", f, args...)
 }
 
-func Eprintf(f string, args ...interface{}) (n int, err error) {
+func Eprintf(f string, args ...face{}) (n int, err error) {
 	return ctx().cprintf("err", f, args...)
 }
 
-func Cprintf(io, f string, args ...interface{}) (n int, err error) {
+func Cprintf(io, f string, args ...face{}) (n int, err error) {
 	return ctx().cprintf(io, f, args...)
 }
 
-func Dprintf(f string, args ...interface{}) (n int, err error) {
+func Dprintf(f string, args ...face{}) (n int, err error) {
 	c := ctx()
 	if c.Debug {
 		return c.cprintf("err", f, args...)
@@ -537,7 +537,7 @@ func Dprintf(f string, args ...interface{}) (n int, err error) {
 
 // Return a function that calls Eprintf but only when flag is set.
 func FlagPrintf(flag *bool) dbg.PrintFunc {
-	return func(fmts string, arg ...interface{}) (int, error) {
+	return func(fmts string, arg ...face{}) (int, error) {
 		if *flag {
 			return Eprintf(fmts, arg...)
 		}
@@ -545,9 +545,8 @@ func FlagPrintf(flag *bool) dbg.PrintFunc {
 	}
 }
 
-
 // Warn if verbose flag is set
-func VWarn(f string, args ...interface{}) (n int, err error) {
+func VWarn(f string, args ...face{}) (n int, err error) {
 	c := ctx()
 	if c.Verb {
 		return c.cprintf("err", "%s: %s\n", c.Args[0], fmt.Sprintf(f, args...))
@@ -555,11 +554,11 @@ func VWarn(f string, args ...interface{}) (n int, err error) {
 	return 0, nil
 }
 
-func SetIn(name string, c <-chan interface{}) {
+func SetIn(name string, c <-chan face{}) {
 	ctx().SetIn(name, c)
 }
 
-func SetOut(name string, c chan<- interface{}) {
+func SetOut(name string, c chan<- face{}) {
 	ctx().SetOut(name, c)
 }
 
@@ -597,7 +596,7 @@ func appexit(sts string) {
 	panic("appexit" + sts)
 }
 
-func Exit(sts ...interface{}) {
+func Exit(sts ...face{}) {
 	if len(sts) == 0 || sts[0] == nil {
 		appexit("")
 	}
@@ -614,7 +613,7 @@ func Exit(sts ...interface{}) {
 }
 
 // Warn and exit
-func Fatal(args ...interface{}) {
+func Fatal(args ...face{}) {
 	if len(args) == 0 || args[0] == nil {
 		appexit("")
 	}
@@ -638,8 +637,7 @@ func Fatal(args ...interface{}) {
 
 // Printf to stderr, prefixed with app name and terminating with \n.
 // Each warn is atomic.
-func Warn(f string, args ...interface{}) (n int, err error)  {
+func Warn(f string, args ...face{}) (n int, err error) {
 	c := ctx()
 	return c.cprintf("err", "%s: %s\n", c.Args[0], fmt.Sprintf(f, args...))
 }
-

@@ -1,9 +1,9 @@
 package main
 
 import (
+	"clive/cmd"
 	"io"
 	"os/exec"
-	"clive/cmd"
 )
 
 var (

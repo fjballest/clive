@@ -33,7 +33,7 @@ const (
 )
 
 // Signature represents a cryptographic signature.
-type Signature struct {
+struct Signature {
 	Format string
 	Blob   []byte
 }
@@ -44,7 +44,7 @@ const CertTimeInfinity = 1<<64 - 1
 
 // An Certificate represents an OpenSSH certificate as defined in
 // [PROTOCOL.certkeys]?rev=1.8.
-type Certificate struct {
+struct Certificate {
 	Nonce           []byte
 	Key             PublicKey
 	Serial          uint64
@@ -62,7 +62,7 @@ type Certificate struct {
 // genericCertData holds the key-independent part of the certificate data.
 // Overall, certificates contain an nonce, public key fields and
 // key-independent fields.
-type genericCertData struct {
+struct genericCertData {
 	Serial          uint64
 	CertType        uint32
 	KeyId           string
@@ -187,7 +187,7 @@ func parseCert(in []byte, privAlgo string) (*Certificate, error) {
 	return c, nil
 }
 
-type openSSHCertSigner struct {
+struct openSSHCertSigner {
 	pub    *Certificate
 	signer Signer
 }
@@ -217,7 +217,7 @@ const sourceAddressCriticalOption = "source-address"
 // can be plugged into ClientConfig.HostKeyCallback and
 // ServerConfig.PublicKeyCallback. For the CertChecker to work,
 // minimally, the IsAuthority callback should be set.
-type CertChecker struct {
+struct CertChecker {
 	// SupportedCriticalOptions lists the CriticalOptions that the
 	// server application layer understands. These are only used
 	// for user certificates.

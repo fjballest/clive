@@ -1,9 +1,9 @@
 package main
 
 import (
-	"clive/dbg"
 	"clive/cmd"
 	"clive/cmd/wr/refs"
+	"clive/dbg"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -51,10 +51,10 @@ func (s *scan) skipBlanks() bool {
 	return some
 }
 
-func (e *Elem) Warn(fmts string, args ...interface{}) {
+func (e *Elem) Warn(fmts string, args ...face{}) {
 	if e != nil && e.fname != "" {
 		fmts = "%s:%d: " + fmts
-		args = append([]interface{}{e.fname, e.lno}, args...)
+		args = append([]face{}{e.fname, e.lno}, args...)
 	}
 	cmd.Warn(fmts, args...)
 }

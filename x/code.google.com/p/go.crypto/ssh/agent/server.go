@@ -17,7 +17,7 @@ import (
 
 // Server wraps an Agent and uses it to implement the agent side of
 // the SSH-agent, wire protocol.
-type server struct {
+struct server {
 	agent Agent
 }
 
@@ -49,23 +49,23 @@ func marshalKey(k *Key) []byte {
 	return ssh.Marshal(&record)
 }
 
-type agentV1IdentityMsg struct {
+struct agentV1IdentityMsg {
 	Numkeys uint32 `sshtype:"2"`
 }
 
-type agentRemoveIdentityMsg struct {
+struct agentRemoveIdentityMsg {
 	KeyBlob []byte `sshtype:"18"`
 }
 
-type agentLockMsg struct {
+struct agentLockMsg {
 	Passphrase []byte `sshtype:"22"`
 }
 
-type agentUnlockMsg struct {
+struct agentUnlockMsg {
 	Passphrase []byte `sshtype:"23"`
 }
 
-func (s *server) processRequest(data []byte) (interface{}, error) {
+func (s *server) processRequest(data []byte) (face{}, error) {
 	switch data[0] {
 	case agentRequestV1Identities:
 		return &agentV1IdentityMsg{0}, nil

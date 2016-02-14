@@ -8,30 +8,30 @@ import (
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/net/ink"
-	"sync"
-	"clive/zx"   
+	"clive/zx"
 	fpath "path"
-	"strings" 
+	"strings"
+	"sync"
 )
 
 struct IX {
-	pg *ink.Pg
-	eds []*Ed
-	dot *Ed
+	pg   *ink.Pg
+	eds  []*Ed
+	dot  *Ed
 	cmds []*Cmd
 	sync.Mutex
 	idgen int
 }
 
 var (
-	ix *IX
+	ix     *IX
 	dryrun bool
 )
 
 func newIX() *IX {
 	ix := &IX{}
 	cmds := ix.newCmds()
-	cmds.d = zx.Dir {
+	cmds.d = zx.Dir{
 		"type": "-",
 		"path": cmds.tag,
 		"name": fpath.Base(cmds.tag),
@@ -67,7 +67,7 @@ func (ix *IX) loop() {
 			case "win":
 				go func() {
 					icmds := ix.newCmds()
-					icmds.d = zx.Dir {
+					icmds.d = zx.Dir{
 						"type": "-",
 						"path": icmds.tag,
 						"name": fpath.Base(icmds.tag),
@@ -108,7 +108,7 @@ func (ix *IX) lookFile(file, addr string) *Ed {
 	return ed
 }
 
-func (ix *IX) lookURL(what string)  {
+func (ix *IX) lookURL(what string) {
 	ix.pg.Add(ink.Url(what))
 }
 

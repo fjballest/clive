@@ -51,7 +51,7 @@ const (
 	rootID             = 1
 )
 
-type kstatfs struct {
+struct kstatfs {
 	Blocks  uint64
 	Bfree   uint64
 	Bavail  uint64
@@ -64,7 +64,7 @@ type kstatfs struct {
 	Spare   [6]uint32
 }
 
-type fileLock struct {
+struct fileLock {
 	Start uint64
 	End   uint64
 	Type  uint32
@@ -202,7 +202,7 @@ const (
 	InitXtimes        InitFlags = 1 << 31 // OS X only
 )
 
-type flagName struct {
+struct flagName {
 	bit  uint32
 	name string
 }
@@ -303,7 +303,7 @@ const (
 // The read buffer is required to be at least 8k but may be much larger
 const minReadBuffer = 8192
 
-type entryOut struct {
+struct entryOut {
 	outHeader
 	Nodeid         uint64 // Inode ID
 	Generation     uint64 // Inode generation
@@ -314,11 +314,11 @@ type entryOut struct {
 	Attr           attr
 }
 
-type forgetIn struct {
+struct forgetIn {
 	Nlookup uint64
 }
 
-type attrOut struct {
+struct attrOut {
 	outHeader
 	AttrValid     uint64 // Cache timeout for the attributes
 	AttrValidNsec uint32
@@ -327,7 +327,7 @@ type attrOut struct {
 }
 
 // OS X
-type getxtimesOut struct {
+struct getxtimesOut {
 	outHeader
 	Bkuptime     uint64
 	Crtime       uint64
@@ -335,35 +335,35 @@ type getxtimesOut struct {
 	CrtimeNsec   uint32
 }
 
-type mknodIn struct {
+struct mknodIn {
 	Mode uint32
 	Rdev uint32
 	// "filename\x00" follows.
 }
 
-type mkdirIn struct {
+struct mkdirIn {
 	Mode    uint32
 	Padding uint32
 	// filename follows
 }
 
-type renameIn struct {
+struct renameIn {
 	Newdir uint64
 	// "oldname\x00newname\x00" follows
 }
 
 // OS X
-type exchangeIn struct {
+struct exchangeIn {
 	Olddir  uint64
 	Newdir  uint64
 	Options uint64
 }
 
-type linkIn struct {
+struct linkIn {
 	Oldnodeid uint64
 }
 
-type setattrInCommon struct {
+struct setattrInCommon {
 	Valid     uint32
 	Padding   uint32
 	Fh        uint64
@@ -382,24 +382,24 @@ type setattrInCommon struct {
 	Unused5   uint32
 }
 
-type openIn struct {
+struct openIn {
 	Flags  uint32
 	Unused uint32
 }
 
-type openOut struct {
+struct openOut {
 	outHeader
 	Fh        uint64
 	OpenFlags uint32
 	Padding   uint32
 }
 
-type createIn struct {
+struct createIn {
 	Flags uint32
 	Mode  uint32
 }
 
-type createOut struct {
+struct createOut {
 	outHeader
 
 	Nodeid         uint64 // Inode ID
@@ -415,35 +415,35 @@ type createOut struct {
 	Padding   uint32
 }
 
-type releaseIn struct {
+struct releaseIn {
 	Fh           uint64
 	Flags        uint32
 	ReleaseFlags uint32
 	LockOwner    uint32
 }
 
-type flushIn struct {
+struct flushIn {
 	Fh         uint64
 	FlushFlags uint32
 	Padding    uint32
 	LockOwner  uint64
 }
 
-type readIn struct {
+struct readIn {
 	Fh      uint64
 	Offset  uint64
 	Size    uint32
 	Padding uint32
 }
 
-type writeIn struct {
+struct writeIn {
 	Fh         uint64
 	Offset     uint64
 	Size       uint32
 	WriteFlags uint32
 }
 
-type writeOut struct {
+struct writeOut {
 	outHeader
 	Size    uint32
 	Padding uint32
@@ -460,18 +460,18 @@ var writeFlagNames = []flagName{}
 
 const compatStatfsSize = 48
 
-type statfsOut struct {
+struct statfsOut {
 	outHeader
 	St kstatfs
 }
 
-type fsyncIn struct {
+struct fsyncIn {
 	Fh         uint64
 	FsyncFlags uint32
 	Padding    uint32
 }
 
-type setxattrInCommon struct {
+struct setxattrInCommon {
 	Size  uint32
 	Flags uint32
 }
@@ -480,7 +480,7 @@ func (setxattrInCommon) position() uint32 {
 	return 0
 }
 
-type getxattrInCommon struct {
+struct getxattrInCommon {
 	Size    uint32
 	Padding uint32
 }
@@ -489,29 +489,29 @@ func (getxattrInCommon) position() uint32 {
 	return 0
 }
 
-type getxattrOut struct {
+struct getxattrOut {
 	outHeader
 	Size    uint32
 	Padding uint32
 }
 
-type lkIn struct {
+struct lkIn {
 	Fh    uint64
 	Owner uint64
 	Lk    fileLock
 }
 
-type lkOut struct {
+struct lkOut {
 	outHeader
 	Lk fileLock
 }
 
-type accessIn struct {
+struct accessIn {
 	Mask    uint32
 	Padding uint32
 }
 
-type initIn struct {
+struct initIn {
 	Major        uint32
 	Minor        uint32
 	MaxReadahead uint32
@@ -520,7 +520,7 @@ type initIn struct {
 
 const initInSize = int(unsafe.Sizeof(initIn{}))
 
-type initOut struct {
+struct initOut {
 	outHeader
 	Major        uint32
 	Minor        uint32
@@ -530,22 +530,22 @@ type initOut struct {
 	MaxWrite     uint32
 }
 
-type interruptIn struct {
+struct interruptIn {
 	Unique uint64
 }
 
-type bmapIn struct {
+struct bmapIn {
 	Block     uint64
 	BlockSize uint32
 	Padding   uint32
 }
 
-type bmapOut struct {
+struct bmapOut {
 	outHeader
 	Block uint64
 }
 
-type inHeader struct {
+struct inHeader {
 	Len     uint32
 	Opcode  uint32
 	Unique  uint64
@@ -558,13 +558,13 @@ type inHeader struct {
 
 const inHeaderSize = int(unsafe.Sizeof(inHeader{}))
 
-type outHeader struct {
+struct outHeader {
 	Len    uint32
 	Error  int32
 	Unique uint64
 }
 
-type dirent struct {
+struct dirent {
 	Ino     uint64
 	Off     uint64
 	Namelen uint32

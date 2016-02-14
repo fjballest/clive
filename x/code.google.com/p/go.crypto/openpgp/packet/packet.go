@@ -63,7 +63,7 @@ func readLength(r io.Reader) (length int64, isPartial bool, err error) {
 // partialLengthReader wraps an io.Reader and handles OpenPGP partial lengths.
 // The continuation lengths are parsed and removed from the stream and EOF is
 // returned at the end of the packet. See RFC 4880, section 4.2.2.4.
-type partialLengthReader struct {
+struct partialLengthReader {
 	r         io.Reader
 	remaining int64
 	isPartial bool
@@ -95,7 +95,7 @@ func (r *partialLengthReader) Read(p []byte) (n int, err error) {
 
 // partialLengthWriter writes a stream of data using OpenPGP partial lengths.
 // See RFC 4880, section 4.2.2.4.
-type partialLengthWriter struct {
+struct partialLengthWriter {
 	w          io.WriteCloser
 	lengthByte [1]byte
 }
@@ -135,7 +135,7 @@ func (w *partialLengthWriter) Close() error {
 
 // A spanReader is an io.LimitReader, but it returns ErrUnexpectedEOF if the
 // underlying Reader returns EOF before the limit has been reached.
-type spanReader struct {
+struct spanReader {
 	r io.Reader
 	n int64
 }
@@ -252,7 +252,7 @@ func serializeStreamHeader(w io.WriteCloser, ptype packetType) (out io.WriteClos
 
 // Packet represents an OpenPGP packet. Users are expected to try casting
 // instances of this interface to specific packet types.
-type Packet interface {
+interface Packet {
 	parse(io.Reader) error
 }
 

@@ -11,11 +11,11 @@ import (
 
 var (
 	opts = opt.New("{file}")
-	one    bool
-	seps   string
+	one  bool
+	seps string
 )
 
-func words(in <-chan interface{}, out chan<- interface{}) {
+func words(in <-chan face{}, out chan<- face{}) {
 	for m := range in {
 		dat, ok := m.([]byte)
 		if !ok {

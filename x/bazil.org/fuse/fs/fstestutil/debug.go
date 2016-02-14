@@ -18,7 +18,7 @@ func (f *flagDebug) IsBoolFlag() bool {
 	return true
 }
 
-func nop(msg interface{}) {}
+func nop(msg face{}) {}
 
 func (f *flagDebug) Set(s string) error {
 	v, err := strconv.ParseBool(s)
@@ -38,7 +38,7 @@ func (f *flagDebug) String() string {
 	return strconv.FormatBool(bool(*f))
 }
 
-func logMsg(msg interface{}) {
+func logMsg(msg face{}) {
 	log.Printf("FUSE: %s\n", msg)
 }
 

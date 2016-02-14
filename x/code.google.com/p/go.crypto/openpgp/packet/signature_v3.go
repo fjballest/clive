@@ -20,7 +20,7 @@ import (
 // than version 4 and should not be used to create new signatures. They are included
 // here for backwards compatibility to read and validate with older key material.
 // See RFC 4880, section 5.2.2.
-type SignatureV3 struct {
+struct SignatureV3 {
 	SigType      SignatureType
 	CreationTime time.Time
 	IssuerKeyId  uint64

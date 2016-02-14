@@ -89,7 +89,7 @@ func detachSign(w io.Writer, signer *Entity, message io.Reader, sigType packet.S
 
 // FileHints contains metadata about encrypted files. This metadata is, itself,
 // encrypted.
-type FileHints struct {
+struct FileHints {
 	// IsBinary can be set to hint that the contents are binary data.
 	IsBinary bool
 	// FileName hints at the name of the file that should be written. It's
@@ -323,7 +323,7 @@ func Encrypt(ciphertext io.Writer, to []*Entity, signed *Entity, hints *FileHint
 // signatureWriter hashes the contents of a message while passing it along to
 // literalData. When closed, it closes literalData, writes a signature packet
 // to encryptedData and then also closes encryptedData.
-type signatureWriter struct {
+struct signatureWriter {
 	encryptedData io.WriteCloser
 	literalData   io.WriteCloser
 	hashType      crypto.Hash
@@ -361,7 +361,7 @@ func (s signatureWriter) Close() error {
 // noOpCloser is like an ioutil.NopCloser, but for an io.Writer.
 // TODO: we have two of these in OpenPGP packages alone. This probably needs
 // to be promoted somewhere more common.
-type noOpCloser struct {
+struct noOpCloser {
 	w io.Writer
 }
 

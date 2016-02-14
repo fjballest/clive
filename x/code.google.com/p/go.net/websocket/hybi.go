@@ -60,7 +60,7 @@ var (
 )
 
 // A hybiFrameHeader is a frame header as defined in hybi draft.
-type hybiFrameHeader struct {
+struct hybiFrameHeader {
 	Fin        bool
 	Rsv        [3]bool
 	OpCode     byte
@@ -71,7 +71,7 @@ type hybiFrameHeader struct {
 }
 
 // A hybiFrameReader is a reader for hybi frame.
-type hybiFrameReader struct {
+struct hybiFrameReader {
 	reader io.Reader
 
 	header hybiFrameHeader
@@ -110,7 +110,7 @@ func (frame *hybiFrameReader) TrailerReader() io.Reader { return nil }
 func (frame *hybiFrameReader) Len() (n int) { return frame.length }
 
 // A hybiFrameReaderFactory creates new frame reader based on its frame type.
-type hybiFrameReaderFactory struct {
+struct hybiFrameReaderFactory {
 	*bufio.Reader
 }
 
@@ -178,7 +178,7 @@ func (buf hybiFrameReaderFactory) NewFrameReader() (frame frameReader, err error
 }
 
 // A HybiFrameWriter is a writer for hybi frame.
-type hybiFrameWriter struct {
+struct hybiFrameWriter {
 	writer *bufio.Writer
 
 	header *hybiFrameHeader
@@ -243,7 +243,7 @@ func (frame *hybiFrameWriter) Write(msg []byte) (n int, err error) {
 
 func (frame *hybiFrameWriter) Close() error { return nil }
 
-type hybiFrameWriterFactory struct {
+struct hybiFrameWriterFactory {
 	*bufio.Writer
 	needMaskingKey bool
 }
@@ -259,7 +259,7 @@ func (buf hybiFrameWriterFactory) NewFrameWriter(payloadType byte) (frame frameW
 	return &hybiFrameWriter{writer: buf.Writer, header: frameHeader}, nil
 }
 
-type hybiFrameHandler struct {
+struct hybiFrameHandler {
 	conn        *Conn
 	payloadType byte
 }
@@ -463,7 +463,7 @@ func newHybiClientConn(config *Config, buf *bufio.ReadWriter, rwc io.ReadWriteCl
 }
 
 // A HybiServerHandshaker performs a server handshake using hybi draft protocol.
-type hybiServerHandshaker struct {
+struct hybiServerHandshaker {
 	*Config
 	accept []byte
 }

@@ -21,26 +21,25 @@ const (
 	sTime              // sort as a time
 )
 
-type addr struct {
+struct addr {
 	from, to int
 	kind     sKind
 	rev      bool
 	all      bool
 }
 
-type xSort struct {
+struct xSort {
 	lines []string
-	keys  [][]interface{} // field or line keys to sort
-	revs  []bool          // which addr is reverse order?
+	keys  [][]face{} // field or line keys to sort
+	revs  []bool     // which addr is reverse order?
 }
 
-
 var (
-	opts = opt.New("{file}")
+	opts             = opt.New("{file}")
 	one, uniq, xflag bool
 	seps             string
 	addrs            []addr
-	kargs []string
+	kargs            []string
 )
 
 func (x *xSort) Len() int {
@@ -191,7 +190,7 @@ func (x *xSort) initKey(k sKind, fldnb int, rev bool, all bool, one bool, seps s
 }
 
 func (x *xSort) sort() error {
-	x.keys = make([][]interface{}, len(x.lines))
+	x.keys = make([][]face{}, len(x.lines))
 	for _, a := range addrs {
 		if a.from < 0 {
 			a.from = len(x.lines) - (-a.from) + 1
@@ -232,7 +231,7 @@ func (x *xSort) sort() error {
 	return nil
 }
 
-func sortFiles(in <-chan interface{}) error {
+func sortFiles(in <-chan face{}) error {
 	out := cmd.Out("out")
 	x := &xSort{}
 	for m := range in {

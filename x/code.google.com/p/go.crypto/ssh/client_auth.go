@@ -74,7 +74,7 @@ func keys(m map[string]bool) []string {
 }
 
 // An AuthMethod represents an instance of an RFC 4252 authentication method.
-type AuthMethod interface {
+interface AuthMethod {
 	// auth authenticates user over transport t.
 	// Returns true if authentication is successful.
 	// If authentication is not successful, a []string of alternative
@@ -109,14 +109,15 @@ func (n *noneAuth) method() string {
 // a function call, e.g. by prompting the user.
 type passwordCallback func() (password string, err error)
 
+struct passwordAuthMsg {
+	User     string `sshtype:"50"`
+	Service  string
+	Method   string
+	Reply    bool
+	Password string
+}
+
 func (cb passwordCallback) auth(session []byte, user string, c packetConn, rand io.Reader) (bool, []string, error) {
-	type passwordAuthMsg struct {
-		User     string `sshtype:"50"`
-		Service  string
-		Method   string
-		Reply    bool
-		Password string
-	}
 
 	pw, err := cb()
 	// REVIEW NOTE: is there a need to support skipping a password attempt?
@@ -154,7 +155,7 @@ func PasswordCallback(prompt func() (secret string, err error)) AuthMethod {
 	return passwordCallback(prompt)
 }
 
-type publickeyAuthMsg struct {
+struct publickeyAuthMsg {
 	User    string `sshtype:"50"`
 	Service string
 	Method  string
@@ -348,15 +349,15 @@ func (cb KeyboardInteractiveChallenge) method() string {
 	return "keyboard-interactive"
 }
 
-func (cb KeyboardInteractiveChallenge) auth(session []byte, user string, c packetConn, rand io.Reader) (bool, []string, error) {
-	type initiateMsg struct {
-		User       string `sshtype:"50"`
-		Service    string
-		Method     string
-		Language   string
-		Submethods string
-	}
+struct initiateMsg {
+	User       string `sshtype:"50"`
+	Service    string
+	Method     string
+	Language   string
+	Submethods string
+}
 
+func (cb KeyboardInteractiveChallenge) auth(session []byte, user string, c packetConn, rand io.Reader) (bool, []string, error) {
 	if err := c.writePacket(Marshal(&initiateMsg{
 		User:    user,
 		Service: serviceSSH,

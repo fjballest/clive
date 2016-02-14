@@ -4,31 +4,32 @@
 package zxc
 
 import (
-	"fmt"
 	"bytes"
-	"strings"
-	"errors"
-	fpath "path"
-	"time"
+	"clive/dbg"
+	"clive/net/auth"
+	"clive/u"
 	"clive/zx"
 	"clive/zx/pred"
 	"clive/zx/rzx"
 	"clive/zx/zux"
-	"clive/dbg"
-	"clive/net/auth"
-	"clive/u"
+	"errors"
+	"fmt"
 	"io"
+	fpath "path"
+	"strings"
+	"time"
 )
 
 type walkFor int
+
 const (
-	forStat walkFor = iota	// walk for stat
-	forGet		// walk for Get()
-	forPut		// walk for Put()
-	forDel		// walk to remove()
-	forCreat		// walk to create a new file/dir
-	forLink		// walk to create a new link
-	forCreatAll		// walk to create a new file/dir (and its ancestors)
+	forStat     walkFor = iota // walk for stat
+	forGet                     // walk for Get()
+	forPut                     // walk for Put()
+	forDel                     // walk to remove()
+	forCreat                   // walk to create a new file/dir
+	forLink                    // walk to create a new link
+	forCreatAll                // walk to create a new file/dir (and its ancestors)
 )
 
 // A caching fs
@@ -36,11 +37,11 @@ struct Fs {
 	*dbg.Flag
 	*zx.Flags
 	*zx.Stats
-	ai     *auth.Info
+	ai    *auth.Info
 	perms bool
-	sync bool		// write-through
-	rfs zx.Getter
-	c fsCache
+	sync  bool // write-through
+	rfs   zx.Getter
+	c     fsCache
 	syncc chan bool
 }
 
@@ -60,6 +61,7 @@ var ctldir = zx.Dir{
 var _fs zx.FullFs = &Fs{}
 
 type ddir zx.Dir
+
 func (d ddir) String() string {
 	return zx.Dir(d).LongFmt()
 }
@@ -86,15 +88,15 @@ func New(rfs zx.Getter) (*Fs, error) {
 	}
 	tag := fmt.Sprintf("zcx!%s", rfs)
 	fs := &Fs{
-		Flag:   &dbg.Flag{Tag: tag},
-		Flags:  &zx.Flags{},
+		Flag:  &dbg.Flag{Tag: tag},
+		Flags: &zx.Flags{},
 		Stats: &zx.Stats{},
-		rfs: rfs,
+		rfs:   rfs,
 		perms: true,
 		syncc: make(chan bool),
 	}
 	fs.Flags.Add("debug", &fs.Debug)
-	fs.Flags.Add("writesync", &fs.sync)	// sync after changes
+	fs.Flags.Add("writesync", &fs.sync) // sync after changes
 	// TODO: The user u.Uid should be able to change fs.noperms
 	fs.Flags.AddRO("perms", &fs.perms)
 	fs.Flags.Add("clear", func(...string) error {
@@ -116,13 +118,13 @@ func New(rfs zx.Getter) (*Fs, error) {
 		fs.Flags.Add("rfsdebug", &rfs.Debug)
 	}
 	c := &mCache{
-		Flag: dbg.Flag {
+		Flag: dbg.Flag{
 			Tag: "cache",
 		},
 	}
 	fs.Flags.Add("cachedebug", &c.Debug)
 	fs.Flags.Add("verb", &c.Verb)
-	fs.Flags.Add("cachestats", &c.stats)	// the cache stats all the times
+	fs.Flags.Add("cachestats", &c.stats) // the cache stats all the times
 	rd["addr"] = "zxc!/"
 	if err := c.setRoot(rd); err != nil {
 		return nil, err
@@ -142,12 +144,32 @@ func (fs *Fs) Sync() error {
 	return err
 }
 
+func (fs *Fs) needSync() {
+	select {
+	case fs.syncc <- true:
+	default:
+	}
+}
+
 func (fs *Fs) syncer() {
+	ival := syncIval
+	last := time.Now()
 	doselect {
-	case <-fs.syncc:
-		break
-	case <-time.After(syncIval):
+	case x := <-fs.syncc:
+		if !x {
+			break
+		}
+		if time.Since(last) < syncIval {
+			ival = time.Second
+			continue
+		}
 		fs.Sync()
+		ival = syncIval
+		last = time.Now()
+	case <-time.After(ival):
+		fs.Sync()
+		ival = syncIval
+		last = time.Now()
 	}
 }
 
@@ -293,7 +315,7 @@ func (fs *Fs) walk(why walkFor, nd zx.Dir, els ...string) (f fsFile, err error) 
 		}
 		cf, err := f.walk1(els[0])
 		isnotexist := zx.IsNotExist(err)
-		if why == forCreatAll && isnotexist && len(els) > 1{
+		if why == forCreatAll && isnotexist && len(els) > 1 {
 			dd := nd.Dup()
 			od := f.dir()
 			dd["type"] = "d"
@@ -370,8 +392,7 @@ func (fs *Fs) wstat(p string, nd zx.Dir) (zx.Dir, error) {
 		return ctldir.Dup(), nil
 	}
 	why := forStat
-	ndsz := nd.Size()
-	if ndsz != 0 {
+	if nd["size"] != "" {
 		why = forPut
 	}
 	f, err := fs.walk(why, nil, zx.Elems(p)...)
@@ -401,6 +422,8 @@ func (fs *Fs) wstat(p string, nd zx.Dir) (zx.Dir, error) {
 	f.Unlock()
 	if fs.sync {
 		f.sync(fs.rfs)
+	} else {
+		fs.needSync()
 	}
 	return d, nil
 }
@@ -411,7 +434,7 @@ func (fs *Fs) Wstat(p string, nd zx.Dir) <-chan zx.Dir {
 	nd = nd.SysDup()
 	d, err := fs.wstat(p, nd)
 	if err == nil {
-		fs.Dprintf("wstat %s: %s\n\t-> %s\n", p, ddir(nd), ddir(d))
+		fs.Dprintf("wstat %s: %s\n\t-> %s\n", p, nd, ddir(d))
 		c <- d
 	} else {
 		fs.Dprintf("wstat %s: %s\n", p, err)
@@ -461,7 +484,7 @@ func (fs *Fs) get(p string, off, count int64, c chan<- []byte) error {
 	d := f.dir()
 	if d["type"] != "d" {
 		// this unlocks f before actually sending anything
-		return f.getData(off, count, c)	
+		return f.getData(off, count, c)
 	}
 	ds, err := f.getDir()
 	f.Unlock()
@@ -537,7 +560,10 @@ func (fs *Fs) remove(p string, all bool) error {
 	f.Unlock()
 	if fs.sync {
 		f.sync(fs.rfs)
+	} else {
+		fs.needSync()
 	}
+
 	return err
 }
 
@@ -798,7 +824,7 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 		d["type"] = "d"
 		typ = "d"
 		f, err = fs.walk(forCreatAll, d, els...)
-	case "F":	
+	case "F":
 		d["type"] = "-"
 		typ = "-"
 		if d["size"] == "" {
@@ -844,7 +870,7 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 		d.SetTime("mtime", time.Now())
 	}
 	d["wuid"] = uid
-	if wd["path"] != p {		// new dir or new file
+	if wd["path"] != p { // new dir or new file
 		d["type"] = typ
 		if d["uid"] == "" {
 			d["uid"] = uid
@@ -860,7 +886,7 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 		if d["size"] == "" {
 			d["size"] = "0"
 		}
-		d["addr"] = "zxc!"+p
+		d["addr"] = "zxc!" + p
 		nf, err := f.newFile(d, fs.rfs)
 		f.Unlock()
 		if err != nil {
@@ -872,7 +898,7 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 		f = nf
 		f.Lock()
 	} else if typ == "-" {
-		f.wstat(zx.Dir{"size":"0"})
+		f.wstat(zx.Dir{"size": "0"})
 	}
 	if c == nil {
 		c = make(chan []byte)
@@ -887,6 +913,8 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 		f.Unlock()
 		if fs.sync {
 			f.sync(fs.rfs)
+		} else {
+			fs.needSync()
 		}
 		return d, nil
 	}
@@ -897,6 +925,8 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) (zx.Dir, error
 	f.Unlock()
 	if fs.sync {
 		f.sync(fs.rfs)
+	} else {
+		fs.needSync()
 	}
 	if err != nil {
 		return nil, err

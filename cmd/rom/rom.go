@@ -24,16 +24,16 @@ func bytes(m []byte) {
 	defer cmd.Printf("\t\t},\n")
 	for i, b := range m {
 		cmd.Printf("%d,", b)
-		if i % 16 == 0 && i > 0 && i < len(m)-1 {
+		if i%16 == 0 && i > 0 && i < len(m)-1 {
 			cmd.Printf("\n\t\t")
 		}
 	}
-	if len(m) % 16 != 0 {
+	if len(m)%16 != 0 {
 		cmd.Printf("\n")
 	}
 }
 
-func rom(in <-chan interface{}) {
+func rom(in <-chan face{}) {
 	cmd.Printf("package %s\n", name)
 	cmd.Printf("var Files = map[string][]byte{\n")
 	defer cmd.Printf("}\n")

@@ -27,7 +27,7 @@ import (
 //
 // Since the armored data can be very large, this package presents a streaming
 // interface.
-type Block struct {
+struct Block {
 	Type    string            // The type, taken from the preamble (i.e. "PGP SIGNATURE").
 	Header  map[string]string // Optional headers.
 	Body    io.Reader         // A Reader from which the contents can be read
@@ -61,7 +61,7 @@ var armorEndOfLine = []byte("-----")
 
 // lineReader wraps a line based reader. It watches for the end of an armor
 // block and records the expected CRC value.
-type lineReader struct {
+struct lineReader {
 	in  *bufio.Reader
 	buf []byte
 	eof bool
@@ -131,7 +131,7 @@ func (l *lineReader) Read(p []byte) (n int, err error) {
 // openpgpReader passes Read calls to the underlying base64 decoder, but keeps
 // a running CRC of the resulting data and checks the CRC against the value
 // found by the lineReader at EOF.
-type openpgpReader struct {
+struct openpgpReader {
 	lReader    *lineReader
 	b64Reader  io.Reader
 	currentCRC uint32

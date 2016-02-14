@@ -112,7 +112,7 @@ const (
 )
 
 // A Session represents a connection to a remote command or shell.
-type Session struct {
+struct Session {
 	// Stdin specifies the remote process's standard input.
 	// If Stdin is nil, the remote process reads from an empty
 	// bytes.Buffer.
@@ -156,7 +156,7 @@ func (s *Session) Close() error {
 }
 
 // RFC 4254 Section 6.4.
-type setenvRequest struct {
+struct setenvRequest {
 	Name  string
 	Value string
 }
@@ -176,7 +176,7 @@ func (s *Session) Setenv(name, value string) error {
 }
 
 // RFC 4254 Section 6.2.
-type ptyRequestMsg struct {
+struct ptyRequestMsg {
 	Term     string
 	Columns  uint32
 	Rows     uint32
@@ -213,7 +213,7 @@ func (s *Session) RequestPty(term string, h, w int, termmodes TerminalModes) err
 }
 
 // RFC 4254 Section 6.5.
-type subsystemRequestMsg struct {
+struct subsystemRequestMsg {
 	Subsystem string
 }
 
@@ -231,7 +231,7 @@ func (s *Session) RequestSubsystem(subsystem string) error {
 }
 
 // RFC 4254 Section 6.9.
-type signalMsg struct {
+struct signalMsg {
 	Signal string
 }
 
@@ -247,7 +247,7 @@ func (s *Session) Signal(sig Signal) error {
 }
 
 // RFC 4254 Section 6.5.
-type execMsg struct {
+struct execMsg {
 	Command string
 }
 
@@ -303,7 +303,7 @@ func (s *Session) Output(cmd string) ([]byte, error) {
 	return b.Bytes(), err
 }
 
-type singleWriter struct {
+struct singleWriter {
 	b  bytes.Buffer
 	mu sync.Mutex
 }
@@ -492,7 +492,7 @@ func (s *Session) stderr() {
 }
 
 // sessionStdin reroutes Close to CloseWrite.
-type sessionStdin struct {
+struct sessionStdin {
 	io.Writer
 	ch Channel
 }
@@ -562,7 +562,7 @@ func newSession(ch Channel, reqs <-chan *Request) (*Session, error) {
 }
 
 // An ExitError reports unsuccessful completion of a remote command.
-type ExitError struct {
+struct ExitError {
 	Waitmsg
 }
 
@@ -572,7 +572,7 @@ func (e *ExitError) Error() string {
 
 // Waitmsg stores the information about an exited remote command
 // as reported by Wait.
-type Waitmsg struct {
+struct Waitmsg {
 	status int
 	signal string
 	msg    string

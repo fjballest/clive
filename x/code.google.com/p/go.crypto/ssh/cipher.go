@@ -33,7 +33,7 @@ const (
 
 // noneCipher implements cipher.Stream and provides no encryption. It is used
 // by the transport before the first key-exchange.
-type noneCipher struct{}
+struct noneCipher {}
 
 func (c noneCipher) XORKeyStream(dst, src []byte) {
 	copy(dst, src)
@@ -51,7 +51,7 @@ func newRC4(key, iv []byte) (cipher.Stream, error) {
 	return rc4.NewCipher(key)
 }
 
-type streamCipherMode struct {
+struct streamCipherMode {
 	keySize    int
 	ivSize     int
 	skip       int
@@ -120,7 +120,7 @@ var cipherModes = map[string]*streamCipherMode{
 const prefixLen = 5
 
 // streamPacketCipher is a packetCipher using a stream cipher.
-type streamPacketCipher struct {
+struct streamPacketCipher {
 	mac    hash.Hash
 	cipher cipher.Stream
 
@@ -237,7 +237,7 @@ func (s *streamPacketCipher) writePacket(seqNum uint32, w io.Writer, rand io.Rea
 	return nil
 }
 
-type gcmCipher struct {
+struct gcmCipher {
 	aead   cipher.AEAD
 	prefix [4]byte
 	iv     []byte

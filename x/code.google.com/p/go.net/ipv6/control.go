@@ -33,7 +33,7 @@ var (
 // all protocol implementations prohibit using a combination of RFC
 // 2292 and RFC 3542 for some practical reasons.
 
-type rawOpt struct {
+struct rawOpt {
 	sync.Mutex
 	cflags ControlFlags
 }
@@ -57,7 +57,7 @@ const (
 
 // A ControlMessage represents per packet basis IP-level socket
 // options.
-type ControlMessage struct {
+struct ControlMessage {
 	// Receiving socket options: SetControlMessage allows to
 	// receive the options from the protocol stack using ReadFrom
 	// method of PacketConn.

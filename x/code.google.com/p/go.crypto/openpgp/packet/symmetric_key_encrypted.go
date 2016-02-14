@@ -19,7 +19,7 @@ const maxSessionKeySizeInBytes = 64
 
 // SymmetricKeyEncrypted represents a passphrase protected session key. See RFC
 // 4880, section 5.3.
-type SymmetricKeyEncrypted struct {
+struct SymmetricKeyEncrypted {
 	CipherFunc   CipherFunction
 	Encrypted    bool
 	Key          []byte // Empty unless Encrypted is false.

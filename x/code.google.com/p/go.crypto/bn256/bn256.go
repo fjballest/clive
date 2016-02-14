@@ -27,7 +27,7 @@ import (
 
 // G1 is an abstract cyclic group. The zero value is suitable for use as the
 // output of an operation, but cannot be used as an input.
-type G1 struct {
+struct G1 {
 	p *curvePoint
 }
 
@@ -144,7 +144,7 @@ func (e *G1) Unmarshal(m []byte) (*G1, bool) {
 
 // G2 is an abstract cyclic group. The zero value is suitable for use as the
 // output of an operation, but cannot be used as an input.
-type G2 struct {
+struct G2 {
 	p *twistPoint
 }
 
@@ -261,7 +261,7 @@ func (e *G2) Unmarshal(m []byte) (*G2, bool) {
 
 // GT is an abstract cyclic group. The zero value is suitable for use as the
 // output of an operation, but cannot be used as an input.
-type GT struct {
+struct GT {
 	p *gfP12
 }
 
@@ -370,7 +370,7 @@ func Pair(g1 *G1, g2 *G2) *GT {
 
 // bnPool implements a tiny cache of *big.Int objects that's used to reduce the
 // number of allocations made during processing.
-type bnPool struct {
+struct bnPool {
 	bns   []*big.Int
 	count int
 }

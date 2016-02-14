@@ -26,7 +26,7 @@ const (
 )
 
 // Signature represents a signature. See RFC 4880, section 5.2.
-type Signature struct {
+struct Signature {
 	SigType    SignatureType
 	PubKeyAlgo PublicKeyAlgorithm
 	Hash       crypto.Hash
@@ -592,7 +592,7 @@ func (sig *Signature) Serialize(w io.Writer) (err error) {
 }
 
 // outputSubpacket represents a subpacket to be marshaled.
-type outputSubpacket struct {
+struct outputSubpacket {
 	hashed        bool // true if this subpacket is in the hashed area.
 	subpacketType signatureSubpacketType
 	isCritical    bool

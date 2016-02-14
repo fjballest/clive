@@ -5,22 +5,22 @@ package main
 
 import (
 	"clive/ch"
-	"clive/mblk"
 	"clive/cmd"
 	"clive/cmd/opt"
+	"clive/mblk"
 	"clive/zx"
 	fpath "path"
 )
 
 struct wFile {
-	d zx.Dir
+	d   zx.Dir
 	dat *mblk.Buffer
 }
 
 var (
-	opts = opt.New("{file}")
+	opts   = opt.New("{file}")
 	printf = cmd.Printf
-	odir string
+	odir   string
 
 	notux, lflag, pflag, nflag, iflag, dflag, aflag, fflag, sflag, wflag, wwflag bool
 )
@@ -65,7 +65,7 @@ func (w *wFile) end() error {
 	dc := make(chan []byte)
 	cmd.Dprintf("writing file %s\n", w.d["Dpath"])
 	rc := cmd.Put(w.d["Dpath"], w.d, 0, dc)
-	_, _, err := w.dat.SendTo(0, -1, dc);
+	_, _, err := w.dat.SendTo(0, -1, dc)
 	close(dc, err)
 	if err != nil {
 		close(rc, err)

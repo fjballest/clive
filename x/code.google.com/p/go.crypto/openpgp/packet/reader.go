@@ -11,7 +11,7 @@ import (
 
 // Reader reads packets from an io.Reader and allows packets to be 'unread' so
 // that they result from the next call to Next.
-type Reader struct {
+struct Reader {
 	q       []Packet
 	readers []io.Reader
 }

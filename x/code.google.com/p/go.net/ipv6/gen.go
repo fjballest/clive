@@ -96,7 +96,7 @@ func parseICMPv6Parameters(w io.Writer, r io.Reader) error {
 	return nil
 }
 
-type icmpv6Parameters struct {
+struct icmpv6Parameters {
 	XMLName    xml.Name `xml:"registry"`
 	Title      string   `xml:"title"`
 	Updated    string   `xml:"updated"`
@@ -109,7 +109,7 @@ type icmpv6Parameters struct {
 	} `xml:"registry"`
 }
 
-type canonICMPv6ParamRecord struct {
+struct canonICMPv6ParamRecord {
 	OrigName string
 	Name     string
 	Value    int
@@ -183,7 +183,7 @@ func parseProtocolNumbers(w io.Writer, r io.Reader) error {
 	return nil
 }
 
-type protocolNumbers struct {
+struct protocolNumbers {
 	XMLName  xml.Name `xml:"registry"`
 	Title    string   `xml:"title"`
 	Updated  string   `xml:"updated"`
@@ -196,7 +196,7 @@ type protocolNumbers struct {
 	} `xml:"registry>record"`
 }
 
-type canonProtocolRecord struct {
+struct canonProtocolRecord {
 	OrigName string
 	Name     string
 	Descr    string

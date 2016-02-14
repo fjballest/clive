@@ -1,10 +1,10 @@
 package ink
 
 import (
-	"io"
+	"clive/cmd"
 	"fmt"
 	"html"
-	"clive/cmd"
+	"io"
 	"strconv"
 )
 
@@ -29,17 +29,17 @@ import (
 //	Set  name idx on
 struct RadioSet {
 	*Ctlr
-	Value *string	// current value
-	els []*Button
+	Value *string // current value
+	els   []*Button
 }
 
 // Create a Radio button Set.
 // Value is updated to reflect the selected button name.
 func NewRadioSet(value *string, button ...*Button) *RadioSet {
-	bs := &RadioSet {
+	bs := &RadioSet{
 		Value: value,
-		Ctlr: newCtlr("buttons"),
-		els: button,
+		Ctlr:  newCtlr("buttons"),
+		els:   button,
 	}
 	for _, b := range button {
 		if *value == b.Name {
@@ -68,21 +68,21 @@ func (bs *RadioSet) WriteTo(w io.Writer) (tot int64, err error) {
 	for i, b := range bs.els {
 		bid := fmt.Sprintf("%s_b%d", vid, i)
 		bids = append(bids, bid)
-		n, err = io.WriteString(w, `<input type="radio" id="`+bid+`" name="`+vid+`">` +
-				`<label for = "`+bid+`">` + 
-				html.EscapeString(b.Tag) + `</label>` + "\n")
+		n, err = io.WriteString(w, `<input type="radio" id="`+bid+`" name="`+vid+`">`+
+			`<label for = "`+bid+`">`+
+			html.EscapeString(b.Tag)+`</label>`+"\n")
 		tot += int64(n)
 		if err != nil {
 			return tot, err
 		}
 	}
-	wsaddr := `wss://localhost:`+servePort
+	wsaddr := `wss://localhost:` + servePort
 	n, err = io.WriteString(w, `</div></form><script>
 		$(function(){
 			var d = $("#`+vid+`");
 			d.wsaddr = "`+wsaddr+`";
 			document.mkradio(d, "`+bs.Id+`", "`+vid+`");
-			$("#`+vid+`").buttonset();` + "\n")
+			$("#`+vid+`").buttonset();`+"\n")
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -110,14 +110,14 @@ func (bs *RadioSet) update(id string) {
 		if !b.value {
 			v = "off"
 		}
-		ev := &Ev{Id: bs.Id, Src: id+"u", Args: []string{
+		ev := &Ev{Id: bs.Id, Src: id + "u", Args: []string{
 			"Set", b.Name, fmt.Sprintf("%d", i), v}}
 		out <- ev
 	}
 }
 
 func (bs *RadioSet) handle(wev *Ev) {
-	if wev==nil || len(wev.Args)<1 {
+	if wev == nil || len(wev.Args) < 1 {
 		return
 	}
 	ev := wev.Args
@@ -139,7 +139,7 @@ func (bs *RadioSet) handle(wev *Ev) {
 		}
 		for i, b := range bs.els {
 			b.value = i == n
-			if b.Value != nil  {
+			if b.Value != nil {
 				*b.Value = b.value
 			}
 			if b.value && bs.Value != nil {
