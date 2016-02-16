@@ -53,6 +53,9 @@ func init() {
 //	>...	// like . > ...
 //	< ...	// like . > ...
 //	| ...	// like . | ...
+//
+// builtin() and some of the builtin funcs change the args[] so there is no
+// need to type spaces when using ,>..., >..., |..., etc.
 
 func builtin(arg0 string) func(*Cmd, ...string) {
 	if arg0 == "" {
@@ -60,6 +63,11 @@ func builtin(arg0 string) func(*Cmd, ...string) {
 	}
 	if fn, ok := btab[arg0]; ok {
 		return fn
+	}
+	if len(arg0) > 1 &&
+		(arg0[0] == '.' || arg0[0] == ',') &&
+		(arg0[1] == '>' || arg0[1] == '<' || arg0[1] == '|') {
+		return bdot
 	}
 	switch arg0[0] {
 	case '>':
@@ -597,6 +605,10 @@ func bX(c *Cmd, args ...string) {
 // "." -> "x ."
 // "," -> "X ."
 func bdot(c *Cmd, args ...string) {
+	if len(args[0]) > 1 && (args[0][1] == '>' || args[0][1] == '|' || args[0][1] == '<') {
+		arg0 := args[0]
+		args = append([]string{arg0[:1], arg0[1:]}, args[1:]...)
+	}
 	if args[0] == "." {
 		args = append([]string{"x"}, args...)
 	} else {
