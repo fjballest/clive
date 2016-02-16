@@ -16,7 +16,7 @@ import (
 
 // Events sent from the viewer:
 //	tag wordclicked
-//	click[124]	textclicked	p0 p1	(buttons are 1, 2, 4, 8, 16, ...)
+//	click[1248]	textclicked	p0 p1	(buttons are 1, 2, 4, 8, 16, ...)
 //	tick	p0 p1
 //	epaste	p0 p1
 //	ecopy	p0 p1
@@ -65,7 +65,7 @@ import (
 //	start
 //	end
 //	tag wordclicked
-//	click[124]	textclicked	p0 p1	(buttons are 1, 2, 4, 8, 16, ...)
+//	click[1248]	textclicked	p0 p1	(buttons are 1, 2, 4, 8, 16, ...)
 //	tick	p0 p1
 //	eins	text p0
 //	edel	p0 p1
@@ -256,24 +256,24 @@ func (t *Txt) wrongVers(tag string, wev *Ev) bool {
 	if wev.Vers == vers+1 {
 		return false
 	}
-	cmd.Dprintf("%s: %s: vers %d != %d+1\n", t.Id, tag, wev.Vers, vers)
+	dprintf("%s: %s: vers %d != %d+1\n", t.Id, tag, wev.Vers, vers)
 	t.update(wev.Src)
 	return true
 }
 
 func (t *Txt) p0p1(ev []string) (int, int, error) {
 	if len(ev) < 3 {
-		cmd.Dprintf("%s: %s: short\n", t.Id, ev[0])
+		dprintf("%s: %s: short\n", t.Id, ev[0])
 		return 0, 0, errors.New("short event")
 	}
 	p0, err := strconv.Atoi(ev[1])
 	if err != nil {
-		cmd.Dprintf("%s: %s: p0: %s\n", t.Id, ev[0], err)
+		dprintf("%s: %s: p0: %s\n", t.Id, ev[0], err)
 		return 0, 0, errors.New("bad p0")
 	}
 	p1, err := strconv.Atoi(ev[2])
 	if err != nil {
-		cmd.Dprintf("%s: %s: p1: %s\n", t.Id, ev[0], err)
+		dprintf("%s: %s: p1: %s\n", t.Id, ev[0], err)
 		return 0, 0, errors.New("bad p1")
 	}
 	return p0, p1, nil
@@ -303,7 +303,7 @@ func (t *Txt) handler() {
 		select {
 		case e, ok := <-t.in:
 			if !ok {
-				cmd.Dprintf("%s: handler done\n", t.Id)
+				dprintf("%s: handler done\n", t.Id)
 				return
 			}
 			t.held = append(t.held, e)
@@ -311,7 +311,7 @@ func (t *Txt) handler() {
 			if len(t.held) == 0 {
 				e, ok := <-t.in
 				if !ok {
-					cmd.Dprintf("%s: handler done\n", t.Id)
+					dprintf("%s: handler done\n", t.Id)
 					return
 				}
 				t.held = append(t.held, e)
@@ -326,7 +326,7 @@ func (t *Txt) handler() {
 		if e == nil {
 			continue
 		}
-		cmd.Dprintf("-> %d %v\n", len(t.held), e)
+		dprintf("-> %d %v\n", len(t.held), e)
 		if len(e.Args) > 0 {
 			h = h(e)
 		}
@@ -365,7 +365,7 @@ func (t *Txt) handleUnlocked(wev *Ev) handler {
 			to := t.viewOut(wev.Src)
 			to <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"held"}}
 		}
-		cmd.Dprintf("%s: locked by %s (%d)\n", t.Id, wev.Src, len(t.held))
+		dprintf("%s: locked by %s (%d)\n", t.Id, wev.Src, len(t.held))
 		return t.handleLocked
 	}
 	t.apply(wev)
@@ -392,7 +392,7 @@ func (t *Txt) handleLocked(wev *Ev) handler {
 				to := t.viewOut(t.owner)
 				to <- &Ev{Id: t.Id, Src: t.Id + "u", Args: []string{"rlse"}}
 			}
-			cmd.Dprintf("%s: releasing %s for %s\n", t.Id, t.owner, wev.Src)
+			dprintf("%s: releasing %s for %s\n", t.Id, t.owner, wev.Src)
 			return t.handleReleasing
 		}
 		return t.handleLocked
@@ -402,7 +402,7 @@ func (t *Txt) handleLocked(wev *Ev) handler {
 		if ev[0] == "end" || ev[0] == "quit" {
 			t.apply(wev)
 		}
-		cmd.Dprintf("%s: unlocked\n", t.Id)
+		dprintf("%s: unlocked\n", t.Id)
 		return t.handleUnlocked
 	}
 	t.apply(wev)
@@ -424,13 +424,13 @@ func (t *Txt) handleReleasing(wev *Ev) handler {
 	}
 	if ev[0] == "rlsed" {
 		t.owner = ""
-		cmd.Dprintf("%s: unlocked\n", t.Id)
+		dprintf("%s: unlocked\n", t.Id)
 		return t.handleUnlocked
 	}
 	t.apply(wev)
 	if ev[0] == "end" || ev[0] == "quit" {
 		t.owner = ""
-		cmd.Dprintf("%s: unlocked\n", t.Id)
+		dprintf("%s: unlocked\n", t.Id)
 		return t.handleUnlocked
 	}
 	return t.handleReleasing
@@ -450,11 +450,11 @@ func (t *Txt) undoRedo(isredo bool) bool {
 			uev = t.t.Redo()
 		}
 		if uev == nil {
-			cmd.Dprintf("%s: %s: no more\n", t.Id, o)
+			dprintf("%s: %s: no more\n", t.Id, o)
 			return some
 		}
 		some = true
-		cmd.Dprintf("%s: %s: undo1\n", t.Id, o)
+		dprintf("%s: %s: undo1\n", t.Id, o)
 		nev := &Ev{Id: t.Id, Src: "", Vers: t.t.Vers()}
 		off := fmt.Sprintf("%d", uev.Off)
 		s := string(uev.Data)
@@ -482,10 +482,10 @@ func (t *Txt) apply(wev *Ev) {
 	}
 	switch ev[0] {
 	default:
-		cmd.Dprintf("%s: unhandled %v\n", t.Id, ev)
+		dprintf("%s: unhandled %v\n", t.Id, ev)
 		return
-	case "save", "quit", "tag", "click1", "click2", "click4", "focus":
-		cmd.Dprintf("%s: %v\n", t.Id, wev)
+	case "save", "quit", "tag", "click1", "click2", "click4", "click8", "focus":
+		dprintf("%s: %v\n", t.Id, wev)
 		t.post(wev)
 	case "hold", "held", "rlse", "rlsed":
 		cmd.Warn("%s: unexpected %v\n", t.Id, wev)
@@ -493,7 +493,7 @@ func (t *Txt) apply(wev *Ev) {
 		// let's see if that happens.
 		panic("javascript hold bug?")
 	case "start":
-		cmd.Dprintf("%s: start %v\n", t.Id, wev.Src)
+		dprintf("%s: start %v\n", t.Id, wev.Src)
 		p0 := t.t.Mark("p0")
 		t.t.SetMark(wev.Src+"p0", p0.Off)
 		p1 := t.t.Mark("p1")
@@ -503,7 +503,7 @@ func (t *Txt) apply(wev *Ev) {
 	case "needreload":
 		t.update(wev.Src)
 	case "end":
-		cmd.Dprintf("%s: end %v\n", t.Id, wev.Src)
+		dprintf("%s: end %v\n", t.Id, wev.Src)
 		t.t.DelMark(wev.Src + "p0")
 		t.t.DelMark(wev.Src + "p1")
 		t.post(wev)
@@ -516,17 +516,17 @@ func (t *Txt) apply(wev *Ev) {
 		t.discard(wev.Src)
 	case "tick":
 		if len(ev) < 3 {
-			cmd.Dprintf("%s: tick: short\n", t.Id)
+			dprintf("%s: tick: short\n", t.Id)
 			return
 		}
 		p0, err := strconv.Atoi(ev[1])
 		if err != nil {
-			cmd.Dprintf("%s: ins: %s\n", t.Id, err)
+			dprintf("%s: ins: %s\n", t.Id, err)
 			return
 		}
 		p1, err := strconv.Atoi(ev[2])
 		if err != nil {
-			cmd.Dprintf("%s: ins: %s\n", t.Id, err)
+			dprintf("%s: ins: %s\n", t.Id, err)
 			return
 		}
 		t.t.SetMark(wev.Src+"p0", p0)
@@ -542,12 +542,12 @@ func (t *Txt) apply(wev *Ev) {
 		t.post(wev)
 	case "eins":
 		if len(ev) < 3 {
-			cmd.Dprintf("%s: ins: short\n", t.Id)
+			dprintf("%s: ins: short\n", t.Id)
 			return
 		}
 		p0, err := strconv.Atoi(ev[2])
 		if err != nil || t.wrongVers(ev[0], wev) {
-			cmd.Dprintf("%s: ins: %s\n", t.Id, err)
+			dprintf("%s: ins: %s\n", t.Id, err)
 			return
 		}
 		data := []rune(ev[1])
@@ -555,30 +555,37 @@ func (t *Txt) apply(wev *Ev) {
 			return
 		}
 		if err := t.t.Ins(data, p0); err != nil {
-			cmd.Dprintf("%s: ins: %s\n", t.Id, err)
+			dprintf("%s: ins: %s\n", t.Id, err)
 			return
 		}
 		t.t.ContdEdit()
-		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
+		dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 		t.out <- wev
 		t.post(wev)
 	case "edel", "ecut":
 		p0, p1, err := t.p0p1(ev)
+		if ev[0] == "ecut" {
+			wev.Vers++ // cut does not advance, let wrongVers check it
+		}
 		if err != nil || t.wrongVers(ev[0], wev) {
 			return
 		}
 		if p1 <= p0 {
-			return
-		}
-		rs := t.t.Del(p0, p1-p0)
-		if ev[0] == "ecut" {
-			if err := snarf.Set(string(rs)); err != nil {
-				cmd.Dprintf("%s: %s: snarf: %s\n", t.Id, ev[0], err)
-			}
+			t.t.Del(0, 0)	// advance the vers
 		} else {
-			t.t.ContdEdit()
+			rs := t.t.Del(p0, p1-p0)
+			if ev[0] == "ecut" {
+				if err := snarf.Set(string(rs)); err != nil {
+					dprintf("%s: %s: snarf: %s\n", t.Id, ev[0], err)
+				}
+			} else {
+				t.t.ContdEdit()
+			}
 		}
-		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
+		if ev[0] == "ecut" {
+			wev.Vers = t.t.Vers()
+		}
+		dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 		ev[0] = "edel"
 		t.out <- wev
 		t.post(wev)
@@ -592,23 +599,24 @@ func (t *Txt) apply(wev *Ev) {
 			s = t.getString(p0, p1-p0)
 		}
 		if err := snarf.Set(s); err != nil {
-			cmd.Dprintf("%s: %s: snarf: %s\n", t.Id, ev[0], err)
+			dprintf("%s: %s: snarf: %s\n", t.Id, ev[0], err)
 		}
 	case "epaste":
 		p0, _, err := t.p0p1(ev)
+		wev.Vers++ // paste does not advance, let wrongVers check it
 		if err != nil || t.wrongVers(ev[0], wev) {
 			return
 		}
 		s, err := snarf.Get()
 		if err != nil {
-			cmd.Dprintf("%s: %s: snarf: %s\n", t.Id, ev[0], err)
+			dprintf("%s: %s: snarf: %s\n", t.Id, ev[0], err)
 			return
 		}
 		if s == "" {
-			return
-		}
-		if err := t.t.Ins([]rune(s), p0); err != nil {
-			cmd.Dprintf("%s: %s: ins: %s\n", t.Id, ev[0], err)
+			// Make the vers advance
+			t.t.Del(0, 0)
+		} else if err := t.t.Ins([]rune(s), p0); err != nil {
+			dprintf("%s: %s: ins: %s\n", t.Id, ev[0], err)
 			return
 		}
 		nev := &Ev{Id: t.Id, Src: "", Vers: t.t.Vers()}
@@ -623,8 +631,8 @@ func (t *Txt) apply(wev *Ev) {
 			t.undoRedo(ev[0] == "eredo")
 		}
 	case "intr":
-		cmd.Dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
-		cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
+		dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
+		dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 		t.post(wev)
 		if t.lastev == ev[0] {
 			t.post(&Ev{Id: t.Id, Src: wev.Src, Vers: t.t.Vers(), Args: []string{"clear"}})
@@ -750,10 +758,10 @@ func (t *Txt) Ins(data []rune, off int) error {
 	t.getText()
 	defer t.putText()
 	if err := t.t.Ins(data, off); err != nil {
-		cmd.Dprintf("%s: ins: %s\n", t.Id, err)
+		dprintf("%s: ins: %s\n", t.Id, err)
 		return err
 	}
-	cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
+	dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 	// Sending 4k or so in a single event makes Safari
 	// take a very long time (30s) to post the event.
 	// It seems it's not prepared to handle ws messages that are not small.
@@ -777,7 +785,7 @@ func (t *Txt) Del(off, n int) []rune {
 	t.getText()
 	defer t.putText()
 	rs := t.t.Del(off, n)
-	cmd.Dprintf("%s: vers %d\n", t.Id, t.t.Vers())
+	dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 	wev := &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(),
 		Args: []string{"edel", strconv.Itoa(off), strconv.Itoa(off + len(rs))}}
 	t.out <- wev

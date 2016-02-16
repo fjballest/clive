@@ -888,7 +888,7 @@ pipe() {
 skip cmd run (dry|error)cmd done
 chk pipe...
 cmd:
-func(x) {
+fn(x) {
     block {
         pipe() {
             cmd {
@@ -1617,7 +1617,7 @@ pipe() {
 skip cmd run (dry|error)cmd done
 chk pipe...
 cmd:
-func(x) {
+fn(x) {
     block {
         pipe() {
             cmd {

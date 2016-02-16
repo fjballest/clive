@@ -1,7 +1,6 @@
 package ink
 
 import (
-	"clive/cmd"
 	"fmt"
 	"html"
 	"io"
@@ -123,11 +122,11 @@ func (bs *RadioSet) handle(wev *Ev) {
 	ev := wev.Args
 	switch ev[0] {
 	case "start":
-		cmd.Dprintf("%s: %v\n", bs.Id, ev)
+		dprintf("%s: %v\n", bs.Id, ev)
 		bs.update(wev.Src)
 		bs.post(wev)
 	case "end", "quit":
-		cmd.Dprintf("%s: %v\n", bs.Id, ev)
+		dprintf("%s: %v\n", bs.Id, ev)
 		bs.post(wev)
 	case "Set":
 		if len(ev) < 4 {
@@ -148,7 +147,7 @@ func (bs *RadioSet) handle(wev *Ev) {
 		}
 		bs.post(wev)
 	default:
-		cmd.Dprintf("%s: unhandled %v\n", bs.Id, ev)
+		dprintf("%s: unhandled %v\n", bs.Id, ev)
 		return
 	}
 }

@@ -50,6 +50,8 @@ struct Ctlr {
 var (
 	idgen int
 	idlk  sync.Mutex
+	Debug bool	// set to enable debug diagnostics
+	dprintf = cmd.FlagPrintf(&Debug)
 )
 
 func newId() int {
@@ -244,7 +246,7 @@ func (c *Ctlr) reflector() {
 		ev := ev
 		for _, v := range c.getViews() {
 			if ev.Src != v.Id {
-				// cmd.Dprintf("%s: reflecting %v\n", v.Id, ev.Args)
+				// dprintf("%s: reflecting %v\n", v.Id, ev.Args)
 				v.out <- ev
 			}
 		}
@@ -276,26 +278,26 @@ func (c *Ctlr) delView(v *view) {
 }
 
 func (c *Ctlr) server(ws *websocket.Conn) {
-	cmd.Dprintf("%s: ws started\n", c.Id)
+	dprintf("%s: ws started\n", c.Id)
 	v := c.newView()
 	defer func() {
-		cmd.Dprintf("%s: ws reader done\n", c.Id)
+		dprintf("%s: ws reader done\n", c.Id)
 		ws.Close()
 		c.delView(v)
 	}()
 	go func() {
-		defer cmd.Dprintf("%s: ws writer done\n", c.Id)
+		defer dprintf("%s: ws writer done\n", c.Id)
 		defer c.delView(v)
 		for ev := range v.out {
 			m, err := json.Marshal(ev)
 			if err != nil {
-				cmd.Dprintf("%s: update: marshal: %s\n", c.Id, err)
+				dprintf("%s: update: marshal: %s\n", c.Id, err)
 				close(v.out, err)
 				break
 			}
-			// cmd.Dprintf("%s: update: %s...\n", c.Id, ev.Args[0])
+			// dprintf("%s: update: %s...\n", c.Id, ev.Args[0])
 			if err := websocket.Message.Send(ws, string(m)+"\r\n"); err != nil {
-				cmd.Dprintf("%s: update: %v wr: %s\n", c.Id, ev, err)
+				dprintf("%s: update: %v wr: %s\n", c.Id, ev, err)
 				close(v.out, err)
 				break
 			}
@@ -305,7 +307,7 @@ func (c *Ctlr) server(ws *websocket.Conn) {
 	for {
 		n, err := ws.Read(buf[0:])
 		if err != nil {
-			cmd.Dprintf("%s: server read: %s\n", c.Id, err)
+			dprintf("%s: server read: %s\n", c.Id, err)
 			close(v.out, err)
 			break
 		}
@@ -314,10 +316,10 @@ func (c *Ctlr) server(ws *websocket.Conn) {
 		}
 		ev, err := parseEv(buf[:n])
 		if err != nil {
-			cmd.Dprintf("%s: ev parse: %s\n", c.Id, err)
+			dprintf("%s: ev parse: %s\n", c.Id, err)
 			continue
 		}
-		cmd.Dprintf("%s: ev %v\n", c.Id, ev)
+		dprintf("%s: ev %v\n", c.Id, ev)
 		if len(ev.Args) == 1 && ev.Args[0] == "id" && v.Id == "" {
 			v.Id = ev.Src
 			c.in <- &Ev{Id: c.Id, Src: v.Id, Args: []string{"start"}}
@@ -325,7 +327,7 @@ func (c *Ctlr) server(ws *websocket.Conn) {
 		}
 		if ok := c.in <- ev; !ok {
 			err := cerror(c.in)
-			cmd.Dprintf("%s: in closed %v", c.Id, err)
+			dprintf("%s: in closed %v", c.Id, err)
 			close(v.out, err)
 			break
 		}

@@ -11,6 +11,8 @@ import (
 	"io"
 	"strings"
 	"time"
+	"clive/zx"
+	"clive/net/ink"
 )
 
 var btab = map[string]func(*Cmd, ...string){}
@@ -73,13 +75,20 @@ func builtin(arg0 string) func(*Cmd, ...string) {
 func bcd(c *Cmd, args ...string) {
 	defer c.ed.win.DelMark(c.mark)
 	if len(args) == 1 {
+		ix.Lock()
+		if ix.dot != nil {
+			args = append(args, ix.dot.dir)
+		}
+		ix.Unlock()
+	}
+	if len(args) == 1 {
 		c.printf("missing destination dir\n")
 		return
 	}
 	if err := cmd.Cd(args[1]); err != nil {
 		c.printf("cd: %s\n", err)
 	} else {
-		c.printf("dot: %s\n", cmd.Dot())
+		c.printf("dot: %s\n\n", cmd.Dot())
 	}
 }
 
@@ -101,7 +110,7 @@ func bcmds(c *Cmd, args ...string) {
 	}
 	ix.Unlock()
 	s := out.String()
-	c.printf("%s", s)
+	c.printf("%s\n\n", s)
 	c.ed.win.DelMark(c.mark)
 }
 
@@ -131,6 +140,7 @@ func br(c *Cmd, args ...string) {
 		} else {
 			dot.d = d
 		}
+		c.printf("load %s\n", dot)
 		go dot.load()
 	}
 	c.ed.win.DelMark(c.mark)
@@ -360,6 +370,76 @@ func (c *Cmd) getErrs(donec chan bool) {
 	donec <- true
 }
 
+func (c *Cmd) io(hasnl bool) {
+	cmd.Dprintf("io started\n")
+	defer cmd.Dprintf("io terminated\n")
+	p := c.p
+	ed := c.ed
+	haderrors := false
+	_ = time.Second
+	cmd.Warn("merge... %v", time.Now())
+	first := true
+	for m := range ch.Merge(p.Out, p.Err) {
+		switch m := m.(type) {
+		case error:
+			haderrors = true
+		case []byte:
+			cmd.Dprintf("ix cmd io: [%d] bytes\n", len(m))
+			s := string(m)
+			c.printf("%s", s)
+		case zx.Dir:
+			c.printf("%s\n", m.Fmt())
+			first = true
+		case zx.Addr:
+			c.printf("%s\n", m)
+			if first {
+				ix.cleanAddrs()
+				if ed = ix.editFor(m.Name); ed != nil {
+					ed.win.Show()
+					ed.SetAddr(m)
+				}
+			}
+			ix.addAddr(m)
+			first = false
+		default:
+			cmd.Dprintf("ix cmd io: got type %T\n", m)
+		}
+	}
+	cmd.Warn("wait...%v", time.Now())
+	if err := p.Wait(); err != nil {
+		if !haderrors {
+			cmd.Dprintf("ix cmd exit sts: %s\n", err)
+			c.printf("cmd error: %s\n", err)
+		}
+	}
+	c.printf("\n")
+	ed.win.DelMark(c.mark)
+	if n := ed.ix.delCmd(c); n == 0 && ed.gone {
+		close(ed.waitc)
+	}
+}
+
+func (c *Cmd) inkio(inkc <-chan face{}) {
+	cmd.Dprintf("inkio started\n")
+	defer cmd.Dprintf("inkio terminated\n")
+	nb := 0
+	for m := range inkc {
+		m, ok := m.([]byte)
+		if !ok {
+			continue
+		}
+		s := string(m)
+		cmd.Dprintf("got ink %s\n", s)
+		if strings.HasPrefix(s, "http") {
+			nb++
+			u := fmt.Sprintf("%s|/ink/%s/%d", s, c.name, nb)
+			go c.ed.look(u)
+			continue
+		}
+		c.ed.ix.pg.Add(ink.Html(string(m)))
+	}
+}
+
 func (c *Cmd) pipeFrom(eds []*Ed, args ...string) {
 	for _, ed := range eds {
 		c.pipe(ed, false, args...)
@@ -461,7 +541,7 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 		go func() {
 			for _, ed := range eds {
 				if err := ed.load(); err == nil {
-					c.printf("%s\n", ed)
+					c.printf("load %s\n", ed)
 				} else {
 					c.printf("%s: %s\n", ed, err)
 				}

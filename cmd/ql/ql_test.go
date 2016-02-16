@@ -107,6 +107,7 @@ a b c
 			Line: `{lf -u 1 ; lf -u fdsafdsfa } >[out,err]/tmp/errs ; cat /tmp/errs`,
 			Out: `- rw-r--r--      0 /tmp/cmdtest/1
 lf: stat /tmp/cmdtest/fdsafdsfa: no such file or directory
+lf: stat /tmp/cmdtest/fdsafdsfa: no such file or directory
 `,
 		},
 		test.Run{
@@ -203,7 +204,7 @@ c ---------      0 |<in3
 `,
 		},
 		test.Run{
-			Line: `func f { echo x $argv0 $#argv $argv y } ; f a b c ; f c d e `,
+			Line: `fn f { echo x $argv0 $#argv $argv y } ; f a b c ; f c d e `,
 			Out: `x f 3 a b c y
 x f 3 c d e y
 `,

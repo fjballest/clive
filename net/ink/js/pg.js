@@ -18,7 +18,7 @@ function setdirty(e) {
 	}
 	var pmax = p.find(".portlet-max");
 	$("<span class='ui-icon inline ui-icon-disk portlet-dirty'></span>").insertBefore(pmax);
-	pmax.closest(".portlet-header").css('background-color', '#EE8800');
+	pmax.closest(".portlet-header").css('color', 'blue');
 	p.find(".portlet-dirty").click(function() {
 		e.post(["save"]);
 	});
@@ -30,8 +30,28 @@ function setclean(e) {
 	if(!p || !p.length) {
 		return;
 	}
-	p.find(".portlet-dirty").closest(".portlet-header").css('background-color', '#CC6600');
+	p.find(".portlet-dirty").closest(".portlet-header").css('color', 'black');
 	p.find(".portlet-dirty").remove();
+}
+
+var oldfocus = undefined;
+
+function setfocus(e) {
+	console.log("focus");
+	var p = $(e).closest(".portlet");
+	if(!p || !p.length) {
+		return;
+	}
+	var pmax = p.find(".portlet-max");
+	if(oldfocus) {
+		try {
+			oldfocus.closest(".portlet-header").css('background-color', '#CC6600');
+		}catch(ex) {
+			console.log(ex);
+		}
+	}
+	pmax.closest(".portlet-header").css('background-color', '#EE8800');
+	oldfocus = pmax;
 }
 
 // Like setclean/dirty, but updates the tag
@@ -64,6 +84,7 @@ function showcontrol(e, tag) {
 
 $(function(){
 	document.setdirty = setdirty;
+	document.setfocus = setfocus;
 	document.setclean = setclean;
 	document.settag = settag;
 	document.showcontrol = showcontrol;

@@ -18,7 +18,7 @@ import (
 )
 
 struct client {
-	uid string
+	uid  string
 	when time.Time
 }
 

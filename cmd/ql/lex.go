@@ -47,7 +47,7 @@ var (
 	keywords = map[string]int{
 		"for":   FOR,
 		"while": WHILE,
-		"func":  FUNC,
+		"fn":  FUNC,
 		"cond":  COND,
 		"or":    OR,
 	}
@@ -359,7 +359,7 @@ func tokstr(tok int, lval *yySymType) string {
 	case WHILE:
 		return "while"
 	case FUNC:
-		return "func"
+		return "fn"
 	case NL:
 		return "nl"
 	case NAME:

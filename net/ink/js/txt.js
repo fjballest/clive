@@ -222,26 +222,32 @@ function tuntick() {
 }
 
 function tviewsel() {
-	if(!this.lines[this.ln0]) {
-		return;
-	}
-	var off = this.lines[this.ln0].off;
-	var eoff = off+this.frsize;
-	if(this.p0 >= off && this.p0 <= eoff) {
-		return;
+	if(this.lines[this.ln0]) {
+		var off = this.lines[this.ln0].off;
+		var eoff = off+this.frsize;
+		if(this.p0 >= off && this.p0 <= eoff) {
+			return;
+		}
 	}
 	for(var i = 0; i < this.lines.length; i++){
 		var xln = this.lines[i];
 		var xlnlen = xln.txt.length;
 		if(this.p0 >= xln.off && this.p0 <= xln.off+xlnlen){
-			var n = i - this.frlines/3;
+			var n = i - Math.floor(this.frlines/3);
 			if(n < 0) {
 				n = 0;
 			}
+			if(n >= this.lines.length) {
+				n = this.lines.length-1;
+			}
 			xln = this.lines[n];
-			this.ln0 = n;
-			this.froff = xln.off;
-			this.redrawtext();
+			if(xln) {
+				this.ln0 = n;
+				this.froff = xln.off;
+				this.redrawtext();
+			} else {
+				console.log("tviewsel: no ln for", n, i);
+			}
 			return;
 		}
 	}
@@ -393,8 +399,8 @@ function tdrawline(xln, i) {
 	   xln != this.lines[this.lines.length-1])
 		return true;
 	var dx = this.posdx(xln, this.p0 - xln.off);
-	dx += marginsz - 4;
-	this.saved = ctx.getImageData(dx, pos, 6, this.fontht);
+	dx += marginsz - 3*this.tscale/2;
+	this.saved = ctx.getImageData(dx, pos, 3*this.tscale, this.fontht);
 	this.tickx = dx;
 	this.ticky = pos;
 	ctx.putImageData(this.tick, dx, pos);
@@ -469,15 +475,17 @@ function tredrawtext() {
 	if(!this.tick){
 		var x = ctx.lineWidth;
 		ctx.lineWidth = 1;
-		ctx.fillRect(0, 0, 6, 6);
-		ctx.fillRect(0, this.fontht-6, 6, 6);
-		ctx.moveTo(3, 0);
-		ctx.lineTo(3, this.fontht);
+		var d = 3*this.tscale;
+		ctx.fillRect(0, 0, d, d);
+		ctx.fillRect(0, this.fontht-d, d, d);
+		ctx.moveTo(d/2, 0);
+		ctx.lineTo(d/2, this.fontht);
 		ctx.stroke();
 		ctx.lineWidth = x;
-		this.tick = ctx.getImageData(0, 0, 6, this.fontht);
+		this.tick = ctx.getImageData(0, 0, d, this.fontht);
 	}
 	if(!this.lines[this.ln0]) {
+		console.log("tredrawtext: no ln0");
 		return;
 	}
 	var off = this.lines[this.ln0].off;
@@ -675,6 +683,12 @@ var wordre = null;
 function iswordchar(c) {
 	if(!wordre)
 		wordre = /\w/;
+	return wordre.test(c);
+}
+
+function islongwordchar(c) {
+	if(!wordre)
+		wordre = /\w/;
 	return c == '/' || c == '.' || c == ':' || c == '#' || c == ',' || wordre.test(c);
 }
 
@@ -700,9 +714,16 @@ function lparen(c) {
 	return "([{<".charAt(i);
 }
 
-function ttgetword(pos) {
+function ttgetword(pos, long) {
 	if(pos >= this.nrunes)
 		return ["", this.nrunes, this.nrunes];
+	if(!long) {
+		long = (this.dblclick > 1);
+	}
+	var ischar = iswordchar;
+	if(long) {
+		ischar = islongwordchar;
+	}
 	var i;
 	var xln;
 	for(i = 0; i < this.lines.length; i++){
@@ -792,13 +813,13 @@ function ttgetword(pos) {
 			}while(i >= 0 && n > 0);
 			return [txt, pos, epos];
 		}
-		if(!iswordchar(c))
+		if(!islongwordchar(c))
 			return "";
-		while(p0 > 0 && iswordchar(xln.txt.charAt(p0-1))){
+		while(p0 > 0 && ischar(xln.txt.charAt(p0-1))){
 			pos--;
 			p0--;
 		}
-		while(p1 < xlnlen && iswordchar(xln.txt.charAt(p1))){
+		while(p1 < xlnlen && ischar(xln.txt.charAt(p1))){
 			epos++;
 			p1++;
 		}
@@ -973,10 +994,10 @@ function tmwait() {
 function tm1(pos) {
 	var now = new Date().getTime();
 	if(!this.clicktime || now-this.clicktime>500){
-		this.dblclick = false;
+		this.dblclick = 0;
 		this.clicktime = now;
 	}else{
-		this.dblclick = true;
+		this.dblclick++;
 		this.clicktime = now;
 	}
 
@@ -984,7 +1005,6 @@ function tm1(pos) {
 		var x = this.tgetword(pos);
 		this.post(["click1", x[0], ""+x[1], ""+x[2]]);
 		this.tsetsel(x[1], x[2]);
-		this.clicktime = null;
 	}
 	this.onmousemove = function(e){
 		try{
@@ -1040,6 +1060,9 @@ function tm1(pos) {
 				this.onmousemove = this.evxy;
 				this.post(["focus"]);
 				this.selectend();
+				if(document.setfocus) {
+					document.setfocus(this);
+				}
 			}
 		}catch(ex){
 			console.log("tm1: up: " + ex);
@@ -1047,7 +1070,7 @@ function tm1(pos) {
 	}
 }
 
-function tm23(pos, b) {
+function tm234(pos, b) {
 	this.secondary = b;
 	this.onmousemove = function(e){
 		try{
@@ -1099,7 +1122,7 @@ function tm23(pos, b) {
 					this.post(["click"+b, txt,
 						  ""+this.p0, ""+this.p1]);
 				}else{
-					var x = this.tgetword(sp0);
+					var x = this.tgetword(sp0, b != 8);
 					this.post(["click"+b, x[0],
 						  ""+x[1], ""+x[2]]);
 				}
@@ -1161,7 +1184,7 @@ function tmdown(e) {
 	if(0)console.log("tmdown ", this.divid, e);
 	this.selectstart();
 	e.preventDefault();
-	this.secondary = 0;		/* paranoia: see tm23 */
+	this.secondary = 0;		/* paranoia: see tm234 */
 	this.secondaryabort = false;
 	try {
 		this.tmpress(e);
@@ -1176,12 +1199,13 @@ function tmdown(e) {
 			break;
 		case 2:
 		case 4:
+		case 8:
 			var tpos = this.ptr2tpos(this.lastx, this.lasty);
 			var pos = this.tpos2pos(tpos[0], tpos[1]);
 			this.oldp0 = this.p0;
 			this.oldp1 = this.p1;
 			this.tsetsel(pos, pos);
-			this.tm23(pos, b);
+			this.tm234(pos, b);
 			break;
 		default:
 			this.tmwait();
@@ -1280,6 +1304,7 @@ function tkeydown(e, deferred) {
 		case 112:	/* F1 */
 		case 113:	/* F2 */
 		case 114:	/* F3 */
+		case 115:	/* F4 */
 			if(deferred)
 				break;
 			var mev = {
@@ -1313,6 +1338,7 @@ function tkeyup(e, deferred) {
 		case 112:	/* F1 */
 		case 113:	/* F2 */
 		case 114:	/* F3 */
+		case 115:	/* F4 */
 			if(deferred)
 				break;
 			var mev = {
@@ -1972,7 +1998,7 @@ function mktxt(d, t, e, cid, id) {
 	e.divcid = cid;
 	e.divid = id;
 	e.vers = 0;
-	e.tscale = 2;
+	e.tscale = 4;	// tscale must be even; we /2
 	e.nlines = 0;
 	e.ln0 = 0;
 	e.frsize = 0;
@@ -1984,7 +2010,7 @@ function mktxt(d, t, e, cid, id) {
 	e.tabstop = 4;
 	var tabtext = Array(e.tabstop+1).join("X")
 	e.tabwid = ctx.measureText(tabtext).width;
-	e.fontht = 28; // TODO: use font height from fixfont
+	e.fontht = 14*e.tscale; // TODO: use font height from fixfont
 	e.buttons = 0;
 	e.nclicks = {1: 0, 2: 0, 4: 0};
 	e.userresized = false;
@@ -2072,7 +2098,7 @@ function mktxt(d, t, e, cid, id) {
 	e.onclick = null;
 	e.onddblclick = null;
 	e.tm1 = tm1;
-	e.tm23 = tm23;
+	e.tm234 = tm234;
 	e.tmdown = tmdown;
 	e.tmpress = tmpress;
 	e.tmrlse = tmrlse;
@@ -2131,7 +2157,8 @@ function mktxt(d, t, e, cid, id) {
 		ev.Src = id;
 		if(!this.vers)
 			this.vers = 0;
-		if(args[0] == "eins" || args[0] == "edel" || args[0] == "ecut" || args[0] == "epaste"){
+		// cut advances the vers (might del nothing)
+		if(args[0] == "eins" || args[0] == "edel"){
 			this.vers++;
 		}
 		ev.Vers = this.vers;
@@ -2142,6 +2169,13 @@ function mktxt(d, t, e, cid, id) {
 			// console.log("posting ", msg);
 		}catch(ex){
 			console.log("post: " + ex);
+		}
+		// if this is a cut, it implies a del and we
+		// must advance our vers, the event didn't
+		// advance the vers.
+		// Same for paste.
+		if(args[0] == "ecut" || args[0] == "epaste") {
+			ev.Vers++;
 		}
 		return ev;
 	};

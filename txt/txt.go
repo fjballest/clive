@@ -505,6 +505,7 @@ func (t *Text) MarkDel(mark string, n int) []rune {
 	t.Lock()
 	defer t.Unlock()
 	m := t.marks[mark]
+	t.vers++
 	if n == 0 || m == nil {
 		return []rune{}
 	}
@@ -516,7 +517,6 @@ func (t *Text) MarkDel(mark string, n int) []rune {
 		n = m.Off
 	}
 	off := m.Off - n
-	t.vers++
 	contd := t.contd
 	t.contd = false
 	rs := t.del(off, n)
@@ -532,10 +532,10 @@ func (t *Text) MarkDel(mark string, n int) []rune {
 func (t *Text) Del(off, n int) []rune {
 	t.Lock()
 	defer t.Unlock()
+	t.vers++
 	if n == 0 {
 		return []rune{}
 	}
-	t.vers++
 	contd := t.contd
 	t.contd = false
 	rs := t.del(off, n)
@@ -823,7 +823,7 @@ func (t *Text) sprint(markstoo bool) string {
 		}
 		fmt.Fprintf(&w, "%s%d: %s\n", s, i, e)
 	}
-	fmt.Fprintf(&w, "\n")
+	fmt.Fprintf(&w, "vers %d\n", t.vers)
 	return w.String()
 }
 
@@ -835,10 +835,10 @@ func (t *Text) DelAll() {
 	defer t.Unlock()
 	contd := t.contd
 	t.contd = false
+	t.vers++
 	if t.sz == 0 {
 		return
 	}
-	t.vers++
 	dat := t.del(0, t.sz)
 	e := t.addEdit(Edel, 0, dat, contd)
 	t.markEdit(e)

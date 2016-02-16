@@ -67,7 +67,7 @@ func add(c *count) {
 }
 
 func cnt(in <-chan face{}) {
-	var c *count
+	c := &count{name: "in"}
 	var saved []byte
 	inword := false
 	for m := range in {
@@ -76,7 +76,7 @@ func cnt(in <-chan face{}) {
 			cmd.Dprintf("got %T %s\n", m, m["path"])
 			inword = false
 			saved = nil
-			if c != nil {
+			if c != nil && (c.name != "in" || c.msgs != 0) {
 				add(c)
 			}
 			c = &count{name: m["Upath"]}

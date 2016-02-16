@@ -105,7 +105,7 @@ while a b c { ... }
 while a b c { ... } >y
 
 # functions
-func x { ... }
+fn x { ... }
 
 # conditional
 # Runs commands within each or branch
@@ -184,7 +184,7 @@ for x y c {
 while a b c {
 	d e f
 }
-func x {
+fn x {
 	d e f
 }
 

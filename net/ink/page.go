@@ -217,7 +217,7 @@ func NewColsPg(path string, cols ...[]face{}) *Pg {
 		if v := values["ncol"]; len(v) > 0 {
 			nc, err := strconv.Atoi(v[0])
 			if err == nil && nc > 0 {
-				cmd.Dprintf("changing layout to %v columns...\n", nc)
+				dprintf("changing layout to %v columns...\n", nc)
 				pg.setNumCols(nc)
 			}
 		}
@@ -414,7 +414,7 @@ func (pg *Pg) dettach(cid string) io.WriterTo {
 			}
 			copy(c[j:], c[j+1:])
 			pg.els[i] = c[:len(c)-1]
-			cmd.Dprintf("el %s from col %d...\n", cid, i)
+			dprintf("el %s from col %d...\n", cid, i)
 			return el
 		}
 	}
@@ -450,10 +450,10 @@ func (pg *Pg) layout(args []string) {
 			if ename == "none" {
 				continue
 			}
-			cmd.Dprintf("layout for %d %s %s\n", ci, cname, ename)
+			dprintf("layout for %d %s %s\n", ci, cname, ename)
 			el := pg.dettach(ename)
 			if el != nil {
-				cmd.Dprintf("el %s to col %d\n", ename, ci)
+				dprintf("el %s to col %d\n", ename, ci)
 				pg.els[ci] = append(pg.els[ci], el)
 			}
 		}
@@ -488,7 +488,7 @@ func (pg *Pg) handle(wev *Ev) {
 		return
 	}
 	ev := wev.Args
-	cmd.Dprintf("%s: ev %v\n", pg.Id, ev)
+	dprintf("%s: ev %v\n", pg.Id, ev)
 	switch ev[0] {
 	case "start":
 		pg.post(wev)
@@ -509,7 +509,7 @@ func (pg *Pg) handle(wev *Ev) {
 		}
 		pg.layout(ev[1:])
 	default:
-		cmd.Dprintf("%s: unhandled %v\n", pg.Id, ev)
+		dprintf("%s: unhandled %v\n", pg.Id, ev)
 		return
 	}
 }

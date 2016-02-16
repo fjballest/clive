@@ -1,7 +1,6 @@
 package main
 
 import (
-	"clive/ch"
 	"clive/cmd"
 	"clive/cmd/run"
 	"clive/net/ink"
@@ -13,7 +12,6 @@ import (
 	fpath "path"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // command run within an edit
@@ -33,6 +31,7 @@ struct Dot {
 // edit
 struct Ed {
 	tag     string
+	dir     string
 	d       zx.Dir
 	dot     Dot
 	ix      *IX
@@ -45,6 +44,7 @@ struct Ed {
 	ctx     *cmd.Ctx
 	temp    bool // don't save, don't ever flag as dirty
 	iscmd   bool // it's a command win, used by the event loop
+	laddr zx.Addr // last look addr
 }
 
 var notDirty = errors.New("not dirty")
@@ -104,6 +104,7 @@ func (ix *IX) newEd(tag string) *Ed {
 	win.ClientDoesUndoRedo()
 	win.SetFont("t")
 	ed := &Ed{win: win, ix: ix, tag: tag, waitc: make(chan func())}
+	ed.dir = cmd.Dot()
 	return ed
 }
 
@@ -261,6 +262,8 @@ func (ed *Ed) SetAddr(a zx.Addr) {
 	ed.dot.P0 = p0
 	ed.dot.P1 = p1
 	cmd.Dprintf("%s: dot set to %s (%s) for %s\n", ed, ed.dot, ed.Addr(), a)
+	a.P0, a.P1 = p0, p1
+	ed.laddr = a
 	ed.win.SetSel(p0, p1)
 }
 
@@ -275,73 +278,6 @@ func (c *Cmd) printf(f string, args ...face{}) {
 	}
 	if err := c.ed.win.MarkIns(c.mark, []rune(s)); err != nil {
 		cmd.Warn("mark ins: %s", err)
-	}
-}
-
-func (c *Cmd) io(hasnl bool) {
-	cmd.Dprintf("io started\n")
-	defer cmd.Dprintf("io terminated\n")
-	p := c.p
-	ed := c.ed
-	haderrors := false
-	_ = time.Second
-	cmd.Warn("merge... %v", time.Now())
-	first := true
-	for m := range ch.Merge(p.Out, p.Err) {
-		switch m := m.(type) {
-		case error:
-			haderrors = true
-		case []byte:
-			cmd.Dprintf("ix cmd io: [%d] bytes\n", len(m))
-			s := string(m)
-			c.printf("%s", s)
-		case zx.Dir:
-			c.printf("%s\n", m.Fmt())
-			first = true
-		case zx.Addr:
-			c.printf("%s\n", m)
-			if first {
-				if ed = ix.editFor(m.Name); ed != nil {
-					ed.win.Show()
-					ed.SetAddr(m)
-				}
-			}
-			first = false
-		default:
-			cmd.Dprintf("ix cmd io: got type %T\n", m)
-		}
-	}
-	cmd.Warn("wait...%v", time.Now())
-	if err := p.Wait(); err != nil {
-		if !haderrors {
-			cmd.Dprintf("ix cmd exit sts: %s\n", err)
-			c.printf("cmd error: %s\n", err)
-		}
-	}
-	ed.win.DelMark(c.mark)
-	if n := ed.ix.delCmd(c); n == 0 && ed.gone {
-		close(ed.waitc)
-	}
-}
-
-func (c *Cmd) inkio(inkc <-chan face{}) {
-	cmd.Dprintf("inkio started\n")
-	defer cmd.Dprintf("inkio terminated\n")
-	nb := 0
-	for m := range inkc {
-		m, ok := m.([]byte)
-		if !ok {
-			continue
-		}
-		s := string(m)
-		cmd.Dprintf("got ink %s\n", s)
-		if strings.HasPrefix(s, "http") {
-			nb++
-			u := fmt.Sprintf("%s|/ink/%s/%d", s, c.name, nb)
-			go c.ed.look(u)
-			continue
-		}
-		c.ed.ix.pg.Add(ink.Html(string(m)))
 	}
 }
 
@@ -426,18 +362,61 @@ func (ed *Ed) look(what string) {
 	ed.lookFiles(s)
 }
 
-func (ed *Ed) click24(ev *ink.Ev) {
+func (ed *Ed) hasText(rs []rune, p0 int) bool {
+	if p0 < 0 || p0 >= ed.win.Len() {
+		return false
+	}
+	for i := range rs {
+		if r := ed.win.Getc(p0+i); r != rs[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (ed *Ed) findText(rs []rune, p0 int) int {
+	for ; p0 < ed.win.Len(); p0++ {
+		if ed.hasText(rs, p0) {
+			return p0
+		}
+	}
+	return -1
+}
+func (ed *Ed) lookText(what string, p0 int) {
+	rs := []rune(what)
+	pos := ed.findText(rs, p0)
+	if pos < 0 && p0 > 0 {
+		pos = ed.findText(rs, 0)
+	}
+	if pos >= 0 {
+		ed.dot.P0 = pos
+		ed.dot.P1 = pos+len(rs)
+		cmd.Dprintf("%s: dot set to %s (%s)\n", ed, ed.dot, ed.Addr())
+		ed.win.SetSel(ed.dot.P0, ed.dot.P1)
+	}
+}
+
+func (ed *Ed) click248(ev *ink.Ev) {
 	if len(ev.Args) < 4 {
-		cmd.Warn("edit: short click2 event")
+		cmd.Warn("edit: short click24 event")
 		return
 	}
-	pos, err := strconv.Atoi(ev.Args[3])
+	p0, err := strconv.Atoi(ev.Args[2])
 	if err != nil {
-		cmd.Warn("bad p1 in click2 event")
+		cmd.Warn("bad p0 in click24 event")
+		return
+	}
+	p1, err := strconv.Atoi(ev.Args[3])
+	if err != nil {
+		cmd.Warn("bad p1 in click24 event")
 		return
 	}
 	if ev.Args[0] == "click2" {
-		go ed.runCmd(pos, ev.Args[1])
+		go ed.runCmd(p1, ev.Args[1])
+	} else if ev.Args[0] == "click8" {
+		go ed.lookText(ev.Args[1], p1)
+	} else if p0 == ed.laddr.P0 && p1 == ed.laddr.P1 {
+		go ed.ix.lookNext(ed.laddr)
 	} else {
 		go ed.look(ev.Args[1])
 	}
@@ -525,6 +504,9 @@ func (ed *Ed) load() error {
 	var dc <-chan []byte
 	if ed.d["type"] == "d" {
 		ed.temp = true
+		if ed.temp {
+			ed.win.DoesntGetDirty()
+		}
 		c := make(chan []byte)
 		dc = c
 		go func() {
@@ -574,8 +556,8 @@ func (ed *Ed) editLoop() {
 			if p1 := ed.win.Mark("p1"); p1 != nil {
 				ed.dot.P1 = p1.Off
 			}
-		case "click2", "click4":
-			ed.click24(ev)
+		case "click2", "click4", "click8":
+			ed.click248(ev)
 		case "end":
 			if len(ed.win.Views()) == 0 {
 				cmd.Dprintf("%s w/o views\n", ed)
