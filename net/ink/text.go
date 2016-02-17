@@ -102,7 +102,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := t.newViewId()
 
 	n, err := io.WriteString(w, `
-		<div id="`+vid+`" class="`+t.Id+` ui-widget-content hasws", tabindex="1" style="border:2px solid black; margin:0; width:100%;height:300; background-color:#ffffea">`)
+		<div id="`+vid+`" class="`+t.Id+` ui-widget-content hasws", tabindex="1" style="border:2px solid black; margin:0; width:100%;height:300; background-color:#dfdfca">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err

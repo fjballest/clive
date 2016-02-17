@@ -890,7 +890,7 @@ function tmayresize(user) {
 	var p = $(this).parent();
 	var dx = p.width();
 	var dy = p.height() - 5;
-	console.log('text resized', dx, dy);
+	console.log('text resized', dx, dy, user?"user":"win");
 	var c = this;
 	var ctx = this.getContext("2d", {alpha: false});
 	var tag = $("#"+this.divid+"t")
@@ -913,18 +913,20 @@ function tautoresize() {
 	if(nln < 3) {
 		nln = 3;
 	}
-	var ht = (nln+2) * this.fontht;
+	var fontht = this.fontht/this.tscale;
+	var ht = (nln+2) * fontht;
 	var p = $(this);
 	var oldht = p.height();
-	if (oldht >= 400) {
-		return;
+	console.log("auto rsz", nln, ht, oldht);
+	if (ht >= 400) {
+		ht = 400;
 	}
-	console.log("auto rsz", nln, ht, p.height());
-	if (oldht < ht - this.fontht || oldht > ht + this.fontht) {
+	if (oldht < ht - fontht || oldht > ht + fontht) {
+		console.log("auto resizing");
 		var delta = ht - oldht;
 		p = $(this).parent();
 		var nht = p.height() + delta;
-		p.css('height', nht);
+		p.height(nht);
 		this.mayresize();
 	}
 }
@@ -1620,7 +1622,7 @@ function tapply(ev, fromserver) {
 		if(ev.Vers) {
 			this.vers = ev.Vers;
 		}
-		if(!this.userresized) {
+		if(!this.userresized && arg[1].indexOf('\n') >= 0) {
 			this.autoresize();
 		} 
 		break;
@@ -1663,6 +1665,7 @@ function tapply(ev, fromserver) {
 			this.vers = ev.Vers;
 		break;
 	case "reload":
+		this.reloadln0 = this.ln0;
 		this.tclear();
 		break;
 	case "reloading":
@@ -1679,6 +1682,15 @@ function tapply(ev, fromserver) {
 			break;
 		}
 		this.vers = parseInt(arg[1]);
+		if(this.reloadln0 < this.lines.length) {
+			var ln0 = this.reloadln0;
+			delete this.reloadln0;
+			var xln = this.lines[this.ln0];
+			if(xln) {
+				this.ln0 = ln0;
+				this.froff = xln.off
+			}
+		}
 		this.redrawtext();
 		if(!this.userresized) {
 			this.autoresize();
@@ -2065,7 +2077,10 @@ function mktxt(d, t, e, cid, id) {
 	e.onmouseup = tlocknmup;
 	e.onmouseenter = function(e) {
 		if(!selecting) {
+			var x = window.scrollX;
+			var y = window.scrollY;
 			$("#" + this.divid ).focus();
+			window.scrollTo(x, y);
 		}
 		if(this.islocked || this.locking) {
 			return;
@@ -2084,6 +2099,7 @@ function mktxt(d, t, e, cid, id) {
 		return false;
 	};
 	e.onmousewheel = function(e) {
+		e.stopPropagation();
 		if(this.islocked || this.locking) {
 			return tmwheel.call(this, e);
 		}

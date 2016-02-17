@@ -226,12 +226,12 @@ func NewColsPg(path string, cols ...[]face{}) *Pg {
 		fmt.Fprintln(w, `
 		<style>
 		body {
-			background-color: #ddddc8;
+			background-color: #fcfce7;
 			min-width: 520px;
 		}
-		.ui-widget-content {background-color: #ddddc8; }
+		.ui-widget-content {background-color: #fcfce7; }
 		.column {width: `+strconv.Itoa(pcent)+`%;  float: left; padding-bottom: 10px; padding-right: 5px; padding-left: 5px;}
-		.portlet { margin: 0 0 0 0; padding: 0.2em; background-color: #ddddc8;}
+		.portlet { margin: 0 0 0 0; padding: 0.2em; background-color: #fcfce7;}
 		.portlet-header { padding: 0.1em 0.1em; margin-bottom: 0.5em; 
 			position: relative; background-color: #CC6600}
 		.portlet-toggle { position: absolute; top: 50%; right: 0; margin-top: -8px; }
@@ -247,7 +247,7 @@ func NewColsPg(path string, cols ...[]face{}) *Pg {
 		for i := 0; i < len(pg.els); i++ {
 			pre := fmt.Sprintf(`<div id="column%d" class="column">`, i)
 			if i == 0 {
-				pre += `<span id="morecols"><tt>more</tt></span> `
+				pre += `<div><span id="morecols"><tt>more</tt></span> `
 				pre += `<span id="lesscols"><tt>less</tt></span> `
 				for i, c := range pg.Cmds {
 					c = html.EscapeString(c)
@@ -255,9 +255,7 @@ func NewColsPg(path string, cols ...[]face{}) *Pg {
 					cmds[id] = c
 					pre += `<span id="` + id + `"><tt>` + c + `</tt></span> `
 				}
-				pre += `<p>`
-			} else {
-				pre += `<p>`
+				pre += `<p></div>`
 			}
 			// $$ is replaced by writeEls to pgid="xxx"
 			pg.els[i] = writeEls(w, pg.els[i],

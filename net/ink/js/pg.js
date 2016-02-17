@@ -19,7 +19,8 @@ function setdirty(e) {
 	var pmax = p.find(".portlet-max");
 	$("<span class='ui-icon inline ui-icon-disk portlet-dirty'></span>").insertBefore(pmax);
 	pmax.closest(".portlet-header").css('color', 'blue');
-	p.find(".portlet-dirty").click(function() {
+	p.find(".portlet-dirty").click(function(e) {
+		e.stopPropagation();
 		e.post(["save"]);
 	});
 }
@@ -54,18 +55,27 @@ function setfocus(e) {
 	oldfocus = pmax;
 }
 
+function scrollcol() {
+	var child = $(this).find(".portlet").first();
+	console.log("scroll ", child);
+	$(this).append(child);
+}
+
 // Like setclean/dirty, but updates the tag
 function settag(e, tag) {
 	var p = $(e).closest(".portlet");
 	if(!p || !p.length) {
 		return;
 	}
-	var tt = p.find(".portlet-header").find("tt");
+	var tt = p.find('.portlet-header').find("tt");
 	tt.html(tag);
+	return;
 	tt.getWordByEvent('click', function tagclick(ev, word) {
+			ev.stopPropagation();
 			console.log("tag click on ", ev, word);
 			e.post(["tag", word]);
 		});
+	
 }
 
 // move the control to the start of the column
@@ -124,12 +134,18 @@ function updportlets() {
 		} else {
 			continue;
 		}
-		$(p).addClass("ui-widget ui-widget-content ui-helper-clearfix ui-corner-all")
-		.find(".portlet-header").addClass("ui-widget-header ui-corner-all")
+		var hdr = $(p).addClass("ui-widget ui-widget-content ui-helper-clearfix ui-corner-all")
+			.find(".portlet-header");
+		$(hdr).on('click', function(e) {
+			console.log("tag click");
+			scrollcol.call($(this).closest(".column"), e);
+		});
+		hdr.addClass("ui-widget-header ui-corner-all")
 		.prepend("<span class='ui-icon inline ui-icon-minus portlet-toggle'></span>")
 		.prepend("<span class='ui-icon inline ui-icon-arrowthick-2-n-s portlet-max'></span>")
 		.prepend("<span class='ui-icon inline ui-icon-extlink portlet-drag'></span>")
 		.prepend("<span class='ui-icon inline ui-icon-close portlet-close'></span>");
+		hdr.on('contextmenu', function(){return false;});
 	}
 	ps = $(".portlet-max");
 	for(var i = 0; i < ps.length; i++) {
@@ -139,7 +155,8 @@ function updportlets() {
 		} else {
 			continue;
 		}
-		$(p).click(function(){
+		$(p).click(function(e){
+			e.stopPropagation();
 			var p0 = $(this).closest(".portlet").get(0);
 			var col = $(this).closest(".column");
 			$(col).find(".portlet").each(function(){
@@ -171,7 +188,8 @@ function updportlets() {
 		} else {
 			continue;
 		}
-		$(p).click(function(){
+		$(p).click(function(e){
+			e.stopPropagation();
 			var icon = $(this);
 			icon.toggleClass("ui-icon-minus ui-icon-plus");
 			icon.closest(".portlet").find(".portlet-content").toggle();
@@ -185,64 +203,14 @@ function updportlets() {
 		} else {
 			continue;
 		}
-		$(p).click(function(){
+		$(p).click(function(e){
+			e.stopPropagation();
 			var icon = $(this);
 			var el = icon.closest(".portlet");
 			removecontrol(el, true)
 		});
 	}
 }
-
-$(function() {
-	jQuery.event.props.push('dataTransfer');
-	$(".column").sortable({
-		connectWith: ".column",
-		handle: ".portlet-header",
-		cancel: ".portlet-toggle",
-		tolerance: "pointer",
-		placeholder: "portlet-placeholder ui-corner-all",
-		update: function(e, u) {
-			console.log("update", e, u);
-			pgupdate();
-		},
-		start: function(e) {
-			console.log("start", e);
-		},
-
-	});
-	updportlets();
-	$(".column").on('dragover', function(e) {
-		$(this).css("border", "1px black");
-		e.dataTransfer.dropEffect = "copy";
-		e.preventDefault();
-	});
-	$(".column").on('dragleave', function(e) {
-		$(this).css("border", "0px");
-		e.preventDefault();
-	});
-	$(".column").on('drop', function(e) {
-		$(this).css("border", "0px");
-		e.preventDefault();
-		pgdrop(this, e);
-	});
-	$("#morecols").on('click', function(e) {
-		var ncols = $(".column").length +1;
-		document.post(["cols", ""+ncols]);
-		var ori = window.location.origin;
-		ori += "?ncol=" + ncols;
-		location.replace(ori);
-	});
-	$("#lesscols").on('click', function(e) {
-		var ncols = $(".column").length;
-		if(ncols > 1) {
-			ncols--;
-			document.post(["cols", ""+ncols]);
-			var ori = window.location.origin;
-			ori += "?ncol=" + ncols;
-			location.replace(ori);
-		}
-	});
-});
 
 function pgdrop(col, e) {
 	var data = e.dataTransfer.getData("Text");
@@ -306,6 +274,25 @@ function pgapply(ev) {
 	}
 }
 
+function smooth(fn) {
+	var to;
+	return function(e) {
+		var self = this;
+		var args = arguments;
+		var defer = function() {
+			if (to) {
+				clearTimeout(to);
+				to = null;
+			}
+			fn.apply(self, args);
+		};
+		if(to) {
+			clearTimeout(to);
+		}
+		to = setTimeout(defer, 30);
+	};
+}
+
 function mkpg(id, cid) {
 	var wsurl = "wss://" + window.location.host + "/ws/" + cid;
 	var ws = new WebSocket(wsurl);
@@ -353,3 +340,57 @@ function mkpg(id, cid) {
 		$(document.body).css("background-color", "#ddddc8");
 	};
 }
+
+$(function() {
+	jQuery.event.props.push('dataTransfer');
+	$(".column").sortable({
+		connectWith: ".column",
+		handle: ".portlet-header",
+		cancel: ".portlet-toggle",
+		tolerance: "pointer",
+		placeholder: "portlet-placeholder ui-corner-all",
+		update: function(e, u) {
+			console.log("update", e, u);
+			pgupdate();
+		},
+		start: function(e) {
+			console.log("start", e);
+		},
+
+	});
+	updportlets();
+	$(".column").on('dragover', function(e) {
+		$(this).css("border", "1px black");
+		e.dataTransfer.dropEffect = "copy";
+		e.preventDefault();
+	});
+	$(".column").on('dragleave', function(e) {
+		$(this).css("border", "0px");
+		e.preventDefault();
+	});
+	$(".column").on('drop', function(e) {
+		$(this).css("border", "0px");
+		e.preventDefault();
+		pgdrop(this, e);
+	});
+	$("#morecols").on('click', function(e) {
+		var ncols = $(".column").length +1;
+		document.post(["cols", ""+ncols]);
+		var ori = window.location.origin;
+		ori += "?ncol=" + ncols;
+		location.replace(ori);
+	});
+	$("#lesscols").on('click', function(e) {
+		var ncols = $(".column").length;
+		if(ncols > 1) {
+			ncols--;
+			document.post(["cols", ""+ncols]);
+			var ori = window.location.origin;
+			ori += "?ncol=" + ncols;
+			location.replace(ori);
+		}
+	});
+	// $(".column").on('mousewheel', smooth(scrollcol));
+	// $("body").css("overflow", "hidden");
+	
+});

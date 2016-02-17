@@ -22,12 +22,14 @@ func init() {
 	btab["cmds"] = bcmds
 	btab["="] = beq
 	btab["w"] = bw
-	btab["r"] = br
+	btab["e"] = be
 	btab["d"] = bd
 	btab["."] = bdot
 	btab[","] = bdot
 	btab["x"] = bX
 	btab["X"] = bX
+	btab["u"] = bu
+	btab["r"] = bu
 }
 
 // NB: All builtins must do a c.ed.win.DelMark(c.mark) once no
@@ -41,8 +43,10 @@ func init() {
 //	cmds	// print running commands
 //	=	// print dot
 //	w	// save
-//	r	// undo edits and get from disk
+//	e	// undo all edits and get from disk to start a new edit
 //	d	// delete
+//	u	// undo
+//	r	// redo
 //	x	// list edits
 //	x expr	// list edits matching expr ("." means dot)
 //	x [expr] c	// apply cmd c to dots of matching edits.
@@ -129,6 +133,22 @@ func beq(c *Cmd, args ...string) {
 	c.ed.win.DelMark(c.mark)
 }
 
+func bu(c *Cmd, args ...string) {
+	if dot := c.ed.ix.dot; dot != nil {
+		r := dot.undoRedo(args[0] == "r")
+		if r {
+			if args[0] == "u" {
+				c.printf("undo %s\n", dot)
+			} else {
+				c.printf("redo %s\n", dot)
+			}
+		} else {
+			c.printf("%s: no more edits\n", dot)
+		}
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
 func bw(c *Cmd, args ...string) {
 	if dot := c.ed.ix.dot; dot != nil {
 		if err := dot.save(); err == nil {
@@ -140,7 +160,7 @@ func bw(c *Cmd, args ...string) {
 	c.ed.win.DelMark(c.mark)
 }
 
-func br(c *Cmd, args ...string) {
+func be(c *Cmd, args ...string) {
 	if dot := c.ed.ix.dot; dot != nil {
 		d, err := cmd.Stat(dot.tag)
 		if err != nil {
@@ -148,7 +168,7 @@ func br(c *Cmd, args ...string) {
 		} else {
 			dot.d = d
 		}
-		c.printf("load %s\n", dot)
+		c.printf("edit %s\n", dot)
 		go dot.load()
 	}
 	c.ed.win.DelMark(c.mark)
@@ -545,16 +565,32 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 				c.printf("%s: %s\n", ed, err)
 			}
 		}
-	case "r":
+	case "e":
 		go func() {
 			for _, ed := range eds {
 				if err := ed.load(); err == nil {
-					c.printf("load %s\n", ed)
+					c.printf("edit %s\n", ed)
 				} else {
 					c.printf("%s: %s\n", ed, err)
 				}
 			}
 		}()
+	case "u", "r":
+		go func() {
+			for _, ed := range eds {
+				r := ed.undoRedo(args[0] == "r")
+				if r {
+					if args[0] == "u" {
+						c.printf("undo %s\n", ed)
+					} else {
+						c.printf("redo %s\n", ed)
+					}
+				} else {
+					c.printf("%s: no more edits\n", ed)
+				}
+			}
+		}()
+
 	default:
 		cmd.Warn("edit: %q not implemented", args[0])
 	}
@@ -564,9 +600,10 @@ func bX(c *Cmd, args ...string) {
 	var out bytes.Buffer
 	if len(args) > 1 {
 		isio := strings.ContainsRune("|><", rune(args[1][0]))
-		iscmd := args[1] == "r" ||
+		iscmd := args[1] == "e" ||
 			args[1] == "w" || args[1] == "=" ||
-			args[1] == "d" || args[1] == "X"
+			args[1] == "d" || args[1] == "X" ||
+			args[1] == "u" || args[1] == "r"
 		if isio || iscmd {
 			args = append([]string{args[0], ".*"}, args[1:]...)
 		}
@@ -586,7 +623,8 @@ func bX(c *Cmd, args ...string) {
 		return
 	}
 	isio := strings.ContainsRune("|><", rune(args[2][0]))
-	if args[2] != "r" && args[2] != "w" && args[2] != "=" && args[2] != "d" && args[2] != "X" && !isio {
+	if args[2] != "e" && args[2] != "w" && args[2] != "=" && args[2] != "d" && args[2] != "X" &&
+		args[2] != "u" && args[2] != "r" && !isio {
 		c.printf("unknown edit command %q\n", args[2])
 		c.ed.win.DelMark(c.mark)
 		return

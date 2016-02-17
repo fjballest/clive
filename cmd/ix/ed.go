@@ -431,11 +431,11 @@ func (ed *Ed) clear() {
 	t.DropEdits()
 }
 
-func (ed *Ed) undoRedo(isredo bool) {
+func (ed *Ed) undoRedo(isredo bool) bool {
 	t := ed.win.GetText()
 	some := false
+	var e *txt.Edit
 	for {
-		var e *txt.Edit
 		if !isredo {
 			e = t.Undo()
 		} else {
@@ -451,11 +451,9 @@ func (ed *Ed) undoRedo(isredo bool) {
 			break
 		}
 	}
-	if some {
-		ed.win.PutText()
-	} else {
-		ed.win.UngetText()
-	}
+	ed.win.PutText()
+	// XXX: TODO: ed.win.SetSel() for the position of the undo/redo
+	return some
 }
 
 func (ed *Ed) save() error {
