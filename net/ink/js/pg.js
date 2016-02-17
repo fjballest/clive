@@ -251,6 +251,13 @@ function pgapply(ev) {
 			break;
 		}
 		var cols = $(".column");
+		var n = cols.length-1;
+		if (arg.length > 2) {
+			n = parseInt(arg[2]);
+		}
+		if(n < 0 || n > cols.length-1) {
+			n = cols.length-1;
+		}
 		var col = cols[cols.length-1];
 		var first = $(col).find(".portlet");
 		if(first && first.length > 0) {

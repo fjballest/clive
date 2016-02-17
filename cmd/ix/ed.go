@@ -109,7 +109,7 @@ func (ix *IX) newEd(tag string) *Ed {
 }
 
 func (ix *IX) newCmds() *Ed {
-	tag := fmt.Sprintf("/ql/%d", ix.newId())
+	tag := fmt.Sprintf("ql!%d!%s", ix.newId(), cmd.Dot())
 	ed := ix.newEd(tag)
 	ed.temp = true
 	ed.iscmd = true
@@ -189,6 +189,8 @@ func (ed *Ed) String() string {
 
 func (ed *Ed) menuLine() string {
 	switch {
+	case ed.iscmd:
+		return "> " + ed.tag
 	case ed.temp:
 		return "/ " + ed.tag
 	case ed.win.IsDirty():

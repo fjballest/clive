@@ -365,6 +365,16 @@ func writeEls(w io.Writer, els []io.WriterTo, pre, elpre, elmid, elpost, post st
 // If it's a Url, the string can be the url or "url|name" where name is
 // the name to be shown as the tag.
 func (pg *Pg) Add(el face{}) (string, error) {
+	return pg.AddAt(el, -1)
+}
+
+// Like Add, but add the element to the given column.
+func (pg *Pg) AddAt(el face{}, colnb int) (string, error) {
+	pg.Lock()
+	if colnb < 0 {
+		colnb = len(pg.els)-1
+	}
+	pg.Unlock()
 	nel := pg.mkel(el)
 	if nel == nil {
 		return "", fmt.Errorf("unknown element type %T", el)
@@ -380,14 +390,20 @@ func (pg *Pg) Add(el face{}) (string, error) {
 		updportlets();
 		</script>
 	`)
-	pg.out <- &Ev{Id: pg.Id, Src: "app", Args: []string{"load", buf.String()}}
+	scol := strconv.Itoa(colnb)
+	pg.out <- &Ev{Id: pg.Id, Src: "app",
+			Args: []string{"load", buf.String(),scol},
+	}
 	pg.Lock()
 	defer pg.Unlock()
-	col := pg.els[len(pg.els)-1]
+	if colnb >= len(pg.els) {
+		colnb = len(pg.els)-1
+	}
+	col := pg.els[colnb]
 	col = append(col, nil)
 	copy(col[1:], col[0:])
 	col[0] = nel
-	pg.els[len(pg.els)-1] = col
+	pg.els[colnb] = col
 	return elid, nil
 }
 
@@ -417,6 +433,24 @@ func (pg *Pg) dettach(cid string) io.WriterTo {
 		}
 	}
 	return nil
+}
+
+// Return the layout of the page, in columns.
+// Each column returns the ids of the elements shown.
+func (pg *Pg) Cols() [][]string {
+	pg.Lock()
+	defer pg.Unlock()
+	var cols [][]string
+	for _, c := range pg.els {
+		var col []string
+		for _, el := range c {
+			if ir, ok := el.(idder); ok {
+				col = append(col, ir.GetId())
+			}
+		}
+		cols = append(cols, col)
+	}
+	return cols
 }
 
 func (pg *Pg) layout(args []string) {

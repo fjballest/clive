@@ -41,7 +41,9 @@ func newIX() *IX {
 	col2 := []face{}{}
 	ix.pg = ink.NewColsPg("/", col1, col2)
 	ix.pg.Tag = "IX"
-	ix.pg.Cmds = []string{"win", "dump", "quit"}
+	cols := ix.pg.Cols()
+	cmds.winid = cols[0][0]
+	ix.pg.Cmds = []string{"win", "quit"}
 	return ix
 }
 
@@ -75,7 +77,6 @@ func (ix *IX) loop() {
 					}
 					icmds.winid, _ = ix.pg.Add(icmds.win)
 				}()
-			case "dump":
 			case "quit":
 				// XXX: MUST save everything here.
 				cmd.Fatal("user quit")
@@ -162,6 +163,32 @@ func (ix *IX) editFile(what string) *Ed {
 	ed.load()	// sets temp
 	ed.winid, _ = ix.pg.Add(ed.win)
 	return ed
+}
+
+func (ix *IX) winEd(id string) *Ed {
+	ix.Lock()
+	defer ix.Unlock()
+	for _, ed := range ix.eds {
+		if ed.winid == id {
+			return ed
+		}
+	}
+	return nil
+}
+
+func (ix *IX) layout() [][]*Ed {
+	pgcols := ix.pg.Cols()
+	var cols [][]*Ed
+	for _, c := range pgcols {
+		var col []*Ed
+		for _, el := range c {
+			if ed := ix.winEd(el); ed != nil {
+				col = append(col, ed)
+			}
+		}
+		cols = append(cols, col)
+	}
+	return cols
 }
 
 func main() {

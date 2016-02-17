@@ -30,6 +30,7 @@ func init() {
 	btab["X"] = bX
 	btab["u"] = bu
 	btab["r"] = bu
+	btab["dump"] = bdump
 }
 
 // NB: All builtins must do a c.ed.win.DelMark(c.mark) once no
@@ -101,6 +102,13 @@ func bcd(c *Cmd, args ...string) {
 		c.printf("cd: %s\n", err)
 	} else {
 		c.printf("dot: %s\n\n", cmd.Dot())
+		if c.ed.iscmd {
+			old := c.ed.tag
+			flds := strings.Split(old, "!")
+			flds = flds[:len(flds)-1]
+			flds = append(flds, cmd.Dot())
+			c.ed.win.SetTag(strings.Join(flds, "!"))
+		}
 	}
 }
 
@@ -129,6 +137,36 @@ func bcmds(c *Cmd, args ...string) {
 func beq(c *Cmd, args ...string) {
 	if dot := c.ed.ix.dot; dot != nil {
 		c.printf("%s\n", dot.Addr())
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+
+// XXX: implement bload, using the new pg.AddAt(),
+// but load ONLY those edits that are not already loaded.
+
+
+func bdump(c *Cmd, args ...string) {
+	var buf bytes.Buffer
+	cols := c.ed.ix.layout()
+	for i, c := range cols {
+		for _, ed := range c {
+			fmt.Fprintf(&buf, "%d\t%s\n", i, ed.tag)
+		}
+	}
+	if len(args) > 1 {
+		dc := make(chan []byte, 1)
+		dc <- buf.Bytes()
+		close(dc)
+		rc := cmd.Put(args[1], zx.Dir{"type": "-"}, 0, dc)
+		<-rc
+		if err := cerror(rc); err != nil {
+			c.printf("dump: %s\n", err)
+		} else {
+			c.printf("dump %s\n", args[1])
+		}
+	} else {
+		c.printf("%s\n", buf.String())
 	}
 	c.ed.win.DelMark(c.mark)
 }
