@@ -19,8 +19,8 @@ function setdirty(e) {
 	var pmax = p.find(".portlet-max");
 	$("<span class='ui-icon inline ui-icon-disk portlet-dirty'></span>").insertBefore(pmax);
 	pmax.closest(".portlet-header").css('color', 'blue');
-	p.find(".portlet-dirty").click(function(e) {
-		e.stopPropagation();
+	p.find(".portlet-dirty").click(function(ev) {
+		ev.stopPropagation();
 		e.post(["save"]);
 	});
 }
@@ -142,8 +142,10 @@ function updportlets() {
 		});
 		hdr.addClass("ui-widget-header ui-corner-all")
 		.prepend("<span class='ui-icon inline ui-icon-minus portlet-toggle'></span>")
-		.prepend("<span class='ui-icon inline ui-icon-arrowthick-2-n-s portlet-max'></span>")
-		.prepend("<span class='ui-icon inline ui-icon-extlink portlet-drag'></span>")
+		.prepend("<span class='ui-icon inline ui-icon-triangle-2-n-s portlet-incr2'></span>")
+		.prepend("<span class='ui-icon inline ui-icon-triangle-1-n portlet-decr'></span>")
+		.prepend("<span class='ui-icon inline ui-icon-triangle-1-s portlet-incr'></span>")
+		.prepend("<span class='ui-icon inline ui-icon-triangle-1-e portlet-max'></span>")
 		.prepend("<span class='ui-icon inline ui-icon-close portlet-close'></span>");
 		hdr.on('contextmenu', function(){return false;});
 	}
@@ -208,6 +210,63 @@ function updportlets() {
 			var icon = $(this);
 			var el = icon.closest(".portlet");
 			removecontrol(el, true)
+		});
+	}
+	ps = $(".portlet-incr");
+	for(var i = 0; i < ps.length; i++) {
+		var p = ps[i];
+		if(!p.configured) {
+			p.configured = true;
+		} else {
+			continue;
+		}
+		$(p).click(function(e){
+			e.stopPropagation();
+			var icon = $(this);
+			var el = icon.closest(".portlet");
+			$(el).find(".canaddsize").each(function() {
+				if(this.addsize) {
+					this.addsize(1);
+				}
+			});
+		});
+	}
+	ps = $(".portlet-incr2");
+	for(var i = 0; i < ps.length; i++) {
+		var p = ps[i];
+		if(!p.configured) {
+			p.configured = true;
+		} else {
+			continue;
+		}
+		$(p).click(function(e){
+			e.stopPropagation();
+			var icon = $(this);
+			var el = icon.closest(".portlet");
+			$(el).find(".canaddsize").each(function() {
+				if(this.addsize) {
+					this.addsize(2);
+				}
+			});
+		});
+	}
+	ps = $(".portlet-decr");
+	for(var i = 0; i < ps.length; i++) {
+		var p = ps[i];
+		if(!p.configured) {
+			p.configured = true;
+		} else {
+			continue;
+		}
+		$(p).click(function(e){
+			e.stopPropagation();
+			var icon = $(this);
+			var el = icon.closest(".portlet");
+			$(el).find(".canaddsize").each(function() {
+				if(this.addsize) {
+					this.addsize(-1);
+				}
+			});
 		});
 	}
 }

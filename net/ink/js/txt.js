@@ -50,7 +50,7 @@ function tfixfont() {
 	if(this.fontstyle.indexOf('i') > -1) {
 		mod = "italic " + mod;
 	}
-	var ht = this.fontht - 4;
+	var ht = this.fontht - 2*this.tscale;
 	ctx.font = mod + " "  + ht+"px "+ style;
 	ctx.textBaseline="top";
 }
@@ -908,19 +908,33 @@ function tmayresize(user) {
 	this.redrawtext();
 }
 
-function tautoresize() {
-	var nln = this.frlines;
-	if(nln < 3) {
-		nln = 3;
-	}
-	var fontht = this.fontht/this.tscale;
-	var ht = (nln+2) * fontht;
+function tautoresize(addsize, moreless) {
 	var p = $(this);
 	var oldht = p.height();
-	console.log("auto rsz", nln, ht, oldht);
-	if (ht >= 400) {
-		ht = 400;
+	var ht = oldht;
+	var fontht = this.fontht/this.tscale;
+	if(addsize) {
+		if(moreless > 1){
+			ht = window.innerHeight - 100;
+		} else if(moreless >= 0) {
+			ht += fontht*6;
+		} else {
+			ht -= fontht*6;
+			if(ht < 5*fontht) {
+				ht = 5*fontht;
+			}
+		}
+	}else{
+		var nln = this.frlines;
+		if(nln < 3) {
+			nln = 3;
+		}
+		ht = (nln+2) * fontht;
+		if (ht >= 400) {
+			ht = 400;
+		}
 	}
+	console.log("auto rsz", nln, ht, oldht);
 	if (oldht < ht - fontht || oldht > ht + fontht) {
 		console.log("auto resizing");
 		var delta = ht - oldht;
@@ -2098,13 +2112,13 @@ function mktxt(d, t, e, cid, id) {
 		console.log("holding...");
 		return false;
 	};
-	e.onmousewheel = function(e) {
-		e.stopPropagation();
-		if(this.islocked || this.locking) {
-			return tmwheel.call(this, e);
+	e.onmousewheel = function(ev) {
+		ev.stopPropagation();
+		if(e.islocked || e.locking) {
+			return tmwheel.call(e, ev);
 		}
-		this.locking = true;
-		this.post(["hold"]);
+		e.locking = true;
+		e.post(["hold"]);
 		console.log("holding...");
 		return false;
 	};
@@ -2203,6 +2217,9 @@ function mktxt(d, t, e, cid, id) {
 	e.ws = new WebSocket(wsurl);
 	d.get(0).ws = e.ws;
 	d.get(0).post = e.post;
+	d.get(0).addsize = function(moreless) {
+		e.autoresize(true, moreless);
+	};
 	e.ws.onopen = function() {
 		e.post(["id"]);
 	};

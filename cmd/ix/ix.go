@@ -259,7 +259,11 @@ func main() {
 	args := opts.Parse()
 	ix = newIX()
 	done := make(chan bool)
-	go ink.Serve()
+	go func() {
+		if err := ink.Serve(); err != nil {
+			cmd.Fatal("can't listen")
+		}
+	}()
 	go func() {
 		ix.loop()
 		close(done)
