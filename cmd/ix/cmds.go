@@ -13,6 +13,7 @@ import (
 	"time"
 	"clive/zx"
 	"clive/net/ink"
+	"strconv"
 )
 
 var btab = map[string]func(*Cmd, ...string){}
@@ -31,6 +32,8 @@ func init() {
 	btab["u"] = bu
 	btab["r"] = bu
 	btab["dump"] = bdump
+	btab["load"] = bload
+	btab["win"] = bwin
 }
 
 // NB: All builtins must do a c.ed.win.DelMark(c.mark) once no
@@ -43,7 +46,7 @@ func init() {
 //	cd dir
 //	cmds	// print running commands
 //	=	// print dot
-//	w	// save
+//	w [name]	// save
 //	e	// undo all edits and get from disk to start a new edit
 //	d	// delete
 //	u	// undo
@@ -85,6 +88,16 @@ func builtin(arg0 string) func(*Cmd, ...string) {
 	return nil
 }
 
+func bwin(c *Cmd, args ...string) {
+	defer c.ed.win.DelMark(c.mark)
+	ed := ix.newCmds(cmd.Dot())
+	if ed != nil {
+		ed.winid, _ = ix.pg.Add(ed.win)
+	} else {
+		c.printf("can't create commands window\n")
+	}
+}
+
 func bcd(c *Cmd, args ...string) {
 	defer c.ed.win.DelMark(c.mark)
 	if len(args) == 1 {
@@ -103,11 +116,13 @@ func bcd(c *Cmd, args ...string) {
 	} else {
 		c.printf("dot: %s\n\n", cmd.Dot())
 		if c.ed.iscmd {
+			c.ed.dir = cmd.Dot()
 			old := c.ed.tag
 			flds := strings.Split(old, "!")
 			flds = flds[:len(flds)-1]
 			flds = append(flds, cmd.Dot())
-			c.ed.win.SetTag(strings.Join(flds, "!"))
+			c.ed.tag = strings.Join(flds, "!")
+			c.ed.win.SetTag(c.ed.tag)
 		}
 	}
 }
@@ -130,7 +145,7 @@ func bcmds(c *Cmd, args ...string) {
 	}
 	ix.Unlock()
 	s := out.String()
-	c.printf("%s\n\n", s)
+	c.printf("%s--\n", s)
 	c.ed.win.DelMark(c.mark)
 }
 
@@ -141,10 +156,50 @@ func beq(c *Cmd, args ...string) {
 	c.ed.win.DelMark(c.mark)
 }
 
+func (ix *IX) load1(tag string, nc int) {
+	if strings.HasPrefix(tag, "ql!") {
+		toks := strings.Split(tag, "!")
+		if len(toks) >= 3 {
+			ix.lookCmds(toks[2], nc)
+		}
+	} else {
+		ix.lookFile(tag, "", nc)
+	}
+}
 
-// XXX: implement bload, using the new pg.AddAt(),
-// but load ONLY those edits that are not already loaded.
+func (ix *IX) load(fname string) error {
+	dat, err := cmd.GetAll(fname)
+	if err != nil {
+		return err
+	}
+	lns := strings.Split(string(dat), "\n")
+	for _, ln := range lns {
+		toks := strings.Fields(ln)
+		if len(toks) != 2 {
+			continue
+		}
+		nc, err := strconv.Atoi(toks[0])
+		if err != nil {
+			continue
+		}
+		tag := strings.TrimSpace(toks[1])
+		ix.load1(tag, nc)
+	}
+	return nil
+}
 
+func bload(c *Cmd, args ...string) {
+ 	defer c.ed.win.DelMark(c.mark)
+	if len(args) == 1 {
+		c.printf("missing file name\n")
+		return
+	}
+	if err := c.ed.ix.load(args[1]); err != nil {
+		c.printf("load: %s\n", err)
+	} else {
+		c.printf("%s loaded\n", args[1])
+	}
+}
 
 func bdump(c *Cmd, args ...string) {
 	var buf bytes.Buffer
@@ -155,15 +210,11 @@ func bdump(c *Cmd, args ...string) {
 		}
 	}
 	if len(args) > 1 {
-		dc := make(chan []byte, 1)
-		dc <- buf.Bytes()
-		close(dc)
-		rc := cmd.Put(args[1], zx.Dir{"type": "-"}, 0, dc)
-		<-rc
-		if err := cerror(rc); err != nil {
+		err := cmd.PutAll(args[1], buf.Bytes())
+		if err != nil {
 			c.printf("dump: %s\n", err)
 		} else {
-			c.printf("dump %s\n", args[1])
+			c.printf("dumped %s\n", args[1])
 		}
 	} else {
 		c.printf("%s\n", buf.String())
@@ -188,26 +239,31 @@ func bu(c *Cmd, args ...string) {
 }
 
 func bw(c *Cmd, args ...string) {
+	defer c.ed.win.DelMark(c.mark)
 	if dot := c.ed.ix.dot; dot != nil {
+		if len(args) > 1 {
+			if err := dot.move(args[1]); err != nil {
+				c.printf("save: %s\n", err)
+				return
+			}
+		}
 		if err := dot.save(); err == nil {
 			c.printf("saved %s\n", dot)
 		} else if err != notDirty {
 			c.printf("%s: %s\n", dot, err)
 		}
 	}
-	c.ed.win.DelMark(c.mark)
 }
 
 func be(c *Cmd, args ...string) {
 	if dot := c.ed.ix.dot; dot != nil {
 		d, err := cmd.Stat(dot.tag)
 		if err != nil {
-			cmd.Warn("%s: look: %s", dot, err)
+			c.printf("%s: stat: %s", dot, err)
 		} else {
-			dot.d = d
+			c.printf("edit %s\n", dot)
+			go dot.load(d)
 		}
-		c.printf("edit %s\n", dot)
-		go dot.load()
 	}
 	c.ed.win.DelMark(c.mark)
 }
@@ -442,9 +498,8 @@ func (c *Cmd) io(hasnl bool) {
 	p := c.p
 	ed := c.ed
 	haderrors := false
-	_ = time.Second
-	cmd.Warn("merge... %v", time.Now())
 	first := true
+	c.printf("\n")
 	for m := range ch.Merge(p.Out, p.Err) {
 		switch m := m.(type) {
 		case error:
@@ -460,9 +515,9 @@ func (c *Cmd) io(hasnl bool) {
 			c.printf("%s\n", m)
 			if first {
 				ix.cleanAddrs()
-				if ed = ix.editFor(m.Name); ed != nil {
-					ed.win.Show()
-					ed.SetAddr(m)
+				if xed := ix.editFor(m.Name); xed != nil {
+					xed.win.Show()
+					xed.SetAddr(m)
 				}
 			}
 			ix.addAddr(m)
@@ -471,14 +526,13 @@ func (c *Cmd) io(hasnl bool) {
 			cmd.Dprintf("ix cmd io: got type %T\n", m)
 		}
 	}
-	cmd.Warn("wait...%v", time.Now())
 	if err := p.Wait(); err != nil {
 		if !haderrors {
 			cmd.Dprintf("ix cmd exit sts: %s\n", err)
 			c.printf("cmd error: %s\n", err)
 		}
 	}
-	c.printf("\n")
+	c.printf("--\n")
 	ed.win.DelMark(c.mark)
 	if n := ed.ix.delCmd(c); n == 0 && ed.gone {
 		close(ed.waitc)
@@ -496,7 +550,8 @@ func (c *Cmd) inkio(inkc <-chan face{}) {
 		}
 		s := string(m)
 		cmd.Dprintf("got ink %s\n", s)
-		if strings.HasPrefix(s, "http") {
+		if strings.HasPrefix(s, "http") || strings.HasPrefix(s, "https") ||
+		   strings.HasPrefix(s, "file://") || strings.HasPrefix(s, "//") {
 			nb++
 			u := fmt.Sprintf("%s|/ink/%s/%d", s, c.name, nb)
 			go c.ed.look(u)
@@ -526,7 +581,6 @@ func (c *Cmd) pipe(ed *Ed, sendin bool, args ...string) {
 	args = append([]string{"ql", "-uc"}, args...)
 	p, err := run.PipeToCtx(setio, args...)
 	if err != nil {
-		cmd.Warn("run: %s", err)
 		c.printf("error: %s\n", err)
 		c.ed.win.DelMark(c.mark)
 		return
@@ -603,15 +657,17 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 				c.printf("%s: %s\n", ed, err)
 			}
 		}
+		c.printf("\n")
 	case "e":
 		go func() {
 			for _, ed := range eds {
-				if err := ed.load(); err == nil {
+				if err := ed.load(nil); err == nil {
 					c.printf("edit %s\n", ed)
 				} else {
 					c.printf("%s: %s\n", ed, err)
 				}
 			}
+			c.printf("\n")
 		}()
 	case "u", "r":
 		go func() {
@@ -627,10 +683,11 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 					c.printf("%s: no more edits\n", ed)
 				}
 			}
+			c.printf("\n")
 		}()
 
 	default:
-		cmd.Warn("edit: %q not implemented", args[0])
+		c.ed.ix.Warn("edit: %q not implemented", args[0])
 	}
 }
 

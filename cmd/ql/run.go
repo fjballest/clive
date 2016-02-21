@@ -74,7 +74,9 @@ func (xfd *xFd) Close() error {
 
 func (x *xEnv) Close() error {
 	for _, fd := range x.fds {
-		fd.Close()
+		if fd != nil {
+			fd.Close()
+		}
 	}
 	for _, wc := range x.waits {
 		<-wc
@@ -137,14 +139,50 @@ func (b *bgCmds) wait(tag string) {
 	<-wc
 }
 
+var env = os.Environ()
+
+func (x *xEnv) addUXio() {
+	for _, v := range env {
+		if !strings.HasPrefix(v, "cliveio#") {
+			continue
+		}
+		toks := strings.Split(v, "=")
+		if len(toks) != 2 {
+			continue
+		}
+		cname := strings.TrimPrefix(toks[0], "cliveio#")
+		fdval := toks[1]
+		if len(fdval) < 2 {
+			continue
+		}
+		if cname == "in" || cname == "out" || cname == "err" {
+			continue
+		}
+		dir := fdval[0]
+		if dir != '<' && dir != '>' {
+			continue
+		}
+		fdname := fdval[1:]
+		n, err := strconv.Atoi(fdname)
+		if err != nil {
+			continue
+		}
+		fd := os.NewFile(uintptr(n), cname)
+		x.fds[cname] = &xFd{fd: fd, path: cname, ref: -1, isIn: dir == '<'}
+	}
+}
+
+
 func newEnv() *xEnv {
-	return &xEnv{
+	x := &xEnv{
 		fds: map[string]*xFd{
 			"in":  &xFd{fd: os.Stdin, path: "in", ref: -1, isIn: true},
 			"out": &xFd{fd: os.Stdout, path: "out", ref: -1, isIn: false},
 			"err": &xFd{fd: os.Stderr, path: "err", ref: -1, isIn: false},
 		},
 	}
+	x.addUXio()
+	return x
 }
 
 func (x *xEnv) dup() *xEnv {
@@ -668,8 +706,7 @@ func (nd *Nd) eval(x *xEnv, argv ...string) error {
 
 func cleanenv(env []string) []string {
 	for i := 0; i < len(env); {
-		if /* strings.HasPrefix(env[i], "dot=") || strings.HasPrefix(env[i], "cliveio#") ||
-		 */strings.HasPrefix(env[i], "clivebg") {
+		if strings.HasPrefix(env[i], "clivebg") {
 			copy(env[i:], env[i+1:])
 			env = env[:len(env)-1]
 		} else {

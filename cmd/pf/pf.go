@@ -10,6 +10,11 @@ import (
 	"clive/mblk"
 	"clive/zx"
 	fpath "path"
+	"bytes"
+	"fmt"
+	"net/http"
+	"os"
+	"time"
 )
 
 struct wFile {
@@ -22,7 +27,7 @@ var (
 	printf = cmd.Printf
 	odir   string
 
-	notux, lflag, pflag, nflag, iflag, dflag, aflag, fflag, sflag, wflag, wwflag bool
+	hflag, notux, lflag, pflag, nflag, iflag, dflag, aflag, fflag, sflag, wflag, wwflag bool
 )
 
 func (w *wFile) start(d zx.Dir) error {
@@ -90,6 +95,16 @@ func (w *wFile) write(b []byte) error {
 	return err
 }
 
+var buf bytes.Buffer
+
+func bufHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write(buf.Bytes())
+	go func() {
+		time.Sleep(time.Second)	// http doesn't let serve just once
+		os.Exit(0)
+	}()
+}
+
 func main() {
 	cmd.UnixIO("err")
 	c := cmd.AppCtx()
@@ -101,6 +116,7 @@ func main() {
 	opts.NewFlag("l", "long list for dirs", &lflag)
 	opts.NewFlag("i", "print also ignored data", &iflag)
 	opts.NewFlag("u", "don't use unix out", &notux)
+	opts.NewFlag("h", "serve the output as a page sent to ink", &hflag)
 	opts.NewFlag("a", "print addresses", &aflag)
 	opts.NewFlag("o", "write destination path", &odir)
 	opts.NewFlag("s", "separate messages, print each message in its own line.", &sflag)
@@ -120,6 +136,11 @@ func main() {
 	out := cmd.Out("out")
 	var w wFile
 	var err error
+	if hflag {
+		printf = func(fmts string, arg ...interface{}) (int, error) {
+			return fmt.Fprintf(&buf, fmts, arg...)
+		}
+	}
 	for m := range in {
 		cmd.Dprintf("got %T\n", m)
 		ok := true
@@ -177,7 +198,9 @@ func main() {
 			if sflag && len(m) > 0 && m[len(m)-1] != '\n' {
 				m = append(m, '\n')
 			}
-			ok = out <- m
+			if _, werr := printf("%s", string(m)); werr != nil {
+				ok = false
+			}
 		case ch.Ign:
 			if dflag || !iflag {
 				continue
@@ -188,7 +211,9 @@ func main() {
 			if dflag || !iflag {
 				continue
 			}
-			ok = out <- []byte(m)
+			if _, werr := printf("%s", m); werr != nil {
+				ok = false
+			}
 		case zx.Addr:
 			if !aflag {
 				continue
@@ -207,6 +232,27 @@ func main() {
 			err = werr
 			cmd.Warn("write: %s", err)
 		}
+	}
+	if hflag {
+		ink := cmd.Out("ink")
+		if ink == nil {
+			cmd.Fatal("no ink out chan")
+		}
+		cert := "/zx/lib/webcert.pem"
+		key := "/zx/lib/webkey.pem"
+		http.HandleFunc("/", bufHandler)
+		go http.ListenAndServeTLS(":10001", cert, key, nil)
+		go http.ListenAndServe(":10000", nil)
+		// The dance here to serve the page and
+		// die once it's served is ugly, but it will be http
+		// the one reponsible for listening before writing to ink
+		// and then dying after the page has been served.
+		// For now, this will do.
+		time.Sleep(100*time.Millisecond)
+		cmd.Dprintf("serving: https://localhost:10001/\n")
+		ink <- []byte("https://localhost:10001/")
+		c := make(chan bool)
+		<-c
 	}
 	if err := cerror(in); err != nil {
 		cmd.Fatal(err)

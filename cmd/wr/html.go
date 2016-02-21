@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	CSS      = `http://lsub.org/ls/class.css` // CSS used for html output
-	MAN      = `http://lsub.org/sys/man`      // base url for man pages in output
+	CSS      = `//lsub.org/ls/class.css` // CSS used for html output
+	MAN      = `//lsub.org/sys/man`      // base url for man pages in output
 	TEMPLATE = `/zx/usr/web/sys/man/TEMPLATE` // template for clive man pages
 )
 

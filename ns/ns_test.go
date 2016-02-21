@@ -670,10 +670,11 @@ func TestPaths(t *testing.T) {
 	}
 	printf("\nfind /...\n")
 	// ns.Verb = testing.Verbose()
+	n = 0
 	dc = ns.Find("/", "type=d", "/", "/", 0)
 	for d := range dc {
 		printf("found %s\n", d.TestFmt())
-		if d["path"] != fpath.Join("/mnt", d.SPath()) {
+		if strings.HasPrefix(d["path"], "/mnt") && d["path"] != fpath.Join("/mnt", d.SPath()) {
 			t.Fatalf("bad find path")
 		}
 		n++

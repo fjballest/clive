@@ -158,7 +158,8 @@ func (pg *Pg) mkiframe(s string) urlEl {
 	defer pg.Unlock()
 	pg.idgen++
 	id := fmt.Sprintf("page%d", pg.idgen)
-	s = ` <iframe id="` + id + `frame" src="` + u + `" style="width: 95%; height: 100%;"></iframe>` +
+	s = ` <iframe id="` + id + `frame" src="` + u + `"` +
+		` style="width: 95%; height: 100%;"></iframe>` +
 		`<script>
 		$(function(){
 			$("#` + id + `_0").resizable({handles: "s"});

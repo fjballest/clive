@@ -449,6 +449,11 @@ func (s *Server) client(mx *ch.Mux) {
 		}
 		break
 	}
+	if ai == nil {
+		dbg.Warn("no client auth info for %s", mx.Tag)
+		close(mx.In)
+		return
+	}
 	s.Dprintf("%s auth as %s\n", mx.Tag, ai.Uid)
 	s.clients.add(mx.Tag, ai.Uid)
 	ns := s.authFor(ai)

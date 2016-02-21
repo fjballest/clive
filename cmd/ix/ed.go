@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-// command run within an edit
+// Command run within an edit.
 struct Cmd {
 	ed    *Ed
 	name  string
@@ -59,6 +59,14 @@ func (ix *IX) delEd(ed *Ed) int {
 	ed.gone = true
 	if ix.dot == ed {
 		ix.dot = nil
+	}
+	if ix.msgs == ed {
+		ix.msgs = nil
+		for _, e := range ix.eds {
+			if e != ed && e.iscmd {
+				ix.msgs = e
+			}
+		}
 	}
 	for i, e := range ix.eds {
 		if e == ed {
@@ -108,15 +116,39 @@ func (ix *IX) newEd(tag string) *Ed {
 	return ed
 }
 
-func (ix *IX) newCmds() *Ed {
-	tag := fmt.Sprintf("ql!%d!%s", ix.newId(), cmd.Dot())
+func (ix *IX) newCmds(dir string) *Ed {
+	d, err := cmd.Stat(dir)
+	if err != nil {
+		if ix.msgs != nil {
+			ix.Warn("newCmds: %s", err)
+		} else {
+			cmd.Warn("newCmds: %s", err)
+		}
+		return nil
+	}
+	if d["type"] != "d" {
+		if ix.msgs != nil {
+			ix.Warn("newCmds: %s: not a directory", dir)
+		} else {
+			cmd.Warn("newCmds: %s: not a directory", dir)
+		}
+		return nil
+	}
+	tag := fmt.Sprintf("ql!%d!%s", ix.newId(), dir)
 	ed := ix.newEd(tag)
 	ed.temp = true
 	ed.iscmd = true
+	ed.d = zx.Dir{
+		"type": "-",
+		"path": tag,
+		"name": fpath.Base(tag),
+	}
 	ix.Lock()
 	defer ix.Unlock()
 	ix.eds = append(ix.eds, ed)
-
+	if ix.msgs == nil {
+		ix.msgs = ed
+	}
 	// We can't make the editLoop the new ctx main func because:
 	// 1. commands may reopen the window and
 	// recreate it while commands run. So the context must
@@ -124,6 +156,9 @@ func (ix *IX) newCmds() *Ed {
 	// 2. the new windows must have their event loops in the same
 	// context, or changes in the NS/env/... will be gone.
 	ed.ctx = cmd.New(func() {
+		if err := cmd.Cd(dir); err != nil {
+			go ed.win.Ins([]rune("can't cd to " + dir + ": " + err.Error()+"\n"), 0)
+		}
 		ed.editLoop()
 		// new command loops are sent to waitc
 		for fn := range ed.waitc {
@@ -298,7 +333,6 @@ func (ed *Ed) runCmd(at int, line string) {
 		hasnl: hasnl,
 	}
 	if b := builtin(args[0]); b != nil {
-		cmd.Warn("run: %s", args)
 		b(c, args...)
 		// We don't del the output mark for builtins,
 		// Some will keep bg processes and must defer that.
@@ -315,7 +349,6 @@ func (ed *Ed) runCmd(at int, line string) {
 	}
 	p, err := run.CtxCmd(setio, args...)
 	if err != nil {
-		cmd.Warn("run: %s", err)
 		c.printf("error: %s\n", err)
 		ed.win.DelMark(c.mark)
 		return
@@ -333,7 +366,10 @@ func (ed *Ed) lookFiles(name string) {
 		if !ok || d["type"] != "-" {
 			continue
 		}
-		ed.ix.lookFile(d["path"], "")
+		ed.ix.lookFile(d["path"], "", -1)
+	}
+	if err := cerror(dc); err != nil {
+		ed.ix.Warn("look: %s", err)
 	}
 }
 
@@ -350,7 +386,7 @@ func (ed *Ed) look(what string) {
 			names[1] = ":" + names[1]
 		}
 		cmd.Dprintf("look file %q %q\n", names[0], names[1])
-		ed.ix.lookFile(names[0], names[1])
+		ed.ix.lookFile(names[0], names[1], -1)
 		return
 	}
 	toks := strings.Split(s, "|")
@@ -458,21 +494,53 @@ func (ed *Ed) undoRedo(isredo bool) bool {
 	return some
 }
 
+func (ed *Ed) move(to string) error {
+	to = cmd.AbsPath(to)
+	d, err := cmd.Stat(to)
+	if err == nil && d["type"] == "d" {
+		return fmt.Errorf("%s: %s", to, zx.ErrIsDir)
+	}
+	ed.tag = to
+	ed.win.SetTag(ed.tag)
+	return nil
+}
+
+func (ed *Ed) wasChanged() error {
+	nd, err := cmd.Stat(ed.tag)
+	if err != nil {
+		return nil
+	}
+	if nd["type"] != ed.d["type"] {
+		return errors.New("file type changed")
+	}
+	if nd["mtime"] != ed.d["mtime"] {
+		ed.d["mtime"] = nd["mtime"]
+		return fmt.Errorf("file was changed by %s", nd["wuid"])
+	}
+	return nil
+}
+
 func (ed *Ed) save() error {
-	defer ed.win.Clean()
 	if !ed.win.IsDirty() {
+		ed.win.Clean()
 		return notDirty
 	}
 	if dryrun {
 		cmd.Warn("not saving %s: dry run", ed)
+		ed.win.Clean()
 		return notDirty
 	}
 	if ed.d["type"] != "-" {
 		// not a regular file
+		ed.win.Clean()
 		return notDirty
 	}
+	if err := ed.wasChanged(); err != nil {
+		return err
+	}
+	defer ed.win.Clean()
 	dc := make(chan []byte)
-	rc := cmd.Put(ed.d["path"], zx.Dir{"type": "-"}, 0, dc)
+	rc := cmd.Put(ed.tag, zx.Dir{"type": "-"}, 0, dc)
 	tc := ed.win.Get(0, -1)
 	for rs := range tc {
 		dat := []byte(string(rs))
@@ -484,17 +552,24 @@ func (ed *Ed) save() error {
 	close(dc)
 	rd := <-rc
 	if err := cerror(rc); err != nil {
-		cmd.Warn("save %s: %s", ed, err)
+		ed.ix.Warn("save %s: %s", ed, err)
 		return err
 	}
-	for k, v := range rd {
-		ed.d[k] = v
+	if mt, ok := rd["mtime"]; ok {
+		ed.d["mtime"] = mt
 	}
 	return nil
 }
 
-func (ed *Ed) load() error {
+func (ed *Ed) load(nd zx.Dir) error {
 	what := ed.tag
+	if nd == nil {
+		d, err := cmd.Stat(what)
+		if err != nil {
+			return err
+		}
+		nd = d
+	}
 	t := ed.win.GetText()
 	defer ed.win.PutText()
 	if t.Len() > 0 {
@@ -529,7 +604,7 @@ func (ed *Ed) load() error {
 	}
 	err := cerror(dc)
 	if err != nil {
-		cmd.Warn("%s: get: %s", what, err)
+		ed.ix.Warn("%s: get: %s", what, err)
 	}
 	ed.win.Clean()
 	return err
@@ -571,7 +646,11 @@ func (ed *Ed) editLoop() {
 			}
 			return
 		case "clear":
-			ed.clear()
+			if ed.iscmd {
+				ed.clear()
+			} else {
+				ed.load(nil)
+			}
 		case "eundo", "eredo":
 			ed.undoRedo(ev.Args[0] == "eredo")
 		}

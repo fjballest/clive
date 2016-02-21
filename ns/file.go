@@ -181,7 +181,7 @@ func (ns *NS) Get(path string, off, count int64) <-chan []byte {
 
 // On unions, the first entry is always used.
 func (ns *NS) Put(path string, ud zx.Dir, off int64, dc <-chan []byte) <-chan zx.Dir {
-	_, ds, err := ns.Resolve(path)
+	pname, ds, err := ns.Resolve(path)
 	if err != nil {
 		close(dc, err)
 		return derr(err)
@@ -197,11 +197,21 @@ func (ns *NS) Put(path string, ud zx.Dir, off int64, dc <-chan []byte) <-chan zx
 		close(dc, err)
 		return derr(fmt.Errorf("%s: tree is not a putter"))
 	}
-	return xfs.Put(d.SPath(), ud, off, dc)
+	rc := make(chan zx.Dir)
+	go func() {
+		pc := xfs.Put(d.SPath(), ud, off, dc)
+		rd := <-pc
+		if rd != nil {
+			rd["path"] = fpath.Join(pname, d.SPath())
+			rc <- rd
+		}
+		close(rc, cerror(pc))
+	}()
+	return rc
 }
 
 func (ns *NS) Wstat(path string, ud zx.Dir) <-chan zx.Dir {
-	_, ds, err := ns.Resolve(path)
+	pname, ds, err := ns.Resolve(path)
 	if err != nil {
 		return derr(err)
 	}
@@ -214,7 +224,17 @@ func (ns *NS) Wstat(path string, ud zx.Dir) <-chan zx.Dir {
 	if !ok {
 		return derr(fmt.Errorf("%s: tree is not a wstater"))
 	}
-	return xfs.Wstat(d.SPath(), ud)
+	rc := make(chan zx.Dir)
+	go func() {
+		wc := xfs.Wstat(d.SPath(), ud)
+		rd := <-wc
+		if rd != nil {
+			rd["path"] = fpath.Join(pname, d.SPath())
+			rc <- rd
+		}
+		close(rc, cerror(wc))
+	}()
+	return rc
 }
 
 func (ns *NS) Remove(path string) <-chan error {

@@ -1,3 +1,5 @@
+// +install gf
+
 /*
 	list files command
 */
@@ -22,12 +24,12 @@ func main() {
 	opts.NewFlag("D", "debug", &c.Debug)
 	opts.NewFlag("u", "unix IO", &ux)
 	opts.NewFlag("g", "get contents", &gflag)
+	if cmd.Args()[0] == "gf" {
+		gflag = true
+	}
 	args := opts.Parse()
 	if ux {
 		cmd.UnixIO()
-	}
-	if cmd.Args()[0] == "gf" {
-		gflag = true
 	}
 	if len(args) == 0 {
 		args = append(args, ".,1")

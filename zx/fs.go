@@ -2,6 +2,7 @@ package zx
 
 import (
 	"clive/net/auth"
+	"bytes"
 )
 
 // A zx file system.
@@ -145,12 +146,12 @@ func Stat(fs Fs, p string) (Dir, error) {
 
 // Get all contents for a file
 func GetAll(fs Getter, p string) ([]byte, error) {
+	var buf bytes.Buffer
 	gc := fs.Get(p, 0, -1)
-	data := make([]byte, 0, 1024)
 	for d := range gc {
-		data = append(data, d...)
+		buf.Write(d)
 	}
-	return data, cerror(gc)
+	return buf.Bytes(), cerror(gc)
 }
 
 // Put all contents for a file, creating it.

@@ -27,6 +27,11 @@ func Get(path string, off, count int64) <-chan []byte {
 	return NS().Get(path, off, count)
 }
 
+func GetAll(path string) ([]byte, error) {
+	path = AbsPath(path)
+	return zx.GetAll(NS(), path)
+}
+
 // Unlike zx.GetDir(), this updates the paths in dirs to reflect user paths,
 // like Dirs() and Files() do.
 func GetDir(path string) ([]zx.Dir, error) {
@@ -44,14 +49,36 @@ func GetDir(path string) ([]zx.Dir, error) {
 }
 
 func Put(path string, ud zx.Dir, off int64, dc <-chan []byte) <-chan zx.Dir {
+	upath := path
+	apath := AbsPath(path)
+	rc := make(chan zx.Dir)
+	go func() {
+		pc := NS().Put(apath, ud, off, dc)
+		d := <- pc
+		if d != nil {
+			d["Rpath"] = "/"
+			d["Upath"] = upath
+			rc <- d
+		}
+		close(rc, cerror(pc))
+	}()
+	return rc
+}
+
+func PutAll(path string, data []byte, mode ...string) error {
 	path = AbsPath(path)
-	return NS().Put(path, ud, off, dc)
+	return zx.PutAll(NS(), path, data, mode...)
 }
 
 func Wstat(path string, ud zx.Dir) (zx.Dir, error) {
-	path = AbsPath(path)
-	rc := NS().Wstat(path, ud)
+	upath := path
+	apath := AbsPath(path)
+	rc := NS().Wstat(apath, ud)
 	d := <-rc
+	if d != nil {
+		d["Rpath"] = "/"
+		d["Upath"] = upath
+	}
 	return d, cerror(rc)
 }
 

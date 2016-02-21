@@ -141,7 +141,7 @@ func startFile(d zx.Dir) (chan<- string, <-chan *Text) {
 		} else {
 			oname = ibase + oext
 		}
-	} else {
+	} else if oname != "-" {
 		if a, err := filepath.Abs(oname); err == nil {
 			outdir = filepath.Dir(a)
 		}
@@ -166,7 +166,7 @@ func endFile(lnc chan<- string, tc <-chan *Text) error {
 func wr(in <-chan face{}) error {
 	var lnc chan<- string
 	var tc <-chan *Text
-	singleout := oname != ""
+	singleout := oname != "" && oname != "-"
 	var sts error
 	stdin := zx.Dir{"name": "stdin", "uname": "stdin"}
 	for m := range in {
@@ -214,7 +214,7 @@ func main() {
 	opts.NewFlag("r", "generate roff", &tflag)
 	opts.NewFlag("l", "generate latex", &lflag)
 	opts.NewFlag("m", "generate man page", &mflag)
-	opts.NewFlag("c", "sect: generate html for a clive man page in the given section", &sect)
+	opts.NewFlag("c", "sect: with -h, generate a man page in the given section", &sect)
 	opts.NewFlag("s", "generate ps", &psflag)
 	opts.NewFlag("p", "generate pdf", &pflag)
 	opts.NewFlag("o", "file: generate a single output file", &oname)
@@ -227,6 +227,9 @@ func main() {
 	args := opts.Parse()
 	if !notux {
 		cmd.UnixIO("out")
+	}
+	if oname == "stdout" {
+		oname = "-"
 	}
 	hflag = hflag || sect != ""
 	cliveMan = sect != "" || mflag
