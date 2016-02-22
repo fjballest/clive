@@ -1126,8 +1126,14 @@ function tm234(pos, b) {
 			if(this.buttons == 0){
 				var sp0 = this.p0;
 				var sp1 = this.p1;
+				var xln = this.lines[this.lines.length-1];
+				var tsize = 0;
+				if(xln && xln.txt.length == 0){
+					tsize = xln.off;
+				}
 				this.secondary = 0;
 				this.tsetsel(this.oldp0, this.oldp1);
+				console.log("sp0 " + sp0 + " " + sp1 + " " + tsize);
 				if(!this.secondaryabort)
 				if(sp0 != sp1){
 					var txt = this.tget(sp0, sp1);
@@ -1137,7 +1143,14 @@ function tm234(pos, b) {
 					var txt = this.tget(this.p0, this.p1);
 					this.post(["click"+b, txt,
 						  ""+this.p0, ""+this.p1]);
-				}else{
+				}else if(b != 1 && sp0 == sp1 && tsize &&
+					sp0 == tsize && sp0>0) {
+					// a click at a final empty line selects the previous
+					// line (which is the last one shown).
+					var x = this.tgetword(sp0-1, b != 8);
+					this.post(["click"+b, x[0],
+						  ""+x[1], ""+x[2]]);
+				}else {
 					var x = this.tgetword(sp0, b != 8);
 					this.post(["click"+b, x[0],
 						  ""+x[1], ""+x[2]]);

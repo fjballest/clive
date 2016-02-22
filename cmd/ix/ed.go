@@ -489,8 +489,16 @@ func (ed *Ed) undoRedo(isredo bool) bool {
 			break
 		}
 	}
+	if p0 := ed.win.Mark("p0"); p0 != nil {
+		ed.dot.P0 = p0.Off
+	}
+	if p1 := ed.win.Mark("p1"); p1 != nil {
+		ed.dot.P1 = p1.Off
+	}
 	ed.win.PutText()
-	// XXX: TODO: ed.win.SetSel() for the position of the undo/redo
+	if some {
+		ed.win.SetSel(ed.dot.P0, ed.dot.P1)
+	}
 	return some
 }
 

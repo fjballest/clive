@@ -713,7 +713,7 @@ func bX(c *Cmd, args ...string) {
 		if out.Len() == 0 {
 			fmt.Fprintf(&out, "none\n")
 		}
-		c.printf("%s", out.String())
+		c.printf("%s\n", out.String())
 		c.ed.win.DelMark(c.mark)
 		return
 	}
