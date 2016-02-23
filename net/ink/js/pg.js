@@ -125,6 +125,23 @@ function removecontrol(el, needpost) {
 	el.remove();
 }
 
+function maxpl(pl) {
+	var ismin = false;
+	var icon = $(pl).find(".portlet-toggle").first();
+	if(!icon.hasClass("ui-icon-plus")){
+		return false;
+	}
+	console.log("maxpl ", icon);
+	$(pl).find('.portlet-content').toggle();
+	icon.toggleClass("ui-icon-minus ui-icon-plus");
+	pl.find(".canaddsize").each(function() {
+		if(this.addsize) {
+			this.addsize(0);
+		}
+	});
+	return true;
+}
+
 function updportlets() {
 	var ps = $(".portlet")
 	for(var i = 0; i < ps.length; i++) {
@@ -159,12 +176,17 @@ function updportlets() {
 		}
 		$(p).click(function(e){
 			e.stopPropagation();
-			var p0 = $(this).closest(".portlet").get(0);
+			var pl = $(this).closest(".portlet");
+			if(maxpl(pl)) {
+				return;
+			}
+			var p0 = pl.get(0);
 			var col = $(this).closest(".column");
 			$(col).find(".portlet").each(function(){
 				var pi = $(this).get(0);
 				var self = $(this);
-				if(p0 == pi) {
+				// let's minimize everything.
+				if(false && p0 == pi) {
 					$(this).find(".portlet-toggle").each(function(){
 						if($(this).hasClass("ui-icon-plus")) {
 							$(this).toggleClass("ui-icon-minus ui-icon-plus");
@@ -194,7 +216,13 @@ function updportlets() {
 			e.stopPropagation();
 			var icon = $(this);
 			icon.toggleClass("ui-icon-minus ui-icon-plus");
-			icon.closest(".portlet").find(".portlet-content").toggle();
+			var pl = icon.closest(".portlet");
+			pl.find(".portlet-content").toggle();
+			pl.find(".canaddsize").each(function() {
+				if(this.addsize) {
+					this.addsize(0);
+				}
+			});
 		});
 	}
 	ps = $(".portlet-close");
@@ -224,6 +252,7 @@ function updportlets() {
 			e.stopPropagation();
 			var icon = $(this);
 			var el = icon.closest(".portlet");
+			maxpl(el);
 			$(el).find(".canaddsize").each(function() {
 				if(this.addsize) {
 					this.addsize(1);
@@ -243,6 +272,7 @@ function updportlets() {
 			e.stopPropagation();
 			var icon = $(this);
 			var el = icon.closest(".portlet");
+			maxpl(el);
 			$(el).find(".canaddsize").each(function() {
 				if(this.addsize) {
 					this.addsize(2);
@@ -262,6 +292,7 @@ function updportlets() {
 			e.stopPropagation();
 			var icon = $(this);
 			var el = icon.closest(".portlet");
+			maxpl(el);
 			$(el).find(".canaddsize").each(function() {
 				if(this.addsize) {
 					this.addsize(-1);

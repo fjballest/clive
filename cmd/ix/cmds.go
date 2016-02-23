@@ -550,6 +550,14 @@ func (c *Cmd) inkio(inkc <-chan face{}) {
 		}
 		s := string(m)
 		cmd.Dprintf("got ink %s\n", s)
+		if strings.HasPrefix(s, "look:") {
+			go c.ed.look(s[5:])
+			continue
+		}
+		if strings.HasPrefix(s, "exec:") {
+			go c.ed.exec(s[5:])
+			continue
+		}
 		if strings.HasPrefix(s, "http") || strings.HasPrefix(s, "https") ||
 		   strings.HasPrefix(s, "file://") || strings.HasPrefix(s, "//") {
 			nb++

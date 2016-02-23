@@ -334,8 +334,9 @@ Dloop:
 			if i == len(ds)-1 {
 				break
 			}
-			ds = append(ds[:i], ds[i+1:]...)
-			fi = ds[i]
+			copy(ds[i:], ds[i+1:])
+			ds = ds[:len(ds)-1]
+			continue
 		}
 		d := newDir(fi)
 		cp := fpath.Join(p, fi.Name())

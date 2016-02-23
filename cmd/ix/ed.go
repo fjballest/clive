@@ -318,6 +318,7 @@ func (c *Cmd) printf(f string, args ...face{}) {
 	}
 }
 
+// if at < 0 then we want to replace the full cmd text with the command output.
 func (ed *Ed) runCmd(at int, line string) {
 	cmd.Dprintf("run cmd %s at %d\n", line, at)
 	hasnl := len(line) > 0 && line[len(line)-1] == '\n'
@@ -331,6 +332,10 @@ func (ed *Ed) runCmd(at int, line string) {
 		ed:    ed,
 		mark:  ed.newMark(at),
 		hasnl: hasnl,
+	}
+	if at < 0 {
+		c.pipeFrom([]*Ed{ed}, "ql", "-uc", line)
+		return
 	}
 	if b := builtin(args[0]); b != nil {
 		b(c, args...)
@@ -398,6 +403,17 @@ func (ed *Ed) look(what string) {
 	}
 	cmd.Dprintf("look files %q\n", s)
 	ed.lookFiles(s)
+}
+
+func (ed *Ed) exec(what string) {
+	cmd.Dprintf("exec %s\n", what)
+	ned := ed.ix.newCmds(ed.dir)
+	if ned == nil {
+		ix.Warn("can't create commands window at %s", ed.dir)
+		return
+	}
+	ned.winid, _ = ix.pg.Add(ned.win)
+	go ned.runCmd(-1, what)
 }
 
 func (ed *Ed) hasText(rs []rune, p0 int) bool {

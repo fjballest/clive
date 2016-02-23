@@ -914,8 +914,13 @@ function tautoresize(addsize, moreless) {
 	var ht = oldht;
 	var fontht = this.fontht/this.tscale;
 	if(addsize) {
+		this.userresized = true;
 		if(moreless > 1){
-			ht = window.innerHeight - 100;
+			var wtop = $(window).scrollTop();
+			var etop = $(this).offset().top;
+			var eoff = etop-wtop;
+			console.log("resize ", wtop, etop, eoff);
+			ht = window.innerHeight - 10 - eoff;
 		} else if(moreless >= 0) {
 			ht += fontht*6;
 		} else {
