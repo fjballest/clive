@@ -8,6 +8,7 @@ import (
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/net/ink"
+	"clive/cmd/look"
 	"clive/zx"
 	fpath "path"
 	"strings"
@@ -24,16 +25,23 @@ struct IX {
 	sync.Mutex
 	msgs *Ed	// commands window used to notify the user
 	idgen int
+	lookstr string
 }
 
 var (
 	ix     *IX
+	rules	look.Rules
 	dryrun bool
+
+	defaultRules = `
+		^([a-zA-Z.]+)\(([0-9]+)\)$
+			doc \2 \1|rf
+	`
 )
 
 func newIX() *IX {
 	ix := &IX{}
-	cmds := ix.newCmds(cmd.Dot())
+	cmds := ix.newCmds(cmd.Dot(), "")
 	if cmds == nil {
 		cmd.Fatal("can't create command window")
 	}
@@ -72,7 +80,7 @@ func (ix *IX) Warn(fmts string, arg ...interface{}) {
 		c := ix.msgs
 		ix.Unlock()
 		if c == nil {
-			c = ix.newCmds(cmd.Dot())
+			c = ix.newCmds(cmd.Dot(), "")
 			if c == nil {
 				cmd.Warn("can't create commands window")
 				return
@@ -98,7 +106,7 @@ func (ix *IX) loop() {
 			switch ev.Args[1] {
 			case "win":
 				go func() {
-					icmds := ix.newCmds(cmd.Dot())
+					icmds := ix.newCmds(cmd.Dot(), "")
 					if icmds == nil {
 						cmd.Warn("can't create commands window")
 					} else {
@@ -172,7 +180,7 @@ func (ix *IX) lookCmds(dir string, at int) *Ed {
 		ed.win.Show()
 		return ed
 	}
-	ed = ix.newCmds(dir)
+	ed = ix.newCmds(dir, "")
 	if ed == nil {
 		cmd.Warn("can't create commands window at %s", dir)
 		return nil
@@ -247,6 +255,18 @@ func (ix *IX) layout() [][]*Ed {
 	return cols
 }
 
+func makeRules() {
+	r := cmd.DotFile("look")
+	if r == "" {
+		r = defaultRules
+	}
+	rs, err := look.ParseRules(r)
+	if err != nil {
+		ix.Warn("rules: %s", err)
+	}
+	rules = rs
+}
+
 func main() {
 	opts := opt.New("{file}")
 	c := cmd.AppCtx()
@@ -280,6 +300,7 @@ func main() {
 			}
 		}
 	}
+	makeRules()
 	if dmpf != "" {
 		if err := ix.load(dmpf); err != nil {
 			ix.Warn("load: %s: %s", dmpf, err)

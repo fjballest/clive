@@ -689,7 +689,7 @@ function iswordchar(c) {
 function islongwordchar(c) {
 	if(!wordre)
 		wordre = /\w/;
-	return c == '/' || c == '.' || c == ':' || c == '#' || c == ',' || wordre.test(c);
+	return c == '(' || c == ')' || c == '/' || c == '.' || c == ':' || c == '#' || c == ',' || wordre.test(c);
 }
 
 function islparen(c) {

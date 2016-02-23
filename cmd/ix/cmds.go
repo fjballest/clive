@@ -14,6 +14,7 @@ import (
 	"clive/zx"
 	"clive/net/ink"
 	"strconv"
+	fpath "path"
 )
 
 var btab = map[string]func(*Cmd, ...string){}
@@ -31,6 +32,7 @@ func init() {
 	btab["X"] = bX
 	btab["u"] = bu
 	btab["r"] = bu
+	btab["n"] = bn
 	btab["dump"] = bdump
 	btab["load"] = bload
 	btab["win"] = bwin
@@ -90,7 +92,7 @@ func builtin(arg0 string) func(*Cmd, ...string) {
 
 func bwin(c *Cmd, args ...string) {
 	defer c.ed.win.DelMark(c.mark)
-	ed := ix.newCmds(cmd.Dot())
+	ed := ix.newCmds(cmd.Dot(), "")
 	if ed != nil {
 		ed.winid, _ = ix.pg.Add(ed.win)
 	} else {
@@ -253,6 +255,37 @@ func bw(c *Cmd, args ...string) {
 			c.printf("%s: %s\n", dot, err)
 		}
 	}
+}
+
+func bn(c *Cmd, args ...string) {
+	for _, uname := range args[1:] {
+		name := cmd.AbsPath(uname)
+		pd := fpath.Dir(name)
+		d, err := cmd.Stat(pd)
+		if err != nil {
+			c.printf("%s: %s\n", pd, err)
+			continue
+		}
+		if d["type"] != "d" {
+			c.printf("%s: %s\n", pd, zx.ErrNotDir)
+			continue
+		}
+		c.printf("new %s\n", uname)
+		ed := c.ed.ix.newEdit(name)
+		ed.dir = pd
+		d["type"] = "-"
+		d["size"] = "0"
+		d["name"] = fpath.Base(name)
+		d["path"] = name
+		d["addr"] = fpath.Join(d["addr"], name)
+		d["mtime"] = "0"
+		ed.d = d
+		cmd.Dprintf("new %v\n", d)
+		ed.load(d)	// and ignore errors here, it migth be brand new
+		ed.winid, _ = ix.pg.Add(ed.win)
+	}
+	c.printf("\n")
+	c.ed.win.DelMark(c.mark)
 }
 
 func be(c *Cmd, args ...string) {
@@ -462,7 +495,11 @@ func (c *Cmd) getOut(w io.Writer, donec chan bool) {
 	for m := range ch.GroupBytes(p.Out, time.Second, 4096) {
 		switch m := m.(type) {
 		case error:
-			c.printf("%s\n", m)
+			if c.mark != "" {
+				c.printf("%s\n", m)
+			} else {
+				c.ed.ix.Warn("exec: %s", m)
+			}
 		case []byte:
 			cmd.Dprintf("ix cmd out: [%d] bytes\n", len(m))
 			w.Write(m)
@@ -480,11 +517,19 @@ func (c *Cmd) getErrs(donec chan bool) {
 	for m := range ch.GroupBytes(p.Err, time.Second, 4096) {
 		switch m := m.(type) {
 		case error:
-			c.printf("%s\n", m)
+			if c.mark != "" {
+				c.printf("%s\n", m)
+			} else {
+				c.ed.ix.Warn("exec: %s", m)
+			}
 		case []byte:
 			cmd.Dprintf("ix cmd err: [%d] bytes\n", len(m))
 			s := string(m)
-			c.printf("%s\n", s)
+			if c.mark != "" {
+				c.printf("%s\n", s)
+			} else {
+				c.ed.ix.Warn("exec: %s", s)
+			}
 		default:
 			cmd.Dprintf("ix cmd out: got type %T\n", m)
 		}
@@ -550,12 +595,12 @@ func (c *Cmd) inkio(inkc <-chan face{}) {
 		}
 		s := string(m)
 		cmd.Dprintf("got ink %s\n", s)
-		if strings.HasPrefix(s, "look:") {
+		if c.mark != "" && strings.HasPrefix(s, "look:") {
 			go c.ed.look(s[5:])
 			continue
 		}
-		if strings.HasPrefix(s, "exec:") {
-			go c.ed.exec(s[5:])
+		if c.mark != "" && strings.HasPrefix(s, "exec:") {
+			go c.ed.exec(s[5:], "")
 			continue
 		}
 		if strings.HasPrefix(s, "http") || strings.HasPrefix(s, "https") ||
@@ -573,6 +618,61 @@ func (c *Cmd) pipeFrom(eds []*Ed, args ...string) {
 	for _, ed := range eds {
 		c.pipe(ed, false, args...)
 	}
+}
+
+// collect command output and update c.ed contents with that.
+// There's no c.mark for exec().
+// the output/ink output is shown only if there's some.
+func (c *Cmd) exec(tag string, args ...string) {
+	inkc := make(chan face{})
+	setio := func(c *cmd.Ctx) {
+		c.ForkEnv()
+		c.ForkNS()
+		c.ForkDot()
+		c.SetOut("ink", inkc)
+	}
+	cmd.Dprintf("exec %s\n", args)
+	ix := c.ed.ix
+	args = append([]string{"ql", "-uc"}, args...)
+	p, err := run.CtxCmd(setio, args...)
+	if err != nil {
+		ix.Warn("exec: %s\n", err)
+		return
+	}
+	c.p = p
+	ix.addCmd(c)
+	var buf bytes.Buffer
+	donec := make(chan bool, 2)
+	go c.getOut(&buf, donec)
+	go c.getErrs(donec)
+	go c.inkio(inkc)
+	go func() {
+		<-donec
+		<-donec
+		if err := p.Wait(); err != nil {
+			cmd.Dprintf("ix cmd exit sts: %s\n", err)
+			c.printf("cmd error: %s\n", err)
+		}
+		s := buf.String()
+		cmd.Dprintf("pipe output %q\n", s)
+		if len(s) > 0 {
+			ned := ix.newCmds(c.ed.dir, tag)
+			if ned == nil {
+				ix.Warn("can't create commands window at %s", c.ed.dir)
+			} else {
+				ned.winid, _ = ix.pg.Add(ned.win)
+				ned.dot.P0 = 0
+				ned.dot.P1 = ned.win.Len()
+				ned.replDot(s)
+				ned.dot.P0 = 0
+				ned.dot.P1 = 0
+				ned.win.SetSel(0, 0)
+			}
+		}
+		if n := ix.delCmd(c); n == 0 && c.ed.gone {
+			close(c.ed.waitc)
+		}
+	}()
 }
 
 func (c *Cmd) pipe(ed *Ed, sendin bool, args ...string) {

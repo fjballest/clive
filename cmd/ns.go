@@ -68,10 +68,17 @@ func (c *cwd) dup() *cwd {
 func mkNS() *ns.NS {
 	s := GetEnv("NS")
 	if s == "" {
-		nsf := fpath.Join(u.Home, "NS")
+		nsf := fpath.Join(u.Home, "lib", "NS")
 		if fi, err := os.Stat(nsf); err == nil && !fi.IsDir() {
 			s = nsf
-		} else {
+		}
+		if s == "" {
+			nsf := fpath.Join(u.Home, "NS")
+			if fi, err := os.Stat(nsf); err == nil && !fi.IsDir() {
+				s = nsf
+			}
+		}
+		if s == "" {
 			s = "/"
 		}
 		SetEnv("NS", s)

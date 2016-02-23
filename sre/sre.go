@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"runtime"
 	"unicode/utf8"
+	"bytes"
 )
 
 /*
@@ -378,6 +379,47 @@ func Match(sre, text string) ([]string, error) {
 		rs = append(rs, string(rtext[safe(r.P0, n):safe(r.P1, n)]))
 	}
 	return rs, nil
+}
+
+// Like Match, for a compiled sre.
+func (prg *ReProg) Match(text string) []string {
+	rtext := []rune(text)
+	n := len(rtext)
+	rg := prg.Exec(runestr(rtext), 0, n)
+	var rs []string
+	for _, r := range rg {
+		rs = append(rs, string(rtext[safe(r.P0, n):safe(r.P1, n)]))
+	}
+	return rs
+}
+
+// Replace in the given string \n with the corresponding entry
+// in matches. Only \0 to \9 accepted.
+func Repl(matches []string, s string) string {
+	var out bytes.Buffer
+	esc := false
+	for _, r := range s {
+		if !esc {
+			if r == '\\' {
+				esc = true
+				continue
+			}
+			out.WriteRune(r)
+			continue
+		}
+		esc = false
+		if r == '\\' {
+			out.WriteRune(r)
+			continue
+		}
+		if r >= '0' && r <= '9' {
+			nb := int(r - '0')
+			if nb >= 0 && nb < len(matches) {
+				out.WriteString(matches[nb])
+			}
+		}
+	}
+	return out.String()
 }
 
 func (prg *ReProg) peek() rune {

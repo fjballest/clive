@@ -2,6 +2,7 @@ package main
 
 import (
 	"clive/cmd"
+	"clive/cmd/look"
 	"clive/cmd/run"
 	"clive/net/ink"
 	"clive/txt"
@@ -21,7 +22,7 @@ struct Cmd {
 	mark  string
 	hasnl bool
 	p     *run.Proc
-	all   bool
+	all   bool	// replace all text with output, for c.pipe()
 }
 
 struct Dot {
@@ -116,7 +117,10 @@ func (ix *IX) newEd(tag string) *Ed {
 	return ed
 }
 
-func (ix *IX) newCmds(dir string) *Ed {
+func (ix *IX) newCmds(dir, tag string) *Ed {
+	if tag == "" {
+		tag = fmt.Sprintf("ql!%d!%s", ix.newId(), dir)
+	}
 	d, err := cmd.Stat(dir)
 	if err != nil {
 		if ix.msgs != nil {
@@ -134,7 +138,6 @@ func (ix *IX) newCmds(dir string) *Ed {
 		}
 		return nil
 	}
-	tag := fmt.Sprintf("ql!%d!%s", ix.newId(), dir)
 	ed := ix.newEd(tag)
 	ed.temp = true
 	ed.iscmd = true
@@ -318,7 +321,6 @@ func (c *Cmd) printf(f string, args ...face{}) {
 	}
 }
 
-// if at < 0 then we want to replace the full cmd text with the command output.
 func (ed *Ed) runCmd(at int, line string) {
 	cmd.Dprintf("run cmd %s at %d\n", line, at)
 	hasnl := len(line) > 0 && line[len(line)-1] == '\n'
@@ -332,10 +334,6 @@ func (ed *Ed) runCmd(at int, line string) {
 		ed:    ed,
 		mark:  ed.newMark(at),
 		hasnl: hasnl,
-	}
-	if at < 0 {
-		c.pipeFrom([]*Ed{ed}, "ql", "-uc", line)
-		return
 	}
 	if b := builtin(args[0]); b != nil {
 		b(c, args...)
@@ -394,26 +392,49 @@ func (ed *Ed) look(what string) {
 		ed.ix.lookFile(names[0], names[1], -1)
 		return
 	}
-	toks := strings.Split(s, "|")
-	uri, err := url.Parse(toks[0])
-	if err == nil && uri.IsAbs() {
-		cmd.Dprintf("look url %q\n", s)
-		ed.ix.lookURL(s)
+	c, err := rules.CmdFor(s)
+	if err == nil {
+		cmd.Dprintf("look rule %q\n", s)
+		ed.exec(c, s)
 		return
+	}
+	if err != look.ErrNoMatch {
+		ed.ix.Warn("look: %s", err)
+		return
+	}
+	if strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://") {
+		toks := strings.Split(s, "|")
+		uri, err := url.Parse(toks[0])
+		if err == nil && uri.IsAbs() {
+			cmd.Dprintf("look url %q\n", s)
+			ed.ix.lookURL(s)
+			return
+		}
 	}
 	cmd.Dprintf("look files %q\n", s)
 	ed.lookFiles(s)
 }
 
-func (ed *Ed) exec(what string) {
-	cmd.Dprintf("exec %s\n", what)
-	ned := ed.ix.newCmds(ed.dir)
-	if ned == nil {
-		ix.Warn("can't create commands window at %s", ed.dir)
+func (ed *Ed) exec(what, tag string) {
+	what = strings.TrimSpace(what)
+	if len(what) == 0 {
 		return
 	}
-	ned.winid, _ = ix.pg.Add(ned.win)
-	go ned.runCmd(-1, what)
+	cmd.Dprintf("exec %s\n", what)
+	if tag == "" {
+		tag = what
+	} else {
+		tag = strings.TrimSpace(tag)
+	}
+	if len(tag) > 50 {
+		tag = tag[:50]+"..."
+	}
+	args := strings.Fields(what)
+	c := &Cmd{
+		name:  args[0],
+		ed:    ed,
+	}
+	c.exec(tag, args...)
 }
 
 func (ed *Ed) hasText(rs []rune, p0 int) bool {
@@ -468,7 +489,11 @@ func (ed *Ed) click248(ev *ink.Ev) {
 	if ev.Args[0] == "click2" {
 		go ed.runCmd(p1, ev.Args[1])
 	} else if ev.Args[0] == "click8" {
-		go ed.lookText(ev.Args[1], p1)
+		what := ed.ix.lookstr
+		if what == "" {
+			what = ev.Args[1]
+		}
+		go ed.lookText(what, ed.dot.P1)
 	} else if p0 == ed.laddr.P0 && p1 == ed.laddr.P1 {
 		go ed.ix.lookNext(ed.laddr)
 	} else {
@@ -546,6 +571,7 @@ func (ed *Ed) wasChanged() error {
 
 func (ed *Ed) save() error {
 	if !ed.win.IsDirty() {
+		cmd.Dprintf("save: %s not dirty\n", ed.tag)
 		ed.win.Clean()
 		return notDirty
 	}
@@ -556,6 +582,7 @@ func (ed *Ed) save() error {
 	}
 	if ed.d["type"] != "-" {
 		// not a regular file
+		cmd.Dprintf("save: %s type '%s' not saved\n", ed.tag, ed.d["type"])
 		ed.win.Clean()
 		return notDirty
 	}
@@ -655,6 +682,8 @@ func (ed *Ed) editLoop() {
 			if p1 := ed.win.Mark("p1"); p1 != nil {
 				ed.dot.P1 = p1.Off
 			}
+		case "click1":
+			ed.ix.lookstr = ev.Args[1]
 		case "click2", "click4", "click8":
 			ed.click248(ev)
 		case "end":

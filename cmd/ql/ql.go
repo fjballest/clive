@@ -9,13 +9,10 @@ import (
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/cmd/tty"
-	"clive/u"
 	"clive/zx"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
-	fpath "path"
 	"strings"
 )
 
@@ -100,14 +97,13 @@ func parse() (err error) {
 }
 
 func dotql() {
-	qlpath := fpath.Join(u.Home, ".ql")
-	dat, err := ioutil.ReadFile(qlpath)
-	if err != nil {
+	dat := cmd.DotFile("ql")
+	if dat == "" {
 		return
 	}
 	inc := make(chan face{}, 2)
-	inc <- zx.Dir{"path": qlpath, "Upath": qlpath, "type": "-"}
-	inc <- dat
+	inc <- zx.Dir{"path": ".ql", "Upath": ".ql", "type": "-"}
+	inc <- []byte(dat)
 	close(inc)
 	in := &inRdr{name: "in", inc: inc}
 	yylex = newLex(in)
