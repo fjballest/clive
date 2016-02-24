@@ -64,17 +64,17 @@ func btype(x *xEnv, args ...string) error {
 	for _, a := range args[1:] {
 		found := false
 		if getFunc(a) != nil {
-			cmd.Printf("%s: func\n", a)
+			x.Printf("%s: func\n", a)
 			found = true
 		}
 		if builtins[a] != nil {
-			cmd.Printf("%s: builtin\n", a)
+			x.Printf("%s: builtin\n", a)
 			found = true
 		}
 		if p := cmd.LookPath(a); p != "" {
-			cmd.Printf("%s: %s\n", a, p)
+			x.Printf("%s: %s\n", a, p)
 		} else if !found {
-			cmd.Printf("%s: unknown\n", a)
+			x.Printf("%s: unknown\n", a)
 		}
 	}
 	return nil
@@ -96,7 +96,7 @@ func bcd(x *xEnv, args ...string) error {
 		err = errors.New("missing argument")
 	}
 	if err != nil {
-		cmd.Eprintf("cd: %s", err)
+		x.Eprintf("cd: %s", err)
 		cmd.SetEnv("sts", err.Error())
 	} else {
 		cmd.SetEnv("sts", "")
@@ -108,12 +108,12 @@ func bpwd(x *xEnv, args ...string) error {
 	var err error
 	if len(args) > 1 {
 		err = errors.New("too many arguments")
-		cmd.Eprintf("cd: %s", err)
+		x.Eprintf("cd: %s", err)
 		cmd.SetEnv("sts", err.Error())
 	} else {
 		cmd.SetEnv("sts", "")
 	}
-	cmd.Printf("%s\n", cmd.Dot())
+	x.Printf("%s\n", cmd.Dot())
 	return nil
 }
 
@@ -150,7 +150,7 @@ func bfork(x *xEnv, args ...string) error {
 			cmd.ForkIO()
 		default:
 			err = fmt.Errorf("%s unknown (not ns, env, dot)", a)
-			cmd.Eprintf("cd: %s", err)
+			x.Eprintf("cd: %s", err)
 			cmd.SetEnv("sts", err.Error())
 			return nil
 		}

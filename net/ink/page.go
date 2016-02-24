@@ -106,6 +106,16 @@ func jsHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, p)
 }
 
+func zxHandler(w http.ResponseWriter, r *http.Request) {
+	p := fpath.Clean(r.URL.Path)
+	http.ServeFile(w, r, p)
+}
+
+// Serve files under /zx
+func ServeZX() {
+	http.HandleFunc("/zx/", AuthHandler(zxHandler))
+}
+
 //go:generate mkjs
 // Serve the javascript files at /js.
 // Only needed if NewPg() is not used.
@@ -277,6 +287,8 @@ func NewColsPg(path string, cols ...[]face{}) *Pg {
 				});
 				</script>`)
 		}
+		fmt.Fprintln(w, `<img src="https://lsub.org/clive.gif" style="position:fixed; bottom:0; left:0; z-index:-1; width:100px;">`)
+		fmt.Fprintln(w, `<img src="https://lsub.org/zxlogo.gif" style="position:fixed; bottom:0; right:0; z-index:-1; width:100px;">`)
 		fmt.Fprintln(w, `</body></html>`)
 	}
 	go func() {

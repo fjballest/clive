@@ -1,6 +1,5 @@
 9 diff -nr ch ../clive.new/ch
-
-
+ 
 To see where you are 
 	git branch
 	git status 

@@ -7,6 +7,8 @@
 	A rule is a pair of lines, the first line is a regular
 	expression as provided by sre(2) and the
 	second is the command to execute for the rule.
+	The special command "not" can be used to prevent further
+	rules to match.
 	Back-references may be used to build a command from parts
 	of the matching text.
 */
@@ -36,8 +38,8 @@ struct Rule {
 type Rules []*Rule
 
 var (
-	debug bool
-	dprintf = cmd.FlagPrintf(&debug)
+	Debug bool
+	dprintf = cmd.FlagPrintf(&Debug)
 	ErrNoMatch = errors.New("no match")
 )
 
@@ -59,6 +61,7 @@ func (r *Rule) CmdFor(s string) (string, error) {
 	if r.re == nil {
 		re, err := sre.Compile([]rune(r.Rexp), sre.Fwd)
 		if err != nil {
+			dprintf("look: %s: %v\n", r.Rexp, err)
 			return "", fmt.Errorf("look: rexp: %s", err)
 		}
 		r.re = re
@@ -78,6 +81,9 @@ func (r *Rule) CmdFor(s string) (string, error) {
 func (rs Rules) CmdFor(s string) (string, error) {
 	for _, r := range rs {
 		c, err := r.CmdFor(s)
+		if err == nil && r.Cmd == "not" {
+			break
+		}
 		if err == nil || err != ErrNoMatch {
 			return c, err
 		}

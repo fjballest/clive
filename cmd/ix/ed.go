@@ -378,6 +378,16 @@ func (ed *Ed) lookFiles(name string) {
 
 func (ed *Ed) look(what string) {
 	s := strings.TrimSpace(what)
+	c, err := rules.CmdFor(s)
+	if err == nil {
+		cmd.Dprintf("look rule %q\n", s)
+		ed.exec(c, s)
+		return
+	}
+	if err != look.ErrNoMatch {
+		ed.ix.Warn("look: %s", err)
+		return
+	}
 	names := strings.SplitN(s, ":", 2)
 	d, err := cmd.Stat(names[0])
 	if err == nil {
@@ -392,17 +402,11 @@ func (ed *Ed) look(what string) {
 		ed.ix.lookFile(names[0], names[1], -1)
 		return
 	}
-	c, err := rules.CmdFor(s)
-	if err == nil {
-		cmd.Dprintf("look rule %q\n", s)
-		ed.exec(c, s)
-		return
+	if strings.HasPrefix(s, "file:///zx/") {
+		n := len("file://")
+		s= "https://localhost:8181" + s[n:] 
 	}
-	if err != look.ErrNoMatch {
-		ed.ix.Warn("look: %s", err)
-		return
-	}
-	if strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://") {
+	if strings.HasPrefix(s, "https://") {
 		toks := strings.Split(s, "|")
 		uri, err := url.Parse(toks[0])
 		if err == nil && uri.IsAbs() {
@@ -562,9 +566,12 @@ func (ed *Ed) wasChanged() error {
 	if nd["type"] != ed.d["type"] {
 		return errors.New("file type changed")
 	}
-	if nd["mtime"] != ed.d["mtime"] {
+	nt := nd.Time("mtime")
+	ot := ed.d.Time("mtime")
+	if !nt.Equal(ot) {
 		ed.d["mtime"] = nd["mtime"]
-		return fmt.Errorf("file was changed by %s", nd["wuid"])
+		return fmt.Errorf("file read on %v changed by %s on %v",
+			ot, nd["wuid"], nt)
 	}
 	return nil
 }
@@ -621,6 +628,7 @@ func (ed *Ed) load(nd zx.Dir) error {
 		}
 		nd = d
 	}
+	ed.d = nd
 	t := ed.win.GetText()
 	defer ed.win.PutText()
 	if t.Len() > 0 {

@@ -223,7 +223,6 @@ func (ix *IX) editFile(what string, at int) *Ed {
 	}
 	ed := ix.newEdit(what)
 	ed.dir = dot
-	ed.d = d
 	ed.load(d)	// sets temp
 	ed.winid, _ = ix.pg.AddAt(ed.win, at)
 	return ed
@@ -255,16 +254,14 @@ func (ix *IX) layout() [][]*Ed {
 	return cols
 }
 
-func makeRules() {
+func makeRules() error {
 	r := cmd.DotFile("look")
 	if r == "" {
 		r = defaultRules
 	}
 	rs, err := look.ParseRules(r)
-	if err != nil {
-		ix.Warn("rules: %s", err)
-	}
 	rules = rs
+	return err
 }
 
 func main() {
@@ -277,7 +274,9 @@ func main() {
 	opts.NewFlag("l", "file: load the session from the given file", &dmpf)
 	cmd.UnixIO()
 	args := opts.Parse()
+	look.Debug = c.Debug
 	ix = newIX()
+	ink.ServeZX()
 	done := make(chan bool)
 	go func() {
 		if err := ink.Serve(); err != nil {
@@ -300,7 +299,10 @@ func main() {
 			}
 		}
 	}
-	makeRules()
+	err := makeRules()
+	if err != nil {
+		ix.Warn("rules: %s", err)
+	}
 	if dmpf != "" {
 		if err := ix.load(dmpf); err != nil {
 			ix.Warn("load: %s: %s", dmpf, err)

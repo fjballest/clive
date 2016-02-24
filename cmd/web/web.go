@@ -18,11 +18,16 @@ var (
 
 func main() {
 	cmd.UnixIO()
+	local := false
 	opts.NewFlag("p", "port: port used (8080 by default)", &port)
 	opts.NewFlag("t", "port: TLS port (8083 by default)", &tport)
+	opts.NewFlag("l", "localhost and TLS only", &local)
 	args := opts.Parse()
 	switch len(args) {
 	case 0:
+		if local {
+			dir = "/zx"
+		}
 	case 1:
 		dir = args[0]
 	default:
@@ -31,9 +36,22 @@ func main() {
 	}
 	cert := "/zx/lib/webcert.pem"
 	key := "/zx/lib/webkey.pem"
-	go http.ListenAndServeTLS(":"+tport, cert, key, http.FileServer(http.Dir(dir)))
-	err := http.ListenAndServe(":"+port, http.FileServer(http.Dir(dir)))
-	if err != nil {
-		cmd.Fatal(err)
-	}
+	addr := ":"
+	go func() {
+		err := http.ListenAndServeTLS(addr+tport, cert, key, http.FileServer(http.Dir(dir)))
+		if err != nil {
+			cmd.Fatal(err)
+		}
+	}()
+	go func() {
+		if local {
+			return
+		}
+		err := http.ListenAndServe(addr+port, http.FileServer(http.Dir(dir)))
+		if err != nil {
+			cmd.Fatal(err)
+		}
+	}()
+	c := make(chan bool)
+	<-c
 }

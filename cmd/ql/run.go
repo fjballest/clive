@@ -52,6 +52,24 @@ var bgcmds = bgCmds{
 	wall:  make(chan bool),
 }
 
+func (x *xEnv) Printf(fmts string, arg ...interface{}) (int, error) {
+	if ofd, ok := x.fds["out"]; ok {
+		s := fmt.Sprintf(fmts, arg...)
+		_, err := ch.WriteMsg(ofd.fd, 1, []byte(s))
+		return len(s), err
+	}
+	return cmd.Printf(fmts, arg...)
+}
+
+func (x *xEnv) Eprintf(fmts string, arg ...interface{}) (int, error) {
+	if ofd, ok := x.fds["err"]; ok {
+		s := fmt.Sprintf(fmts, arg...)
+		_, err := ch.WriteMsg(ofd.fd, 1, []byte(s))
+		return len(s), err
+	}
+	return cmd.Eprintf(fmts, arg...)
+}
+
 func (xfd *xFd) addref() {
 	xfd.Lock()
 	if xfd.ref > 0 {
@@ -468,12 +486,22 @@ func (nd *Nd) appNames(x *xEnv) (names []string) {
 	if len(nd.Child) != 2 {
 		panic("bad app node children")
 	}
-	left, err := nd.Child[0].expand(x)
+	var left, right []string
+	var err error
+	if nd.Child[0].typ == Nnames {
+		left, err = nd.Child[0].expand(x)
+	} else {
+		left, err = nd.Child[0].expand1(x)
+	}
 	if err != nil {
 		cmd.Warn("expand: append: %s", err)
 		return nil
 	}
-	right, err := nd.Child[1].expand(x)
+	if nd.Child[1].typ == Nnames {
+		right, err = nd.Child[1].expand(x)
+	} else {
+		right, err = nd.Child[1].expand1(x)
+	}
 	if err != nil {
 		cmd.Warn("expand: append: %s", err)
 		return nil

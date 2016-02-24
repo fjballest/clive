@@ -36,6 +36,7 @@ func init() {
 	btab["dump"] = bdump
 	btab["load"] = bload
 	btab["win"] = bwin
+	btab["rules"] = brules
 }
 
 // NB: All builtins must do a c.ed.win.DelMark(c.mark) once no
@@ -154,6 +155,16 @@ func bcmds(c *Cmd, args ...string) {
 func beq(c *Cmd, args ...string) {
 	if dot := c.ed.ix.dot; dot != nil {
 		c.printf("%s\n", dot.Addr())
+	}
+	c.ed.win.DelMark(c.mark)
+}
+
+func brules(c *Cmd, args ...string) {
+	err := makeRules()
+	if err != nil {
+		c.printf("rules: %s\n", err)
+	} else {
+		c.printf("new rules\n")
 	}
 	c.ed.win.DelMark(c.mark)
 }
@@ -279,7 +290,6 @@ func bn(c *Cmd, args ...string) {
 		d["path"] = name
 		d["addr"] = fpath.Join(d["addr"], name)
 		d["mtime"] = "0"
-		ed.d = d
 		cmd.Dprintf("new %v\n", d)
 		ed.load(d)	// and ignore errors here, it migth be brand new
 		ed.winid, _ = ix.pg.Add(ed.win)

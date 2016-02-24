@@ -422,7 +422,6 @@ func FullFiles(c <-chan face{}) <-chan face{} {
 // Return the content of a `dotfile' for the given name.
 // if $name is defined, the data is its value.
 // Otherwise, if $home/lib/name or $home/.name exists,
-// its contents are used and $name is set to the value.
 // The empty string is returned if there's no configuration for name.
 func DotFile(name string) string {
 	s := GetEnv(name)
@@ -432,13 +431,11 @@ func DotFile(name string) string {
 	dat, err := GetAll(fpath.Join(u.Home, "lib", name))
 	if err == nil {
 		s := string(dat)
-		SetEnv(name, s)
 		return s
 	}
 	dat, err = GetAll(fpath.Join(u.Home, "."+name))
 	if err == nil {
 		s := string(dat)
-		SetEnv(name, s)
 		return s
 	}
 	return ""
