@@ -591,7 +591,7 @@ func (t *Txt) apply(wev *Ev) {
 		t.post(wev)
 	case "ecopy":
 		p0, p1, err := t.p0p1(ev)
-		if err != nil || t.wrongVers(ev[0], wev) {
+		if err != nil {
 			return
 		}
 		s := ""
@@ -612,16 +612,27 @@ func (t *Txt) apply(wev *Ev) {
 			dprintf("%s: %s: snarf: %s\n", t.Id, ev[0], err)
 			return
 		}
+		rs := []rune(s)
 		if s == "" {
 			// Make the vers advance
 			t.t.Del(0, 0)
-		} else if err := t.t.Ins([]rune(s), p0); err != nil {
+		} else if err := t.t.Ins(rs, p0); err != nil {
 			dprintf("%s: %s: ins: %s\n", t.Id, ev[0], err)
 			return
 		}
 		nev := &Ev{Id: t.Id, Src: "", Vers: t.t.Vers()}
 		nev.Args = []string{"eins", s, wev.Args[1]}
 		t.out <- nev
+		t.post(nev)
+		p1 := p0 + len(rs)
+		t.t.SetMark(wev.Src+"p0", p0)
+		t.t.SetMark(wev.Src+"p1", p1)
+		t.t.SetMark("p0", p0)
+		t.t.SetMark("p1", p1)
+		t.out <- &Ev{Id: t.Id, Src: "", Args: []string{"sel", strconv.Itoa(p0), strconv.Itoa(p1)}}
+		nev = &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(), Args:[]string {
+			"tick", strconv.Itoa(p0), strconv.Itoa(p1),
+		}}
 		t.post(nev)
 
 	case "eundo", "eredo":
@@ -631,7 +642,11 @@ func (t *Txt) apply(wev *Ev) {
 			t.undoRedo(ev[0] == "eredo")
 		}
 	case "intr":
-		dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
+		if cmd.AppCtx().Debug {
+			cmd.Dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
+		} else {
+			dprintf("%s: intr dump:\n:%s", t.Id, t.t.Sprint())
+		}
 		dprintf("%s: vers %d\n", t.Id, t.t.Vers())
 		t.post(wev)
 		if t.lastev == ev[0] {

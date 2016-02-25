@@ -1057,14 +1057,17 @@ function tm1(pos) {
 			if(this.noedits) {
 				return;
 			}
-			if(this.buttons == 3){
+			if(this.buttons == 1+2){
 				this.Post(["ecut", ""+this.p0, ""+this.p1]);
 			}
-			if(this.buttons == 5){
+			if(this.buttons == 1+4){
 				if(this.p0 != this.p1){
 					this.Post(["edel", ""+this.p0, ""+this.p1]);
 				}
 				this.post(["epaste", ""+this.p0, ""+this.p1]);
+			}
+			if(this.buttons == 1+8){
+				this.post(["ecopy", ""+this.p0, ""+this.p1]);
 			}
 		}catch(ex){
 			console.log("tm1: down: " + ex);

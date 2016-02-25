@@ -13,6 +13,7 @@ import (
 	fpath "path"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Command run within an edit.
@@ -245,12 +246,14 @@ func (ed *Ed) replDot(s string) {
 	rs := []rune(s)
 	if ed.dot.P1 > ed.dot.P0 {
 		t.Del(ed.dot.P0, ed.dot.P1-ed.dot.P0)
+		ed.dot.P1 = ed.dot.P0
 	}
 	if len(rs) > 0 {
 		t.ContdEdit()
 		t.Ins(rs, ed.dot.P0)
+		ed.dot.P1 = ed.dot.P0 + len(rs)
 	}
-	ed.win.SetSel(ed.dot.P0, ed.dot.P0+len(rs))
+	ed.win.SetSel(ed.dot.P0, ed.dot.P1)
 	return
 	// This is how we should do it, but it's quite slow
 	// Safari takes a very long time to post the ins events
@@ -284,6 +287,7 @@ func (ed *Ed) newMark(pos int) string {
 }
 
 func (ed *Ed) Addr() zx.Addr {
+	ed.refreshDot()
 	ln0, ln1 := ed.win.LinesAt(ed.dot.P0, ed.dot.P1)
 	return zx.Addr{
 		Name: ed.tag,
@@ -497,6 +501,7 @@ func (ed *Ed) click248(ev *ink.Ev) {
 		if what == "" {
 			what = ev.Args[1]
 		}
+		ed.refreshDot()
 		go ed.lookText(what, ed.dot.P1)
 	} else if p0 == ed.laddr.P0 && p1 == ed.laddr.P1 {
 		go ed.ix.lookNext(ed.laddr)
@@ -530,15 +535,14 @@ func (ed *Ed) undoRedo(isredo bool) bool {
 		}
 		some = true
 		cmd.Dprintf("%s: undo/redo\n", ed)
+		ed.dot.P0 = e.Off
+		ed.dot.P1 = e.Off
+		if e.Op == txt.Eins {
+			ed.dot.P1 += len(e.Data)
+		}
 		if !e.Contd {
 			break
 		}
-	}
-	if p0 := ed.win.Mark("p0"); p0 != nil {
-		ed.dot.P0 = p0.Off
-	}
-	if p1 := ed.win.Mark("p1"); p1 != nil {
-		ed.dot.P1 = p1.Off
 	}
 	ed.win.PutText()
 	if some {
@@ -566,8 +570,11 @@ func (ed *Ed) wasChanged() error {
 	if nd["type"] != ed.d["type"] {
 		return errors.New("file type changed")
 	}
-	nt := nd.Time("mtime")
-	ot := ed.d.Time("mtime")
+	// Some file systems can't record with more
+	// granularity than seconds.
+	// That's the best we can check.
+	nt := nd.Time("mtime").Truncate(time.Second)
+	ot := ed.d.Time("mtime").Truncate(time.Second)
 	if !nt.Equal(ot) {
 		ed.d["mtime"] = nd["mtime"]
 		return fmt.Errorf("file read on %v changed by %s on %v",
@@ -669,6 +676,18 @@ func (ed *Ed) load(nd zx.Dir) error {
 	return err
 }
 
+func (ed *Ed) refreshDot() {
+	if ed.win == nil {
+		return
+	}
+	if p0 := ed.win.Mark("p0"); p0 != nil {
+		ed.dot.P0 = p0.Off
+	}
+	if p1 := ed.win.Mark("p1"); p1 != nil {
+		ed.dot.P1 = p1.Off
+	}
+}
+
 func (ed *Ed) editLoop() {
 	if ed.iscmd {
 		cmd.ForkDot()
@@ -684,12 +703,7 @@ func (ed *Ed) editLoop() {
 		case "focus":
 			ed.ix.dot = ed
 		case "tick":
-			if p0 := ed.win.Mark("p0"); p0 != nil {
-				ed.dot.P0 = p0.Off
-			}
-			if p1 := ed.win.Mark("p1"); p1 != nil {
-				ed.dot.P1 = p1.Off
-			}
+			ed.refreshDot()
 		case "click1":
 			ed.ix.lookstr = ev.Args[1]
 		case "click2", "click4", "click8":

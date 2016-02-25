@@ -393,14 +393,21 @@ func (ix *IX) edits(args ...string) []*Ed {
 
 func (c *Cmd) pipeEdBytesTo(t *txt.Text, p0, p1 int, asbytes bool) bool {
 	var ok bool
+	if asbytes {
+		cmd.Dprintf("cmd ed bytes: p0 %d p1 %d\n", p0, p1)
+	}
 	gc := t.Get(p0, p1-p0)
 	buf := &bytes.Buffer{}
 	p := c.p
 	for rs := range gc {
+		if asbytes {
+			cmd.Dprintf("cmd ed bytes: %q\n", string(rs))
+		}
 		for _, r := range rs {
 			buf.WriteRune(r)
 			if r == '\n' {
 				if asbytes {
+					cmd.Dprintf("cmd in: %q\n", buf)
 					ok = p.In <- buf.Bytes()
 				} else {
 					ok = p.In <- buf.String()
@@ -415,6 +422,7 @@ func (c *Cmd) pipeEdBytesTo(t *txt.Text, p0, p1 int, asbytes bool) bool {
 		}
 		if buf.Len() > 0 {
 			if asbytes {
+				cmd.Dprintf("cmd in: %q\n", buf)
 				ok = p.In <- buf.Bytes()
 			} else {
 				ok = p.In <- buf.String()
@@ -430,6 +438,7 @@ func (c *Cmd) pipeEdBytesTo(t *txt.Text, p0, p1 int, asbytes bool) bool {
 }
 
 func (c *Cmd) pipeEdTo(ed *Ed) bool {
+	ed.refreshDot()
 	p := c.p
 	d := ed.d.Dup()
 	// For the commant, the input is text
@@ -503,6 +512,7 @@ func (c *Cmd) getOut(w io.Writer, donec chan bool) {
 	defer cmd.Dprintf("getOut terminated\n")
 	p := c.p
 	for m := range ch.GroupBytes(p.Out, time.Second, 4096) {
+		m := m
 		switch m := m.(type) {
 		case error:
 			if c.mark != "" {
@@ -511,7 +521,7 @@ func (c *Cmd) getOut(w io.Writer, donec chan bool) {
 				c.ed.ix.Warn("exec: %s", m)
 			}
 		case []byte:
-			cmd.Dprintf("ix cmd out: [%d] bytes\n", len(m))
+			cmd.Dprintf("ix cmd out: [%d] bytes %q\n", len(m), string(m))
 			w.Write(m)
 		default:
 			cmd.Dprintf("ix cmd out: got type %T\n", m)
@@ -728,6 +738,8 @@ func (c *Cmd) pipe(ed *Ed, sendin bool, args ...string) {
 		if c.all {
 			ed.dot.P0 = 0
 			ed.dot.P1 = ed.win.Len()
+		} else {
+			ed.refreshDot()
 		}
 		ed.replDot(s)
 		c.ed.win.DelMark(c.mark)
