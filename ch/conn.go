@@ -3,6 +3,7 @@ package ch
 import (
 	"io"
 	"sync"
+	"fmt"
 )
 
 // A Conn is a channel-pair used as a duplex connection.
@@ -81,8 +82,8 @@ func NewConn(rw io.ReadWriter, nbuf int, hup chan bool) Conn {
 		_, _, err := WriteMsgs(rw, 1, out)
 		if closewriter != nil {
 			cerr := closewriter.CloseWrite()
-			if err == nil {
-				err = cerr
+			if err == nil && cerr != nil {
+				err = fmt.Errorf("%s: %s", ErrIO, cerr)
 			}
 		} else if closer != nil {
 			closer.Close()

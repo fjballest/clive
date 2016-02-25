@@ -370,7 +370,7 @@ func TestMuxOut(t *testing.T) {
 
 	reqs := [...]string{"hi there", "again", "and again"}
 	failed := false
-	nCalls := 15
+	nCalls := 3
 	msrv := func(m *Mux) {
 		nc := 0
 		for c := range m.In {

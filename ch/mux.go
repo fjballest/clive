@@ -175,6 +175,9 @@ func (m *Mux) out(mc *conn, isreply bool) {
 		_, err := WriteMsg(m.rw, tag, d)
 		if err == nil && m.fl != nil {
 			err = m.fl.Flush()
+			if err != nil {
+				err = fmt.Errorf("%s: %s", ErrIO, err)
+			}
 		}
 		m.wlk.Unlock()
 		nmsgs--

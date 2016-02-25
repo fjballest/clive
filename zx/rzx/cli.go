@@ -19,10 +19,12 @@ struct Fs {
 	*zx.Flags
 	Verb  bool
 	addr  string
+	tc    *tls.Config
 	ai    *auth.Info
 	trees map[string]bool
 	fsys  string
 	m     *ch.Mux
+	sync.Mutex	// for redials
 }
 
 type ddir zx.Dir
@@ -88,50 +90,64 @@ func Dial(addr string, tlscfg ...*tls.Config) (*Fs, error) {
 		return fs, nil
 	}
 	addr, fsys := splitaddr(addr)
-	m, err := net.MuxDial(addr, tc)
-	if err != nil {
-		return nil, err
-	}
 	fs := &Fs{
 		Flag:  &dbg.Flag{},
 		Flags: &zx.Flags{},
 		addr:  addr,
-		m:     m,
+		tc: tc,
 		trees: map[string]bool{},
 		fsys:  fsys,
 	}
 	fs.Tag = "rfs"
 	fs.Flags.Add("debug", &fs.Debug)
 	fs.Flags.Add("verbdebug", &fs.Verb)
-	call := fs.m.Rpc()
+	if err := fs.dial(); err != nil {
+		return nil, err
+	}
+	return fs, nil
+}
+
+func (fs *Fs) dial() error {
+	fs.Lock()
+	defer fs.Unlock()
+	m, err := net.MuxDial(fs.addr, fs.tc)
+	if err != nil {
+		return err
+	}
+	call := m.Rpc()
 	ai, err := auth.AtClient(call, "", "zx")
 	if err != nil {
 		if !strings.Contains(err.Error(), "auth disabled") {
 			m.Close()
-			return nil, fmt.Errorf("%s: %s", addr, err)
+			return fmt.Errorf("%s: %s", fs.addr, err)
 		}
-		dbg.Warn("%s: %s", addr, err)
+		dbg.Warn("%s: %s", fs.addr, err)
 	}
 	fs.ai = ai
+	fs.m = m
 	err = fs.getTrees()
+	fs.ai = nil
+	fs.m = nil
 	if err != nil {
 		m.Close()
-		return nil, err
+		return err
 	}
-	if !fs.trees[fsys] {
+	if !fs.trees[fs.fsys] {
 		m.Close()
-		return nil, fmt.Errorf("no fsys '%s' found in server", fsys)
+		return fmt.Errorf("no fsys '%s' found in server", fs.fsys)
 	}
+	fs.ai = ai
+	fs.m = m
 	dialslk.Lock()
-	dials[addr] = fs
+	dials[fs.addr] = fs
 	dialslk.Unlock()
 	go func() {
 		<-m.Hup
 		dialslk.Lock()
-		delete(dials, addr)
+		delete(dials, fs.addr)
 		dialslk.Unlock()
 	}()
-	return fs, nil
+	return nil
 }
 
 func (fs *Fs) Close() error {

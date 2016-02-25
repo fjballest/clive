@@ -79,6 +79,7 @@ var (
 	ErrTooSmall  = errors.New("truncated message")
 	ErrAlready   = errors.New("type already defined")
 	ErrDiscarded = errors.New("msg write discarded")
+	ErrIO        = errors.New("i/o error")
 
 	// Msg size for []byte readers
 	MsgSz = 16 * 1024
@@ -96,7 +97,7 @@ func DefType(x Unpacker) {
 
 func WriteStringTo(w io.Writer, s string) (n int64, err error) {
 	if err := binary.Write(w, binary.LittleEndian, uint32(len(s))); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("%s: %s", ErrIO, err)
 	}
 	n = 4
 	nw, err := io.WriteString(w, s)
@@ -131,6 +132,9 @@ func writeBytes(w io.Writer, tag uint32, typ uint16, b []byte) (int64, error) {
 	buf.Write(hdr[:])
 	buf.Write(b)
 	tot, err := w.Write(buf.Bytes())
+	if err != nil {
+		err = fmt.Errorf("%s: %s", ErrIO, err)
+	}
 	return int64(tot), err
 }
 
@@ -153,7 +157,7 @@ func WriteMsg(w io.Writer, tag uint32, m face{}) (int64, error) {
 		var buf bytes.Buffer
 		n, err := m.WriteTo(&buf)
 		if err != nil {
-			return n, err
+			return n, fmt.Errorf("%s: %s", ErrIO, err)
 		}
 		typ := Tign
 		if ti, ok := m.(Typer); ok {
@@ -194,6 +198,9 @@ func ReadMsg(r io.Reader) (n int, tag uint32, m face{}, err error) {
 
 	nr, err := io.ReadFull(r, hdr[:])
 	if err != nil {
+		if err != io.EOF {
+			err = fmt.Errorf("%s: %s", ErrIO, err)
+		}
 		return nr, 0, nil, err
 	}
 	sz, tag, typ := decHdr(hdr[:])
@@ -205,7 +212,7 @@ func ReadMsg(r io.Reader) (n int, tag uint32, m face{}, err error) {
 		b, err = readBytes(r, sz)
 		sz += hdrSz
 		if err != nil {
-			return sz, tag, nil, err
+			return sz, tag, nil, fmt.Errorf("%s: %s", ErrIO, err)
 		}
 	} else {
 		sz += hdrSz
@@ -287,7 +294,7 @@ func ReadBytes(r io.Reader, c chan<- face{}) (nbytes int64, nmsgs int, err error
 		n, rerr := r.Read(buf[0:])
 		if rerr != nil {
 			if rerr != io.EOF && err == nil {
-				err = rerr
+				err = fmt.Errorf("%s: %s", ErrIO, rerr)
 			}
 			return
 		}
@@ -329,7 +336,7 @@ func WriteBytes(w io.Writer, c <-chan face{}) (nbytes int64, nmsgs int, err erro
 		nmsgs++
 		if werr != nil {
 			if err == nil {
-				err = werr
+				err = fmt.Errorf("%s: %s", ErrIO, werr)
 			}
 			return
 		}
