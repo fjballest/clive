@@ -258,7 +258,8 @@ func NewColsPg(path string, cols ...[]face{}) *Pg {
 		for i := 0; i < len(pg.els); i++ {
 			pre := fmt.Sprintf(`<div id="column%d" class="column">`, i)
 			if i == 0 {
-				pre += `<div><span id="morecols"><tt>more</tt></span> `
+				pre += `<div><b>`
+				pre += `<span id="morecols" style="margin-left:130px;"><tt>more</tt></span> `
 				pre += `<span id="lesscols"><tt>less</tt></span> `
 				for i, c := range pg.Cmds {
 					c = html.EscapeString(c)
@@ -266,7 +267,7 @@ func NewColsPg(path string, cols ...[]face{}) *Pg {
 					cmds[id] = c
 					pre += `<span id="` + id + `"><tt>` + c + `</tt></span> `
 				}
-				pre += `<p></div>`
+				pre += `<p></b></div>`
 			}
 			// $$ is replaced by writeEls to pgid="xxx"
 			pg.els[i] = writeEls(w, pg.els[i],
@@ -287,7 +288,7 @@ func NewColsPg(path string, cols ...[]face{}) *Pg {
 				});
 				</script>`)
 		}
-		fmt.Fprintln(w, `<img src="/js/clive.gif" style="position:fixed; bottom:0; left:0; z-index:-1; width:100px;">`)
+		fmt.Fprintln(w, `<img src="/js/clive.gif" style="position:fixed; top:0; left:0; z-index:-1; width:100px;">`)
 		fmt.Fprintln(w, `<img src="/js/zxlogo.gif" style="position:fixed; bottom:0; right:0; z-index:-1; width:100px;">`)
 		fmt.Fprintln(w, `</body></html>`)
 	}
