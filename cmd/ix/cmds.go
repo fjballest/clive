@@ -763,6 +763,7 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 	case "=":
 		var buf bytes.Buffer
 		for _, ed := range eds {
+			ed.refreshDot()
 			fmt.Fprintf(&buf, "%s\n", ed.Addr())
 		}
 		if buf.Len() > 0 {

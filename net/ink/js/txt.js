@@ -264,6 +264,10 @@ function ttsetsel(p0, p1, refreshall) {
 		p1 = this.nrunes;
 	if(this.p0 != this.p1)
 		refreshall = true;
+	if(!this.lines[this.ln0]) {
+		return;
+	}
+	var froff = this.lines[this.ln0].off;
 	if(refreshall && (this.p1 <froff || this.p0 >froff+this.frsize))
 		refreshall = false;
 	var mp0 = p0;
@@ -277,10 +281,6 @@ function ttsetsel(p0, p1, refreshall) {
 	this.p0 = p0;
 	this.p1 = p1;
 	this.untick();
-	if(!this.lines[this.ln0]) {
-		return;
-	}
-	var froff = this.lines[this.ln0].off;
 	if(mp1 <froff || mp0 >froff+this.frsize)
 		return;
 	var insel = false;
@@ -494,11 +494,11 @@ function tredrawtext() {
 	this.frlines = 0;
 	for(var i = 0; i <= nlines; i++){
 		if(this.ln0+i < this.lines.length){
-			this.frlines++;
 			var xln = this.lines[this.ln0+i];
-			off += lnlen(xln);
 			if(!this.drawline(xln, i))
 				break;
+			this.frlines++;
+			off += lnlen(xln);
 		}else
 			if(!this.drawline(null, i))
 				break;
@@ -814,7 +814,7 @@ function ttgetword(pos, long) {
 			return [txt, pos, epos];
 		}
 		if(!islongwordchar(c))
-			return "";
+			return [xln.txt.slice(p0, p1), pos, epos];
 		while(p0 > 0 && ischar(xln.txt.charAt(p0-1))){
 			pos--;
 			p0--;
@@ -1311,7 +1311,11 @@ function tkeydown(e, deferred) {
 		case 38:	/* up */
 			if(deferred)
 				break;
-			if(this.scrollup(3)){
+			var n = Math.floor(this.frlines/4);
+			if(n < 1) {
+				n = 1;
+			}
+			if(this.scrollup(n)){
 				this.untick();
 				this.redrawtext();
 			}
@@ -1328,7 +1332,11 @@ function tkeydown(e, deferred) {
 			if(deferred)
 				break;
 			this.untick();
-			if(this.scrolldown(3)){
+			var n = Math.floor(this.frlines/4);
+			if(n < 1) {
+				n = 1;
+			}
+			if(this.scrolldown(n)){
 				this.untick();
 				this.redrawtext();
 			}
@@ -1949,6 +1957,8 @@ function tselectstart() {
 	}
 	this.selecting = true;
 	selecting = true;
+	this.oldp0 = this.p0;
+	this.oldp1 = this.p1;
 }
 
 function tselectend() {
@@ -1959,7 +1969,11 @@ function tselectend() {
 		return;
 	}
 	console.log("select end");
-	this.post(["tick", ""+this.p0, ""+this.p1]);
+	if(this.oldp0 != this.p0 || this.oldp1 != this.p1) {
+		this.post(["tick", ""+this.p0, ""+this.p1]);
+		this.oldp0 = this.p0;
+		this.oldp1 = this.p1;
+	}
 	this.selecting = false;
 	selecting = false;
 }

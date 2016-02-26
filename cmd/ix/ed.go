@@ -287,7 +287,6 @@ func (ed *Ed) newMark(pos int) string {
 }
 
 func (ed *Ed) Addr() zx.Addr {
-	ed.refreshDot()
 	ln0, ln1 := ed.win.LinesAt(ed.dot.P0, ed.dot.P1)
 	return zx.Addr{
 		Name: ed.tag,
@@ -468,6 +467,7 @@ func (ed *Ed) findText(rs []rune, p0 int) int {
 func (ed *Ed) lookText(what string, p0 int) {
 	rs := []rune(what)
 	pos := ed.findText(rs, p0)
+	cmd.Dprintf("look text %s: %q %d -> %d\n", ed, what, p0, pos)
 	if pos < 0 && p0 > 0 {
 		pos = ed.findText(rs, 0)
 	}
