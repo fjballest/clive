@@ -24,6 +24,7 @@ struct Fs {
 	trees map[string]bool
 	fsys  string
 	m     *ch.Mux
+	closed bool	// mux is gone, can redial
 	sync.Mutex	// for redials
 }
 
@@ -80,6 +81,9 @@ func splitaddr(addr string) (string, string) {
 // The previously dialed addresses are cached and the
 // old connections are returned.
 // Different fsys names are considered different dials.
+// Network errors are reported including "i/o error", and
+// the caller might call Redial() to re-create the FS or
+// Close() to cease its operation. 
 func Dial(addr string, tlscfg ...*tls.Config) (*Fs, error) {
 	var tc *tls.Config
 	if len(tlscfg) > 0 {
@@ -97,19 +101,33 @@ func Dial(addr string, tlscfg ...*tls.Config) (*Fs, error) {
 		tc: tc,
 		trees: map[string]bool{},
 		fsys:  fsys,
+		closed: true,	// not yet dialed
 	}
 	fs.Tag = "rfs"
 	fs.Flags.Add("debug", &fs.Debug)
 	fs.Flags.Add("verbdebug", &fs.Verb)
-	if err := fs.dial(); err != nil {
+	if err := fs.Redial(); err != nil {
 		return nil, err
 	}
 	return fs, nil
 }
 
-func (fs *Fs) dial() error {
+// Dial again a previously dialed remote ZX FS.
+// If the file system is still dialed, the old connection is closed
+// and a new one created.
+// Upon network errors, the error strings contain "i/o errror" and
+// the caller might just redial the file system to try to continue
+// its operation, or Close() might be called instead.
+func (fs *Fs) Redial() error {
 	fs.Lock()
 	defer fs.Unlock()
+	if !fs.closed {
+		if fs.m != nil {
+			fs.m.Close()
+		}
+		fs.ai = nil
+		fs.closed = true
+	}
 	m, err := net.MuxDial(fs.addr, fs.tc)
 	if err != nil {
 		return err
@@ -138,6 +156,7 @@ func (fs *Fs) dial() error {
 	}
 	fs.ai = ai
 	fs.m = m
+	fs.closed = false
 	dialslk.Lock()
 	dials[fs.addr] = fs
 	dialslk.Unlock()
@@ -146,6 +165,9 @@ func (fs *Fs) dial() error {
 		dialslk.Lock()
 		delete(dials, fs.addr)
 		dialslk.Unlock()
+		fs.Lock()
+		fs.closed = true
+		fs.Unlock()
 	}()
 	return nil
 }
