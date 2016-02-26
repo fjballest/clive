@@ -43,6 +43,8 @@ struct Fs {
 	rfs   zx.Getter
 	c     fsCache
 	syncc chan bool
+	redialc chan bool
+	redialok bool	// do we redial?
 }
 
 var ctldir = zx.Dir{
@@ -87,6 +89,7 @@ func New(rfs zx.Getter) (*Fs, error) {
 		return nil, err
 	}
 	tag := fmt.Sprintf("zcx!%s", rfs)
+	_, ok := rfs.(redialer)
 	fs := &Fs{
 		Flag:  &dbg.Flag{Tag: tag},
 		Flags: &zx.Flags{},
@@ -94,11 +97,14 @@ func New(rfs zx.Getter) (*Fs, error) {
 		rfs:   rfs,
 		perms: true,
 		syncc: make(chan bool),
+		redialc: make(chan bool),
+		redialok: ok,
 	}
 	fs.Flags.Add("debug", &fs.Debug)
 	fs.Flags.Add("writesync", &fs.sync) // sync after changes
 	// TODO: The user u.Uid should be able to change fs.noperms
 	fs.Flags.AddRO("perms", &fs.perms)
+	fs.Flags.AddRO("redialok", &fs.redialok)
 	fs.Flags.Add("clear", func(...string) error {
 		fs.Stats.Clear()
 		return nil
@@ -151,10 +157,48 @@ func (fs *Fs) needSync() {
 	}
 }
 
+func (fs *Fs) needRedial() {
+	if !fs.redialok {
+		return
+	}
+	select {
+	case fs.redialc <- true:
+	default:
+	}
+}
+
+interface redialer {
+	Redial() error
+}
+
+func (fs *Fs) redial() error {
+	// could place a timeout here
+	rfs, ok := fs.rfs.(redialer)
+	if !ok {
+		dbg.Warn("can't redial: not a redialer")
+		return errors.New("not a redialer")
+	}
+	err := rfs.Redial()
+	if err == nil {
+		dbg.Warn("%s: reconnected\n", fs.Tag)
+	} else {
+		fs.Dprintf("redial: %s\n", err)
+	}
+	return err
+}
+
 func (fs *Fs) syncer() {
 	ival := syncIval
 	last := time.Now()
+	redialing := false
 	doselect {
+	case <-fs.redialc:
+		redialing = true
+		if err := fs.redial(); err == nil {
+			redialing = false
+			continue
+		}
+		ival = 5*time.Second
 	case x := <-fs.syncc:
 		if !x {
 			break
@@ -163,11 +207,33 @@ func (fs *Fs) syncer() {
 			ival = time.Second
 			continue
 		}
-		fs.Sync()
+		if redialing {
+			if err := fs.redial(); err != nil {
+				ival = 5*time.Second
+				continue
+			}
+			redialing = false
+		}
+		if err := fs.Sync(); zx.IsIOError(err) && fs.redialok {
+			redialing = true
+			ival = 5*time.Second
+			continue
+		}
 		ival = syncIval
 		last = time.Now()
 	case <-time.After(ival):
-		fs.Sync()
+		if redialing {
+			if err := fs.redial(); err != nil {
+				ival = 5*time.Second
+				continue
+			}
+			redialing = false
+		}
+		if err := fs.Sync(); zx.IsIOError(err) && fs.redialok {
+			redialing = true
+			ival = 5*time.Second
+			continue
+		}
 		ival = syncIval
 		last = time.Now()
 	}
@@ -176,6 +242,7 @@ func (fs *Fs) syncer() {
 // Syncs and closes both the fs and the underlying fs if it has a close op.
 func (fs *Fs) Close() error {
 	close(fs.syncc)
+	close(fs.redialc)
 	err := fs.Sync()
 	if xfs, ok := fs.rfs.(io.Closer); ok {
 		if e := xfs.Close(); e != nil && err == nil {
@@ -189,6 +256,10 @@ func (fs *Fs) Close() error {
 func (fs *Fs) getMeta(f fsFile) error {
 	d, err := zx.Stat(fs.rfs, f.path())
 	if err != nil {
+		if zx.IsIOError(err) && fs.redialok {
+			fs.needRedial()
+			return nil	// have old meta; use that
+		}
 		if zx.IsNotExist(err) {
 			f.gone()
 		}
@@ -201,6 +272,11 @@ func (fs *Fs) getMeta(f fsFile) error {
 func (fs *Fs) getDirData(f fsFile) error {
 	ds, err := zx.GetDir(fs.rfs, f.path())
 	if err != nil {
+		if zx.IsIOError(err) && fs.redialok && f.oldDataOk() {
+			// use the old data
+			fs.needRedial()
+			return nil
+		}
 		if zx.IsNotExist(err) {
 			f.gone()
 		}
@@ -215,7 +291,15 @@ func (fs *Fs) getDirData(f fsFile) error {
 // f must be locked
 func (fs *Fs) getData(f fsFile) error {
 	c := fs.rfs.Get(f.path(), 0, -1)
-	return f.gotData(c)
+	err := f.gotData(c)
+	if err != nil {
+		if zx.IsIOError(err) && fs.redialok && f.oldDataOk() {
+			// use the old data
+			fs.needRedial()
+			return nil
+		}
+	}
+	return err
 }
 
 // If the walk works, f is returned locked

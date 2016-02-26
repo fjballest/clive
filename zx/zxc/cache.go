@@ -54,8 +54,9 @@ interface fsFile {
 	String() string // file's path
 	dir() zx.Dir
 	isDel() bool
-	metaOk() bool // metadata is valid?
-	dataOk() bool // data is valid?
+	metaOk() bool	 // metadata is valid?
+	dataOk() bool    // data is valid?
+	oldDataOk() bool // can we use old data?
 	inval()
 	gotMeta(d zx.Dir) error
 	gotData(c <-chan []byte) error
@@ -221,6 +222,21 @@ func (mf *mFile) dataOk() bool {
 	}
 }
 
+func (mf *mFile) oldDataOk() bool {
+	if mf.d["name"] == ".zx" {
+		return true
+	}
+	switch mf.sts {
+	case cMeta, cClean, cData, cDel, cGone:
+		return true
+	case cNew, cNewMeta:
+		mf.Dprintf("old data not ok\n")
+		return false
+	default:
+		panic("bad state")
+	}
+}
+
 func (mf *mFile) inval() {
 	switch mf.sts {
 	case cClean:
@@ -298,6 +314,33 @@ func (mf *mFile) gotData(c <-chan []byte) error {
 	if mf.d["name"] == ".zx" {
 		return nil
 	}
+	ndata := &mblk.Buffer{}
+	if mf.wd == nil {
+		mf.wd = zx.Dir{}
+	}
+	var tot int64
+	var err error
+	var n int
+	for b := range c {
+		n, err = ndata.Write(b)
+		tot += int64(n)
+		if err != nil {
+			close(c, err)
+			break
+		}
+	}
+	cerr := cerror(c)
+	if err == nil || zx.IsIOError(cerr) {
+		err = cerr
+	}
+	if err != nil {
+		mf.Dprintf("got data: failed: %s\n", err)
+		return err
+	}
+	mf.d.SetSize(tot)
+	delete(mf.wd, "size")
+	mf.data = ndata
+	mf.Dprintf("got data: %d %d %d bytes\n", tot, mf.d.Size(), mf.data.Len())
 	switch mf.sts {
 	case cNewMeta:
 		mf.sts = cMeta
@@ -306,28 +349,7 @@ func (mf *mFile) gotData(c <-chan []byte) error {
 		mf.sts = cClean
 		mf.Dprintf("got data: cClean\n")
 	}
-	mf.data.Truncate(0)
-	mf.d.SetSize(0)
-	if mf.wd == nil {
-		mf.wd = zx.Dir{}
-	}
-	mf.wd.SetSize(0)
-	var tot int64
-	for b := range c {
-		n, err := mf.data.Write(b)
-		tot += int64(n)
-		if err != nil {
-			close(c, err)
-			mf.d.SetSize(tot)
-			return err
-		}
-	}
-	mf.d.SetSize(tot)
-	if mf.wd != nil {
-		delete(mf.wd, "size")
-	}
-	mf.Dprintf("got data: %d %d %d bytes\n", tot, mf.d.Size(), mf.data.Len())
-	return cerror(c)
+	return nil
 }
 
 func (mf *mFile) wstat(nd zx.Dir) error {
@@ -440,8 +462,7 @@ func (mf *mFile) remove(all bool) error {
 	if mf.d["type"] == "d" && !all {
 		for _, cf := range mf.child {
 			if cf.sts != cDel && cf.sts != cGone {
-				return fmt.Errorf("remove %s: %s",
-					mf, zx.ErrNotEmpty)
+				return fmt.Errorf("remove %s: %s", mf, zx.ErrNotEmpty)
 			}
 		}
 	}
@@ -460,7 +481,8 @@ func (mf *mFile) newFile(d zx.Dir, rfs zx.Fs) (fsFile, error) {
 			return nil, errors.New("rfs does not support put/wstat/remove")
 		}
 		oc.Lock()
-		must := oc.sts == cDel && (oc.d["type"] == "'d" || oc.d["type"] != d["type"])
+		must := oc.sts == cDel &&
+			(oc.d["type"] == "'d" || oc.d["type"] != d["type"])
 		oc.Unlock()
 		if must {
 			oc.sync(fs)
@@ -585,39 +607,42 @@ func (mf *mFile) sync(fs zx.Fs) error {
 	}
 	switch mf.sts {
 	case cDel: // try to del children first
-		mf.sts = cGone // can't do anything else
 		for _, cf := range mf.child {
-			if e := cf.sync(rfs); e != nil && err == nil {
-				err = e
+			if e := cf.sync(rfs); e != nil && !zx.IsNotExist(e) {
+				if err == nil {
+					err = e
+				}
 			}
 		}
 		mf.vprintf("sync: remove %s", mf)
-		mf.Dprintf("sync: rm, cGone\n")
 		if e := <-rfs.Remove(mf.d["path"]); e != nil {
 			if !zx.IsNotExist(e) {
 				err = e
 				dbg.Warn("sync: rm: %s", err)
 			}
 		}
+		if err == nil {
+			mf.sts = cGone
+			mf.Dprintf("sync: rm, cGone\n")
+		}
 		mf.Unlock()
 		return err
 	case cGone, cNew, cClean:
 	case cNewMeta, cMeta:
-		mf.sts = cNew
 		mf.vprintf("sync: wstat %s", mf)
-		mf.Dprintf("sync: wstat, cNew\n")
 		wc := rfs.Wstat(mf.d["path"], mf.wd)
-		wd := <-wc
+		rd := <-wc
 		if err = cerror(wc); err != nil {
 			dbg.Warn("sync: wstat: %s", err)
+		} else {
+			// we could update our stat with the returned one
+			_ = rd
+			mf.wd = nil
+			mf.sts = cNew
+			mf.Dprintf("sync: wstat, cNew\n")
 		}
-		// else, we could update our stat with the returned one
-		_ = wd
-		mf.wd = nil
 	case cData:
-		mf.sts = cClean
 		mf.vprintf("sync: put %s", mf)
-		mf.Dprintf("sync: put, cClean\n")
 		c := make(chan []byte)
 		if mf.d["type"] == "d" {
 			close(c)
@@ -632,33 +657,54 @@ func (mf *mFile) sync(fs zx.Fs) error {
 				dbg.Warn("sync: send: %s", err)
 			}
 		}
-		pd := <-rc
+		rd := <-rc
 		if err = cerror(rc); err != nil {
 			dbg.Warn("sync: put: %s", err)
+		} else {
+			// we could update our stat with the returned one
+			_ = rd
+			mf.wd = nil
+			mf.sts = cClean
+			mf.Dprintf("sync: put, cClean\n")
 		}
-		// else, we could update our stat with the returned one
-		_ = pd
-		mf.wd = nil
 	}
 	// We copy the children pointers to avoid locking the
 	// entire tree while we sync
 	cs, ds := mf.children()
 	mf.Unlock()
-	var wg sync.WaitGroup
+	if zx.IsIOError(err) {
+		// diconnected, no point in continue syncing
+		return err
+	}
+	// Concurrent sync for files
+	errc := make(chan error, len(cs))
 	for _, c := range cs {
 		c := c
 		// We sync all files concurrently, perhaps
 		// this is too much; we'll see.
-		wg.Add(1)
 		go func() {
-			c.sync(rfs)
-			wg.Done()
+			errc <- c.sync(rfs)
 		}()
 	}
-	wg.Wait()
+	for i := 0; i < len(cs); i++ {
+		if e := <-errc; e != nil {
+			if zx.IsIOError(e) {
+				return e
+			}
+			if err == nil {
+				err = e
+			}
+		}
+	}
+	// Sequential sync for dirs
 	for _, c := range ds {
-		if e := c.sync(rfs); e != nil && err == nil {
-			err = e
+		if e := c.sync(rfs); e != nil {
+			if zx.IsIOError(e) {
+				return e
+			}
+			if err == nil {
+				err = e
+			}
 		}
 	}
 	return err

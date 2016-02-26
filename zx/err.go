@@ -3,6 +3,7 @@ package zx
 import (
 	"errors"
 	"strings"
+	"clive/ch"
 )
 
 // Popular errors
@@ -18,7 +19,18 @@ var (
 	ErrBadCtl    = errors.New("bad ctl request")
 	ErrNotSuffix = errors.New("not an inner path")
 	ErrBadType   = errors.New("bad file type")
+	ErrIO        = ch.ErrIO
 )
+
+func IsIOError(e error) bool {
+	if e == nil {
+		return false
+	}
+	if e == ErrIO {
+		return true
+	}
+	return strings.Contains(e.Error(), "i/o error")
+}
 
 func IsNotExist(e error) bool {
 	if e == nil {
