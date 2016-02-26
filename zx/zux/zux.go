@@ -330,7 +330,7 @@ Dloop:
 			continue
 		}
 		fi := ds[i]
-		if fi.Name() == AttrFile {
+		if fi.Name() == AttrFile || fi.Name() == ".#zx" { // .#zx was the old AttrFile
 			if i == len(ds)-1 {
 				break
 			}
@@ -339,6 +339,9 @@ Dloop:
 			continue
 		}
 		d := newDir(fi)
+		if d["name"] == AttrFile {
+			dbg.Warn("zux get: dir has name .zx")
+		}
 		cp := fpath.Join(p, fi.Name())
 		cpath := fpath.Join(path, fi.Name())
 		d["path"] = cp
@@ -466,6 +469,7 @@ func (fs *Fs) remove(p string, all bool) error {
 	err = os.Remove(path)
 	if err != nil && zx.IsNotEmpty(err) {
 		os.Remove(fpath.Join(path, AttrFile))
+		os.Remove(fpath.Join(path, ".#zx"))	// old attr file
 		err = os.Remove(path)
 	}
 	return err

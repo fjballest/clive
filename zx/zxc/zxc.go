@@ -520,6 +520,14 @@ Dloop:
 			continue
 		}
 		d := ds[i]
+		if d["name"] == ".zx" || d["name"] == ".#zx" { // .#zx was the old AttrFile
+			if i == len(ds)-1 {
+				break
+			}
+			copy(ds[i:], ds[i+1:])
+			ds = ds[:len(ds)-1]
+			continue
+		}
 		if ok := c <- d.Bytes(); !ok {
 			return cerror(c)
 		}

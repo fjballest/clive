@@ -287,8 +287,8 @@ func NewColsPg(path string, cols ...[]face{}) *Pg {
 				});
 				</script>`)
 		}
-		fmt.Fprintln(w, `<img src="https://lsub.org/clive.gif" style="position:fixed; bottom:0; left:0; z-index:-1; width:100px;">`)
-		fmt.Fprintln(w, `<img src="https://lsub.org/zxlogo.gif" style="position:fixed; bottom:0; right:0; z-index:-1; width:100px;">`)
+		fmt.Fprintln(w, `<img src="/js/clive.gif" style="position:fixed; bottom:0; left:0; z-index:-1; width:100px;">`)
+		fmt.Fprintln(w, `<img src="/js/zxlogo.gif" style="position:fixed; bottom:0; right:0; z-index:-1; width:100px;">`)
 		fmt.Fprintln(w, `</body></html>`)
 	}
 	go func() {

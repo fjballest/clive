@@ -184,6 +184,9 @@ func (mf *mFile) walk1(el string) (fsFile, error) {
 }
 
 func (mf *mFile) metaOk() bool {
+	if mf.d["name"] == ".zx" {
+		return true
+	}
 	switch mf.sts {
 	case cNewMeta, cMeta, cData, cDel, cGone:
 		return true
@@ -199,6 +202,9 @@ func (mf *mFile) metaOk() bool {
 }
 
 func (mf *mFile) dataOk() bool {
+	if mf.d["name"] == ".zx" {
+		return true
+	}
 	switch mf.sts {
 	case cMeta, cClean:
 		if mf.c.stats && mf.d["type"] == "d" {
@@ -253,6 +259,9 @@ func (mf *mFile) dirtyData() {
 }
 
 func (mf *mFile) gotMeta(d zx.Dir) error {
+	if mf.d["name"] == ".zx" {
+		return nil
+	}
 	mf.Dprintf("got meta\n")
 	mf.t = time.Now()
 	if d["type"] != mf.d["type"] {
@@ -286,6 +295,9 @@ func (mf *mFile) gotMeta(d zx.Dir) error {
 }
 
 func (mf *mFile) gotData(c <-chan []byte) error {
+	if mf.d["name"] == ".zx" {
+		return nil
+	}
 	switch mf.sts {
 	case cNewMeta:
 		mf.sts = cMeta
@@ -368,6 +380,9 @@ func (mf *mFile) gotDir(cds []zx.Dir) error {
 			continue
 		}
 		nm := cd["name"]
+		if nm == ".zx" {
+			continue
+		}
 		isnew[nm] = true
 		cf, ok := mf.child[nm]
 		if ok {
@@ -563,6 +578,11 @@ func (mf *mFile) sync(fs zx.Fs) error {
 	}
 	var err error
 	mf.Lock()
+	if mf.d["name"] == ".zx" {
+		mf.sts = cClean
+		mf.Unlock()
+		return nil
+	}
 	switch mf.sts {
 	case cDel: // try to del children first
 		mf.sts = cGone // can't do anything else
