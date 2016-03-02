@@ -6,31 +6,31 @@ package main
 
 import (
 	"clive/cmd"
+	"clive/cmd/look"
 	"clive/cmd/opt"
 	"clive/net/ink"
-	"clive/cmd/look"
 	"clive/zx"
+	"fmt"
 	fpath "path"
 	"strings"
 	"sync"
-	"fmt"
 )
 
 struct IX {
-	pg   *ink.Pg
-	eds  []*Ed
-	dot  *Ed
-	cmds []*Cmd
+	pg    *ink.Pg
+	eds   []*Ed
+	dot   *Ed
+	cmds  []*Cmd
 	addrs []zx.Addr
 	sync.Mutex
-	msgs *Ed	// commands window used to notify the user
-	idgen int
+	msgs    *Ed // commands window used to notify the user
+	idgen   int
 	lookstr string
 }
 
 var (
 	ix     *IX
-	rules	look.Rules
+	rules  look.Rules
 	dryrun bool
 
 	defaultRules = `
@@ -70,7 +70,7 @@ func (ix *IX) newId() int {
 var wlock sync.Mutex
 var warning bool
 
-func (ix *IX) Warn(fmts string, arg ...interface{}) {
+func (ix *IX) Warn(fmts string, arg ...face{}) {
 	// ix might be locked and we still warns to find their way...
 	go func() {
 		wlock.Lock()
@@ -162,7 +162,7 @@ func (ix *IX) lookNext(a zx.Addr) {
 		cmd.Dprintf("look next %s %s\n", a, na)
 		if na.Name == a.Name &&
 			((na.Ln0 == a.Ln0 && na.Ln1 == a.Ln1 && a.Ln0 > 0) ||
-		   	 (na.P0 == a.P0 && na.P1 == a.P1)) && i < len(ix.addrs)-1 {
+				(na.P0 == a.P0 && na.P1 == a.P1)) && i < len(ix.addrs)-1 {
 			na = ix.addrs[i+1]
 			if ed := ix.editFor(na.Name); ed != nil {
 				ed.win.Show()
@@ -171,7 +171,7 @@ func (ix *IX) lookNext(a zx.Addr) {
 			break
 		}
 	}
-			
+
 }
 
 func (ix *IX) lookCmds(dir string, at int) *Ed {
@@ -223,7 +223,7 @@ func (ix *IX) editFile(what string, at int) *Ed {
 	}
 	ed := ix.newEdit(what)
 	ed.dir = dot
-	ed.load(d)	// sets temp
+	ed.load(d) // sets temp
 	ed.winid, _ = ix.pg.AddAt(ed.win, at)
 	return ed
 }

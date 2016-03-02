@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	dir  = "/zx/usr/web"
-	port = "8080"
-	tport = "8083" 
-	opts = opt.New("[dir]")
+	dir   = "/zx/usr/web"
+	port  = "8080"
+	tport = "8083"
+	opts  = opt.New("[dir]")
 )
 
 func main() {

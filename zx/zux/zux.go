@@ -469,7 +469,7 @@ func (fs *Fs) remove(p string, all bool) error {
 	err = os.Remove(path)
 	if err != nil && zx.IsNotEmpty(err) {
 		os.Remove(fpath.Join(path, AttrFile))
-		os.Remove(fpath.Join(path, ".#zx"))	// old attr file
+		os.Remove(fpath.Join(path, ".#zx")) // old attr file
 		err = os.Remove(path)
 	}
 	return err

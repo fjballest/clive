@@ -4,16 +4,16 @@
 package main
 
 import (
+	"bytes"
 	"clive/ch"
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/mblk"
 	"clive/zx"
-	fpath "path"
-	"bytes"
 	"fmt"
 	"net/http"
 	"os"
+	fpath "path"
 	"time"
 )
 
@@ -100,7 +100,7 @@ var buf bytes.Buffer
 func bufHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf.Bytes())
 	go func() {
-		time.Sleep(time.Second)	// http doesn't let serve just once
+		time.Sleep(time.Second) // http doesn't let serve just once
 		os.Exit(0)
 	}()
 }
@@ -137,7 +137,7 @@ func main() {
 	var w wFile
 	var err error
 	if hflag {
-		printf = func(fmts string, arg ...interface{}) (int, error) {
+		printf = func(fmts string, arg ...face{}) (int, error) {
 			return fmt.Fprintf(&buf, fmts, arg...)
 		}
 	}
@@ -248,7 +248,7 @@ func main() {
 		// the one reponsible for listening before writing to ink
 		// and then dying after the page has been served.
 		// For now, this will do.
-		time.Sleep(100*time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		cmd.Dprintf("serving: https://localhost:10001/\n")
 		ink <- []byte("https://localhost:10001/")
 		c := make(chan bool)

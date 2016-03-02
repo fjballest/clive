@@ -18,6 +18,7 @@
 var tffixed = "monospace";
 var tfvar = "Lucida Grande";	// or Verdana
 var fontscheckedout = false;
+var tdebug = false;
 
 function checkoutfonts(ctx) {
 	if(fontscheckedout)
@@ -1260,7 +1261,7 @@ function tkeydown(e, deferred) {
 			key = e.which;
 		var rune = String.fromCharCode(e.keyCode);
 		e.stopPropagation();
-		if(0)console.log("keydown which " + e.which + " key " + e.keyCode +
+		if(tdebug)console.log("keydown which " + e.which + " key " + e.keyCode +
 			" '" + rune + "'" +
 			" " + e.ctrlKey + " " + e.metaKey);
 	
@@ -1360,6 +1361,9 @@ function tkeydown(e, deferred) {
 			mev.preventDefault = function(){}
 			this.onmousedown(mev);
 			break;
+		case 123:	/* F12 */
+			tdebug = !tdebug;
+			break;
 		default:
 			return true;
 		}
@@ -1375,10 +1379,13 @@ function tkeyup(e, deferred) {
 		if(!e.keyCode)
 			key = e.which;
 		var rune = String.fromCharCode(e.keyCode);
-		if(0)
-		console.log("keyup which " + e.which + " key " + e.keyCode +
-			" '" + rune + "'" +
-			" " + e.ctrlKey + " " + e.metaKey);
+		var isdeadkey = e && e.originalEvent && e.originalEvent.keyIdentifier == "Unidentified";
+		if(tdebug) {
+			var ds = (isdeadkey ? " dead" : "");
+			console.log("keyup which " + e.which + " key " + e.keyCode +
+				" '" + rune + "'" + ds +
+				" " + e.ctrlKey + " " + e.metaKey, e);
+		}
 		switch(key){
 		case 112:	/* F1 */
 		case 113:	/* F2 */
@@ -1394,6 +1401,9 @@ function tkeyup(e, deferred) {
 			mev.preventDefault = function(){}
 			this.onmouseup(mev);
 			break;
+		case 18: /* Alt */
+			this.composing = true;
+			return true;
 		default:
 			return true;
 		}
@@ -1410,7 +1420,7 @@ function tevkey(e, deferred) {
 		if(!e.keyCode)
 			key = e.which;
 		var rune = String.fromCharCode(e.keyCode);
-		if(0)console.log("key: which " + e.which + " key " + e.keyCode +
+		if(tdebug)console.log("key: which " + e.which + " key " + e.keyCode +
 			" '" + rune + "'");
 		switch(key){
 		case 9:
@@ -1468,6 +1478,27 @@ function tevkey(e, deferred) {
 		if(this.p0 != this.p1){
 			this.Post(["edel", ""+this.p0, ""+this.p1]);
 		}
+		if(this.composing) {
+			if(!this.latin) {
+				this.latin = "" + rune;
+			} else {
+				this.latin += rune;
+			}
+			if(!kmap.islatin(this.latin)) {
+				this.composing = false;
+				rune = this.latin;
+				this.latin = "";
+			} else {
+				var r = kmap.latin(this.latin);
+				if (r) {
+					this.composing = false;
+					rune = r;
+					this.latin = "";
+				} else {
+					return;
+				}
+			}
+		}
 		this.Post(["eins", rune, ""+this.p0]);
 	}catch(ex){
 		console.log("text: fixtab: " + ex);
@@ -1480,7 +1511,7 @@ function tapply(ev, fromserver) {
 		return;
 	}
 	var arg = ev.Args
-	if(0)console.log(this.divid, "apply", ev.Args, "v", ev.Vers, this.vers);
+	if(tdebug)console.log(this.divid, "apply", ev.Args, "v", ev.Vers, this.vers);
 	switch(arg[0]){
 	case "held":
 		this.locked();
@@ -2268,7 +2299,7 @@ function mktxt(d, t, e, cid, id) {
 			console.log("update: no objet id");
 			return;
 		}
-		if(0)console.log("update to", o.Id, o.Args);
+		if(tdebug)console.log("update to", o.Id, o.Args);
 		e.apply(o, true);
 	};
 	e.ws.onclose = function() {

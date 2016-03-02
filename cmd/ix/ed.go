@@ -23,7 +23,7 @@ struct Cmd {
 	mark  string
 	hasnl bool
 	p     *run.Proc
-	all   bool	// replace all text with output, for c.pipe()
+	all   bool // replace all text with output, for c.pipe()
 }
 
 struct Dot {
@@ -44,9 +44,9 @@ struct Ed {
 	ncmds   int
 	waitc   chan func()
 	ctx     *cmd.Ctx
-	temp    bool // don't save, don't ever flag as dirty
-	iscmd   bool // it's a command win, used by the event loop
-	laddr zx.Addr // last look addr
+	temp    bool    // don't save, don't ever flag as dirty
+	iscmd   bool    // it's a command win, used by the event loop
+	laddr   zx.Addr // last look addr
 }
 
 var notDirty = errors.New("not dirty")
@@ -161,7 +161,7 @@ func (ix *IX) newCmds(dir, tag string) *Ed {
 	// context, or changes in the NS/env/... will be gone.
 	ed.ctx = cmd.New(func() {
 		if err := cmd.Cd(dir); err != nil {
-			go ed.win.Ins([]rune("can't cd to " + dir + ": " + err.Error()+"\n"), 0)
+			go ed.win.Ins([]rune("can't cd to "+dir+": "+err.Error()+"\n"), 0)
 		}
 		ed.editLoop()
 		// new command loops are sent to waitc
@@ -407,7 +407,7 @@ func (ed *Ed) look(what string) {
 	}
 	if strings.HasPrefix(s, "file:///zx/") {
 		n := len("file://")
-		s= "https://localhost:8181" + s[n:] 
+		s = "https://localhost:8181" + s[n:]
 	}
 	if strings.HasPrefix(s, "https://") {
 		toks := strings.Split(s, "|")
@@ -434,12 +434,12 @@ func (ed *Ed) exec(what, tag string) {
 		tag = strings.TrimSpace(tag)
 	}
 	if len(tag) > 50 {
-		tag = tag[:50]+"..."
+		tag = tag[:50] + "..."
 	}
 	args := strings.Fields(what)
 	c := &Cmd{
-		name:  args[0],
-		ed:    ed,
+		name: args[0],
+		ed:   ed,
 	}
 	c.exec(tag, args...)
 }
@@ -449,7 +449,7 @@ func (ed *Ed) hasText(rs []rune, p0 int) bool {
 		return false
 	}
 	for i := range rs {
-		if r := ed.win.Getc(p0+i); r != rs[i] {
+		if r := ed.win.Getc(p0 + i); r != rs[i] {
 			return false
 		}
 	}
@@ -473,7 +473,7 @@ func (ed *Ed) lookText(what string, p0 int) {
 	}
 	if pos >= 0 {
 		ed.dot.P0 = pos
-		ed.dot.P1 = pos+len(rs)
+		ed.dot.P1 = pos + len(rs)
 		cmd.Dprintf("%s: dot set to %s (%s)\n", ed, ed.dot, ed.Addr())
 		ed.win.SetSel(ed.dot.P0, ed.dot.P1)
 	}

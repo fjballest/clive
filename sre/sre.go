@@ -29,10 +29,10 @@ package sre
 */
 
 import (
+	"bytes"
 	"fmt"
 	"runtime"
 	"unicode/utf8"
-	"bytes"
 )
 
 /*

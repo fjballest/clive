@@ -47,7 +47,7 @@ var (
 	keywords = map[string]int{
 		"for":   FOR,
 		"while": WHILE,
-		"fn":  FUNC,
+		"fn":    FUNC,
 		"cond":  COND,
 		"or":    OR,
 	}

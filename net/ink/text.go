@@ -571,7 +571,7 @@ func (t *Txt) apply(wev *Ev) {
 			return
 		}
 		if p1 <= p0 {
-			t.t.Del(0, 0)	// advance the vers
+			t.t.Del(0, 0) // advance the vers
 		} else {
 			rs := t.t.Del(p0, p1-p0)
 			if ev[0] == "ecut" {
@@ -630,7 +630,7 @@ func (t *Txt) apply(wev *Ev) {
 		t.t.SetMark("p0", p0)
 		t.t.SetMark("p1", p1)
 		t.out <- &Ev{Id: t.Id, Src: "", Args: []string{"sel", strconv.Itoa(p0), strconv.Itoa(p1)}}
-		nev = &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(), Args:[]string {
+		nev = &Ev{Id: t.Id, Src: "app", Vers: t.t.Vers(), Args: []string{
 			"tick", strconv.Itoa(p0), strconv.Itoa(p1),
 		}}
 		t.post(nev)

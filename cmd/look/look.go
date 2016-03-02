@@ -15,13 +15,13 @@
 package look
 
 import (
-	"sync"
+	"bytes"
+	"clive/cmd"
 	"clive/sre"
 	"errors"
-	"clive/cmd"
 	"fmt"
-	"bytes"
 	"strings"
+	"sync"
 )
 
 // If the user looks for something matching Rexp, then
@@ -29,7 +29,7 @@ import (
 // Backquoting to refer to \0...\9 is ok in Cmd.
 struct Rule {
 	Rexp string
-	Cmd string
+	Cmd  string
 
 	sync.Mutex
 	re *sre.ReProg
@@ -38,8 +38,8 @@ struct Rule {
 type Rules []*Rule
 
 var (
-	Debug bool
-	dprintf = cmd.FlagPrintf(&Debug)
+	Debug      bool
+	dprintf    = cmd.FlagPrintf(&Debug)
 	ErrNoMatch = errors.New("no match")
 )
 
@@ -91,7 +91,6 @@ func (rs Rules) CmdFor(s string) (string, error) {
 	return "", ErrNoMatch
 }
 
-
 func ParseRules(txt string) (Rules, error) {
 	var rs []*Rule
 	lns := strings.Split(txt, "\n")
@@ -105,10 +104,10 @@ func ParseRules(txt string) (Rules, error) {
 		}
 		r := &Rule{
 			Rexp: ln,
-			Cmd: strings.TrimSpace(lns[i+1]),
+			Cmd:  strings.TrimSpace(lns[i+1]),
 		}
 		rs = append(rs, r)
-		i++	// for the cmd line
+		i++ // for the cmd line
 	}
 	return rs, nil
 }

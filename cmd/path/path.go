@@ -3,7 +3,6 @@
 */
 package main
 
-
 import (
 	"clive/cmd"
 	"clive/cmd/opt"
@@ -14,7 +13,7 @@ import (
 var (
 	ux, dflag, bflag bool
 
-	dir string
+	dir  string
 	opts = opt.New("{name}")
 )
 

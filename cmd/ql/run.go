@@ -52,7 +52,7 @@ var bgcmds = bgCmds{
 	wall:  make(chan bool),
 }
 
-func (x *xEnv) Printf(fmts string, arg ...interface{}) (int, error) {
+func (x *xEnv) Printf(fmts string, arg ...face{}) (int, error) {
 	if ofd, ok := x.fds["out"]; ok {
 		s := fmt.Sprintf(fmts, arg...)
 		_, err := ch.WriteMsg(ofd.fd, 1, []byte(s))
@@ -61,7 +61,7 @@ func (x *xEnv) Printf(fmts string, arg ...interface{}) (int, error) {
 	return cmd.Printf(fmts, arg...)
 }
 
-func (x *xEnv) Eprintf(fmts string, arg ...interface{}) (int, error) {
+func (x *xEnv) Eprintf(fmts string, arg ...face{}) (int, error) {
 	if ofd, ok := x.fds["err"]; ok {
 		s := fmt.Sprintf(fmts, arg...)
 		_, err := ch.WriteMsg(ofd.fd, 1, []byte(s))
@@ -189,7 +189,6 @@ func (x *xEnv) addUXio() {
 		x.fds[cname] = &xFd{fd: fd, path: cname, ref: -1, isIn: dir == '<'}
 	}
 }
-
 
 func newEnv() *xEnv {
 	x := &xEnv{

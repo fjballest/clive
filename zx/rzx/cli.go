@@ -17,15 +17,15 @@ import (
 struct Fs {
 	*dbg.Flag
 	*zx.Flags
-	Verb  bool
-	addr  string
-	tc    *tls.Config
-	ai    *auth.Info
-	trees map[string]bool
-	fsys  string
-	m     *ch.Mux
-	closed bool	// mux is gone, can redial
-	sync.Mutex	// for redials
+	Verb       bool
+	addr       string
+	tc         *tls.Config
+	ai         *auth.Info
+	trees      map[string]bool
+	fsys       string
+	m          *ch.Mux
+	closed     bool // mux is gone, can redial
+	sync.Mutex      // for redials
 }
 
 type ddir zx.Dir
@@ -83,7 +83,7 @@ func splitaddr(addr string) (string, string) {
 // Different fsys names are considered different dials.
 // Network errors are reported including "i/o error", and
 // the caller might call Redial() to re-create the FS or
-// Close() to cease its operation. 
+// Close() to cease its operation.
 func Dial(addr string, tlscfg ...*tls.Config) (*Fs, error) {
 	var tc *tls.Config
 	if len(tlscfg) > 0 {
@@ -95,13 +95,13 @@ func Dial(addr string, tlscfg ...*tls.Config) (*Fs, error) {
 	}
 	addr, fsys := splitaddr(addr)
 	fs := &Fs{
-		Flag:  &dbg.Flag{},
-		Flags: &zx.Flags{},
-		addr:  addr,
-		tc: tc,
-		trees: map[string]bool{},
-		fsys:  fsys,
-		closed: true,	// not yet dialed
+		Flag:   &dbg.Flag{},
+		Flags:  &zx.Flags{},
+		addr:   addr,
+		tc:     tc,
+		trees:  map[string]bool{},
+		fsys:   fsys,
+		closed: true, // not yet dialed
 	}
 	fs.Tag = "rfs"
 	fs.Flags.Add("debug", &fs.Debug)

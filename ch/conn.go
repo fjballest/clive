@@ -1,9 +1,9 @@
 package ch
 
 import (
+	"fmt"
 	"io"
 	"sync"
-	"fmt"
 )
 
 // A Conn is a channel-pair used as a duplex connection.

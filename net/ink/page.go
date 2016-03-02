@@ -75,6 +75,7 @@ var headers = `
 <link rel="stylesheet" href="/js/jquery-ui/jquery-ui.min.css">
 <script src="/js/jquery-2.2.0.min.js"></script>
 <script type="text/javascript" src="/js/clive.js"></script>
+<script src="/js/latin.js"></script>
 <script type="text/javascript" src="/js/txt.js"></script>
 <script type="text/javascript" src="/js/button.js"></script>
 <script type="text/javascript" src="/js/radio.js"></script>
@@ -386,7 +387,7 @@ func (pg *Pg) Add(el face{}) (string, error) {
 func (pg *Pg) AddAt(el face{}, colnb int) (string, error) {
 	pg.Lock()
 	if colnb < 0 {
-		colnb = len(pg.els)-1
+		colnb = len(pg.els) - 1
 	}
 	pg.Unlock()
 	nel := pg.mkel(el)
@@ -406,12 +407,12 @@ func (pg *Pg) AddAt(el face{}, colnb int) (string, error) {
 	`)
 	scol := strconv.Itoa(colnb)
 	pg.out <- &Ev{Id: pg.Id, Src: "app",
-			Args: []string{"load", buf.String(),scol},
+		Args: []string{"load", buf.String(), scol},
 	}
 	pg.Lock()
 	defer pg.Unlock()
 	if colnb >= len(pg.els) {
-		colnb = len(pg.els)-1
+		colnb = len(pg.els) - 1
 	}
 	col := pg.els[colnb]
 	col = append(col, nil)

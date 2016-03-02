@@ -5,16 +5,16 @@ import (
 	"clive/ch"
 	"clive/cmd"
 	"clive/cmd/run"
+	"clive/net/ink"
 	"clive/sre"
 	"clive/txt"
+	"clive/zx"
 	"fmt"
 	"io"
+	fpath "path"
+	"strconv"
 	"strings"
 	"time"
-	"clive/zx"
-	"clive/net/ink"
-	"strconv"
-	fpath "path"
 )
 
 var btab = map[string]func(*Cmd, ...string){}
@@ -202,7 +202,7 @@ func (ix *IX) load(fname string) error {
 }
 
 func bload(c *Cmd, args ...string) {
- 	defer c.ed.win.DelMark(c.mark)
+	defer c.ed.win.DelMark(c.mark)
 	if len(args) == 1 {
 		c.printf("missing file name\n")
 		return
@@ -291,7 +291,7 @@ func bn(c *Cmd, args ...string) {
 		d["addr"] = fpath.Join(d["addr"], name)
 		d["mtime"] = "0"
 		cmd.Dprintf("new %v\n", d)
-		ed.load(d)	// and ignore errors here, it migth be brand new
+		ed.load(d) // and ignore errors here, it migth be brand new
 		ed.winid, _ = ix.pg.Add(ed.win)
 	}
 	c.printf("\n")
@@ -624,7 +624,7 @@ func (c *Cmd) inkio(inkc <-chan face{}) {
 			continue
 		}
 		if strings.HasPrefix(s, "http") || strings.HasPrefix(s, "https") ||
-		   strings.HasPrefix(s, "file://") || strings.HasPrefix(s, "//") {
+			strings.HasPrefix(s, "file://") || strings.HasPrefix(s, "//") {
 			nb++
 			u := fmt.Sprintf("%s|/ink/%s/%d", s, c.name, nb)
 			go c.ed.look(u)

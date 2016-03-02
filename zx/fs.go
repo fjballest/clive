@@ -1,8 +1,8 @@
 package zx
 
 import (
-	"clive/net/auth"
 	"bytes"
+	"clive/net/auth"
 )
 
 // A zx file system.

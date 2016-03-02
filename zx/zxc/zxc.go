@@ -37,14 +37,14 @@ struct Fs {
 	*dbg.Flag
 	*zx.Flags
 	*zx.Stats
-	ai    *auth.Info
-	perms bool
-	sync  bool // write-through
-	rfs   zx.Getter
-	c     fsCache
-	syncc chan bool
-	redialc chan bool
-	redialok bool	// do we redial?
+	ai       *auth.Info
+	perms    bool
+	sync     bool // write-through
+	rfs      zx.Getter
+	c        fsCache
+	syncc    chan bool
+	redialc  chan bool
+	redialok bool // do we redial?
 }
 
 var ctldir = zx.Dir{
@@ -91,13 +91,13 @@ func New(rfs zx.Getter) (*Fs, error) {
 	tag := fmt.Sprintf("zcx!%s", rfs)
 	_, ok := rfs.(redialer)
 	fs := &Fs{
-		Flag:  &dbg.Flag{Tag: tag},
-		Flags: &zx.Flags{},
-		Stats: &zx.Stats{},
-		rfs:   rfs,
-		perms: true,
-		syncc: make(chan bool),
-		redialc: make(chan bool),
+		Flag:     &dbg.Flag{Tag: tag},
+		Flags:    &zx.Flags{},
+		Stats:    &zx.Stats{},
+		rfs:      rfs,
+		perms:    true,
+		syncc:    make(chan bool),
+		redialc:  make(chan bool),
 		redialok: ok,
 	}
 	fs.Flags.Add("debug", &fs.Debug)
@@ -198,7 +198,7 @@ func (fs *Fs) syncer() {
 			redialing = false
 			continue
 		}
-		ival = 5*time.Second
+		ival = 5 * time.Second
 	case x := <-fs.syncc:
 		if !x {
 			break
@@ -209,14 +209,14 @@ func (fs *Fs) syncer() {
 		}
 		if redialing {
 			if err := fs.redial(); err != nil {
-				ival = 5*time.Second
+				ival = 5 * time.Second
 				continue
 			}
 			redialing = false
 		}
 		if err := fs.Sync(); zx.IsIOError(err) && fs.redialok {
 			redialing = true
-			ival = 5*time.Second
+			ival = 5 * time.Second
 			continue
 		}
 		ival = syncIval
@@ -224,14 +224,14 @@ func (fs *Fs) syncer() {
 	case <-time.After(ival):
 		if redialing {
 			if err := fs.redial(); err != nil {
-				ival = 5*time.Second
+				ival = 5 * time.Second
 				continue
 			}
 			redialing = false
 		}
 		if err := fs.Sync(); zx.IsIOError(err) && fs.redialok {
 			redialing = true
-			ival = 5*time.Second
+			ival = 5 * time.Second
 			continue
 		}
 		ival = syncIval
@@ -258,7 +258,7 @@ func (fs *Fs) getMeta(f fsFile) error {
 	if err != nil {
 		if zx.IsIOError(err) && fs.redialok {
 			fs.needRedial()
-			return nil	// have old meta; use that
+			return nil // have old meta; use that
 		}
 		if zx.IsNotExist(err) {
 			f.gone()

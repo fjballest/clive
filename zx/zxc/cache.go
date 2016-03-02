@@ -54,7 +54,7 @@ interface fsFile {
 	String() string // file's path
 	dir() zx.Dir
 	isDel() bool
-	metaOk() bool	 // metadata is valid?
+	metaOk() bool    // metadata is valid?
 	dataOk() bool    // data is valid?
 	oldDataOk() bool // can we use old data?
 	inval()

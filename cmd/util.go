@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"bytes"
+	"clive/u"
 	"clive/zx"
 	"errors"
 	"fmt"
 	fpath "path"
 	"strings"
 	"unicode/utf8"
-	"clive/u"
 )
 
 func Stat(path string) (zx.Dir, error) {
@@ -55,7 +55,7 @@ func Put(path string, ud zx.Dir, off int64, dc <-chan []byte) <-chan zx.Dir {
 	rc := make(chan zx.Dir)
 	go func() {
 		pc := NS().Put(apath, ud, off, dc)
-		d := <- pc
+		d := <-pc
 		if d != nil {
 			d["Rpath"] = "/"
 			d["Upath"] = upath

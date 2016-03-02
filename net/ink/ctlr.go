@@ -48,9 +48,9 @@ struct Ctlr {
 }
 
 var (
-	idgen int
-	idlk  sync.Mutex
-	Debug bool	// set to enable debug diagnostics
+	idgen   int
+	idlk    sync.Mutex
+	Debug   bool // set to enable debug diagnostics
 	dprintf = cmd.FlagPrintf(&Debug)
 )
 
