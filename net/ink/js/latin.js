@@ -1,6 +1,6 @@
 "use strict";
 /*
-	Plan 9 like latin composition.
+	Clive's Plan 9 like latin composition.
 	kmap.islatin(str): prefix or full latin sequence
 	kmap.latin(str): str for a full latin sequence.
 */

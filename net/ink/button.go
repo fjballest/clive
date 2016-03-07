@@ -59,7 +59,7 @@ func NewButtonSet(button ...*Button) *ButtonSet {
 func (bs *ButtonSet) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := bs.newViewId()
 	n, err := io.WriteString(w,
-		`<div id="`+vid+`" class="`+bs.Id+` ui-widget-header ui-corner-all hasws">`)
+		`<div id="`+vid+`" class="`+bs.Id+` ui-widget-header ui-corner-all clivectl">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -96,14 +96,14 @@ func (bs *ButtonSet) WriteTo(w io.Writer) (tot int64, err error) {
 			n, err = io.WriteString(w, `$("#`+b+`").button().click(function(e) {
 				var checked = $("#`+b+`").is(':checked');
 				if(checked) {
-					d.post(["Set", "`+bs.els[i].Name+`", "`+fmt.Sprintf("%d", i)+`", "on"]);
+					d.clivectlr.post(["Set", "`+bs.els[i].Name+`", "`+fmt.Sprintf("%d", i)+`", "on"]);
 				} else {
-					d.post(["Set", "`+bs.els[i].Name+`", "`+fmt.Sprintf("%d", i)+`", "off"]);
+					d.clivectlr.post(["Set", "`+bs.els[i].Name+`", "`+fmt.Sprintf("%d", i)+`", "off"]);
 				}
 			});`)
 		} else {
 			n, err = io.WriteString(w, `$("#`+b+`").button().click(function() {
-				d.post(["click", "`+bs.els[i].Name+`", "`+fmt.Sprintf("%d", i)+`"]);
+				d.clivectlr.post(["click", "`+bs.els[i].Name+`", "`+fmt.Sprintf("%d", i)+`"]);
 			});`)
 		}
 		tot += int64(n)

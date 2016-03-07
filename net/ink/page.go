@@ -73,14 +73,15 @@ struct urlEl {
 // HTML headers to be included in pages using this interface.
 var headers = `
 <link rel="stylesheet" href="/js/jquery-ui/jquery-ui.min.css">
-<script src="/js/jquery-2.2.0.min.js"></script>
-<script type="text/javascript" src="/js/clive.js"></script>
-<script src="/js/latin.js"></script>
-<script type="text/javascript" src="/js/txt.js"></script>
+<script type="text/javascript" src="/js/jquery-2.2.0.min.js"></script>
+<script type="text/javascript" src="/js/ctlr.js"></script>
+<script type="text/javascript" src="/js/latin.js"></script>
+<script type="text/javascript" src="/js/lines.js"></script>
+<script type="text/javascript" src="/js/text.js"></script>
 <script type="text/javascript" src="/js/button.js"></script>
 <script type="text/javascript" src="/js/radio.js"></script>
-<script src="/js/jquery-ui/jquery-ui.min.js"></script>
-<script src="/js/jquery.get-word-by-event.js"></script>
+<script type="text/javascript" src="/js/jquery-ui/jquery-ui.min.js"></script>
+<script type="text/javascript" src="/js/jquery.get-word-by-event.js"></script>
 `
 
 // Write headers to a page so it can support controls.

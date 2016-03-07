@@ -75,7 +75,7 @@ struct Txt {
 	*Ctlr
 	t               *txt.Text
 	tag             string // NB: this is not the page element tag.
-	tagged, noedits bool   // It was a tag line but we no longer use it.
+	noedits bool   // It was a tag line but we no longer use it.
 	cundo           bool
 	owner           string
 	held            []*Ev
@@ -102,34 +102,22 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := t.newViewId()
 
 	n, err := io.WriteString(w, `
-		<div id="`+vid+`" class="`+t.Id+` ui-widget-content hasws canaddsize", tabindex="1" style="border:2px solid black; margin:0; width:100%;height:300; background-color:#dfdfca">`)
+		<div id="`+vid+`" class="`+t.Id+` ui-widget-content", `+
+			`tabindex="1" style="border:2px solid black; `+
+			`margin:0; width:100%;height:300; background-color:#dfdfca">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
-	}
-	if t.tagged {
-		n, err := io.WriteString(w, `<div id="`+vid+`t" class="ui-widget-header">`+
-			html.EscapeString(t.tag)+`</div>`)
-		tot += int64(n)
-		if err != nil {
-			return tot, err
-		}
 	}
 	ctag := t.Tag()
 	ts := ``
 	if ctag != "" {
 		ctag = html.EscapeString(ctag)
-		ts = `
-			if(document.settag) {
-				document.settag(x, "` + ctag + `");
-			}
+		ts = `c.settag("` + ctag + `");
 		`
 	}
 	if t.dirty {
-		ts += `
-			if(document.setdirty) {
-				document.setdirty(x);
-			}
+		ts += `c.setdirty();
 		`
 	}
 	wsaddr := `wss://localhost:` + servePort
@@ -139,14 +127,10 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 <script>
 	$(function(){
 		var d = $("#`+vid+`");
-		var t = $("#`+vid+`t");
 		var x = $("#`+vid+`c").get(0);
 		d.wsaddr = "`+wsaddr+`";
 		x.tag = "`+t.tag+`";
-		x.lines = [];
-		x.lines.push({txt: "", off: 0});
-		document.mktxt(d, t, x, "`+t.Id+`", "`+vid+`");
-		x.fontstyle="`+t.font+`";
+		var c = document.mktxt(d, x, "`+t.Id+`", "`+vid+`", "`+t.font+`");
 		`+ts+`
 	});
 </script>`)
@@ -154,8 +138,8 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 	return tot, err
 }
 
-// Create a new text control with the given tag line and body lines.
-func newTxt(tagged bool, tag string, lines ...string) *Txt {
+// Create a new text control with the given body lines.
+func NewTxt(lines ...string) *Txt {
 	lns := strings.Join(lines, "\n")
 	if len(lns) == 0 || lns[len(lns)-1] != '\n' {
 		lns += "\n"
@@ -163,19 +147,13 @@ func newTxt(tagged bool, tag string, lines ...string) *Txt {
 	t := &Txt{
 		Ctlr:   newCtlr("text"),
 		t:      txt.NewEditing([]rune(lns)),
-		tag:    tag,
-		tagged: tagged,
+		tag:    "",
 		font:   "r",
 	}
 	t.t.SetMark("p0", 0)
 	t.t.SetMark("p1", 0)
 	go t.handler()
 	return t
-}
-
-// Create a new text control with no tag line and the given body lines.
-func NewTxt(lines ...string) *Txt {
-	return newTxt(false, "", lines...)
 }
 
 // Change the font used.

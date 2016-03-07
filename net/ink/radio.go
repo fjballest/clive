@@ -58,7 +58,7 @@ func NewRadioSet(value *string, button ...*Button) *RadioSet {
 func (bs *RadioSet) WriteTo(w io.Writer) (tot int64, err error) {
 	vid := bs.newViewId()
 	n, err := io.WriteString(w,
-		`<form><div id="`+vid+`" class="`+bs.Id+` hasws">`)
+		`<form><div id="`+vid+`" class="`+bs.Id+` clivectl">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err

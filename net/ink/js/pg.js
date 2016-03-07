@@ -1,7 +1,10 @@
 "use strict";
 /*
  * clive ink pg tools
-*/
+ *
+ * needs a rewrite.
+ * should define a global clive object to contain all the clive globals, and go from there.
+ */
 
 // controls may call this to set the icon for dirty (and get saves on clicks)
 // but they must implement the post method on the element passed.
@@ -107,9 +110,9 @@ function removecontrol(el, needpost) {
 	if(!el) {
 		return;
 	}
-	$(el).find(".hasws").each(function() {
+	$(el).find(".clivectl").each(function() {
 		if(!this.ws) {
-			console.log("BUG: hasws w/o ws");
+			console.log("BUG: clivectl w/o ws");
 			console.log("didn't set d.get(0).ws?");
 		} else {
 			if(needpost && this.post) {
@@ -134,7 +137,7 @@ function maxpl(pl) {
 	console.log("maxpl ", icon);
 	$(pl).find('.portlet-content').toggle();
 	icon.toggleClass("ui-icon-minus ui-icon-plus");
-	pl.find(".canaddsize").each(function() {
+	pl.find(".clivectl").each(function() {
 		if(this.addsize) {
 			this.addsize(0);
 		}
@@ -218,7 +221,7 @@ function updportlets() {
 			icon.toggleClass("ui-icon-minus ui-icon-plus");
 			var pl = icon.closest(".portlet");
 			pl.find(".portlet-content").toggle();
-			pl.find(".canaddsize").each(function() {
+			pl.find(".clivectl").each(function() {
 				if(this.addsize) {
 					this.addsize(0);
 				}
@@ -253,7 +256,7 @@ function updportlets() {
 			var icon = $(this);
 			var el = icon.closest(".portlet");
 			maxpl(el);
-			$(el).find(".canaddsize").each(function() {
+			$(el).find(".clivectl").each(function() {
 				if(this.addsize) {
 					this.addsize(1);
 				}
@@ -273,7 +276,7 @@ function updportlets() {
 			var icon = $(this);
 			var el = icon.closest(".portlet");
 			maxpl(el);
-			$(el).find(".canaddsize").each(function() {
+			$(el).find(".clivectl").each(function() {
 				if(this.addsize) {
 					this.addsize(2);
 				}
@@ -293,7 +296,7 @@ function updportlets() {
 			var icon = $(this);
 			var el = icon.closest(".portlet");
 			maxpl(el);
-			$(el).find(".canaddsize").each(function() {
+			$(el).find(".clivectl").each(function() {
 				if(this.addsize) {
 					this.addsize(-1);
 				}

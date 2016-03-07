@@ -1,5 +1,8 @@
 "use strict";
 /*
+
+	DEPRECATED. lines.js and ntxt.js are the implementation now.
+
 	js code for the clive text frame
 	which is similar to a Plan 9 text frame
 	but implemented with the HTML5 canvas.
@@ -18,6 +21,7 @@
 var tffixed = "monospace";
 var tfvar = "Lucida Grande";	// or Verdana
 var fontscheckedout = false;
+var tdebug = false;
 
 function checkoutfonts(ctx) {
 	if(fontscheckedout)
@@ -50,7 +54,7 @@ function tfixfont() {
 	if(this.fontstyle.indexOf('i') > -1) {
 		mod = "italic " + mod;
 	}
-	var ht = this.fontht - 4;
+	var ht = this.fontht - 2*this.tscale;
 	ctx.font = mod + " "  + ht+"px "+ style;
 	ctx.textBaseline="top";
 }
@@ -222,26 +226,32 @@ function tuntick() {
 }
 
 function tviewsel() {
-	if(!this.lines[this.ln0]) {
-		return;
-	}
-	var off = this.lines[this.ln0].off;
-	var eoff = off+this.frsize;
-	if(this.p0 >= off && this.p0 <= eoff) {
-		return;
+	if(this.lines[this.ln0]) {
+		var off = this.lines[this.ln0].off;
+		var eoff = off+this.frsize;
+		if(this.p0 >= off && this.p0 <= eoff) {
+			return;
+		}
 	}
 	for(var i = 0; i < this.lines.length; i++){
 		var xln = this.lines[i];
 		var xlnlen = xln.txt.length;
 		if(this.p0 >= xln.off && this.p0 <= xln.off+xlnlen){
-			var n = i - this.frlines/3;
+			var n = i - Math.floor(this.frlines/3);
 			if(n < 0) {
 				n = 0;
 			}
+			if(n >= this.lines.length) {
+				n = this.lines.length-1;
+			}
 			xln = this.lines[n];
-			this.ln0 = n;
-			this.froff = xln.off;
-			this.redrawtext();
+			if(xln) {
+				this.ln0 = n;
+				this.froff = xln.off;
+				this.redrawtext();
+			} else {
+				console.log("tviewsel: no ln for", n, i);
+			}
 			return;
 		}
 	}
@@ -258,6 +268,10 @@ function ttsetsel(p0, p1, refreshall) {
 		p1 = this.nrunes;
 	if(this.p0 != this.p1)
 		refreshall = true;
+	if(!this.lines[this.ln0]) {
+		return;
+	}
+	var froff = this.lines[this.ln0].off;
 	if(refreshall && (this.p1 <froff || this.p0 >froff+this.frsize))
 		refreshall = false;
 	var mp0 = p0;
@@ -271,10 +285,6 @@ function ttsetsel(p0, p1, refreshall) {
 	this.p0 = p0;
 	this.p1 = p1;
 	this.untick();
-	if(!this.lines[this.ln0]) {
-		return;
-	}
-	var froff = this.lines[this.ln0].off;
 	if(mp1 <froff || mp0 >froff+this.frsize)
 		return;
 	var insel = false;
@@ -393,8 +403,8 @@ function tdrawline(xln, i) {
 	   xln != this.lines[this.lines.length-1])
 		return true;
 	var dx = this.posdx(xln, this.p0 - xln.off);
-	dx += marginsz - 2;
-	this.saved = ctx.getImageData(dx, pos, 4, this.fontht);
+	dx += marginsz - 3*this.tscale/2;
+	this.saved = ctx.getImageData(dx, pos, 3*this.tscale, this.fontht);
 	this.tickx = dx;
 	this.ticky = pos;
 	ctx.putImageData(this.tick, dx, pos);
@@ -469,15 +479,17 @@ function tredrawtext() {
 	if(!this.tick){
 		var x = ctx.lineWidth;
 		ctx.lineWidth = 1;
-		ctx.fillRect(0, 0, 6, 6);
-		ctx.fillRect(0, this.fontht-6, 6, 6);
-		ctx.moveTo(3, 0);
-		ctx.lineTo(3, this.fontht);
+		var d = 3*this.tscale;
+		ctx.fillRect(0, 0, d, d);
+		ctx.fillRect(0, this.fontht-d, d, d);
+		ctx.moveTo(d/2, 0);
+		ctx.lineTo(d/2, this.fontht);
 		ctx.stroke();
 		ctx.lineWidth = x;
-		this.tick = ctx.getImageData(0, 0, 6, this.fontht);
+		this.tick = ctx.getImageData(0, 0, d, this.fontht);
 	}
 	if(!this.lines[this.ln0]) {
+		console.log("tredrawtext: no ln0");
 		return;
 	}
 	var off = this.lines[this.ln0].off;
@@ -486,11 +498,11 @@ function tredrawtext() {
 	this.frlines = 0;
 	for(var i = 0; i <= nlines; i++){
 		if(this.ln0+i < this.lines.length){
-			this.frlines++;
 			var xln = this.lines[this.ln0+i];
-			off += lnlen(xln);
 			if(!this.drawline(xln, i))
 				break;
+			this.frlines++;
+			off += lnlen(xln);
 		}else
 			if(!this.drawline(null, i))
 				break;
@@ -570,7 +582,7 @@ function ttins(t, dontscroll) {
 				this.reformat(i);
 				if(!dontscroll)
 				if(i >= this.ln0+this.nlines-1 &&
-				   i <= this.ln0+this.nlines+1)
+				   i <= this.ln0+this.nlines+1 && this.nlines > 1)
 					this.scrolldown(nscrl);
 				this.redrawtext();
 				return;
@@ -675,7 +687,13 @@ var wordre = null;
 function iswordchar(c) {
 	if(!wordre)
 		wordre = /\w/;
-	return c == '/' || c == '.' || c == ':' || c == '#' || c == ',' || wordre.test(c);
+	return wordre.test(c);
+}
+
+function islongwordchar(c) {
+	if(!wordre)
+		wordre = /\w/;
+	return c == '-' || c == '(' || c == ')' || c == '/' || c == '.' || c == ':' || c == '#' || c == ',' || wordre.test(c);
 }
 
 function islparen(c) {
@@ -700,9 +718,13 @@ function lparen(c) {
 	return "([{<".charAt(i);
 }
 
-function ttgetword(pos) {
+function ttgetword(pos, long) {
 	if(pos >= this.nrunes)
 		return ["", this.nrunes, this.nrunes];
+	var ischar = iswordchar;
+	if(long) {
+		ischar = islongwordchar;
+	}
 	var i;
 	var xln;
 	for(i = 0; i < this.lines.length; i++){
@@ -792,13 +814,13 @@ function ttgetword(pos) {
 			}while(i >= 0 && n > 0);
 			return [txt, pos, epos];
 		}
-		if(!iswordchar(c))
-			return "";
-		while(p0 > 0 && iswordchar(xln.txt.charAt(p0-1))){
+		if(!islongwordchar(c))
+			return [xln.txt.slice(p0, p1), pos, epos];
+		while(p0 > 0 && ischar(xln.txt.charAt(p0-1))){
 			pos--;
 			p0--;
 		}
-		while(p1 < xlnlen && iswordchar(xln.txt.charAt(p1))){
+		while(p1 < xlnlen && ischar(xln.txt.charAt(p1))){
 			epos++;
 			p1++;
 		}
@@ -869,7 +891,7 @@ function tmayresize(user) {
 	var p = $(this).parent();
 	var dx = p.width();
 	var dy = p.height() - 5;
-	console.log('text resized', dx, dy);
+	console.log('text resized', dx, dy, user?"user":"win");
 	var c = this;
 	var ctx = this.getContext("2d", {alpha: false});
 	var tag = $("#"+this.divid+"t")
@@ -887,23 +909,44 @@ function tmayresize(user) {
 	this.redrawtext();
 }
 
-function tautoresize() {
-	var nln = this.frlines;
-	if(nln < 3) {
-		nln = 3;
-	}
-	var ht = (nln+2) * this.fontht;
+function tautoresize(addsize, moreless) {
 	var p = $(this);
 	var oldht = p.height();
-	if (oldht >= 400) {
-		return;
+	var ht = oldht;
+	var fontht = this.fontht/this.tscale;
+	if(addsize) {
+		this.userresized = true;
+		if(moreless > 1){
+			var wtop = $(window).scrollTop();
+			var etop = $(this).offset().top;
+			var eoff = etop-wtop;
+			console.log("resize ", wtop, etop, eoff);
+			ht = window.innerHeight - 10 - eoff;
+		} else if(moreless >= 0) {
+			ht += fontht*6;
+		} else {
+			ht -= fontht*6;
+			if(ht < 5*fontht) {
+				ht = 5*fontht;
+			}
+		}
+	}else{
+		var nln = this.frlines;
+		if(nln < 3) {
+			nln = 3;
+		}
+		ht = (nln+2) * fontht;
+		if (ht >= 400) {
+			ht = 400;
+		}
 	}
-	console.log("auto rsz", nln, ht, p.height());
-	if (oldht < ht - this.fontht || oldht > ht + this.fontht) {
+	console.log("auto rsz", nln, ht, oldht);
+	if (oldht < ht - fontht || oldht > ht + fontht) {
+		console.log("auto resizing");
 		var delta = ht - oldht;
 		p = $(this).parent();
 		var nht = p.height() + delta;
-		p.css('height', nht);
+		p.height(nht);
 		this.mayresize();
 	}
 }
@@ -973,18 +1016,18 @@ function tmwait() {
 function tm1(pos) {
 	var now = new Date().getTime();
 	if(!this.clicktime || now-this.clicktime>500){
-		this.dblclick = false;
+		this.dblclick = 0;
 		this.clicktime = now;
 	}else{
-		this.dblclick = true;
+		this.dblclick++;
 		this.clicktime = now;
 	}
-
+	var wassel = true;
 	if(this.dblclick){
-		var x = this.tgetword(pos);
+		var x = this.tgetword(pos, this.dblclick>1);
 		this.post(["click1", x[0], ""+x[1], ""+x[2]]);
 		this.tsetsel(x[1], x[2]);
-		this.clicktime = null;
+		wassel = false;
 	}
 	this.onmousemove = function(e){
 		try{
@@ -1016,14 +1059,20 @@ function tm1(pos) {
 			if(this.noedits) {
 				return;
 			}
-			if(this.buttons == 3){
+			if(this.buttons == 1+2){
+				wassel = false;
 				this.Post(["ecut", ""+this.p0, ""+this.p1]);
 			}
-			if(this.buttons == 5){
+			if(this.buttons == 1+4){
+				wassel = false;
 				if(this.p0 != this.p1){
 					this.Post(["edel", ""+this.p0, ""+this.p1]);
 				}
 				this.post(["epaste", ""+this.p0, ""+this.p1]);
+			}
+			if(this.buttons == 1+8){
+				wassel = false;
+				this.post(["ecopy", ""+this.p0, ""+this.p1]);
 			}
 		}catch(ex){
 			console.log("tm1: down: " + ex);
@@ -1040,6 +1089,13 @@ function tm1(pos) {
 				this.onmousemove = this.evxy;
 				this.post(["focus"]);
 				this.selectend();
+				if(wassel && this.p0 != this.p1) {
+					var x = this.tget(this.p0, this.p1);
+					this.post(["click1", x, ""+this.p0, ""+this.p1]);
+				}
+				if(document.setfocus) {
+					document.setfocus(this);
+				}
 			}
 		}catch(ex){
 			console.log("tm1: up: " + ex);
@@ -1047,7 +1103,7 @@ function tm1(pos) {
 	}
 }
 
-function tm23(pos, b) {
+function tm234(pos, b) {
 	this.secondary = b;
 	this.onmousemove = function(e){
 		try{
@@ -1087,8 +1143,14 @@ function tm23(pos, b) {
 			if(this.buttons == 0){
 				var sp0 = this.p0;
 				var sp1 = this.p1;
+				var xln = this.lines[this.lines.length-1];
+				var tsize = 0;
+				if(xln && xln.txt.length == 0){
+					tsize = xln.off;
+				}
 				this.secondary = 0;
 				this.tsetsel(this.oldp0, this.oldp1);
+				console.log("sp0 " + sp0 + " " + sp1 + " " + tsize);
 				if(!this.secondaryabort)
 				if(sp0 != sp1){
 					var txt = this.tget(sp0, sp1);
@@ -1098,8 +1160,15 @@ function tm23(pos, b) {
 					var txt = this.tget(this.p0, this.p1);
 					this.post(["click"+b, txt,
 						  ""+this.p0, ""+this.p1]);
-				}else{
-					var x = this.tgetword(sp0);
+				}else if(b != 1 && sp0 == sp1 && tsize &&
+					sp0 == tsize && sp0>0) {
+					// a click at a final empty line selects the previous
+					// line (which is the last one shown).
+					var x = this.tgetword(sp0-1, b != 8 || this.dblclick>1);
+					this.post(["click"+b, x[0],
+						  ""+x[1], ""+x[2]]);
+				}else {
+					var x = this.tgetword(sp0, b != 8 || this.dblclick>1);
 					this.post(["click"+b, x[0],
 						  ""+x[1], ""+x[2]]);
 				}
@@ -1161,7 +1230,7 @@ function tmdown(e) {
 	if(0)console.log("tmdown ", this.divid, e);
 	this.selectstart();
 	e.preventDefault();
-	this.secondary = 0;		/* paranoia: see tm23 */
+	this.secondary = 0;		/* paranoia: see tm234 */
 	this.secondaryabort = false;
 	try {
 		this.tmpress(e);
@@ -1176,12 +1245,13 @@ function tmdown(e) {
 			break;
 		case 2:
 		case 4:
+		case 8:
 			var tpos = this.ptr2tpos(this.lastx, this.lasty);
 			var pos = this.tpos2pos(tpos[0], tpos[1]);
 			this.oldp0 = this.p0;
 			this.oldp1 = this.p1;
 			this.tsetsel(pos, pos);
-			this.tm23(pos, b);
+			this.tm234(pos, b);
 			break;
 		default:
 			this.tmwait();
@@ -1192,14 +1262,173 @@ function tmdown(e) {
 	e.returnValue = false;
 }
 
-function tevkey(e) {
+function tkeydown(e, deferred) {
+	try{
+		var key = e.keyCode;
+		if(!e.keyCode)
+			key = e.which;
+		var rune = String.fromCharCode(e.keyCode);
+		e.stopPropagation();
+		if(tdebug)console.log("keydown which " + e.which + " key " + e.keyCode +
+			" '" + rune + "'" +
+			" " + e.ctrlKey + " " + e.metaKey);
+	
+		switch(key){
+		case 27:	/* escape */
+			if(deferred)
+				break;
+			this.post(["intr", "esc"]);
+			this.dump();
+			console.log("["+this.p0+","+this.p1+"]='" +
+				this.tget(this.p0, this.p1) + "'");
+			break;
+		case 8:		/* backspace */
+			if(this.noedits) {
+				return;
+			}
+			if(deferred)
+				break;
+			if(this.p0 != this.p1){
+				this.Post(["edel", ""+this.p0, ""+this.p1]);
+			}else if(this.p0 > 0){
+				var p0 = this.p0-1;
+				this.Post(["edel", ""+p0, ""+this.p1]);
+			}
+			break;
+		case 9:		/* tab */
+			if(this.noedits) {
+				return;
+			}
+			if(deferred)
+				break;
+			if(this.p0 != this.p1){
+				this.Post(["edel", ""+this.p0, ""+this.p1]);
+			}
+			this.Post(["eins", "\t", ""+this.p0]);
+			break;
+		case 32:	/* space */
+			if(deferred)
+				break;
+			this.Post(["eins", " ", ""+this.p0]);
+			break;
+		case 37:	/* left */
+			if(this.noedits) {
+				return;
+			}
+			this.post(["eundo"]);
+			break;
+		case 38:	/* up */
+			if(deferred)
+				break;
+			var n = Math.floor(this.frlines/4);
+			if(n < 1) {
+				n = 1;
+			}
+			if(this.scrollup(n)){
+				this.untick();
+				this.redrawtext();
+			}
+			break;
+		case 39:	/* right */
+			if(this.noedits) {
+				return;
+			}
+			if(deferred)
+				break;
+			this.post(["eredo"]);
+			break;
+		case 40:	/* down */
+			if(deferred)
+				break;
+			this.untick();
+			var n = Math.floor(this.frlines/4);
+			if(n < 1) {
+				n = 1;
+			}
+			if(this.scrolldown(n)){
+				this.untick();
+				this.redrawtext();
+			}
+			break;
+		case 46:	/* delete */
+			if(deferred)
+				break;
+			this.post(["intr", "del"]);
+			break;
+		case 112:	/* F1 */
+		case 113:	/* F2 */
+		case 114:	/* F3 */
+		case 115:	/* F4 */
+			if(deferred)
+				break;
+			var mev = {
+				fakex: this.lastx,
+				fakey: this.lasty,
+				which: key-112+1,
+			};
+			mev.preventDefault = function(){}
+			this.onmousedown(mev);
+			break;
+		case 123:	/* F12 */
+			tdebug = !tdebug;
+			break;
+		default:
+			return true;
+		}
+		return false;
+	}catch(ex){
+		console.log("keydown: " + ex);
+	}
+}
+
+function tkeyup(e, deferred) {
+	try{
+		var key = e.keyCode;
+		if(!e.keyCode)
+			key = e.which;
+		var rune = String.fromCharCode(e.keyCode);
+		var isdeadkey = e && e.originalEvent && e.originalEvent.keyIdentifier == "Unidentified";
+		if(tdebug) {
+			var ds = (isdeadkey ? " dead" : "");
+			console.log("keyup which " + e.which + " key " + e.keyCode +
+				" '" + rune + "'" + ds +
+				" " + e.ctrlKey + " " + e.metaKey, e);
+		}
+		switch(key){
+		case 112:	/* F1 */
+		case 113:	/* F2 */
+		case 114:	/* F3 */
+		case 115:	/* F4 */
+			if(deferred)
+				break;
+			var mev = {
+				fakex: this.lastx,
+				fakey: this.lasty,
+				which: key-112+1,
+			};
+			mev.preventDefault = function(){}
+			this.onmouseup(mev);
+			break;
+		case 18: /* Alt */
+			this.composing = true;
+			return true;
+		default:
+			return true;
+		}
+		return false;
+	}catch(ex){
+		console.log("keydown: " + ex);
+	}
+}
+
+function tevkey(e, deferred) {
 	try {
 		// console.log("key");
 		var key = e.keyCode;
 		if(!e.keyCode)
 			key = e.which;
 		var rune = String.fromCharCode(e.keyCode);
-		if(0)console.log("key: which " + e.which + " key " + e.keyCode +
+		if(tdebug)console.log("key: which " + e.which + " key " + e.keyCode +
 			" '" + rune + "'");
 		switch(key){
 		case 9:
@@ -1212,6 +1441,8 @@ function tevkey(e) {
 		switch(rune){
 		case 'c':
 		case 'C':
+			if(deferred)
+				break;
 			if(e.ctrlKey || e.metaKey){
 				e.preventDefault();
 				this.post(["ecopy", ""+this.p0, ""+this.p1]);
@@ -1220,6 +1451,8 @@ function tevkey(e) {
 			break;
 		case 'v':
 		case 'V':
+			if(deferred)
+				break;
 			if(this.noedits) {
 				break;
 			}
@@ -1234,6 +1467,8 @@ function tevkey(e) {
 			break;
 		case 'x':
 		case 'X':
+			if(deferred)
+				break;
 			if(this.noedits) {
 				break;
 			}
@@ -1246,133 +1481,35 @@ function tevkey(e) {
 		}
 		if(e.metaKey || e.ctrlKey || this.noedits)
 			return;
+		if(deferred)
+			return;
 		if(this.p0 != this.p1){
 			this.Post(["edel", ""+this.p0, ""+this.p1]);
+		}
+		if(this.composing) {
+			if(!this.latin) {
+				this.latin = "" + rune;
+			} else {
+				this.latin += rune;
+			}
+			if(!kmap.islatin(this.latin)) {
+				this.composing = false;
+				rune = this.latin;
+				this.latin = "";
+			} else {
+				var r = kmap.latin(this.latin);
+				if (r) {
+					this.composing = false;
+					rune = r;
+					this.latin = "";
+				} else {
+					return;
+				}
+			}
 		}
 		this.Post(["eins", rune, ""+this.p0]);
 	}catch(ex){
 		console.log("text: fixtab: " + ex);
-	}
-}
-
-
-function tkeyup(e) {
-	try{
-		var key = e.keyCode;
-		if(!e.keyCode)
-			key = e.which;
-		var rune = String.fromCharCode(e.keyCode);
-		if(0)
-		console.log("keyup which " + e.which + " key " + e.keyCode +
-			" '" + rune + "'" +
-			" " + e.ctrlKey + " " + e.metaKey);
-		switch(key){
-		case 112:	/* F1 */
-		case 113:	/* F2 */
-		case 114:	/* F3 */
-			var mev = {
-				fakex: this.lastx,
-				fakey: this.lasty,
-				which: key-112+1,
-			};
-			mev.preventDefault = function(){}
-			this.onmouseup(mev);
-			break;
-		default:
-			return true;
-		}
-		return false;
-	}catch(ex){
-		console.log("keydown: " + ex);
-	}
-}
-
-function tkeydown(e) {
-	try{
-		var key = e.keyCode;
-		if(!e.keyCode)
-			key = e.which;
-		var rune = String.fromCharCode(e.keyCode);
-		e.stopPropagation();
-		if(0)console.log("keydown which " + e.which + " key " + e.keyCode +
-			" '" + rune + "'" +
-			" " + e.ctrlKey + " " + e.metaKey);
-	
-		switch(key){
-		case 27:	/* escape */
-			this.post(["intr", "esc"]);
-			this.dump();
-			console.log("["+this.p0+","+this.p1+"]='" +
-				this.tget(this.p0, this.p1) + "'");
-			break;
-		case 8:		/* backspace */
-			if(this.noedits) {
-				return;
-			}
-			if(this.p0 != this.p1){
-				this.Post(["edel", ""+this.p0, ""+this.p1]);
-			}else if(this.p0 > 0){
-				var p0 = this.p0-1;
-				this.Post(["edel", ""+p0, ""+this.p1]);
-			}
-			break;
-		case 9:		/* tab */
-			if(this.noedits) {
-				return;
-			}
-			if(this.p0 != this.p1){
-				this.Post(["edel", ""+this.p0, ""+this.p1]);
-			}
-			this.Post(["eins", "\t", ""+this.p0]);
-			break;
-		case 32:	/* space */
-			this.Post(["eins", " ", ""+this.p0]);
-			break;
-		case 37:	/* left */
-			if(this.noedits) {
-				return;
-			}
-			this.post(["eundo"]);
-			break;
-		case 38:	/* up */
-			if(this.scrollup(3)){
-				this.untick();
-				this.redrawtext();
-			}
-			break;
-		case 39:	/* right */
-			if(this.noedits) {
-				return;
-			}
-			this.post(["eredo"]);
-			break;
-		case 40:	/* down */
-			this.untick();
-			if(this.scrolldown(3)){
-				this.untick();
-				this.redrawtext();
-			}
-			break;
-		case 46:	/* delete */
-			this.post(["intr", "del"]);
-			break;
-		case 112:	/* F1 */
-		case 113:	/* F2 */
-		case 114:	/* F3 */
-			var mev = {
-				fakex: this.lastx,
-				fakey: this.lasty,
-				which: key-112+1,
-			};
-			mev.preventDefault = function(){}
-			this.onmousedown(mev);
-			break;
-		default:
-			return true;
-		}
-		return false;
-	}catch(ex){
-		console.log("keydown: " + ex);
 	}
 }
 
@@ -1382,7 +1519,7 @@ function tapply(ev, fromserver) {
 		return;
 	}
 	var arg = ev.Args
-	if(0)console.log(this.divid, "apply", ev.Args, "v", ev.Vers, this.vers);
+	if(tdebug)console.log(this.divid, "apply", ev.Args, "v", ev.Vers, this.vers);
 	switch(arg[0]){
 	case "held":
 		this.locked();
@@ -1567,7 +1704,7 @@ function tapply(ev, fromserver) {
 		if(ev.Vers) {
 			this.vers = ev.Vers;
 		}
-		if(!this.userresized) {
+		if(!this.userresized && arg[1].indexOf('\n') >= 0) {
 			this.autoresize();
 		} 
 		break;
@@ -1610,6 +1747,7 @@ function tapply(ev, fromserver) {
 			this.vers = ev.Vers;
 		break;
 	case "reload":
+		this.reloadln0 = this.ln0;
 		this.tclear();
 		break;
 	case "reloading":
@@ -1626,6 +1764,15 @@ function tapply(ev, fromserver) {
 			break;
 		}
 		this.vers = parseInt(arg[1]);
+		if(this.reloadln0 < this.lines.length) {
+			var ln0 = this.reloadln0;
+			delete this.reloadln0;
+			var xln = this.lines[this.ln0];
+			if(xln) {
+				this.ln0 = ln0;
+				this.froff = xln.off
+			}
+		}
 		this.redrawtext();
 		if(!this.userresized) {
 			this.autoresize();
@@ -1702,11 +1849,11 @@ function tlocknkeydown(e) {
 	xe.metaKey = e.metaKey;
 	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		console.log("holded keydown");
+		console.log("held keydown");
 		$(self).trigger(xe);
 		return false;
 	});
-	return false;
+	return tkeydown.call(this, e, true);
 }
 
 function tlocknevkey(e) {
@@ -1720,9 +1867,18 @@ function tlocknevkey(e) {
 		console.log("holding...");
 	}
 	var self = this;
+	var xe = jQuery.Event("keypress");
+	xe.which = e.which;
+	xe.keyCode = e.keyCode;
+	xe.ctrlKey = e.ctrlKey;
+	xe.metaKey = e.metaKey;
+	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		tevkey.call(self, e);
+		console.log("held keypress");
+		$(self).trigger(xe);
+		return false;
 	});
+	return tevkey.call(this, e, true);
 }
 
 function tlocknkeyup(e) {
@@ -1736,9 +1892,18 @@ function tlocknkeyup(e) {
 		console.log("holding...");
 	}
 	var self = this;
+	var xe = jQuery.Event("keyup");
+	xe.which = e.which;
+	xe.keyCode = e.keyCode;
+	xe.ctrlKey = e.ctrlKey;
+	xe.metaKey = e.metaKey;
+	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		tkeyup.call(self, e);
+		console.log("held keyup");
+		$(self).trigger(xe);
+		return false;
 	});
+	return tkeyup.call(this, e, true);
 }
 
 function tlocknmdown(e) {
@@ -1751,11 +1916,17 @@ function tlocknmdown(e) {
 		console.log("holding...");
 	}
 	var self = this;
+	var xe = jQuery.Event("mousedown");
+	xe.which = e.which;
+	xe.pageX = e.pageX;
+	xe.pageY = e.pageY;
+	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		console.log("deferred push");
-		self.onmousedown(e)
-		self.onmouseup(e);
+		console.log("held mousedown");
+		$(self).trigger(xe);
+		return false;
 	});
+	return false;
 }
 
 function tlocknmup(e) {
@@ -1768,9 +1939,17 @@ function tlocknmup(e) {
 		console.log("holding...");
 	}
 	var self = this;
+	var xe = jQuery.Event("mouseup");
+	xe.which = e.which;
+	xe.pageX = e.pageX;
+	xe.pageY = e.pageY;
+	xe.preventDefault = function(){};
 	this.whenlocked.push(function() {
-		tmup.call(self, e);
+		console.log("held mouseup");
+		$(self).trigger(xe);
+		return false;
 	});
+	return false;
 }
 
 function tlocked() {
@@ -1817,6 +1996,8 @@ function tselectstart() {
 	}
 	this.selecting = true;
 	selecting = true;
+	this.oldp0 = this.p0;
+	this.oldp1 = this.p1;
 }
 
 function tselectend() {
@@ -1827,7 +2008,11 @@ function tselectend() {
 		return;
 	}
 	console.log("select end");
-	this.post(["tick", ""+this.p0, ""+this.p1]);
+	if(this.oldp0 != this.p0 || this.oldp1 != this.p1) {
+		this.post(["tick", ""+this.p0, ""+this.p1]);
+		this.oldp0 = this.p0;
+		this.oldp1 = this.p1;
+	}
 	this.selecting = false;
 	selecting = false;
 }
@@ -1913,7 +2098,7 @@ function mktxt(d, t, e, cid, id) {
 	e.divcid = cid;
 	e.divid = id;
 	e.vers = 0;
-	e.tscale = 2;
+	e.tscale = 4;	// tscale must be even; we /2
 	e.nlines = 0;
 	e.ln0 = 0;
 	e.frsize = 0;
@@ -1925,7 +2110,7 @@ function mktxt(d, t, e, cid, id) {
 	e.tabstop = 4;
 	var tabtext = Array(e.tabstop+1).join("X")
 	e.tabwid = ctx.measureText(tabtext).width;
-	e.fontht = 28; // TODO: use font height from fixfont
+	e.fontht = 14*e.tscale; // TODO: use font height from fixfont
 	e.buttons = 0;
 	e.nclicks = {1: 0, 2: 0, 4: 0};
 	e.userresized = false;
@@ -1974,19 +2159,16 @@ function mktxt(d, t, e, cid, id) {
 	e.whenlocked = [];
 
 	e.tkeydown = tlocknkeydown;
-//	e.tkeydown = tkeydown;
 	e.tkeypress = tlocknevkey;
-//	e.tkeypress = tevkey;
 	e.tkeyup = tlocknkeyup;
-//	e.tkeyup = tkeyup;
-
 	e.onmousedown = tlocknmdown;
-//	e.onmousedown = tmdown;
 	e.onmouseup = tlocknmup;
-//	e.onmouseup = tmup;
 	e.onmouseenter = function(e) {
 		if(!selecting) {
+			var x = window.scrollX;
+			var y = window.scrollY;
 			$("#" + this.divid ).focus();
+			window.scrollTo(x, y);
 		}
 		if(this.islocked || this.locking) {
 			return;
@@ -1995,15 +2177,32 @@ function mktxt(d, t, e, cid, id) {
 		this.post(["hold"]);
 		console.log("holding...");
 	};
+	e.onmousemove = function(e) {
+		if(this.islocked || this.locking) {
+			return tevxy.call(this, e);
+		}
+		this.locking = true;
+		this.post(["hold"]);
+		console.log("holding...");
+		return false;
+	};
+	e.onmousewheel = function(ev) {
+		ev.stopPropagation();
+		if(e.islocked || e.locking) {
+			return tmwheel.call(e, ev);
+		}
+		e.locking = true;
+		e.post(["hold"]);
+		console.log("holding...");
+		return false;
+	};
 
-	e.onmousemove = tevxy;
-	e.onmousewheel = tmwheel;
 	e.onpaste = function(){return false;}
 	e.oncontextmenu = function(){return false;}
 	e.onclick = null;
 	e.onddblclick = null;
 	e.tm1 = tm1;
-	e.tm23 = tm23;
+	e.tm234 = tm234;
 	e.tmdown = tmdown;
 	e.tmpress = tmpress;
 	e.tmrlse = tmrlse;
@@ -2062,7 +2261,8 @@ function mktxt(d, t, e, cid, id) {
 		ev.Src = id;
 		if(!this.vers)
 			this.vers = 0;
-		if(args[0] == "eins" || args[0] == "edel" || args[0] == "ecut" || args[0] == "epaste"){
+		// cut advances the vers (might del nothing)
+		if(args[0] == "eins" || args[0] == "edel"){
 			this.vers++;
 		}
 		ev.Vers = this.vers;
@@ -2074,6 +2274,13 @@ function mktxt(d, t, e, cid, id) {
 		}catch(ex){
 			console.log("post: " + ex);
 		}
+		// if this is a cut, it implies a del and we
+		// must advance our vers, the event didn't
+		// advance the vers.
+		// Same for paste.
+		if(args[0] == "ecut" || args[0] == "epaste") {
+			ev.Vers++;
+		}
 		return ev;
 	};
 
@@ -2084,6 +2291,9 @@ function mktxt(d, t, e, cid, id) {
 	e.ws = new WebSocket(wsurl);
 	d.get(0).ws = e.ws;
 	d.get(0).post = e.post;
+	d.get(0).addsize = function(moreless) {
+		e.autoresize(true, moreless);
+	};
 	e.ws.onopen = function() {
 		e.post(["id"]);
 	};
@@ -2097,7 +2307,7 @@ function mktxt(d, t, e, cid, id) {
 			console.log("update: no objet id");
 			return;
 		}
-		if(0)console.log("update to", o.Id, o.Args);
+		if(tdebug)console.log("update to", o.Id, o.Args);
 		e.apply(o, true);
 	};
 	e.ws.onclose = function() {
@@ -2108,6 +2318,7 @@ function mktxt(d, t, e, cid, id) {
 		handles: 's'
 	}).on('resize', function() {
 		console.log("user resized");
+		e.userresized = true;
 		e.mayresize(true);
 	});
 	$(window).resize(function() {
@@ -2127,5 +2338,5 @@ function mktxt(d, t, e, cid, id) {
 	}
 }
 
-document.mktxt = mktxt
+//document.mktxt = mktxt
 

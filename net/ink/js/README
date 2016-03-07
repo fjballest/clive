@@ -1,0 +1,15 @@
+This contains a few js files from clive (c) Laboratorio de Sistemas
+under the LICENSE for Clive:
+	- ctlr.js
+	- button.js
+	- radio.js
+	- latin.js
+	- lines.js
+	- text.js
+	- pg.js
+	- zxlogo.gif
+	- clive.gif
+
+All other files come from other authors and are under their
+respective licenses; this includes jquery and jquery-ui plus
+some other tools.
