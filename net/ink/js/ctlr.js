@@ -56,27 +56,34 @@ function CliveCtlr() {
 		return ev;
 	};
 
+	var d = this.d;
+	this.setfocus = function() {
+		if(document.setfocus) {
+			document.setfocus(d);
+		}
+	};
+
 	this.settag = function(t) {
 		if(document.settag) {
-			document.settag(this, t);
+			document.settag(d, t);
 		}
 	};
 
 	this.setdirty = function() {
 		if(document.setdirty) {
-			document.setdirty(this);
+			document.setdirty(d);
 		}
 	};
 
 	this.setclean = function() {
 		if(document.setclean) {
-			document.setclean(this);
+			document.setclean(d);
 		}
 	};
 
 	this.showcontrol = function() {
 		if(document.showcontrol) {
-			document.showcontrol(this);
+			document.showcontrol(d);
 		}
 	};
 

@@ -14,6 +14,7 @@ function setdirty(e) {
 	if(pgdebug)console.log("dirty");
 	var p = $(e).closest(".portlet");
 	if(!p || !p.length) {
+		console.log("dirty: no portlet");
 		return;
 	}
 	var pd = p.find(".portlet-dirty");
@@ -46,7 +47,7 @@ function setfocus(e) {
 	if(pgdebug)console.log("pg focus");
 	var p = $(e).closest(".portlet");
 	if(!p || !p.length) {
-		if(pgdebug)console.log("focus: no portlet");
+		console.log("focus: no portlet for ", e);
 		return;
 	}
 	var pmax = p.find(".portlet-max");
@@ -73,6 +74,7 @@ function scrollcol() {
 function settag(e, tag) {
 	var p = $(e).closest(".portlet");
 	if(!p || !p.length) {
+		console.log("settag: no portlet");
 		return;
 	}
 	var tt = p.find('.portlet-header').find("tt");
@@ -90,6 +92,7 @@ function settag(e, tag) {
 function showcontrol(e, tag) {
 	var p = $(e).closest(".portlet");
 	if(!p || !p.length) {
+		console.log("showcontrol: no portlet");
 		return;
 	}
 	var c = p.closest(".column");

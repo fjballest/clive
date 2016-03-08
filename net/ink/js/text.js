@@ -237,28 +237,20 @@ function CliveText(d, c, cid, id) {
 			this.noedits = false;
 			break;
 		case "clean":
-			if(document.setclean) {
-				document.setclean(this);
-			}
+			this.setclean();
 			break;
 		case "dirty":
-			if(document.setdirty) {
-				document.setdirty(this);
-			}
+			this.setdirty();
 			break;
 		case "show":
-			if(document.showcontrol) {
-				document.showcontrol(this);
-			}
+			this.showcontrol();
 			break;
 		case "tag":
 			if(arg.length < 2){
 				console.log(this.id, "apply: short tag");
 				break;
 			}
-			if(document.settag) {
-				document.settag(this, arg[1]);
-			}
+			settag(arg[1]);
 			break;
 		case "font":
 			if(arg.length < 2){
@@ -1122,9 +1114,7 @@ function CliveText(d, c, cid, id) {
 					var x = self.get(self.p0, self.p1);
 					self.post(["click1", x, ""+self.p0, ""+self.p1]);
 				}
-				if(document.setfocus) {
-					document.setfocus(self);
-				}
+				self.setfocus();
 			}
 		};
 	};
