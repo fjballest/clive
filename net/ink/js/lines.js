@@ -75,9 +75,9 @@ function Line(lni, off, txt, eol) {
 	// not toString(), by intention.
 	this.str = function() {
 		if(this.eol) {
-			return ""+this.off+"["+lni+"]"+" =\t[" + this.txt + "\\n]";
+			return ""+this.off+"["+this.lni+"]"+" =\t[" + this.txt + "\\n]";
 		} else {
-			return ""+this.off+"["+lni+"]"+" =\t[" + this.txt + "]";
+			return ""+this.off+"["+this.lni+"]"+" =\t[" + this.txt + "]";
 		}
 	};
 
@@ -310,6 +310,13 @@ function Lines(els) {
 	};
 
 	this.reformat = function(ln0) {
+		if(tdebug) {
+			var ctx = this.c.getContext("2d", {alpha: false});
+			var avail = this.c.width - this.marginsz;
+			var ln0i = ln0?ln0.lni:-1;
+			console.log("reformat ln " + ln0i + " wid " + avail + ":" );
+			console.trace();
+		}
 		// TODO: should get an indication regarding at which
 		// point it's safe to assume that no further reformat
 		// work is needed and stop there.
@@ -326,18 +333,18 @@ function Lines(els) {
 			}
 			// remove empty lines but keep an empty line at the end.
 			var next = ln.next;
-			if(ln.len() == 0 && ln.next) {
+			if(ln.len() == 0 && next) {
 				if(this.lne == ln) {
-					this.lne = ln.prev;
+					console.log("lines: reformat join bug?");
 				}
 				if(ln0 == ln) {
-					ln0 = ln.next ? ln.next : ln.prev;
+					ln0 = next;
 				}
 				if(this.ln0 == ln) {
-					this.ln0 = ln.next ? ln.next : ln.prev;
+					this.ln0 = next;
 				}
 				if(this.lns == ln) {
-					this.lns = ln.next;
+					this.lns = next;
 				}
 				ln.delline();
 			}
@@ -354,10 +361,15 @@ function Lines(els) {
 			}
 			var woff = this.wrapoff(ln.txt);
 			if(woff < ln.txt.length) {
+				if(tdebug) {
+					console.log("wrap  off " + woff + " ln" + ln.str());
+				}
 				ln.split(woff, false);
 				if(this.lne == ln) {
 					this.lne = ln.next;
 				}
+			} else if(tdebug) {
+				console.log("no wrap ln " + ln.str());
 			}
 		}
 		// keep the empty line at the end
@@ -368,7 +380,10 @@ function Lines(els) {
 		if(!ln0.next && ln0.prev) {
 			ln0 = ln0.prev;
 		}
-		if(0)this.dump();
+		if(tdebug) {
+			console.log("after reformat:");
+			this.dump();
+		}
 		return ln0;
 	};
 
@@ -634,7 +649,6 @@ function DrawLines(c) {
 	this.tabstop = 4;
 	this.marginsz = 6;
 	this.tscale = 4;	// scale must be even; we /2 without Math.floor
-
 	this.secondary = 0;	// button for selection
 
 
@@ -644,6 +658,8 @@ function DrawLines(c) {
 	this.saved = undefined;	// saved image under tick
 
 	var ctx = c.getContext("2d", {alpha: false});
+	this.ctx = ctx;
+
 	checkoutfonts(ctx);
 	ctx.fillStyle = "#FFFFEA";
 	var tabtext = Array(this.tabstop+1).join("X");
@@ -654,7 +670,7 @@ function DrawLines(c) {
 	this.fontht = 14*this.tscale;
 
 	this.fixfont = function() {
-		var ctx = this.c.getContext("2d", {alpha: false});
+		var ctx = this.ctx;
 		var mod = "";
 		var style = "";
 		style = tfvar;
@@ -684,7 +700,7 @@ function DrawLines(c) {
 	};
 
 	this.clearline = function(i) {
-		var ctx = this.c.getContext("2d", {alpha: false});
+		var ctx = this.ctx;
 		var pos = i*this.fontht;
 		if(pos >= this.c.height) {
 			return false;
@@ -694,7 +710,7 @@ function DrawLines(c) {
 	};
 
 	this.mktick = function() {
-		var ctx = this.c.getContext("2d", {alpha: false});
+		var ctx = this.ctx;
 		var x = ctx.lineWidth;
 		ctx.lineWidth = 1;
 		var d = 3*this.tscale;
@@ -711,12 +727,13 @@ function DrawLines(c) {
 		if(!this.saved) {
 			return;
 		}
-		var ctx = this.c.getContext("2d", {alpha: false});
+		var ctx = this.ctx;
 		ctx.putImageData(this.saved, this.tickx, this.ticky);
 		this.saved = undefined;
 	};
 
-	this.tick = function(ctx, x, y) {
+	this.tick = function(x, y) {
+		var ctx = this.ctx;
 		if(0)console.log("tick", x, y);
 		this.saved = ctx.getImageData(x, y, 3*this.tscale, this.fontht);
 		this.tickx = x;
@@ -726,7 +743,7 @@ function DrawLines(c) {
 
 	// draw a line and return false if it's out of the draw space.
 	this.drawline = function(ln) {
-		var ctx = this.c.getContext("2d", {alpha: false});
+		var ctx = this.ctx;
 		var lnht = this.fontht;
 		var avail = this.c.width - 2*this.marginsz - 1;
 		var y = (ln.lni-this.ln0.lni)*lnht;
@@ -802,12 +819,12 @@ function DrawLines(c) {
 		// line with tick
 		var x = this.posdx(ln.txt, this.p0 - ln.off);
 		x += this.marginsz - 3*this.tscale/2;	// a bit to the left
-		this.tick(ctx, x, y);
+		this.tick(x, y);
 		return true;
 	};
 
 	this.updatescrl = function() {
-		var ctx = this.c.getContext("2d", {alpha: false});
+		var ctx = this.ctx;
 		var y0 = this.ln0.lni / this.lne.lni * this.c.height;
 		var dy = this.frlines / this.lne.lni * this.c.height;
 	
@@ -896,10 +913,13 @@ function DrawLines(c) {
 	};
 
 	this.wrapoff = function(t) {
-		var ctx = this.c.getContext("2d", {alpha: false});
+		var ctx = this.ctx;
 		var avail = this.c.width - this.marginsz;
 		var pos = 0;
 		var s = "";
+		if(tdebug) {
+			console.log("wrapoff: X wid: " + ctx.measureText("X").width);
+		}
 		for(var i = 0; i < t.length; i++){
 			var r = t.charAt(i);
 			if(r == '\t') {
@@ -912,14 +932,20 @@ function DrawLines(c) {
 				s += r;
 			}
 			if(ctx.measureText(s).width > avail){
+				if(tdebug) {
+					console.log('wrapoff: ' + s + ': wrap: ' + ctx.measureText(s).width + " " + avail);
+				}
 				return i;
 			}
+		}
+		if(tdebug) {
+			console.log('wrapoff: ' + s + ': no wrap: ' + ctx.measureText(s).width + " " + avail);
 		}
 		return t.length;
 	};
 
 	this.posdx = function(t, n) {
-		var ctx = this.c.getContext("2d", {alpha: false});
+		var ctx = this.ctx;
 		var pos = 0;
 		var dx = 0;
 		var spcwid = ctx.measureText(" ").width;
@@ -991,7 +1017,7 @@ function DrawLines(c) {
 	};
 
 	this.setsel = function(p0, p1, refreshall) {
-		var ctx = this.c.getContext("2d", {alpha: false});
+		var ctx = this.ctx;
 		if(p0 > this.nrunes) {
 			p0 = this.nrunes;
 		}

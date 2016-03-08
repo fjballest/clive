@@ -13,7 +13,7 @@
 */
 
 var selecting = false;
-var tdebug = false;	// also defined by lines.js
+var tdebug=false;
 
 // This is to prevent the event from being propagated to the parent
 // container.
@@ -113,8 +113,7 @@ function CliveText(d, c, cid, id) {
 		var p = c.parent();
 		var dx = p.width();
 		var dy = p.height() - 5;	// -5: leave a bit of room
-		if(tdebug)console.log('text resized', dx, dy, user?"user":"win");
-		var ctx = this.c.getContext("2d", {alpha: false});
+		if(tdebug)console.log('mayresize: text resized dx ' + dx + " dy " + dy + " " + user?"user":"win");
 		// TODO: use helper when we rewrite ink js.
 		var tag = $("#"+this.id+"t")
 		if(tag) {
@@ -172,7 +171,7 @@ function CliveText(d, c, cid, id) {
 			p = p.parent();
 			var nht = p.height() + delta;
 			p.height(nht);
-			this.mayresize();
+			this.mayresize(false);
 		}
 	};
 
@@ -217,8 +216,8 @@ function CliveText(d, c, cid, id) {
 			return;
 		}
 		var arg = ev.Args
-		if(tdebug) {
-			console.log(this.divid, "apply", ev.Args, "v", ev.Vers, this.vers);
+		if(tdebug && arg[0] != "reloading") {
+			console.log(this.id, "apply", ev.Args, "v", ev.Vers, this.vers);
 		}
 		switch(arg[0]){
 		case "held":
@@ -269,6 +268,7 @@ function CliveText(d, c, cid, id) {
 			console.log(this.id, "font", arg[1]);
 			this.fontstyle = arg[1];
 			this.fixfont();
+			this.reformat(this.lns);
 			this.redrawtext();
 			break;
 		case "markinsing":
@@ -449,6 +449,10 @@ function CliveText(d, c, cid, id) {
 		case "reload":
 			this.reloadln0 = this.ln0.lni;
 			this.clear();
+			if(tdebug) {
+				console.log("cleared", this);
+				this.dump();
+			}
 			break;
 		case "reloading":
 			if(arg.length < 2){
@@ -456,7 +460,12 @@ function CliveText(d, c, cid, id) {
 				break;
 			}
 			var nln = new Line(0, 0, arg[1], true);
+			var logit = (tdebug && (!this.lns || !this.lns.next))
 			this.addln(nln);
+			if(logit) {
+				console.log("reloading", this);
+				this.dump();
+			}
 			break
 		case "reloaded":
 			if(arg.length < 2){
@@ -467,12 +476,15 @@ function CliveText(d, c, cid, id) {
 			if(this.reloadln0) {
 				this.ln0 = this.seekln(this.reloadln0);
 				this.reloadln0 = 0;
+				if(!this.ln0) {
+					this.ln0 = this.lns;
+				}
 			}
+			this.reformat(this.lns);
 			this.redrawtext();
 			if(!this.userresized) {
 				this.autoresize();
 			}
-			// this.dump();
 			break;
 		case "mark":
 			if(arg.length < 3){
@@ -884,7 +896,7 @@ function CliveText(d, c, cid, id) {
 		e.returnValue = false;
 	};
 
-	this.tlocknmdown = function() {
+	this.tlocknmdown = function(e) {
 		if(this.islocked) {
 			return this.tmdown(e);
 		}
@@ -916,7 +928,7 @@ function CliveText(d, c, cid, id) {
 		}
 	};
 
-	this.tlocknmup = function() {
+	this.tlocknmup = function(e) {
 		if(this.islocked) {
 			return this.tmup(e);
 		}
@@ -1191,7 +1203,7 @@ function CliveText(d, c, cid, id) {
 		}
 	};
 
-	this.mwait = function() {
+	this.mwait = function(e) {
 		this.c.onmousemove = function(e) {
 			return self.evxy(e);
 		};
@@ -1210,6 +1222,7 @@ function CliveText(d, c, cid, id) {
 		};
 	};
 
+	var self = this;
 	this.c.onmousedown = function(e) {
 		return self.mdown(e);
 	};

@@ -93,7 +93,8 @@ function CliveCtlr() {
 			console.log("update: no objet id");
 			return;
 		}
-		if(tdebug)console.log("update to", o.Id, o.Args);
+		if(tdebug && o.Args && o.Args[0] != "reloading")
+			console.log("update to", o.Id, o.Args);
 		if(self.apply) {
 			self.apply(o, true);
 		}
@@ -117,15 +118,15 @@ function CliveCtlr() {
 	this.d.resizable({
 		handles: 's'
 	}).on('resize', function() {
-		if(tdebug)console.log("user resized");
 		self.userresized = true;
 		if(self.mayresize) {
+			if(tdebug)console.log("user resized");
 			self.mayresize(true);
 		}
 	});
 	$(window).resize(function() {
-		if(tdebug)console.log("window resized");
 		if(self.mayresize) {
+			if(tdebug)console.log("window resized");
 			self.mayresize(false);
 		}
 	});
