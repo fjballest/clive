@@ -310,8 +310,9 @@ function Lines(els) {
 	};
 
 	this.reformat = function(ln0) {
+		var ctx = this.ctx;
+		this.fixfont();
 		if(tdebug) {
-			var ctx = this.c.getContext("2d", {alpha: false});
 			var avail = this.c.width - this.marginsz;
 			var ln0i = ln0?ln0.lni:-1;
 			console.log("reformat ln " + ln0i + " wid " + avail + ":" );

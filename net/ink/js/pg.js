@@ -43,9 +43,10 @@ function setclean(e) {
 var oldfocus = undefined;
 
 function setfocus(e) {
-	if(pgdebug)console.log("focus");
+	if(pgdebug)console.log("pg focus");
 	var p = $(e).closest(".portlet");
 	if(!p || !p.length) {
+		if(pgdebug)console.log("focus: no portlet");
 		return;
 	}
 	var pmax = p.find(".portlet-max");
@@ -56,7 +57,9 @@ function setfocus(e) {
 			console.log("setfocus", ex);
 		}
 	}
-	pmax.closest(".portlet-header").css('background-color', '#EE8800');
+	var hdr = pmax.closest(".portlet-header");
+	if(pgdebug)console.log("pg hdr ", hdr);
+	hdr.css('background-color', '#EE8800');
 	oldfocus = pmax;
 }
 
