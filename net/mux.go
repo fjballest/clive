@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Dial the given address and return a muxed connection
@@ -69,6 +70,10 @@ func serveMuxLoop(l net.Listener, rc chan *ch.Mux, ec chan bool,
 			if n := strings.LastIndex(raddr, ":"); n > 0 {
 				raddr = raddr[:n] + "!" + raddr[n+1:]
 			}
+		}
+		if c, ok := fd.(*net.TCPConn); ok {
+			c.SetKeepAlivePeriod(30 * time.Second)
+			c.SetKeepAlive(true)
 		}
 		if tlscfg != nil {
 			fd = tls.Server(fd, tlscfg)

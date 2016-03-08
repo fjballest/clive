@@ -145,7 +145,7 @@ func dialTCP(host, port string, tlscfg *tls.Config) (net.Conn, error) {
 		return nil, err
 	}
 	// Beware this is not enough if you have NATs
-	c.SetKeepAlivePeriod(2 * time.Second)
+	c.SetKeepAlivePeriod(30 * time.Second)
 	c.SetKeepAlive(true)
 	if tlscfg != nil {
 		return tls.Client(c, tlscfg), nil
@@ -241,7 +241,11 @@ func serveLoop(l net.Listener, rc chan ch.Conn, ec chan bool,
 			}
 		}
 		if tlscfg != nil {
-			fd = tls.Server(fd, tlscfg)
+	
+		if c, ok := fd.(*net.TCPConn); ok {				c.SetKeepAlivePeriod(30 * time.Second)
+			c.SetKeepAlive(true)
+		}
+	fd = tls.Server(fd, tlscfg)
 		}
 		cn := ch.NewConn(fd, 0, nil)
 		cn.Tag = raddr
