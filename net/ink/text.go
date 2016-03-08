@@ -73,17 +73,17 @@ import (
 //
 struct Txt {
 	*Ctlr
-	t               *txt.Text
-	tag             string // NB: this is not the page element tag.
-	noedits bool   // It was a tag line but we no longer use it.
-	cundo           bool
-	owner           string
-	held            []*Ev
-	lastev          string
-	ngets           int
-	getslk          sync.Mutex
-	dirty, istemp   bool
-	font            string
+	t             *txt.Text
+	tag           string // NB: this is not the page element tag.
+	noedits       bool   // It was a tag line but we no longer use it.
+	cundo         bool
+	owner         string
+	held          []*Ev
+	lastev        string
+	ngets         int
+	getslk        sync.Mutex
+	dirty, istemp bool
+	font          string
 }
 
 // Prevent t from getting dirty despite viewer or user calls.
@@ -103,8 +103,8 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 
 	n, err := io.WriteString(w, `
 		<div id="`+vid+`" class="`+t.Id+` ui-widget-content", `+
-			`tabindex="1" style="border:2px solid black; `+
-			`margin:0; width:100%;height:300; background-color:#dfdfca">`)
+		`tabindex="1" style="border:2px solid black; `+
+		`margin:0; width:100%;height:300; background-color:#dfdfca">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -145,10 +145,10 @@ func NewTxt(lines ...string) *Txt {
 		lns += "\n"
 	}
 	t := &Txt{
-		Ctlr:   newCtlr("text"),
-		t:      txt.NewEditing([]rune(lns)),
-		tag:    "",
-		font:   "r",
+		Ctlr: newCtlr("text"),
+		t:    txt.NewEditing([]rune(lns)),
+		tag:  "",
+		font: "r",
 	}
 	t.t.SetMark("p0", 0)
 	t.t.SetMark("p1", 0)

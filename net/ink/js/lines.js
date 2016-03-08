@@ -683,9 +683,9 @@ function DrawLines(c) {
 		this.tickx = this.ticky = 0;
 	};
 
-	this.clearline = function(lni) {
+	this.clearline = function(i) {
 		var ctx = this.c.getContext("2d", {alpha: false});
-		var pos = (lni-this.ln0.lni)*this.fontht;
+		var pos = i*this.fontht;
 		if(pos >= this.c.height) {
 			return false;
 		}
@@ -730,7 +730,7 @@ function DrawLines(c) {
 		var lnht = this.fontht;
 		var avail = this.c.width - 2*this.marginsz - 1;
 		var y = (ln.lni-this.ln0.lni)*lnht;
-		if(y >= this.c.height) {
+		if(y > this.c.height) {
 			return false;
 		}
 
@@ -845,6 +845,7 @@ function DrawLines(c) {
 					break;
 			}
 		}
+		if(tdebug)console.log("redraw " + i + " " + this.nlines);
 		this.updatescrl();
 	};
 

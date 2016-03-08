@@ -203,6 +203,14 @@ function CliveText(d, c, cid, id) {
 		selecting = false;
 	};
 
+	this.adjdel = function(pos, delp0, delp1) {
+		if(pos <= delp0)
+			return pos;
+		if(pos <= delp1)
+			return delp0;
+		return pos - (delp1 - delp0);
+	};
+	
 	this.apply = function(ev, fromserver) {
 		if(!ev || !ev.Args || !ev.Args[0]){
 			console.log("apply: nil ev");
@@ -420,8 +428,8 @@ function CliveText(d, c, cid, id) {
 			}catch(ex){
 				console.log(this.divid, "apply: del: " + ex);
 			}
-			op0 = adjdel(op0, p0, p1);
-			op1 = adjdel(op1, p0, p1);
+			op0 = this.adjdel(op0, p0, p1);
+			op1 = this.adjdel(op1, p0, p1);
 			if(fromserver) {
 				this.setsel(op0, op1, false);
 			}
