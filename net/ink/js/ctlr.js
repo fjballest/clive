@@ -117,14 +117,14 @@ function CliveCtlr() {
 	this.d.resizable({
 		handles: 's'
 	}).on('resize', function() {
-		console.log("user resized");
+		if(tdebug)console.log("user resized");
 		self.userresized = true;
 		if(self.mayresize) {
 			self.mayresize(true);
 		}
 	});
 	$(window).resize(function() {
-		console.log("window resized");
+		if(tdebug)console.log("window resized");
 		if(self.mayresize) {
 			self.mayresize(false);
 		}

@@ -6,10 +6,12 @@
  * should define a global clive object to contain all the clive globals, and go from there.
  */
 
+var pgdebug = false;
+
 // controls may call this to set the icon for dirty (and get saves on clicks)
 // but they must implement the post method on the element passed.
 function setdirty(e) {
-	console.log("dirty");
+	if(pgdebug)console.log("dirty");
 	var p = $(e).closest(".portlet");
 	if(!p || !p.length) {
 		return;
@@ -41,7 +43,7 @@ function setclean(e) {
 var oldfocus = undefined;
 
 function setfocus(e) {
-	console.log("focus");
+	if(pgdebug)console.log("focus");
 	var p = $(e).closest(".portlet");
 	if(!p || !p.length) {
 		return;
@@ -51,7 +53,7 @@ function setfocus(e) {
 		try {
 			oldfocus.closest(".portlet-header").css('background-color', '#CC6600');
 		}catch(ex) {
-			console.log(ex);
+			console.log("setfocus", ex);
 		}
 	}
 	pmax.closest(".portlet-header").css('background-color', '#EE8800');
@@ -60,7 +62,7 @@ function setfocus(e) {
 
 function scrollcol() {
 	var child = $(this).find(".portlet").first();
-	console.log("scroll ", child);
+	if(pgdebug)console.log("scroll ", child);
 	$(this).append(child);
 }
 
@@ -75,7 +77,7 @@ function settag(e, tag) {
 	return;
 	tt.getWordByEvent('click', function tagclick(ev, word) {
 			ev.stopPropagation();
-			console.log("tag click on ", ev, word);
+			if(pgdebug)console.log("tag click on ", ev, word);
 			e.post(["tag", word]);
 		});
 	
@@ -134,7 +136,7 @@ function maxpl(pl) {
 	if(!icon.hasClass("ui-icon-plus")){
 		return false;
 	}
-	console.log("maxpl ", icon);
+	if(pgdebug)console.log("maxpl ", icon);
 	$(pl).find('.portlet-content').toggle();
 	icon.toggleClass("ui-icon-minus ui-icon-plus");
 	pl.find(".clivectl").each(function() {
@@ -157,7 +159,7 @@ function updportlets() {
 		var hdr = $(p).addClass("ui-widget ui-widget-content ui-helper-clearfix ui-corner-all")
 			.find(".portlet-header");
 		$(hdr).on('click', function(e) {
-			console.log("tag click");
+			if(pgdebug)console.log("tag click");
 			scrollcol.call($(this).closest(".column"), e);
 		});
 		hdr.addClass("ui-widget-header ui-corner-all")
@@ -309,12 +311,12 @@ function pgdrop(col, e) {
 	var data = e.dataTransfer.getData("Text");
 	var id = $(col).attr('id');
 	if(data)
-		console.log("drop", data, "on", id);
+		if(pgdebug)console.log("drop", data, "on", id);
 	document.post(["click4", data, id]);
 }
 
 function pgupdate() {
-	console.log("layout updated");
+	if(pgdebug)console.log("layout updated");
 	var layout=["layout"];
 	$(".column").each(function(){
 		var col = $(this).attr('id');
@@ -328,7 +330,7 @@ function pgupdate() {
 		});
 	});
 	document.post(layout);
-	console.log(layout);
+	if(pgdebug)console.log(layout);
 }
 
 function pgapply(ev) {
@@ -351,7 +353,7 @@ function pgapply(ev) {
 		if(n < 0 || n >= cols.length) {
 			n = cols.length-1;
 		}
-		console.log("load at col ", n, cols.length);
+		if(pgdebug)console.log("load at col ", n, cols.length);
 		var col = cols[n];
 		var first = $(col).find(".portlet");
 		if(first && first.length > 0) {
@@ -359,7 +361,7 @@ function pgapply(ev) {
 		} else {
 			$(col).append(arg[1]);
 		}
-		console.log(col);
+		if(pgdebug)console.log(col);
 		break;
 	case "close":
 		if(arg.length < 2){
@@ -430,7 +432,7 @@ function mkpg(id, cid) {
 			console.log("update: no object id");
 			return;
 		}
-		console.log("update to", o.Id, o.Args);
+		if(pgdebug)console.log("update to", o.Id, o.Args);
 		pgapply(o);
 	};
 	ws.onclose = function() {
@@ -451,11 +453,11 @@ $(function() {
 		tolerance: "pointer",
 		placeholder: "portlet-placeholder ui-corner-all",
 		update: function(e, u) {
-			console.log("update", e, u);
+			if(pgdebug)console.log("update", e, u);
 			pgupdate();
 		},
 		start: function(e) {
-			console.log("start", e);
+			if(pgdebug)console.log("start", e);
 		},
 
 	});

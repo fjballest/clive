@@ -113,7 +113,7 @@ function CliveText(d, c, cid, id) {
 		var p = c.parent();
 		var dx = p.width();
 		var dy = p.height() - 5;	// -5: leave a bit of room
-		console.log('text resized', dx, dy, user?"user":"win");
+		if(tdebug)console.log('text resized', dx, dy, user?"user":"win");
 		var ctx = this.c.getContext("2d", {alpha: false});
 		// TODO: use helper when we rewrite ink js.
 		var tag = $("#"+this.id+"t")
@@ -145,7 +145,7 @@ function CliveText(d, c, cid, id) {
 				var wtop = $(window).scrollTop();
 				var etop = p.offset().top;
 				var eoff = etop-wtop;
-				console.log("resize ", wtop, etop, eoff);
+				if(tdebug)console.log("resize ", wtop, etop, eoff);
 				ht = window.innerHeight - 10 - eoff; // -10: leave some room
 			} else if(moreless >= 0) {
 				ht += fontht*6;
@@ -165,9 +165,9 @@ function CliveText(d, c, cid, id) {
 				ht = 400;
 			}
 		}
-		console.log("auto rsz", nln, ht, oldht);
+		if(tdebug)console.log("auto rsz", nln, ht, oldht);
 		if (oldht < ht - fontht || oldht > ht + fontht) {
-			console.log("auto resizing");
+			if(tdebug)console.log("auto resizing");
 			var delta = ht - oldht;
 			p = p.parent();
 			var nht = p.height() + delta;
@@ -178,7 +178,7 @@ function CliveText(d, c, cid, id) {
 
 	this.selectstart = function() {
 		if(!this.selecting) {
-			console.log("selecting...");
+			if(tdebug)console.log("selecting...");
 		}
 		this.selecting = true;
 		selecting = true;
@@ -193,7 +193,7 @@ function CliveText(d, c, cid, id) {
 		if(!this.selecting) {
 			return;
 		}
-		console.log("select end");
+		if(tdebug)console.log("select end");
 		if(this.oldp0 != this.p0 || this.oldp1 != this.p1) {
 			this.post(["tick", ""+this.p0, ""+this.p1]);
 			this.oldp0 = this.p0;
@@ -283,7 +283,7 @@ function CliveText(d, c, cid, id) {
 			this.markinsdata.push(arg[2]);
 			break;
 		case "markinsdone":
-			console.log("markins run...");
+			if(tdebug)console.log("markins run...");
 			if(arg.length < 2){
 				console.log(this.id, "apply: short markinsdone");
 				break;
@@ -324,7 +324,7 @@ function CliveText(d, c, cid, id) {
 			if(!this.userresized) {
 				this.autoresize();
 			} 
-			console.log(this.id, "markins done");
+			if(tdebug)console.log(this.id, "markins done");
 			break;
 		case "einsing":
 			if(arg.length < 2){
@@ -338,7 +338,7 @@ function CliveText(d, c, cid, id) {
 			this.einsdata.push(arg[1]);
 			break;
 		case "einsdone":
-			console.log(this.id, "eins run...");
+			if(tdebug)console.log(this.id, "eins run...");
 			if(arg.length < 2){
 				console.log(this.id, "apply: short ins");
 				break;
@@ -373,7 +373,7 @@ function CliveText(d, c, cid, id) {
 			if(!this.userresized) {
 				this.autoresize();
 			} 
-			console.log(this.id, "eins done");
+			if(tdebug)console.log(this.id, "eins done");
 			break;
 		case "eins":
 			if(arg.length < 3){
@@ -493,7 +493,7 @@ function CliveText(d, c, cid, id) {
 			this.setmark("p1", pos1);
 			this.setsel(pos0, pos1, true);
 			this.viewsel();
-			console.log("setsel", pos0, pos1);
+			if(tdebug)console.log("setsel", pos0, pos1);
 			break;
 		case "delmark":
 			if(arg.length < 2){
@@ -851,7 +851,7 @@ function CliveText(d, c, cid, id) {
 	};
 
 	this.tmdown = function(e) {
-		if(0)console.log("tmdown ", this.id, e);
+		if(tdebug)console.log("tmdown ", this.id, e);
 		this.selectstart();
 		e.preventDefault();
 		this.secondary = 0;		/* paranoia: see tm234 */
@@ -1149,7 +1149,6 @@ function CliveText(d, c, cid, id) {
 		this.c.onmouseup = function(e) {
 			self.evxy(e);
 			self.mrlse(e);
-			console.log("m234 up");
 			if(self.buttons == 0){
 				var sp0 = self.p0;
 				var sp1 = self.p1;
@@ -1160,7 +1159,6 @@ function CliveText(d, c, cid, id) {
 				}
 				self.secondary = 0;
 				self.setsel(self.oldp0, self.oldp1);
-				console.log("sp0 " + sp0 + " " + sp1 + " " + tsize);
 				if(!self.secondaryabort)
 				if(sp0 != sp1) {
 					var txt = self.get(sp0, sp1);
