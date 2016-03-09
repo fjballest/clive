@@ -15,10 +15,16 @@ func authFailed(w http.ResponseWriter, r *http.Request) {
 		<script>
 		document.cookie = "clive=xxx; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
 		</script>
-		<b><tt>You are logged out.</tt></b>
+		<p>
+		<p>
+		<p>
+		<p>
 		<p><p><center><b><tt>
+		<b><tt>You are logged out.</tt></b><br>
 		<b>You may proceed to the <a href="/login">login page</a>.
 		</tt></b></center><p><p>
+		<img src="http://lsub.org/clive.gif"  alt="" style="position:fixed; top:0; left:0; z-index:-1; width:100px;">
+		<img src="http://lsub.org/zxlogo.gif"  alt="" style="position:fixed; bottom:0; right:0; z-index:-1; width:100px;">
 		</body></html>
 	`
 	fmt.Fprintf(w, "%s\n", outs)
@@ -141,6 +147,8 @@ func serveLoginFor(proceedto string) {
 			<input name="box" id="pass" type="password"/ ></form></tt></b></center>
 `
 		fmt.Fprintf(w, "%s\n<p>\n", js)
-		fmt.Fprintf(w, `</body></html>`+"\n")
+		fmt.Fprintf(w, `<img src="http://lsub.org/clive.gif"  alt="" style="position:fixed; top:0; left:0; z-index:-1; width:100px;">
+		<img src="http://lsub.org/zxlogo.gif"  alt="" style="position:fixed; bottom:0; right:0; z-index:-1; width:100px;">
+			</body></html>`+"\n")
 	})
 }

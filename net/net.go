@@ -241,11 +241,12 @@ func serveLoop(l net.Listener, rc chan ch.Conn, ec chan bool,
 			}
 		}
 		if tlscfg != nil {
-	
-		if c, ok := fd.(*net.TCPConn); ok {				c.SetKeepAlivePeriod(30 * time.Second)
-			c.SetKeepAlive(true)
-		}
-	fd = tls.Server(fd, tlscfg)
+
+			if c, ok := fd.(*net.TCPConn); ok {
+				c.SetKeepAlivePeriod(30 * time.Second)
+				c.SetKeepAlive(true)
+			}
+			fd = tls.Server(fd, tlscfg)
 		}
 		cn := ch.NewConn(fd, 0, nil)
 		cn.Tag = raddr

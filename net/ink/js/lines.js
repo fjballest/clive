@@ -128,11 +128,13 @@ function Line(lni, off, txt, eol) {
 
 	// does not del eol
 	this.del = function(lnoff, n) {
-		var lnlen = this.txt.lenth;
+		var lnlen = this.txt.length;
 		if(lnoff+n > lnlen) {
 			n = lnlen - lnoff;
 		}
-		this.txt = this.txt.slice(0,lnoff) + this.txt.slice(lnoff+n, lnlen);
+		if(n > 0) {
+			this.txt = this.txt.slice(0,lnoff) + this.txt.slice(lnoff+n, lnlen);
+		}
 		return n;
 	};
 
@@ -451,32 +453,42 @@ function Lines(els) {
 		var xln, lnoff;
 		[xln, lnoff] = this.seek(this.p0);
 		if(!xln) {
+			console.log("lines: del: no line");
 			return;
 		}
 		var ndel = this.p1 - this.p0;
 		var tot = 0;
 		var xln0 = xln;
 		for(; tot < ndel && xln != null; xln = xln.next) {
+			if(tdebug && 0) {
+				console.log("lines del " + ndel + " loff " + lnoff + " " + xln.str());
+			}
 			var nd = xln.del(lnoff, ndel-tot);
-			tot += nd;
-			if(xln == xln0 && tot == ndel && xln.eol) {
+			if(tot+nd < ndel && xln.eol) {
+				xln.eol = false;
+				nd++;
+			}
+			if(tot == 0 && nd == ndel && xln.eol) {
 				// del within a line; don't reformat; redraw it.
-				this.nrunes -= tot;
-				this.p1 -= tot;
+				if(tdebug) {
+					console.log("single line del");
+				}
+				this.nrunes -= nd;
+				this.p1 -= nd;
 				xln.renumber();
-				this.frlninsdel(xln, -tot);
+				this.frlninsdel(xln, -nd);
 				return;
 			}
-			if(tot < ndel && xln.eol) {
-				xln.eol = false;
-				tot++;
-			}
+			tot += nd;
 			lnoff = 0;
 		}
 		var mightscroll = (this.p1 >= xln0.off);
 		this.nrunes -= tot;
 		this.p1 -= tot;
-		xln0 = this.reformat(xln0);
+		if(xln0.prev) {
+			xln0 = xln0.prev;
+		}
+		this.reformat(xln0);
 		this.redrawtext();
 		if(!dontscroll && mightscroll) {
 			this.mayscrolldel(xln0);

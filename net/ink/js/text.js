@@ -217,7 +217,7 @@ function CliveText(d, c, cid, id) {
 		}
 		var arg = ev.Args
 		if(tdebug && arg[0] != "reloading") {
-			console.log(this.id, "apply", ev.Args, "v", ev.Vers, this.vers);
+			console.log(this.id, "apply", ev.Args, "v" + ev.Vers + " " + this.vers);
 		}
 		switch(arg[0]){
 		case "held":
@@ -250,7 +250,7 @@ function CliveText(d, c, cid, id) {
 				console.log(this.id, "apply: short tag");
 				break;
 			}
-			settag(arg[1]);
+			this.settag(arg[1]);
 			break;
 		case "font":
 			if(arg.length < 2){

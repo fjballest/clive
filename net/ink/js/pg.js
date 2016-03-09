@@ -444,7 +444,9 @@ function mkpg(id, cid) {
 	ws.onclose = function() {
 		console.log("text socket " + wsurl+ " closed\n");
 		var nd = document.open("text/html", "replace");
-		nd.write("<h3 style><tt>disconnected</tt></h3>");
+		nd.write("<center><p><p><p><p><h3><tt>You are disconnected.</tt></h3></center>");
+		nd.write('<img src="http://lsub.org/clive.gif"  alt="" style="position:fixed; top:0; left:0; z-index:-1; width:100px;">');
+		nd.write('<img src="http://lsub.org/zxlogo.gif"  alt="" style="position:fixed; bottom:0; right:0; z-index:-1; width:100px;">');
 		nd.close();
 		$(document.body).css("background-color", "#ddddc8");
 	};
