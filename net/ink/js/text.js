@@ -880,7 +880,7 @@ function CliveText(d, c, cid, id) {
 			this.oldp0 = this.p0;
 			this.oldp1 = this.p1;
 			this.setsel(pos, pos);
-			this.m234(pos, b);
+			this.m234(pos);
 			break;
 		default:
 			this.mwait();
@@ -1121,7 +1121,8 @@ function CliveText(d, c, cid, id) {
 
 	// holding down button-[234], change handlers to speak
 	// a different mouse language.
-	this.m234 = function(pos, b) {
+	this.m234 = function(pos) {
+		var b = this.buttons;
 		this.secondary = b;
 		this.c.onmousemove = function(e){
 			self.evxy(e);
@@ -1145,7 +1146,7 @@ function CliveText(d, c, cid, id) {
 		this.c.onmousedown = function(e) {
 			self.evxy(e);
 			self.mpress(e);
-			self.secondaryabort = true;
+			self.secondaryabort = (self.secondaryabort || self.buttons != self.secondary);
 		};
 
 		this.c.onmouseup = function(e) {
@@ -1164,7 +1165,7 @@ function CliveText(d, c, cid, id) {
 				if(!self.secondaryabort)
 				if(sp0 != sp1) {
 					var txt = self.get(sp0, sp1);
-					self.post(["click"+b, "", ""+sp0, ""+sp1, txt]);
+					self.post(["click"+b, txt, ""+sp0, ""+sp1]);
 				} else if(self.p0 != self.p1 &&
 						 sp0 >= self.p0 && sp0 <= self.p1) {
 					var txt = self.get(self.p0, self.p1);
@@ -1182,8 +1183,6 @@ function CliveText(d, c, cid, id) {
 				self.c.onmousemove = self.c.mmove;
 				self.c.onmousedown = self.c.mdown;
 				self.c.onmouseup = self.c.mup;
-			}
-			if(self.buttons == 0){
 				self.p0 = self.oldp0;
 				self.p1 = self.oldp1;
 				self.secondary = 0;
