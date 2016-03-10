@@ -87,13 +87,15 @@ func main() {
 	if rflag {
 		xfs = zx.MakeRO(xfs)
 	}
-	srv, err := rzx.NewServer(xaddr, auth.TLSserver)
-	if err != nil {
-		cmd.Fatal("serve: %s", err)
-	}
-	srv.Debug = xdebug
-	if err := srv.Serve("main", xfs); err != nil {
-		cmd.Warn("serve: %s: %s", xaddr, err)
+	if xaddr != "" {
+		srv, err := rzx.NewServer(xaddr, auth.TLSserver)
+		if err != nil {
+			cmd.Fatal("serve: %s", err)
+		}
+		srv.Debug = xdebug
+		if err := srv.Serve("main", xfs); err != nil {
+			cmd.Warn("serve: %s: %s", xaddr, err)
+		}
 	}
 	rs := map[bool]string{false: "rw", true: "ro"}
 	cs := map[bool]string{false: "uncached", true: "cached"}

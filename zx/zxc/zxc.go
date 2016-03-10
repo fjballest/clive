@@ -428,7 +428,7 @@ func (fs *Fs) walk(why walkFor, nd zx.Dir, els ...string) (f fsFile, err error) 
 				return f, nil
 			}
 			defer f.Unlock()
-			return f, fmt.Errorf("%s: %s", f, err)
+			return f, fmt.Errorf("%s: %s: %s", f, els[0], err)
 		}
 		f.Unlock()
 		f = cf

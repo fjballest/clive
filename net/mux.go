@@ -197,7 +197,7 @@ func MuxServe(addr string, tlscfg ...*tls.Config) (c <-chan *ch.Mux, ec chan boo
 		}
 		return serveMuxBoth(uc, uec, tc, tec)
 	case "unix", "tcp", "tls":
-		port := Port("unix", svc)
+		port := Port(nw, svc)
 		return serveMux1(nw, host, port, cfg)
 	default:
 		return nil, nil, ErrBadAddr

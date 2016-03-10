@@ -117,7 +117,7 @@ struct Bib {
 
 // Load the files at the given dir into a Bib set.
 func Load(dir string) (*Bib, error) {
-	ds, err := zx.GetDir(cmd.NS(), dir)
+	ds, err := cmd.GetDir(dir)
 	if err != nil {
 		return nil, err
 	}

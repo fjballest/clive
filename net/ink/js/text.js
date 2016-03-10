@@ -668,7 +668,7 @@ function CliveText(d, c, cid, id) {
 			this.post(["hold"]);
 			console.log("holding...");
 		}
-		var self = this;
+		//var self = this;
 		var xe = jQuery.Event("keydown");
 		xe.which = e.which;
 		xe.keyCode = e.keyCode;
@@ -969,7 +969,7 @@ function CliveText(d, c, cid, id) {
 		this.keydown = this.tlocknkeydown;
 		this.keypress = this.tlocknkeypress;
 		this.keyup = this.tlocknkeyup;
-		this.mdown = this.locknmdown;
+		this.mdown = this.tlocknmdown;
 		this.mup = this.tlocknmup;
 		this.post(["tick", ""+this.p0, ""+this.p1]);
 		this.post(["rlsed"]);
@@ -982,7 +982,7 @@ function CliveText(d, c, cid, id) {
 	this.keydown = this.tlocknkeydown;
 	this.keypress = this.tlocknkeypress;
 	this.keyup = this.tlocknkeyup;
-	this.mdown = this.locknmdown;
+	this.mdown = this.tlocknmdown;
 	this.mup = this.tlocknmup;
 
 	this.menter = function(e) {

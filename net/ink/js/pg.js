@@ -19,7 +19,7 @@ function setdirty(e) {
 	}
 	var pd = p.find(".portlet-dirty");
 	if(pd.length > 0) {
-		console.log("already dirty", pd);
+		if(pgdebug)console.log("already dirty", pd);
 		return;
 	}
 	var pmax = p.find(".portlet-max");

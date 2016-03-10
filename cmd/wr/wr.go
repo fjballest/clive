@@ -26,7 +26,6 @@ var (
 	debugPars                                        bool
 	debugIndent                                      bool
 	debugSplit                                       bool
-	hflag, tflag, lflag, mflag, pflag, psflag, notux bool
 	outdir                                           = "."
 	outfig                                           = "./wrfig"
 	outpdf                                           string
@@ -41,6 +40,9 @@ var (
 		".tex":  wrtex,
 		".html": wrhtml,
 	}
+
+
+	hflag, tflag, lflag, mflag, pflag, psflag, notux bool
 )
 
 func outExt() string {
@@ -91,7 +93,7 @@ func out(t *Text) error {
 	var b bytes.Buffer
 	if oext == ".ms" {
 		fmt.Fprintf(&b, `.\" pic %s | tbl | eqn | `+
-			`groff -ms -m pspic  |pstopdf -i -o  %s`+"\n",
+			`groff -Tutf8 -ms -m pspic  |pstopdf -i -o  %s`+"\n",
 			oname, outpdf)
 	}
 	wr(t, max, &b, outfig)

@@ -543,6 +543,10 @@ function Lines(els) {
 		if(ln == null) {
 			ln = this.lne;
 		}
+		while(ln.prev != null && ln.txt.length == 0) {
+			ln = ln.prev;
+			pos = ln.off;
+		}
 		var epos = pos;
 		var p0 = pos - ln.off;
 		if(p0 == ln.txt.length){
