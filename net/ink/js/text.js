@@ -1157,8 +1157,8 @@ function CliveText(d, c, cid, id) {
 				var sp1 = self.p1;
 				var ln = self.lne;
 				var tsize = 0;
-				if(ln && ln.txt.length == 0) {
-					tsize = ln.off;
+				if(ln) {
+					tsize = ln.off + ln.txt.length;
 				}
 				self.secondary = 0;
 				self.setsel(self.oldp0, self.oldp1);
@@ -1171,10 +1171,10 @@ function CliveText(d, c, cid, id) {
 					var txt = self.get(self.p0, self.p1);
 					self.post(["click"+b, txt, ""+self.p0, ""+self.p1]);
 				} else if(b != 1 && sp0 == sp1 && tsize &&
-					sp0 == tsize && sp0>0) {
+					sp0 >= tsize && sp0>0) {
 					// a click at a final empty line selects the previous
 					// line (which is the last one shown).
-					var x = self.getword(sp0-1, b != 8 || self.dblclick>1);
+					var x = self.getword(tsize-1, b != 8 || self.dblclick>1);
 					self.post(["click"+b, x[0], ""+x[1], ""+x[2]]);
 				} else {
 					var x = self.getword(sp0, b != 8 || self.dblclick>1);
