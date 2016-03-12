@@ -22,17 +22,17 @@ struct xCmd {
 }
 
 var (
-	opts                                             = opt.New("{file}")
-	debugPars                                        bool
-	debugIndent                                      bool
-	debugSplit                                       bool
-	outdir                                           = "."
-	outfig                                           = "./wrfig"
-	outpdf                                           string
-	uname, oname, oext                               string
-	max                                              = 70
-	refsdir                                          = refs.Dir
-	wrs                                              = map[string]func(*Text, int, io.Writer, string){
+	opts               = opt.New("{file}")
+	debugPars          bool
+	debugIndent        bool
+	debugSplit         bool
+	outdir             = "."
+	outfig             = "./wrfig"
+	outpdf             string
+	uname, oname, oext string
+	max                = 70
+	refsdir            = refs.Dir
+	wrs                = map[string]func(*Text, int, io.Writer, string){
 		".man":  wrtxt,
 		".ms":   wrroff,
 		".ps":   wrps,
@@ -40,7 +40,6 @@ var (
 		".tex":  wrtex,
 		".html": wrhtml,
 	}
-
 
 	hflag, tflag, lflag, mflag, pflag, psflag, notux bool
 )

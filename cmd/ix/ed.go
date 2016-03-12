@@ -494,6 +494,10 @@ func (ed *Ed) click248(ev *ink.Ev) {
 		cmd.Warn("bad p1 in click24 event")
 		return
 	}
+	if (ev.Args[0] == "click2" || ev.Args[0] == "click4") &&
+		len(strings.TrimSpace(ev.Args[1])) == 0 {
+		return
+	}
 	if ev.Args[0] == "click2" {
 		go ed.runCmd(p1, ev.Args[1])
 	} else if ev.Args[0] == "click8" {

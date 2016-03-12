@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"clive/cmd"
 	"io"
 	"os/exec"
-	"bytes"
 )
 
 var (
@@ -38,13 +38,13 @@ func pspdf(t *Text, wid int, out io.Writer, cline, outfig string) {
 	if err := xcmd.Start(); err != nil {
 		cmd.Fatal("pipe to sh: %s", err)
 	}
-	
+
 	wrroff(t, wid, stdin, outfig)
 	stdin.Close()
 	var buf bytes.Buffer
-	io.Copy(&buf, stderr);
+	io.Copy(&buf, stderr)
 	if buf.Len() > 0 {
-		cmd.Eprintf("%s", buf);
+		cmd.Eprintf("%s", buf)
 	}
 	if err := xcmd.Wait(); err != nil {
 		cmd.Warn("pspdf: sh: %s", err)

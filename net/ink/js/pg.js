@@ -114,11 +114,14 @@ $(function(){
 // el is a portlet
 // remove() is not enough, we must close the ws(s)
 function removecontrol(el, needpost) {
-	console.log("closing", el);
+	if(pgdebug)console.log("removecontrol: ", el);
 	if(!el) {
 		return;
 	}
-	$(el).find(".clivectl").each(function() {
+	var ctls = $(el).find(".clivectl");
+	var found = false;
+	ctls.each(function() {
+		found = true;
 		if(!this.ws) {
 			console.log("BUG: clivectl w/o ws");
 			console.log("didn't set d.get(0).ws?");
@@ -133,6 +136,13 @@ function removecontrol(el, needpost) {
 			this.ws.close();
 		}
 	});
+	if(!found) {
+		var id = $(el).attr('pgid');
+		if(pgdebug)console.log("more non-clivectl", el, id)
+		if(id) {
+			document.post(["quit", id]);
+		}
+	}
 	el.remove();
 }
 

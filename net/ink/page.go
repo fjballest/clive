@@ -411,7 +411,6 @@ func (pg *Pg) AddAt(el face{}, colnb int) (string, error) {
 		Args: []string{"load", buf.String(), scol},
 	}
 	pg.Lock()
-	defer pg.Unlock()
 	if colnb >= len(pg.els) {
 		colnb = len(pg.els) - 1
 	}
@@ -420,6 +419,8 @@ func (pg *Pg) AddAt(el face{}, colnb int) (string, error) {
 	copy(col[1:], col[0:])
 	col[0] = nel
 	pg.els[colnb] = col
+	pg.Unlock()
+	dprintf("pg add: %v\n", pg.Cols())
 	return elid, nil
 }
 
@@ -462,6 +463,8 @@ func (pg *Pg) Cols() [][]string {
 		for _, el := range c {
 			if ir, ok := el.(idder); ok {
 				col = append(col, ir.GetId())
+			} else {
+				dprintf("pg not idder: %v\n", el)
 			}
 		}
 		cols = append(cols, col)
@@ -547,6 +550,7 @@ func (pg *Pg) handle(wev *Ev) {
 			return
 		}
 		if ev[1] != "" {
+			dprintf("%s: del %s\ncols: %s\n", pg.Id, ev[1], pg.Cols())
 			go pg.Del(ev[1])
 		}
 	case "click2", "click4":

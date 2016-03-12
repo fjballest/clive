@@ -112,12 +112,15 @@ func bcd(c *Cmd, args ...string) {
 	}
 	if len(args) == 1 {
 		c.printf("missing destination dir\n")
+		c.printf("--\n")
 		return
 	}
 	if err := cmd.Cd(args[1]); err != nil {
 		c.printf("cd: %s\n", err)
+		c.printf("--\n")
 	} else {
-		c.printf("dot: %s\n\n", cmd.Dot())
+		c.printf("dot: %s\n", cmd.Dot())
+		c.printf("--\n")
 		if c.ed.iscmd {
 			c.ed.dir = cmd.Dot()
 			old := c.ed.tag
@@ -156,6 +159,7 @@ func beq(c *Cmd, args ...string) {
 	if dot := c.ed.ix.dot; dot != nil {
 		c.printf("%s\n", dot.Addr())
 	}
+	c.printf("--\n")
 	c.ed.win.DelMark(c.mark)
 }
 
@@ -166,6 +170,7 @@ func brules(c *Cmd, args ...string) {
 	} else {
 		c.printf("new rules\n")
 	}
+	c.printf("--\n")
 	c.ed.win.DelMark(c.mark)
 }
 
@@ -212,6 +217,7 @@ func bload(c *Cmd, args ...string) {
 	} else {
 		c.printf("%s loaded\n", args[1])
 	}
+	c.printf("--\n")
 }
 
 func bdump(c *Cmd, args ...string) {
@@ -232,6 +238,7 @@ func bdump(c *Cmd, args ...string) {
 	} else {
 		c.printf("%s\n", buf.String())
 	}
+	c.printf("--\n")
 	c.ed.win.DelMark(c.mark)
 }
 
@@ -257,6 +264,7 @@ func bw(c *Cmd, args ...string) {
 		if len(args) > 1 {
 			if err := dot.move(args[1]); err != nil {
 				c.printf("save: %s\n", err)
+				c.printf("--\n")
 				return
 			}
 		}
@@ -266,6 +274,7 @@ func bw(c *Cmd, args ...string) {
 			c.printf("%s: %s\n", dot, err)
 		}
 	}
+	c.printf("--\n")
 }
 
 func bn(c *Cmd, args ...string) {
@@ -294,7 +303,6 @@ func bn(c *Cmd, args ...string) {
 		ed.load(d) // and ignore errors here, it migth be brand new
 		ed.winid, _ = ix.pg.Add(ed.win)
 	}
-	c.printf("\n")
 	c.ed.win.DelMark(c.mark)
 }
 
@@ -308,6 +316,7 @@ func be(c *Cmd, args ...string) {
 			go dot.load(d)
 		}
 	}
+	c.printf("--\n")
 	c.ed.win.DelMark(c.mark)
 }
 
@@ -769,6 +778,7 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 		if buf.Len() > 0 {
 			c.printf("%s\n", buf.String())
 		}
+		c.printf("--\n")
 		c.ed.win.DelMark(c.mark)
 	case ">":
 		go c.pipeTo(eds, args[1:]...)
@@ -788,7 +798,7 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 				c.printf("%s: %s\n", ed, err)
 			}
 		}
-		c.printf("\n")
+		c.printf("--\n")
 	case "e":
 		go func() {
 			for _, ed := range eds {
@@ -798,7 +808,7 @@ func (c *Cmd) edcmd(eds []*Ed, args ...string) {
 					c.printf("%s: %s\n", ed, err)
 				}
 			}
-			c.printf("\n")
+			c.printf("--\n")
 		}()
 	case "u", "r":
 		go func() {
@@ -844,7 +854,7 @@ func bX(c *Cmd, args ...string) {
 		if out.Len() == 0 {
 			fmt.Fprintf(&out, "none\n")
 		}
-		c.printf("%s\n", out.String())
+		c.printf("%s--\n", out.String())
 		c.ed.win.DelMark(c.mark)
 		return
 	}
@@ -852,6 +862,7 @@ func bX(c *Cmd, args ...string) {
 	if args[2] != "e" && args[2] != "w" && args[2] != "=" && args[2] != "d" && args[2] != "X" &&
 		args[2] != "u" && args[2] != "r" && !isio {
 		c.printf("unknown edit command %q\n", args[2])
+		c.printf("--\n")
 		c.ed.win.DelMark(c.mark)
 		return
 	}
