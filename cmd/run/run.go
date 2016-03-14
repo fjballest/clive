@@ -191,7 +191,10 @@ func (p *Proc) addOut(name string) io.Closer {
 	ev := fmt.Sprintf("cliveio#%s=>%d", name, no)
 	xc.Env = append(xc.Env, ev)
 	xc.ExtraFiles = append(xc.ExtraFiles, wfd)
-	go ch.ReadMsgs(rfd, c)
+	go func() {
+		ch.ReadMsgs(rfd, c)
+		rfd.Close()
+	}()
 	return wfd
 }
 

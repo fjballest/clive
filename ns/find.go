@@ -87,6 +87,8 @@ func (f *finder) find1get(d zx.Dir) error {
 	if err != nil {
 		f.ns.vprintf("fnd:\t\tdir fs: %s\n", err)
 		return err
+	} else {
+		f.ns.Dprintf("ns dialed %s\n", d.SAddr())
 	}
 	spath := d.SPath()
 	r, ok := rf.(zx.FindGetter)

@@ -19,12 +19,14 @@ struct Fs {
 	*zx.Flags
 	Verb       bool
 	addr       string
+	raddr		string // addr used to cache dials
 	tc         *tls.Config
 	ai         *auth.Info
 	trees      map[string]bool
 	fsys       string
 	m          *ch.Mux
 	closed     bool // mux is gone, can redial
+	closewc	chan bool
 	sync.Mutex      // for redials
 }
 
@@ -93,15 +95,18 @@ func Dial(addr string, tlscfg ...*tls.Config) (*Fs, error) {
 	if fs, ok := dialed(addr); ok {
 		return fs, nil
 	}
+	raddr := addr
 	addr, fsys := splitaddr(addr)
 	fs := &Fs{
 		Flag:   &dbg.Flag{},
 		Flags:  &zx.Flags{},
 		addr:   addr,
+		raddr:  raddr,
 		tc:     tc,
 		trees:  map[string]bool{},
 		fsys:   fsys,
 		closed: true, // not yet dialed
+		closewc: make(chan bool),
 	}
 	fs.Tag = "rfs"
 	fs.Flags.Add("debug", &fs.Debug)
@@ -124,9 +129,11 @@ func (fs *Fs) Redial() error {
 	if !fs.closed {
 		if fs.m != nil {
 			fs.m.Close()
+			<-fs.closewc
 		}
 		fs.ai = nil
 		fs.closed = true
+		fs.closewc = make(chan bool)
 	}
 	m, err := net.MuxDial(fs.addr, fs.tc)
 	if err != nil {
@@ -158,16 +165,18 @@ func (fs *Fs) Redial() error {
 	fs.m = m
 	fs.closed = false
 	dialslk.Lock()
-	dials[fs.addr] = fs
+	dials[fs.raddr] = fs
 	dialslk.Unlock()
+	closewc := fs.closewc
 	go func() {
 		<-m.Hup
-		dialslk.Lock()
-		delete(dials, fs.addr)
-		dialslk.Unlock()
 		fs.Lock()
 		fs.closed = true
 		fs.Unlock()
+		dialslk.Lock()
+		delete(dials, fs.raddr)
+		dialslk.Unlock()
+		close(closewc)
 	}()
 	return nil
 }
