@@ -214,6 +214,7 @@ func (f *htmlFmt) fntSz(d string) {
 var hcaps = map[Kind]string{
 	Kfig:  "Figure",
 	Kpic:  "Figure",
+	Kgrap: "Figure",
 	Ktbl:  "Table",
 	Keqn:  "Eqn.",
 	Kcode: "Listing",
@@ -266,11 +267,11 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			f.printParCmd(`<br>`)
 			f.closePar()
 		case Kindent:
-			// If it contains just a fig, pic, or tbl, then
+			// If it contains just a fig, pic, grap, or tbl, then
 			// skip this level and jump to the child
 			if len(e.Child) == 1 || len(e.Child) == 2 && e.Child[1].Kind == Kpar {
 				switch e.Child[0].Kind {
-				case Kfig, Kpic, Keqn, Ktbl, Kcode:
+				case Kfig, Kpic, Keqn, Ktbl, Kgrap, Kcode:
 					f.wrElems(e.Child...)
 					continue
 				}
@@ -323,7 +324,7 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			f.printCmd(pref + `</pre></code>` + "\n")
 			f.wrCaption(e)
 			f.printCmd(pref + "<hr><p>\n")
-		case Kpic, Keqn:
+		case Kpic, Kgrap, Keqn:
 			f.printCmd(pref + "<p>\n")
 			f.printCmd(pref + "<hr>\n<center>\n")
 			f.printCmd(pref + `<a name="` + llbl[e.Kind] + e.Nb + `"></a>` + "\n")

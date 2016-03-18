@@ -132,8 +132,8 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			f.printCmd("%s", e.Data)
 		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
 			f.wrText(e)
-		case Kfig, Kpic:
-			if e.Kind == Kpic {
+		case Kfig, Kpic, Kgrap:
+			if e.Kind == Kpic || e.Kind == Kgrap {
 				e.Data = "pic drawing"
 			} else {
 				e.Data = strings.TrimSpace(e.Data)

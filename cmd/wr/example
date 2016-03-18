@@ -193,7 +193,17 @@ the default is program. but all code listings share the same code counter
 despite the tag used. You can use |marks| and [cite: cites] here.
 ]
 
-and $so on...
+[grap
+	draw solid
+	1896	54.2
+	1900	49.4
+	1904	49.2
+	1908	50.0
+	1912	48.2
+A plot of data using grap for pic
+]
+
+and so on...
 
 * See also
 

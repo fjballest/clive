@@ -11,12 +11,12 @@ var (
 	// NB: groff does not handle well · which happens a lot in our docs,
 	// we just use "." instead by now.
 
-	pscmd = `sed 's/·/./g' | pic  | tbl | eqn | groff  -ms -m pspic`
+	pscmd = `sed 's/·/./g' | grap | pic  | tbl | eqn | groff  -ms -m pspic`
 
 	// Pstopdf does NOT know how to write a pdf to stdout.
 	// We might pass to the writer the name of the output file and
 	// avoid the file dance.
-	pdfcmd = `sed 's/·/./g' | pic  | tbl | eqn | groff -ms -m pspic |pstopdf -i -o /tmp/_x.pdf; cat /tmp/_x.pdf`
+	pdfcmd = `sed 's/·/./g' | grap | pic  | tbl | eqn | groff -ms -m pspic |pstopdf -i -o /tmp/_x.pdf; cat /tmp/_x.pdf`
 )
 
 // XXX: TODO: For utf, we must translate non ascii characters

@@ -29,6 +29,7 @@ const (
 	Ksh         // verbatim shell output
 	Kfig        // figure
 	Kpic        // inlined pic figure
+	Kgrap       // inlined plot
 	Ktbl        // table
 	Keqn        // equation
 	Kcode       // code excerpts
@@ -66,6 +67,7 @@ const (
 	RcMark   = "[rc"
 	FigMark  = "[fig"
 	PicMark  = "[pic"
+	GrapMark = "[grap"
 	TblMark  = "[tbl"
 	EqnMark  = "[eqn"
 	CodeMark = "[code"
@@ -132,6 +134,7 @@ var marks = map[string]Kind{
 	VerbMark:  Kverb,
 	FigMark:   Kfig,
 	PicMark:   Kpic,
+	GrapMark:  Kgrap,
 	TblMark:   Ktbl,
 	EqnMark:   Keqn,
 	CodeMark:  Kcode,
@@ -177,6 +180,8 @@ func (k Kind) String() string {
 		return "fig"
 	case Kpic:
 		return "pic"
+	case Kgrap:
+		return "grap"
 	case Ktbl:
 		return "tbl"
 	case Keqn:
@@ -222,7 +227,8 @@ func (k Kind) HasData() bool {
 	switch k {
 	case Ktitle, Khdr1, Khdr2, Khdr3,
 		Kcite, Kbib, Kurl, Ksref, Kfref, Ktref, Keref, Kcref,
-		Kverb, Ksh, Kfig, Kpic, Ktbl, Keqn, Kcode, Ktext, Kfont, Kitem, Kenum, Kname:
+		Kverb, Ksh, Kfig, Kpic, Kgrap,
+		Ktbl, Keqn, Kcode, Ktext, Kfont, Kitem, Kenum, Kname:
 		return true
 	default:
 		return false

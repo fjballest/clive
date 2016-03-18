@@ -221,11 +221,13 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			f.printCmd(".DE\n")
 		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
 			f.wrText(e)
-		case Kfig, Kpic:
+		case Kfig, Kpic, Kgrap:
 			f.closePar()
 			f.printCmd(".KF\n")
 			e.Data = strings.TrimSpace(e.Data)
-			if e.Kind == Kfig {
+			if e.Kind == Kgrap {
+				f.printCmd(".G1\n%s\n.G2\n", e.Data)
+			} else if e.Kind == Kfig {
 				f.printCmd(".PSPIC %s\n", e.Data)
 			} else {
 				f.printCmd(".PS\n")

@@ -231,7 +231,7 @@ func (t *Text) parsePar() (el *Elem) {
 		}
 		t.ttset = !t.ttset
 		return &Elem{Kind: k, indent: nt}
-	case Kverb, Ksh, Kfig, Ktbl, Keqn, Kpic, Kcode:
+	case Kverb, Ksh, Kfig, Ktbl, Keqn, Kpic, Kgrap, Kcode:
 		// could consume ln here to select labels, captions from data.
 		el := &Elem{Kind: k, Tag: strings.TrimSpace(ln), indent: nt}
 		el = t.contdRaw(el)
@@ -239,9 +239,9 @@ func (t *Text) parsePar() (el *Elem) {
 		case Ktbl:
 			el.parseTbl()
 			fallthrough
-		case Kfig, Keqn, Kcode, Kpic:
+		case Kfig, Keqn, Kcode, Kpic, Kgrap:
 			rk := k
-			if k == Kfig || k == Kpic {
+			if k == Kfig || k == Kpic || k == Kgrap {
 				rk = Kfig
 			}
 			t.addRef(el, rk)

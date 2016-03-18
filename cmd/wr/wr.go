@@ -91,8 +91,8 @@ func out(t *Text) error {
 	}
 	var b bytes.Buffer
 	if oext == ".ms" {
-		fmt.Fprintf(&b, `.\" pic %s | tbl | eqn | `+
-			`groff -Tutf8 -ms -m pspic  |pstopdf -i -o  %s`+"\n",
+		fmt.Fprintf(&b, `.\" grap %s | pic  | tbl | eqn | `+
+			`groff  -ms -m pspic  |pstopdf -i -o  %s`+"\n",
 			oname, outpdf)
 	}
 	wr(t, max, &b, outfig)

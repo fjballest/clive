@@ -40,20 +40,23 @@ func escTex(s string) string {
 	return ns
 }
 
-var pic2eps = `pic | tbl | eqn | groff -ms -m pspic | ps2eps | epstopdf -f -o=`
+var pic2eps = `grap | pic | tbl | eqn | groff -ms -m pspic | ps2eps | epstopdf -f -o=`
 
 var figk = map[Kind]string{
-	Kfig: "pic",
-	Kpic: "pic",
-	Keqn: "eqn",
+	Kfig:  "pic",
+	Kgrap: "pic",
+	Kpic:  "pic",
+	Keqn:  "eqn",
 }
 var figstart = map[Kind]string{
-	Kpic: ".PS",
-	Keqn: ".EQ",
+	Kpic:  ".PS",
+	Kgrap: ".G1",
+	Keqn:  ".EQ",
 }
 var figend = map[Kind]string{
-	Kpic: ".PE",
-	Keqn: ".EN",
+	Kpic:  ".PE",
+	Kgrap: ".G2",
+	Keqn:  ".EN",
 }
 
 // pipe the pic data into pic2eps and return the path to the eps file for the pic.
@@ -282,7 +285,7 @@ func (f *texFmt) wrElems(els ...*Elem) {
 			// skip this level and jump to the child
 			if len(e.Child) == 1 || len(e.Child) == 2 && e.Child[1].Kind == Kpar {
 				switch e.Child[0].Kind {
-				case Kfig, Kpic, Keqn, Ktbl, Kcode:
+				case Kfig, Kpic, Keqn, Ktbl, Kgrap, Kcode:
 					f.wrElems(e.Child...)
 					continue
 				}
@@ -315,11 +318,11 @@ func (f *texFmt) wrElems(els ...*Elem) {
 			f.printCmd(pref + `\end{verbatim}` + "\n")
 		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
 			f.wrText(e)
-		case Kfig, Kpic, Kcode, Keqn:
+		case Kfig, Kpic, Kcode, Kgrap, Keqn:
 			f.printCmd(pref + `\begin{figure}` + "\n")
 			f.printCmd(pref + `\centering` + "\n")
 			switch e.Kind {
-			case Kpic:
+			case Kpic, Kgrap:
 				fn := e.pic(f.outfig)
 				f.printCmd("%s\n", pref+f.tab+`\includegraphics{`+fn+"}")
 			case Kfig:

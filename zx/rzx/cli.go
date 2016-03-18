@@ -19,15 +19,15 @@ struct Fs {
 	*zx.Flags
 	Verb       bool
 	addr       string
-	raddr		string // addr used to cache dials
+	raddr      string // addr used to cache dials
 	tc         *tls.Config
 	ai         *auth.Info
 	trees      map[string]bool
 	fsys       string
 	m          *ch.Mux
 	closed     bool // mux is gone, can redial
-	closewc	chan bool
-	sync.Mutex      // for redials
+	closewc    chan bool
+	sync.Mutex // for redials
 }
 
 type ddir zx.Dir
@@ -98,14 +98,14 @@ func Dial(addr string, tlscfg ...*tls.Config) (*Fs, error) {
 	raddr := addr
 	addr, fsys := splitaddr(addr)
 	fs := &Fs{
-		Flag:   &dbg.Flag{},
-		Flags:  &zx.Flags{},
-		addr:   addr,
-		raddr:  raddr,
-		tc:     tc,
-		trees:  map[string]bool{},
-		fsys:   fsys,
-		closed: true, // not yet dialed
+		Flag:    &dbg.Flag{},
+		Flags:   &zx.Flags{},
+		addr:    addr,
+		raddr:   raddr,
+		tc:      tc,
+		trees:   map[string]bool{},
+		fsys:    fsys,
+		closed:  true, // not yet dialed
 		closewc: make(chan bool),
 	}
 	fs.Tag = "rfs"

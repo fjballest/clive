@@ -1,4 +1,4 @@
-.\" pic example.ms | tbl | eqn | groff -ms -m pspic  |pstopdf -i -o  example.pdf
+.\" grap example.ms | pic  | tbl | eqn | groff -Tutf8 -ms -m pspic  |pstopdf -i -o  example.pdf
 
 .TL
 title perhaps continued here with \f(CWverb \e\fP text
@@ -8,7 +8,8 @@ author info
 more author info with \f(CWtt text\fP
 
 .AB
-A section perhaps with the abstract if it's titled "Abstract".
+A section perhaps with the abstract if it's titled "Abstract". Tildes:
+Axéáñññ
 
 .AE
 .NH
@@ -50,8 +51,8 @@ This executes a command and takes its output as verbatim text:
 .DS
 .CW
 .ps -2
-Mon Jan  4 19:30:02 CET 2016
-Mon Jan  4 19:30:02 CET 2016
+Thu Mar 17 15:51:11 CET 2016
+Thu Mar 17 15:51:11 CET 2016
 .ps +2
 .R
 .DE
@@ -75,7 +76,7 @@ For rc and ql as shells we can just say
 .DS
 .CW
 .ps -2
-
+ql
 .ps +2
 .R
 .DE
@@ -207,7 +208,7 @@ but the verbatim text could be unindented as well.
 
 this other paragraph has a cite [for this] and a url for the lsub page
 [http://lsub.org] within the rest of the text you could also place a
-link to [http://google.com]. Imprecise citations like [1,2,3] can also
+link to [http://google.com]. Imprecise citations like [1,2,2] can also
 be made. Cites like intro(1) refer to the manual.
 
 .P
@@ -288,7 +289,21 @@ listings share the same code counter despite the tag used. You can use
 .RE
 .KE
 
-and $so on...
+.KF
+.G1
+draw solid
+1896	54.2
+1900	49.4
+1904	49.2
+1908	50.0
+1912	48.2
+.G2
+.RS
+\fBFigure 3:\fP \fIA plot of data using grap for pic \fP
+.RE
+.KE
+
+and so on...
 
 .NH
 See also
@@ -302,13 +317,10 @@ intro(1) for so and so.
 References
 .LP
 .SM
-1. THE ORGANIZATION OF NETWORKS IN PLAN 9. Presotto, D.,Winterbottom,
-P. Winter 1993 USENIX Conference Proceedings. 1993.
+1. The Organization of Networks in Plan 9. Dave Presotto,Phil
+Winterbottom. Plan 9 User's Manual. Vol. 2.
 .br
 2. Plan B User's Manual. Third edition. Laboratorio de Systemas, URJC.
 GSYC-TR-2005-04. Also at http://planb.lsub.org/sys/man. 2005.
-.br
-3. Plan B User's Manual. Second edition. Laboratorio de Systemas,
-URJC. GSYC-TR-2004-04. 2004.
 .br
 .NS
