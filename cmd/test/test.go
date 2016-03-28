@@ -67,7 +67,7 @@ func Cmd(t *testing.T, cmd string) (cout, cerr string, fails bool) {
 	if testing.Verbose() {
 		dbg.Printf("run %s\n", cmd)
 	}
-	x := exec.Command("sh", "-c", "cd "+tdir+"; "+cmd)
+	x := exec.Command("sh", "-c", "cd "+tdir+"; unset dot ; "+cmd)
 	x.Stdout = &bout
 	x.Stderr = &berr
 	if err := x.Start(); err != nil {

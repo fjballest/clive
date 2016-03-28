@@ -51,9 +51,11 @@ z[a] = (a b c)
 # predefined
 echo $argv0 $args $#args $sts
 
-# pipes
-firstcmd | b | c
-| a | b |c
+# pipes and new line scapes
+firstcmd | b | 
+	c
+| a | b \
+	 |c
 # set in to a's out and err, and c's in to b's err
 a |[in:out,err;xx:yy] b |[err] c
 

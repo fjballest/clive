@@ -23,6 +23,12 @@ var (
 `,
 		},
 		test.Run{
+			Line: `echo a \
+			b`,
+			Out: `a b
+`,
+		},
+		test.Run{
 			Line: `echo a ; echo b`,
 			Out: `a
 b
@@ -85,6 +91,12 @@ a b c
 		},
 		test.Run{
 			Line: `rf <2 | cnt -lu`,
+			Out: `    4096  in
+`,
+		},
+		test.Run{
+			Line: `rf <2 | 
+				cnt -lu`,
 			Out: `    4096  in
 `,
 		},
@@ -227,6 +239,8 @@ func TestQl(t *testing.T) {
 }
 
 func TestPath(t *testing.T) {
+	t.Logf("path %v", cmd.GetEnvList("path"))
+	t.Logf("path %v", cmd.GetEnv("PATH"))
 	t.Logf("path %v", cmd.Path())
 	if p := cmd.LookPath("sh"); p != "/bin/sh" {
 		t.Fatalf("sh is %q\n", p)

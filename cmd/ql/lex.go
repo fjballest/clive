@@ -197,6 +197,12 @@ func (l *lex) lex(lval *yySymType) int {
 			l.wasnl = true
 			return 0
 		}
+		if c == '\\' {
+			c = l.get()
+			if c == '\n' {
+				c = ' '
+			}
+		}
 		if c == '\n' {
 			l.val = l.val[:0]
 			l.Line++
@@ -322,7 +328,7 @@ func (l *lex) scanQuote(q rune, lval *yySymType, what string) int {
 func isPunct(c rune) bool {
 	// runes =$ found within a word do not break the word.
 	// they are tokens on their own only if they are found outside a word
-	return unicode.IsSpace(c) || strings.ContainsRune("'←`<>{}&;[]|#^()", c)
+	return unicode.IsSpace(c) || strings.ContainsRune("\\'←`<>{}&;[]|#^()", c)
 }
 
 func (l *lex) scanName(lval *yySymType) int {

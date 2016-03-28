@@ -295,11 +295,17 @@ func (c *Ctx) GetEnv(name string) string {
 
 func EnvList(val string) []string {
 	// rc seems to use \1 for lists
+	if val == "" {
+		return []string{}
+	}
 	val = strings.Replace(val, "\001", "\b", -1)
 	return strings.Split(val, "\b")
 }
 
 func EnvMap(env string) map[string][]string {
+	if env == "" {
+		return map[string][]string{}
+	}
 	toks := strings.Split(env, "\a")
 	if len(toks) > 0 {
 		toks = toks[1:]
@@ -317,10 +323,11 @@ func EnvMap(env string) map[string][]string {
 
 func Path() []string {
 	pval := GetEnvList("path")
-	if pval == nil {
-		pval = strings.Split(GetEnv("PATH"), ":")
+	if len(pval) == 0 {
+		ospath := GetEnv("PATH")
+		pval = strings.Split(ospath, ":")
 	}
-	if pval == nil {
+	if len(pval) == 0 {
 		return []string{"/bin", "/usr/bin", "."}
 	}
 	return pval

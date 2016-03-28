@@ -114,15 +114,20 @@ optin
 	;
 
 spipe
-	: spipe PIPE cmd
+	: spipe PIPE optnl cmd
 	{
-		$$ = $1.Add($3)
+		$$ = $1.Add($4)
 		$$.Args = append($$.Args, $2)
 	}
 	| cmd
 	{
 		$$ = newList(Npipe, $1)
 	}
+	;
+
+optnl
+	: NL
+	|
 	;
 
 cmd
