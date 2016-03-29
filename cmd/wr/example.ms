@@ -53,8 +53,8 @@ This executes a command and takes its output as verbatim text:
 .DS
 .CW
 .ps -2
-Tue Mar 29 11:35:14 CEST 2016
-Tue Mar 29 11:35:14 CEST 2016
+Tue Mar 29 12:19:01 CEST 2016
+Tue Mar 29 12:19:01 CEST 2016
 .ps +2
 .R
 .DE
@@ -322,14 +322,13 @@ intro(1) for so and so.
 References
 .LP
 .SM
-1. The organization of networks in Plan 9. D. Presotto, P.
-Winterbottom. USENIX Association. Proceedings of the Winter 1993
-USENIX Conference. 1993.
+1. The Organization of Networks in Plan 9. Dave Presotto,Phil
+Winterbottom. Plan 9 User's Manual. Vol. 2.
 .br
-2. Plan B User's Manual. Third edition. Laboratorio de Systemas, URJC.
-GSYC-TR-2005-04. Also at http://planb.lsub.org/sys/man. 2005.
-.br
-3. Plan B User's Manual. Second edition. Laboratorio de Systemas,
+2. Plan B User's Manual. Second edition. Laboratorio de Systemas,
 URJC. GSYC-TR-2004-04. 2004.
+.br
+3. Plan B User's Manual. Third edition. Laboratorio de Systemas, URJC.
+GSYC-TR-2005-04. Also at http://planb.lsub.org/sys/man. 2005.
 .br
 .NS

@@ -331,6 +331,14 @@ func (ed *Ed) runCmd(at int, line string) {
 	if len(ln) == 0 {
 		return
 	}
+	if !ed.iscmd && !ed.temp {
+		ced := ed.ix.lookCmds(ed.dir, 0)
+		// command on a plain edit window, locate or start
+		// a commands window in the same dir.
+		if ced != nil {
+			ed = ced
+		}
+	}
 	args := strings.Fields(ln)
 	c := &Cmd{
 		name:  args[0],

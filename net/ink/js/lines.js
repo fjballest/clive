@@ -618,15 +618,25 @@ function Lines(els) {
 		}
 		if(!islongwordchar(c))
 			return [ln.txt.slice(p0, p1), pos, epos];
-		while(p0 > 0 && ischar(ln.txt.charAt(p0-1))){
+		var txt = ln.txt;
+		for(var lnp = ln.prev; lnp && !lnp.eol; lnp = lnp.prev) {
+			txt = lnp.txt + txt;
+			p0 += lnp.txt.length;
+			p1 += lnp.txt.length;
+		}
+		for(var lnn = ln; lnn.next && !lnn.eol; lnn = lnn.next) {
+			txt += lnn.next.txt;
+		}
+		while(p0 > 0 && ischar(txt.charAt(p0-1))){
 			pos--;
 			p0--;
 		}
-		while(p1 < ln.txt.length && ischar(ln.txt.charAt(p1))){
+
+		while(p1 < txt.length && ischar(txt.charAt(p1))){
 			epos++;
 			p1++;
 		}
-		return [ln.txt.slice(p0, p1), pos, epos];
+		return [txt.slice(p0, p1), pos, epos];
 	};
 
 	this.dump = function() {
