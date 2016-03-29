@@ -6,7 +6,7 @@ _ more author info with |tt text|
 * Abstract
 
 A section perhaps with the abstract if it's titled "Abstract".
-Tildes: Axéáñññ
+Tildes: Axéáñññ \[u00d1] Unicode: ½ ¼ ☺ ™ µkernel.
 
 * A sect
 
@@ -30,6 +30,8 @@ text making one paragraph
 with a forced line break
 
 |verb| at the start of a par.
+A escaped |X||X|, another ||||, and other |_| escapes, like _|X||X|_ these ones.
+
 
 another paragraph
 
@@ -146,7 +148,9 @@ Cites like [cite: intro(1)] refer to the manual.
 	[fig key
 		logols.eps
 	Caption goes here
-	and perhaps continues here. 
+	and perhaps continues here.
+	You may use |teletype| and *bold* but all caption is slanted and
+	using |_| is a _no-operation_.
 	]
 
 

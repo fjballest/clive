@@ -1,4 +1,4 @@
-.\" grap example.ms | pic  | tbl | eqn | groff -Tutf8 -ms -m pspic  |pstopdf -i -o  example.pdf
+.\" grap example.ms | pic  | tbl | eqn | groff  -ms -m pspic  |pstopdf -i -o  example.pdf
 
 .TL
 title perhaps continued here with \f(CWverb \e\fP text
@@ -9,7 +9,7 @@ more author info with \f(CWtt text\fP
 
 .AB
 A section perhaps with the abstract if it's titled "Abstract". Tildes:
-Axéáñññ
+Ax\[u00E9]\[u00E1]\[u00F1]\[u00F1]\[u00F1] \e[u00d1] Unicode: \[u00BD] \[u00BC] \[u263A] \[u2122] \[u00B5]kernel.
 
 .AE
 .NH
@@ -26,7 +26,7 @@ A sub-sub sect
 .LP
 \&.abc escaped
 
-\&'abc escaped _
+\&'abc escaped \fI\fP
 
 "cd escaped"
 
@@ -36,7 +36,9 @@ some text making one paragraph
 .br
 with a forced line break
 
-\f(CWverb\fP at the start of a par.
+\f(CWverb\fP at the start of a par. A escaped
+\f(CWX|X\fP, another \f(CW|\fP, and other
+\f(CW_\fP escapes, like \fI[X[[X[\fP these ones.
 
 another paragraph
 
@@ -51,8 +53,8 @@ This executes a command and takes its output as verbatim text:
 .DS
 .CW
 .ps -2
-Thu Mar 17 15:51:11 CET 2016
-Thu Mar 17 15:51:11 CET 2016
+Tue Mar 29 11:35:14 CEST 2016
+Tue Mar 29 11:35:14 CEST 2016
 .ps +2
 .R
 .DE
@@ -164,7 +166,8 @@ this text has some \fBtext set in bold face\fP and some in
 Within teletype font \f(CWno character is special, including _ and
 *\fP. This is good for things like \f(CW/a/b/c\fP.
 
-You can repeat the * to scape it, or _ or |.
+You can repeat the \fB\fP to scape it, or \fI\fP or
+\f(CW\fP.
 
 you can use
 .ps +2
@@ -208,7 +211,7 @@ but the verbatim text could be unindented as well.
 
 this other paragraph has a cite [for this] and a url for the lsub page
 [http://lsub.org] within the rest of the text you could also place a
-link to [http://google.com]. Imprecise citations like [1,2,2] can also
+link to [http://google.com]. Imprecise citations like [1,2,3] can also
 be made. Cites like intro(1) refer to the manual.
 
 .P
@@ -216,8 +219,10 @@ be made. Cites like intro(1) refer to the manual.
 .KF
 .PSPIC logols.eps
 .RS
-\fBFigure 1:\fP \fICaption goes here and perhaps continues here.
-\fP
+\fBFigure 1:\fP \fICaption goes here and perhaps continues here. You
+may use \f(CWteletype\fP and \fBbold\fP but all
+caption is slanted and using \f(CW_\fP is a
+\fIno-operation\fP. \fP
 .RE
 .KE
 
@@ -317,10 +322,14 @@ intro(1) for so and so.
 References
 .LP
 .SM
-1. The Organization of Networks in Plan 9. Dave Presotto,Phil
-Winterbottom. Plan 9 User's Manual. Vol. 2.
+1. The organization of networks in Plan 9. D. Presotto, P.
+Winterbottom. USENIX Association. Proceedings of the Winter 1993
+USENIX Conference. 1993.
 .br
 2. Plan B User's Manual. Third edition. Laboratorio de Systemas, URJC.
 GSYC-TR-2005-04. Also at http://planb.lsub.org/sys/man. 2005.
+.br
+3. Plan B User's Manual. Second edition. Laboratorio de Systemas,
+URJC. GSYC-TR-2004-04. 2004.
 .br
 .NS

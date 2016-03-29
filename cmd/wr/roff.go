@@ -51,6 +51,12 @@ func escRoff(s string) string {
 			continue
 		case r == '¯', r == '¸':
 			r = '\\'
+		case r > rune(0x7F):
+			// Use groff escapes for all codepoints not in 7bits.
+			// We might use named chars for common 8bit latin but
+			// this is easier.
+			ns += fmt.Sprintf(`\[u%04X]`, r)
+			continue
 		}
 		ns += string(r)
 		if r == '\n' {

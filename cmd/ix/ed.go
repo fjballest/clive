@@ -731,7 +731,9 @@ func (ed *Ed) editLoop() {
 				ed.load(nil)
 			}
 		case "eundo", "eredo":
-			ed.undoRedo(ev.Args[0] == "eredo")
+			if ed.undoRedo(ev.Args[0] == "eredo") {
+				ed.win.Dirty()
+			}
 		}
 		if !ed.iscmd {
 			switch ev.Args[0] {

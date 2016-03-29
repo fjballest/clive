@@ -484,8 +484,8 @@ Loop:
 			els = appText(els, k, indent, s)
 			break
 		}
-		if i < len(s)-1 && strings.ContainsRune("*_|", rune(s[i])) && s[i] == s[i+1] {
-			// scaped mark
+		if t.ttset && i < len(s)-1 && strings.ContainsRune("*_|", rune(s[i])) && s[i] == s[i+1] {
+			// escaped mark
 			els = appText(els, k, indent, s[:i+1])
 			s = s[i+2:]
 			continue
@@ -493,7 +493,7 @@ Loop:
 		if i > 0 {
 			els = appText(els, k, indent, s[:i])
 		}
-		if s[i] == '_' {
+		if s[i] == '_' && !t.bfset && !t.ttset {
 			tk := Kit
 			if t.itset {
 				tk = Kitend
@@ -503,7 +503,7 @@ Loop:
 			s = s[i+1:]
 			continue
 		}
-		if s[i] == '*' {
+		if s[i] == '*' && !t.itset && !t.ttset {
 			tk := Kbf
 			if t.bfset {
 				tk = Kbfend
@@ -513,7 +513,7 @@ Loop:
 			s = s[i+1:]
 			continue
 		}
-		if s[i] == '|' {
+		if s[i] == '|' && !t.itset && !t.bfset {
 			tk := Ktt
 			if t.ttset {
 				tk = Kttend
