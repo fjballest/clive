@@ -5,7 +5,7 @@ import __yyfmt__ "fmt"
 
 //line parse.y:18
 //line parse.y:22
-type yySymType struct {
+struct yySymType {
 	yys    int
 	sval   string
 	nd     *Nd
@@ -271,17 +271,17 @@ var (
 	yyErrorVerbose = false
 )
 
-type yyLexer interface {
+interface yyLexer {
 	Lex(lval *yySymType) int
 	Error(s string)
 }
 
-type yyParser interface {
+interface yyParser {
 	Parse(yyLexer) int
 	Lookahead() int
 }
 
-type yyParserImpl struct {
+struct yyParserImpl {
 	lval  yySymType
 	stack [yyInitialStackSize]yySymType
 	char  int

@@ -566,22 +566,17 @@ function Lines(els) {
 		var c = ln.txt.charAt(p0);
 		if(islparen(c)){
 			pos++;
-			var n = 1;
 			var rc = rparen(c);
 			var txt = "";
 			p1++;
 			epos++;
 			do {
+				var x = 0;
 				for(; p1 < ln.txt.length; p1++, epos++) {
-					var x = ln.txt.charAt(p1);
+					x = ln.txt.charAt(p1);
 					if(x == rc)
-						n--;
-					else if(x == c)
-						n++;
-					if(n != 0)
-						txt += x;
-					if(n == 0)
-						return [txt, pos, epos-1];
+						return [txt, pos, epos];
+					txt += x;
 				}
 				if(ln.eol){
 					epos++;
@@ -589,7 +584,7 @@ function Lines(els) {
 				}
 				ln = ln.next;
 				p1 = 0;
-			} while(n > 0 && ln != null);
+			} while(ln != null);
 			return [txt, pos, epos];
 		}
 		if(isrparen(c)){
