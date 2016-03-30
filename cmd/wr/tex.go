@@ -1,12 +1,8 @@
 package main
 
 import (
-	"bytes"
-	"clive/cmd"
 	"fmt"
 	"io"
-	"os/exec"
-	"path"
 	"strconv"
 	"strings"
 )
@@ -40,14 +36,7 @@ func escTex(s string) string {
 	return ns
 }
 
-var pic2eps = `grap | pic | tbl | eqn | groff -ms -m pspic | ps2eps | epstopdf -f -o=`
 
-var figk = map[Kind]string{
-	Kfig:  "pic",
-	Kgrap: "pic",
-	Kpic:  "pic",
-	Keqn:  "eqn",
-}
 var figstart = map[Kind]string{
 	Kpic:  ".PS",
 	Kgrap: ".G1",
@@ -57,44 +46,6 @@ var figend = map[Kind]string{
 	Kpic:  ".PE",
 	Kgrap: ".G2",
 	Keqn:  ".EN",
-}
-
-// pipe the pic data into pic2eps and return the path to the eps file for the pic.
-func (e *Elem) pic(outfig string) string {
-	outf := fmt.Sprintf("%s.%s%s", path.Base(outfig), figk[e.Kind], e.Nb)
-	outf = strings.Replace(outf, ".", "_", -1) + ".pdf"
-	xcmd := exec.Command("sh", "-c", pic2eps+outf)
-	var b bytes.Buffer
-	b.WriteString(figstart[e.Kind] + "\n")
-	b.WriteString(e.Data)
-	b.WriteString(figend[e.Kind] + "\n")
-	xcmd.Stdin = &b
-	err := xcmd.Run()
-	if err != nil {
-		cmd.Warn("mkpic: %s", err)
-		return "none.png"
-	}
-	cmd.Warn("pic %s", outf)
-	return outf
-}
-
-func epstopdf(fn string) string {
-	if strings.HasSuffix(fn, ".pdf") {
-		return fn
-	}
-	outf := fn
-	if strings.HasSuffix(outf, ".eps") {
-		outf = outf[:len(outf)-4]
-	}
-	outf += ".pdf"
-	xcmd := exec.Command("epstopdf", "-o", outf, fn)
-	err := xcmd.Run()
-	if err != nil {
-		cmd.Warn("epstopdf: %s", err)
-		return "none.png"
-	}
-	cmd.Warn("pic %s", outf)
-	return outf
 }
 
 func (f *texFmt) wrText(e *Elem) {
@@ -407,11 +358,10 @@ func (f *texFmt) wrBib(refs []string) {
 }
 
 func (f *texFmt) run(t *Text) {
-	f.printCmd("%s\n", `% Compile with latex, not pdflatex (or pic circles wont show up)`)
-	f.printCmd("%s\n", `% If there are problems with figures, remember they should be eps or pic`)
+	f.printCmd("%s\n", `% use pdflatex to compile this.`)
 	f.printCmd(`\documentclass[a4paper]{article}` + "\n")
 	f.printCmd(`\usepackage{graphicx}` + "\n")
-	f.printCmd(`\usepackage[utf8]{inputenc}` + "\n")
+	f.printCmd(`\usepackage[utf8x]{inputenc}` + "\n")
 	els := t.Elems
 	n := 0
 	for len(els) > 0 && els[0].Kind == Ktitle {
