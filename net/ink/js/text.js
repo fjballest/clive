@@ -985,7 +985,6 @@ function CliveText(d, c, cid, id) {
 	this.mdown = this.tlocknmdown;
 	this.mup = this.tlocknmup;
 
-	var wheelthis = this;
 	this.menter = function(e) {
 		if(selecting) {
 			return;
@@ -1000,7 +999,6 @@ function CliveText(d, c, cid, id) {
 		this.locking = true;
 		this.post(["hold"]);
 		console.log("holding...");
-		wheelthis = this;
 	};
 
 	this.mwheel = function(e) {
@@ -1009,7 +1007,6 @@ function CliveText(d, c, cid, id) {
 			this.locking = true;
 			this.post(["hold"]);
 			console.log("holding...");
-			return false;
 		}
 		try {
 			e.preventDefault();
@@ -1019,9 +1016,6 @@ function CliveText(d, c, cid, id) {
 			// to old windows after entering a different
 			// window.
 			// The next check is a workaround for that.
-			if (wheelthis != this) {
-				return;
-			}
 			if(d < 0){
 				d = -d;
 				d = 1 + Math.floor(d/10);
