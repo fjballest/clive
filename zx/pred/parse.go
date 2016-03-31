@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 )
 
 // keep Ops and toks exactly the same for the ops used as tokens.
@@ -407,13 +408,18 @@ func (l *lex) parsePrim() (*Pred, error) {
 		l.scan()
 		return &Pred{op: op(t)}, nil
 	case t == tMatch || t == tEqs || t == tRexp:
-		// unary usage assumes path op ...
+		// unary usage assumes path op ... if value does contain '/'
+		// and name op ... if value does not contain '/'.
 		l.scan()
 		t2, v2, err := l.scan()
 		if err != nil || t2.class() != cName {
 			return nil, errors.New("name expected")
 		}
-		return &Pred{op: op(t), name: "path", value: v2}, nil
+		nm := "name"
+		if strings.ContainsRune(v2, '/') {
+			nm = "path"
+		}
+		return &Pred{op: op(t), name: nm, value: v2}, nil
 	case t == tName:
 		_, v1, _ := l.scan()
 		if v1 == "d" || v1 == "-" || v1 == "c" {

@@ -550,10 +550,16 @@ function Lines(els) {
 		var epos = pos;
 		var p0 = pos - ln.off;
 		if(p0 == ln.txt.length){
-			if(!ln.eol) {
-				return [ln.txt, ln.off, ln.off+ln.txt.length];
+			var txt = ln.txt;
+			var off = ln.off
+			for(var lnp = ln.prev; lnp && !lnp.eol; lnp = lnp.prev) {
+				txt = lnp.txt + txt;
+				off = lnp.off;
 			}
-			return [ln.txt+"\n", ln.off, ln.off+ln.txt.length+1];
+			if(!ln.eol) {
+				return [txt, off, off+txt.length];
+			}
+			return [txt+"\n", off, off+txt.length+1];
 		}
 		// heuristic: if click at the right of lparen and not
 		// at rparen, use the lparen.

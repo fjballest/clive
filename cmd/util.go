@@ -104,6 +104,7 @@ func Move(from, to string) error {
 // In the predicate, both '&' and ',' can be used as the and operator.
 // (which is & in clive/zx/pred)
 // The name is returned as given by the user, it's not an absolute path.
+// A missing name is taken as ".".
 func CleanName(name string) (string, string) {
 	toks := strings.SplitN(name, ",", 2)
 	if toks[0] == "" {
