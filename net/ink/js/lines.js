@@ -568,6 +568,7 @@ function Lines(els) {
 			pos++;
 			var rc = rparen(c);
 			var txt = "";
+			var n = 1;
 			p1++;
 			epos++;
 			do {
@@ -575,6 +576,10 @@ function Lines(els) {
 				for(; p1 < ln.txt.length; p1++, epos++) {
 					x = ln.txt.charAt(p1);
 					if(x == rc)
+						n--;
+					if(x == c)
+						n++;
+					if(n == 0)
 						return [txt, pos, epos];
 					txt += x;
 				}

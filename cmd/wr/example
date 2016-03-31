@@ -147,14 +147,25 @@ Cites like [cite: intro(1)] refer to the manual.
 # or the same for any other format
 	[fig key
 		logols.eps
-	Caption goes here
+	Caption goes here for the figure in eps.
 	and perhaps continues here.
 	You may use |teletype| and *bold* but all caption is slanted and
 	using |_| is a _no-operation_.
 	]
 
+Other formats may be used, like png.
+	[fig key2
+		fig2.png
+	Another fig in png.
+	]
 
-or write pic directly in place
+Or gif:
+	[fig key2
+		fig3.gif
+	Another in gif.
+	]
+
+You can write pic directly in place
 
 [pic label
 	circle "hola"

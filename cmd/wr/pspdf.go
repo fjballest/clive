@@ -6,7 +6,6 @@ import (
 	"io"
 	"os/exec"
 	"fmt"
-	fpath "path"
 	"strings"
 )
 
@@ -33,7 +32,7 @@ var figk = map[Kind]string{
 }
 
 func (e *Elem) pic(outfig string) string {
-	outf := fmt.Sprintf("%s.%s%s", fpath.Base(outfig), figk[e.Kind], e.Nb)
+	outf := fmt.Sprintf("%s.%s%s", outfig, figk[e.Kind], e.Nb)
 	outf = strings.Replace(outf, ".", "_", -1) + ".pdf"
 	var b bytes.Buffer
 	b.WriteString(figstart[e.Kind] + "\n")
@@ -46,12 +45,56 @@ func (e *Elem) pic(outfig string) string {
 		if len(errs) > 0 {
 			cmd.Warn("%s", string(errs))
 		}
-		cmd.Warn("mkpic: %s: %s", outfig, err)
-		return "none.png"
+		cmd.Warn("mkpic: %s: %s", e.Data, err)
+		return "none.pdf"
 	}
 	cmd.Warn("pic: %s", outf)
 	return outf
 }
+
+func (e *Elem) pdffig() string {
+	fn := e.Data
+	if strings.HasSuffix(fn, ".pdf") {
+		return fn
+	}
+	fn = e.epsfig()
+	return epstopdf(fn)
+}
+
+func (e *Elem) epsfig() string {
+	fn := e.Data
+	if strings.HasSuffix(fn, ".eps") {
+		return fn
+	}
+	outf := fmt.Sprintf("%s.%s%s", outfig, figk[e.Kind], e.Nb)
+	outf = strings.Replace(outf, ".", "_", -1) + ".eps"
+	xcmd := exec.Command("sh", "-c", "convert " + fn + " " + outf)
+	errs, err := xcmd.CombinedOutput()
+	if err != nil {
+		if len(errs) > 0 {
+			cmd.Warn("%s", string(errs))
+		}
+		cmd.Warn("fig2eps: %s: %s", e.Data, err)
+		return "none.eps"
+	}
+	cmd.Warn("pic: %s", outf)
+	return outf
+}
+
+func (e *Elem) htmlfig() string {
+	fn := e.Data
+	if strings.HasSuffix(fn, ".png") {
+		return fn
+	}
+	if strings.HasSuffix(fn, ".gif") {
+		return fn
+	}
+	if strings.HasSuffix(fn, ".jpg") {
+		return fn
+	}
+	return e.pdffig()
+}
+
 
 func epstopdf(fn string) string {
 	if strings.HasSuffix(fn, ".pdf") {
@@ -69,7 +112,7 @@ func epstopdf(fn string) string {
 			cmd.Warn("%s", string(errs))
 		}
 		cmd.Warn("epstopdf: %s:, %s", outf, err)
-		return "none.png"
+		return "none.pdf"
 	}
 	cmd.Warn("epspic: %s", outf)
 	return outf

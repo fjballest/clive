@@ -36,7 +36,6 @@ func escTex(s string) string {
 	return ns
 }
 
-
 var figstart = map[Kind]string{
 	Kpic:  ".PS",
 	Kgrap: ".G1",
@@ -277,10 +276,8 @@ func (f *texFmt) wrElems(els ...*Elem) {
 				fn := e.pic(f.outfig)
 				f.printCmd("%s\n", pref+f.tab+`\includegraphics{`+fn+"}")
 			case Kfig:
-				fn := strings.TrimSpace(e.Data)
-				if strings.HasSuffix(fn, ".eps") {
-					fn = epstopdf(fn)
-				}
+				e.Data = strings.TrimSpace(e.Data)
+				fn := e.pdffig()
 				f.printCmd("%s\n", pref+f.tab+`\includegraphics{`+fn+"}")
 			case Keqn:
 				fn := e.pic(f.outfig)

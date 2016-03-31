@@ -305,7 +305,8 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 		case Kfig:
 			f.printCmd(pref + "<p>\n")
 			f.printCmd(pref + "<hr>\n<center>\n")
-			s := strings.TrimSpace(e.Data)
+			e.Data = strings.TrimSpace(e.Data)
+			s := e.htmlfig()
 			if strings.HasSuffix(s, ".eps") {
 				s = epstopdf(s)
 			}

@@ -234,7 +234,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			if e.Kind == Kgrap {
 				f.printCmd(".G1\n%s\n.G2\n", e.Data)
 			} else if e.Kind == Kfig {
-				f.printCmd(".PSPIC %s\n", e.Data)
+				f.printCmd(".PSPIC %s\n", e.epsfig())
 			} else {
 				f.printCmd(".PS\n")
 				f.printCmd("%s\n", e.Data)
