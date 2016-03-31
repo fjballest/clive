@@ -187,7 +187,7 @@ func (p *Pred) EvalAt(e zx.Dir, lvl int) (value, pruned bool, err error) {
 		return true, false, nil
 	}
 	if debug {
-		fmt.Fprintf(os.Stderr, "[eval:\n\t%s NAME %sVAL %s\n\t%s\n", p, p.name, p.value, e)
+		fmt.Fprintf(os.Stderr, "[eval:\n\t%s NAME %s VAL %s \n\t%s\n", p, p.name, p.value, e)
 		defer fmt.Fprintf(os.Stderr, "\t%v %v %v\n]\n", value, pruned, err)
 	}
 	switch p.op {
@@ -260,7 +260,7 @@ func (p *Pred) EvalAt(e zx.Dir, lvl int) (value, pruned bool, err error) {
 		return v, toodeep, nil
 	case oMatch:
 		nm := p.name
-		if nm == "path" && len(p.value) > 0 && p.value[0] != '/' {
+		if false && nm == "path" && len(p.value) > 0 && p.value[0] != '/' {
 			nm = "name"
 		}
 		n, ok := e[nm]
@@ -270,7 +270,7 @@ func (p *Pred) EvalAt(e zx.Dir, lvl int) (value, pruned bool, err error) {
 		return pathMatch(p.value, n)
 	case oRexp:
 		nm := p.name
-		if nm == "path" && len(p.value) > 0 && p.value[0] != '/' {
+		if false && nm == "path" && len(p.value) > 0 && p.value[0] != '/' {
 			nm = "name"
 		}
 		n, ok := e[nm]
@@ -288,7 +288,7 @@ func (p *Pred) EvalAt(e zx.Dir, lvl int) (value, pruned bool, err error) {
 		return len(x) > 0, false, err
 	case oEqs:
 		nm := p.name
-		if nm == "path" && len(p.value) > 0 && p.value[0] != '/' {
+		if false && nm == "path" && len(p.value) > 0 && p.value[0] != '/' {
 			nm = "name"
 		}
 		v, ok := e[nm]
@@ -301,7 +301,7 @@ func (p *Pred) EvalAt(e zx.Dir, lvl int) (value, pruned bool, err error) {
 		return v == p.value, false, nil
 	case oNeqs:
 		nm := p.name
-		if nm == "path" && len(p.value) > 0 && p.value[0] != '/' {
+		if false && nm == "path" && len(p.value) > 0 && p.value[0] != '/' {
 			nm = "name"
 		}
 		v, ok := e[nm]

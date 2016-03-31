@@ -331,6 +331,29 @@ func (ed *Ed) runCmd(at int, line string) {
 	if len(ln) == 0 {
 		return
 	}
+	args := strings.Fields(ln)
+	// If the command is the name of a dir, then use cd dir
+	// if it's a commands window, or reload the window in
+	// another dir for dir windows.
+	if len(args) == 1 {
+		d, err := cmd.Stat(args[0])
+		if err == nil && d["type"] == "d" {
+			if !ed.iscmd && !ed.temp {
+				ed.look(d["path"])
+				return
+			}
+			if !ed.iscmd {
+				ed.tag = d["path"]
+				if ed.tag != "/" {
+					ed.tag += "/"
+				}
+				ed.load(d)
+				ed.win.SetTag(ed.tag)
+				return
+			}
+			args = []string{"cd", args[0]}
+		}
+	}
 	if !ed.iscmd && !ed.temp {
 		ced := ed.ix.lookCmds(ed.dir, 0)
 		// command on a plain edit window, locate or start
@@ -339,7 +362,6 @@ func (ed *Ed) runCmd(at int, line string) {
 			ed = ced
 		}
 	}
-	args := strings.Fields(ln)
 	c := &Cmd{
 		name:  args[0],
 		ed:    ed,
