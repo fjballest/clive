@@ -202,9 +202,13 @@ func (t *Text) parsePar() (el *Elem) {
 		return &Elem{Kind: k}
 	case Kbr:
 		return &Elem{Kind: k}
-	case Ktitle:
+	case Ktitle, Kfoot:
 		el := &Elem{Kind: k, Data: strings.TrimSpace(ln)}
-		return t.contdTitle(el)
+		el = t.contdTitle(el)
+		if k == Kfoot {
+			t.addRef(el, Kfoot)
+		}
+		return el
 	case Khdr1, Khdr2, Khdr3:
 		el := &Elem{Kind: k, Data: strings.TrimSpace(ln)}
 		if strings.ToLower(ln) != "abstract" {
@@ -325,7 +329,7 @@ func (ek *eKeys) setKeys() {
 	if e.Caption != nil {
 		ks = append(ks, keys(e.Caption.Data)...)
 	}
-	if e.Kind == Khdr1 || e.Kind == Khdr2 || e.Kind == Khdr3 {
+	if e.Kind == Khdr1 || e.Kind == Khdr2 || e.Kind == Khdr3 || e.Kind == Kfoot {
 		ks = append(ks, keys(e.Data)...)
 	}
 	for _, w := range ks {
@@ -451,6 +455,7 @@ var cites = map[string]Kind{
 	"code": Kcref,
 	"tbl":  Ktref,
 	"eqn":  Keref,
+	"foot": Knref,
 	"url":  Kurl,
 	"bib":  Kbib,
 	"cite": Kcite,
@@ -460,7 +465,7 @@ var cites = map[string]Kind{
 // inlined marks and raw text elems.
 func (t *Text) splitMarks(p *Elem) {
 	switch p.Kind {
-	case Ktext, Kenum, Kitem, Khdr1, Ktitle, Khdr2, Khdr3:
+	case Ktext, Kfoot, Kenum, Kitem, Khdr1, Ktitle, Khdr2, Khdr3:
 		if !strings.ContainsAny(p.Data, "*_|[") {
 			return
 		}
@@ -801,6 +806,8 @@ func (e *Elem) fixRefs(refs map[Kind][]*eKeys) {
 		e.setRef(refs[Ktbl])
 	case Keref:
 		e.setRef(refs[Keqn])
+	case Knref:
+		e.setRef(refs[Kfoot])
 	case Kcref:
 		e.setRef(refs[Kcode])
 	}

@@ -68,12 +68,30 @@ func escRoff(s string) string {
 	return ns
 }
 
+var digits = []rune("⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+func footRef(d string) string {
+	rs := []rune{}
+	for _, r := range d {
+		if r >= '0' && r <= '9' {
+			rs = append(rs, digits[int(r)-int('0')])
+		} else {
+			rs = append(rs, r)
+		}
+	}
+	return string(rs)
+}
+
 func (f *roffFmt) wrText(e *Elem) {
 	if e == nil {
 		return
 	}
 	switch e.Kind {
 	case Khdr1, Khdr2, Khdr3:
+	case Kfoot:
+		if e.Nb != "" {
+			f.printPar(e.Nb, ". ")
+		}
 	default:
 		if e.Nb != "" {
 			f.printPar(e.Nb, " ")
@@ -99,6 +117,8 @@ func (f *roffFmt) wrText(e *Elem) {
 		fallthrough
 	case Kbib:
 		e.Data = "[" + e.Data + "]"
+	case Knref:
+		e.Data = footRef(e.Data)
 	case Kcref, Keref, Ktref, Kfref, Ksref:
 	}
 	f.printPar(e.Data)
@@ -225,7 +245,11 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			f.printCmd(".ps +2\n")
 			f.printCmd(".R\n")
 			f.printCmd(".DE\n")
-		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
+		case Kfoot:
+			f.printCmd(".FS\n")
+			f.wrText(e)
+			f.printCmd(".FE\n")
+		case Ktext, Kurl, Kbib, Kcref, Knref, Keref, Ktref, Kfref, Ksref, Kcite:
 			f.wrText(e)
 		case Kfig, Kpic, Kgrap:
 			f.closePar()

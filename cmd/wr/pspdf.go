@@ -3,9 +3,9 @@ package main
 import (
 	"bytes"
 	"clive/cmd"
+	"fmt"
 	"io"
 	"os/exec"
-	"fmt"
 	"strings"
 )
 
@@ -68,7 +68,7 @@ func (e *Elem) epsfig() string {
 	}
 	outf := fmt.Sprintf("%s.%s%s", outfig, figk[e.Kind], e.Nb)
 	outf = strings.Replace(outf, ".", "_", -1) + ".eps"
-	xcmd := exec.Command("sh", "-c", "convert " + fn + " " + outf)
+	xcmd := exec.Command("sh", "-c", "convert "+fn+" "+outf)
 	errs, err := xcmd.CombinedOutput()
 	if err != nil {
 		if len(errs) > 0 {
@@ -95,7 +95,6 @@ func (e *Elem) htmlfig() string {
 	return e.pdffig()
 }
 
-
 func epstopdf(fn string) string {
 	if strings.HasSuffix(fn, ".pdf") {
 		return fn
@@ -117,7 +116,6 @@ func epstopdf(fn string) string {
 	cmd.Warn("epspic: %s", outf)
 	return outf
 }
-
 
 func pspdf(t *Text, wid int, out io.Writer, cline, outfig string) {
 	// pipe the roff writer into a command to output ps and pdf

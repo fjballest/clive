@@ -34,6 +34,7 @@ const (
 	Keqn        // equation
 	Kcode       // code excerpts
 	Ktext       // text
+	Kfoot       // footnote
 
 	Kindent      // relative indent
 	Kitemize     // indented list of items
@@ -44,6 +45,7 @@ const (
 	Kfref        // to a fig
 	Ktref        // to a tbl
 	Keref        // to a eqn
+	Knref        // to a footnote
 	Kcref        // to a listing
 	Kurl         // link
 	Kbib         // wr/refs citation(s)
@@ -59,6 +61,7 @@ const (
 	Hdr3Mark  = "*** "
 	ItemMark  = "- "
 	EnumMark  = "# "
+	FootMark  = "! "
 
 	// these don't require a space after
 	VerbMark = "[verb"
@@ -123,6 +126,7 @@ struct scan {
 
 var marks = map[string]Kind{
 	TitleMark: Ktitle,
+	FootMark:  Kfoot,
 	Hdr1Mark:  Khdr1,
 	Hdr2Mark:  Khdr2,
 	Hdr3Mark:  Khdr3,
@@ -190,6 +194,8 @@ func (k Kind) String() string {
 		return "code"
 	case Ktext:
 		return "text"
+	case Kfoot:
+		return "foot"
 	case Kindent:
 		return "indent"
 	case Kitemize:
@@ -208,6 +214,8 @@ func (k Kind) String() string {
 		return "tref"
 	case Keref:
 		return "eref"
+	case Knref:
+		return "nref"
 	case Kcref:
 		return "cref"
 	case Kbib:
@@ -226,9 +234,9 @@ func (k Kind) String() string {
 func (k Kind) HasData() bool {
 	switch k {
 	case Ktitle, Khdr1, Khdr2, Khdr3,
-		Kcite, Kbib, Kurl, Ksref, Kfref, Ktref, Keref, Kcref,
+		Kcite, Kbib, Kurl, Ksref, Kfref, Ktref, Keref, Knref, Kcref,
 		Kverb, Ksh, Kfig, Kpic, Kgrap,
-		Ktbl, Keqn, Kcode, Ktext, Kfont, Kitem, Kenum, Kname:
+		Ktbl, Keqn, Kcode, Ktext, Kfoot, Kfont, Kitem, Kenum, Kname:
 		return true
 	default:
 		return false
@@ -238,7 +246,7 @@ func (k Kind) HasData() bool {
 func (k Kind) HasChild() bool {
 	switch k {
 	case Kindent, Kitemize, Kenumeration, Kdescription, Kname,
-		Ktext, Kenum, Kitem, Khdr1, Ktitle, Khdr2, Khdr3:
+		Ktext, Kfoot, Kenum, Kitem, Khdr1, Ktitle, Khdr2, Khdr3:
 		return true
 	default:
 		return false

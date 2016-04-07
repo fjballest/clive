@@ -58,6 +58,8 @@ func (f *txtFmt) wrText(e *Elem) {
 		fallthrough
 	case Kbib:
 		e.Data = "[" + e.Data + "]"
+	case Knref:
+		e.Data = "(" + e.Data + ")"
 	case Kcref, Keref, Ktref, Kfref, Ksref:
 	}
 	f.printPar(e.Data)
@@ -130,7 +132,9 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			f.closePar()
 			e.Data = indentVerb(e.Data, pref, f.tab)
 			f.printCmd("%s", e.Data)
-		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
+		case Kfoot:
+			// printed at the end.
+		case Ktext, Kurl, Kbib, Kcref, Keref, Knref, Ktref, Kfref, Ksref, Kcite:
 			f.wrText(e)
 		case Kfig, Kpic, Kgrap:
 			if e.Kind == Kpic || e.Kind == Kgrap {
@@ -236,6 +240,22 @@ func (f *txtFmt) wrBib(refs []string) {
 	}
 }
 
+func (f *txtFmt) wrFoots(t *Text) {
+	foots := t.refs[Kfoot]
+	if len(foots) == 0 {
+		return
+	}
+	fmt.Fprintf(f.out, "\nNOTES\n\n")
+	for _, ek := range foots {
+		e := ek.el
+		f.i0, f.in = "", "  "
+		f.newPar()
+		f.printPar(fmt.Sprintf("%s. ", e.Nb))
+		f.wrText(e)
+		f.endPar()
+	}
+}
+
 func (f *txtFmt) run(t *Text) {
 	els := t.Elems
 	up := strings.ToUpper
@@ -249,6 +269,7 @@ func (f *txtFmt) run(t *Text) {
 	}
 	fmt.Fprintf(f.out, "\n")
 	f.wrElems(els...)
+	f.wrFoots(t)
 	f.wrBib(t.bibrefs)
 }
 

@@ -1,5 +1,6 @@
 open http://lsub.org/ls/clive.html
-to see what's in here and how to use it.
+to see what's in here and how to use it, there is a link to the
+manual in that page.
 
 This contains the lsub go packages for clive, which
 require the go compiler from lsub with modified chans and doselect.
@@ -24,3 +25,114 @@ introduced by lsub go in some declarations).
 
 In the lsub go we use the lsub branch, but in clive, we use the
 master branch.
+
+NOTES TO INSTALL AND USE CLIVE
+------------------------------
+(thanks to fgergo, who wrote these notes).
+
+Installing clive and running clive programs (e.g. the graphical shell ix)
+
+Installing clive
+You'll be building from source.
+
+Installation requirements
+- linux or macosx
+- git and at least go1.4.3 for bootstrapping clive's modified go compiler
+
+You can install clive’s modified go compiler and clive in different directories.
+These steps install both under $CLIVEROOT. Only this document references
+$CLIVEROOT and only for convenience. Feel free to follow or change.
+
+Installation instructions
+
+#  Download and build clive's modified go compiler
+export CLIVEROOT=/home/<this is my home>/cliveroot	# yes, change this, to wherever you want to have clive
+export GOROOT_BOOTSTRAP=/your/path/to/go14	# yes, change this
+mkdir $CLIVEROOT
+cd $CLIVEROOT
+git clone git://git.lsub.org/golang.git golang
+cd golang
+git checkout lsub
+export GOROOT=`pwd`
+export PATH=$GOROOT/bin:$PATH
+cd src
+./all.bash
+export GOPATH=$CLIVEROOT/gopath
+mkdir $GOPATH
+
+# Download and build clive
+mkdir $GOPATH/src
+cd $GOPATH/src
+git clone git://git.lsub.org/clive.git clive
+cd clive
+go get golang.org/x/net/websocket
+go install -v ./...
+
+# Setup clive: check and set environment variables, create directories, create temporary keys, set passwords
+# check and set environment variables
+echo $GOROOT	# yes, check $GOROOT and set if needed. Details: see above
+echo $GOPATH		# yes, check $GOPATH and set if needed. Details: see above
+export PATH=$GOPATH/bin:$PATH
+# create directories
+sudo mkdir -p /zx/lib			# run as root
+sudo chown -R `whoami`:`whoami` /zx
+# create temporary certs
+cd $HOME/.ssh
+# create ~/.ssh/server.[pem|key]
+openssl req -new -nodes -x509 -out server.pem \
+        -keyout server.key -days 500 -subj \
+        "/C=DE/ST=NRW/L=Earth/O=Random \
+        Company/OU=IT/CN=lsub.org/emailAddress=dont@mail.me"
+# create ~/.ssh/client.[pem|key]
+openssl req -new -nodes -x509 -out client.pem \
+        -keyout client.key -days 500 -subj \
+        "/C=DE/ST=NRW/L=Earth/O=Random \
+        Company/OU=IT/CN=lsub.org/emailAddress=dont@mail.me"
+# create /zx/lib/webcert.[pem|key]
+cd /zx/lib
+openssl req -new -nodes -x509 -out webcert.pem \
+        -keyout webcert.key -days 500 -subj \
+        "/C=DE/ST=NRW/L=Earth/O=Random \
+        Company/OU=IT/CN=lsub.org/emailAddress=dont@mail.me"
+# create passwords
+auth -f default `whoami` secret1	# yes, change this: secret1 will be the password for the  'default' domain
+auth -f wax `whoami` secret2 	# yes, change this: secret2 will be the password for the 'was' domain used by the graphical shell ix
+chmod 600 server.pem server.key client.pem client.key clive.default clive.wax
+
+# Running clive programs
+
+# to test if your certs are ok, first check clive's web command
+web -l	# should start without any output
+# your browser: https://ip_of_machine_running_clive:8083 and accept the security exception and you can browse the files in /zx
+
+# run the graphical shell ix
+ix	# should start without any output
+Your browser on https://ip_of_machine_running_clive:8181 and accept the security exception and you should see the default ix screen something like this: http://lsub.org/export/inkdump.png
+
+# ix manual page: http://lsub.org/sys/man/1/ix.html
+
+# put these in your profile
+export CLIVEROOT=/home/<this is my home>/cliveroot	# yes, change this, to wherever you installed clive
+export GOROOT=$CLIVEROOT/golang
+export GOPATH=$CLIVEROOT/gopath
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+
+Some browsers work better than others
+should be best: macosx/safari
+should be ok: windows/chrome (tested) and chrome in general should just work
+kind of ok: firefox - typing isn't ok: https://support.mozilla.org/en-US/questions/984845
+
+Minimal ix(1) walkthrough
+ix(1) navigation is similar to http://research.swtch.com/acme Mouse click B1 is
+select, B2 run's the selected command and B3 is similar to acme's B3
+("acquire"), cursor keys scroll the current win. You can drag and drop wins with
+B1. To browse the filesystem type / in the first window and B3 click the slash:
+a new win lists the root of the file system. B3 on a file opens that file in a
+new win, B3 on a directory opens that directory in a new win. You can type
+commands in any win, the working directory is shown in the win's title bar. If
+you change a file, B1 the floppy to put changes to disk. These should be enough
+to get you started.
+
+If some or all of this fails to work as described or you have something to add,
+you can try fgergo@gmail.com.
+

@@ -75,7 +75,7 @@ func (f *htmlFmt) wrText(e *Elem) {
 		return
 	}
 	switch e.Kind {
-	case Khdr1, Khdr2, Khdr3:
+	case Khdr1, Khdr2, Khdr3, Kfoot:
 	default:
 		if e.Nb != "" {
 			f.printPar(e.Nb, " ")
@@ -130,6 +130,9 @@ func (f *htmlFmt) wrText(e *Elem) {
 	case Ksref:
 		nb := strings.Replace(e.Data, ".", "x", -1)
 		f.printParCmd(`<a href="#sec`+nb+`">`, e.Data, `</a>`)
+		return
+	case Knref:
+		f.printParCmd(`<a href="#note`+e.Data+`">`, footRef(e.Data), `</a>`)
 		return
 	}
 	x := e.Data
@@ -300,6 +303,9 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			e.Data = indentVerb(e.Data, f.i0, f.tab)
 			f.printCmd("%s", html.EscapeString(e.Data))
 			f.printCmd(pref + `</pre></code>` + "\n")
+		case Kfoot:
+			// TODO: record footnote text and place a list at the end,
+			// like we do for bib.
 		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
 			f.wrText(e)
 		case Kfig:
@@ -398,6 +404,26 @@ func (f *htmlFmt) wrBib(refs []string) {
 	f.printCmd("<hr><p>\n")
 }
 
+func (f *htmlFmt) wrFoots(t *Text) {
+	foots := t.refs[Kfoot]
+	if len(foots) == 0 {
+		return
+	}
+	f.printCmd("<p><h3>Notes</h3>\n<hr>\n")
+	f.printCmd("<p><ol>\n")
+	for _, ek := range foots {
+		e := ek.el
+		f.i0, f.in = "", "  "
+		k := "note" + e.Nb
+		f.printParCmd(`<li> <a name="` + k + `"></a>`)
+		f.wrText(e)
+		f.printParCmd("</li><p> ")
+		f.closePar()
+	}
+	f.printCmd("<p></ol>\n")
+	f.printCmd("<hr><p>\n")
+}
+
 func (f *htmlFmt) run(t *Text) {
 	els := t.Elems
 	if cliveMan {
@@ -440,6 +466,7 @@ func (f *htmlFmt) run(t *Text) {
 	}
 	f.printCmd("<hr>\n<p>\n\n")
 	f.wrElems(els...)
+	f.wrFoots(t)
 	f.wrBib(t.bibrefs)
 	f.printCmd("<p>\n<hr><p>\n\n")
 	if !cliveMan {

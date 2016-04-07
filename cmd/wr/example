@@ -24,6 +24,8 @@ Use [sect: A sect], or any keys, to refer to the section with the title containi
 
 %tex comment scaped
 
+! A footnote
+
 some
 text making one paragraph
 -
@@ -32,8 +34,10 @@ with a forced line break
 |verb| at the start of a par.
 A escaped |X||X|, another ||||, and other |_| escapes, like _|X||X|_ these ones.
 
+! Another footnote
+	continued here.
 
-another paragraph
+another paragraph[foot: continued].
 
 	To relatively indent a paragraph, use the tab.
 

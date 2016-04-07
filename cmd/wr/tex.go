@@ -52,7 +52,7 @@ func (f *texFmt) wrText(e *Elem) {
 		return
 	}
 	switch e.Kind {
-	case Khdr1, Khdr2, Khdr3:
+	case Khdr1, Khdr2, Khdr3, Kfoot:
 	default:
 		if e.Nb != "" {
 			f.printPar(e.Nb, " ")
@@ -97,6 +97,9 @@ func (f *texFmt) wrText(e *Elem) {
 		e.Data = "[" + e.Data + "]"
 		f.printPar(e.Data)
 	default:
+		if e.Kind == Knref {
+			e.Data = footRef(e.Data)
+		}
 		f.printPar(e.Data)
 		for _, c := range e.Textchild {
 			f.wrText(c)
@@ -183,6 +186,7 @@ var llbl = map[Kind]string{
 	Kfig:  "fig",
 	Kpic:  "fig",
 	Kcode: "lst",
+	Kfoot: "foot",
 	Keqn:  "eqn",
 	Ktbl:  "tbl",
 	Khdr1: "sec",
@@ -266,7 +270,11 @@ func (f *texFmt) wrElems(els ...*Elem) {
 			e.Data = indentVerb(e.Data, f.i0, f.tab)
 			f.printCmd("%s", e.Data)
 			f.printCmd(pref + `\end{verbatim}` + "\n")
-		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
+		case Kfoot:
+			f.printCmd(`\let\thefootnote\relax\footnote{` + e.Nb + ". ")
+			f.wrText(e)
+			f.printCmd(`}` + "\n")
+		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Knref, Ksref, Kcite:
 			f.wrText(e)
 		case Kfig, Kpic, Kcode, Kgrap, Keqn:
 			f.printCmd(pref + `\begin{figure}` + "\n")
