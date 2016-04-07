@@ -35,7 +35,7 @@ func main() {
 		opts.Usage()
 	}
 	cert := "/zx/lib/webcert.pem"
-	key := "/zx/lib/webkey.pem"
+	key := "/zx/lib/webcert.key"
 	addr := ":"
 	go func() {
 		err := http.ListenAndServeTLS(addr+tport, cert, key, http.FileServer(http.Dir(dir)))
