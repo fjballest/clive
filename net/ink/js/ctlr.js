@@ -12,9 +12,9 @@ function CliveCtlr() {
 	this.c.clivectlr = this;
 	this.userresized = false;
 	this.wsurl = "wss://" + window.location.host + "/ws/" + this.cid;
-	if(this.d.wsaddr) {
-		this.wsurl = this.d.wsaddr + "/ws/" + this.cid;
-	}
+	//if(this.d.wsaddr) {
+	//	this.wsurl = this.d.wsaddr + "/ws/" + this.cid;
+	//}
 
 	$(this.d).addClass("clivectl");
 	var self = this;

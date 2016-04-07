@@ -63,6 +63,23 @@ function lparen(c) {
 	return "([{<".charAt(i);
 }
 
+// Using ctx.clearRect(x, y, w, h) has problems in Chrome.
+// This seems to work.
+function ctxClearRect(ctx, x, y, wid, ht) {
+	var ofs = ctx.fillStyle;
+	ctx.fillStyle = "#DDDDC8";
+	ctx.fillRect(x, y, wid, ht)
+	ctx.fillStyle = ofs;
+}
+
+// Using ctx.fillText(txt, x, y) has problems in Chrome.
+// This seems to work.
+function ctxFillText(ctx, txt, x, y) {
+	var ofs = ctx.fillStyle;
+	ctx.fillStyle = "black";
+	ctx.fillText(txt, x, y);
+	ctx.fillStyle = ofs;
+}
 
 function Line(lni, off, txt, eol) {
 	this.lni = lni;
@@ -738,7 +755,7 @@ function DrawLines(c) {
 		if(pos >= this.c.height) {
 			return false;
 		}
-		ctx.clearRect(1, pos, this.c.width-1, this.fontht);
+		ctxClearRect(ctx, 1, pos, this.c.width-1, this.fontht);
 		return true;
 	};
 
@@ -788,9 +805,9 @@ function DrawLines(c) {
 		if(this.p0 != this.p1) {
 			if(this.p0 > ln.off+ln.txt.length || this.p1 < ln.off){
 				// unselected line
-				ctx.clearRect(1, y, this.c.width-this.marginsz-1, lnht);
+				ctxClearRect(ctx, 1, y, this.c.width-this.marginsz-1, lnht);
 				var t = this.tabtxt(ln.txt);
-				ctx.fillText(t, this.marginsz, y);
+				ctxFillText(ctx, t, this.marginsz, y);
 				return true;
 			}
 			// up to p0 unselected
@@ -802,8 +819,8 @@ function DrawLines(c) {
 				var s0t = this.tabtxt(ln.txt.slice(0, s0));
 				s0pos = s0t.length;
 				dx += ctx.measureText(s0t).width;
-				ctx.clearRect(1, y, dx, lnht);
-				ctx.fillText(s0t, this.marginsz, y);
+				ctxClearRect(ctx, 1, y, dx, lnht);
+				ctxFillText(ctx, s0t, this.marginsz, y);
 			}
 			// from p0 to p1 selected
 			var s1 = ln.txt.length - s0;
@@ -825,25 +842,25 @@ function DrawLines(c) {
 			} else {
 				ctx.fillRect(dx, y, sx, lnht);
 			}
+			ctxFillText(ctx, s1t, dx, y);
 			ctx.fillStyle = old;
-			ctx.fillText(s1t, dx, y);
 			if(this.p1 > ln.off+ln.txt.length) {
 				return true;
 			}
 			// from p1 unselected
-			ctx.clearRect(dx+sx, y, this.c.width-(dx+sx)-this.marginsz-1, lnht);
+			ctxClearRect(ctx, dx+sx, y, this.c.width-(dx+sx)-this.marginsz-1, lnht);
 			if(s1 >= ln.txt.length) {
 				return true;
 			}
 			var s2t = this.tabtxt(ln.txt.slice(s0+s1, ln.txt.length), s1pos);
-			ctx.fillText(s2t, dx+sx, y);
+			ctxFillText(ctx, s2t, dx+sx, y);
 			return true;
 		}
 
 		// unselected line
-		ctx.clearRect(1, y, this.c.width-this.marginsz-1, lnht);
+		ctxClearRect(ctx, 1, y, this.c.width-this.marginsz-1, lnht);
 		var t = this.tabtxt(ln.txt);
-		ctx.fillText(t, this.marginsz, y);
+		ctxFillText(ctx, t, this.marginsz, y);
 
 		if(this.p0 < ln.off || this.p0 > ln.off + ln.txt.length) {
 			return true;
@@ -861,12 +878,12 @@ function DrawLines(c) {
 		var y0 = this.ln0.lni / this.lne.lni * this.c.height;
 		var dy = this.frlines / this.lne.lni * this.c.height;
 	
-		ctx.clearRect(this.c.width-this.marginsz, 0, this.marginsz, y0);
+		ctxClearRect(ctx, this.c.width-this.marginsz, 0, this.marginsz, y0);
 		var old = ctx.fillStyle;
 		ctx.fillStyle = "#7373FF";
 		ctx.fillRect(this.c.width-this.marginsz, y0, this.marginsz, dy);
 		ctx.fillStyle = old;
-		ctx.clearRect(this.c.width-this.marginsz, y0+dy,
+		ctxClearRect(ctx, this.c.width-this.marginsz, y0+dy,
 			this.marginsz, this.c.height-(y0+dy));
 	};
 
