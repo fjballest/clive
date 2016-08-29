@@ -217,9 +217,10 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			f.wrText(e)
 			if e.Kind == Kchap {
 				ct := escRoff(chtext[eflag])
+				dt := escRoff(e.Data)
 				f.printCmd(".br\n \n");
-				f.printCmd(".OH '"+ct+" " + e.Nb + ".' '" + e.Data + "' \n");
-				f.printCmd(".EH ' "+ e.Data + " ' ' "+ct+" " + e.Nb + ".' \n");
+				f.printCmd(".OH '"+ct+" " + e.Nb + ".' '" + dt + "' \n");
+				f.printCmd(".EH ' "+ dt + " ' ' "+ct+" " + e.Nb + ".' \n");
 			}
 			f.printCmd(".LP\n")
 		case Kpar:
