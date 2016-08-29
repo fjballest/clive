@@ -215,24 +215,17 @@ func (f *htmlFmt) fntSz(d string) {
 	f.fnts = append(f.fnts, n)
 }
 
-var hcaps = map[Kind]string{
-	Kfig:  "Figure",
-	Kpic:  "Figure",
-	Kgrap: "Figure",
-	Ktbl:  "Table",
-	Keqn:  "Eqn.",
-	Kcode: "Listing",
-}
 
 func (f *htmlFmt) wrCaption(e *Elem) {
 	if e.Caption == nil {
-		f.printCmd("<b>%s %s.</b>", hcaps[e.Kind], e.Nb)
+		f.printCmd("<b>%s %s.</b>", labels[e.Kind], e.Nb)
 	} else {
-		f.printCmd("<b>%s %s:</b> <em>", hcaps[e.Kind], e.Nb)
+		f.printCmd("<b>%s %s:</b> <em>", labels[e.Kind], e.Nb)
 		f.wrText(e.Caption)
 		f.printParCmd(`</em>`)
 	}
 }
+
 
 func (f *htmlFmt) wrElems(els ...*Elem) {
 	pref := strings.Repeat(f.tab, f.lvl)
@@ -247,6 +240,8 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			f.wrFnt(e)
 		case Kfont:
 			f.fntSz(e.Data)
+		case Kcop:
+			cop = e.Data
 		case Kchap, Khdr1, Khdr2, Khdr3:
 			f.closePar()
 			f.printParCmd(`<a name="` + llbl[e.Kind] +
@@ -384,12 +379,16 @@ func (f *htmlFmt) wrBib(refs []string) {
 		return
 	}
 	f.printCmd("<p>\n")
+	r := "References"
+	if eflag {
+		r = "Referencias"
+	}
 	if !cliveMan {
-		f.printCmd("<p><h3>References</h3>\n<hr>\n")
+		f.printCmd("<p><h3>"+r+"</h3>\n<hr>\n")
 	} else if !f.hasSeeAlso {
 		f.printCmd("<p><h2>SEE ALSO</h2>\n<hr>\n")
 	} else {
-		f.printCmd("<p><h3>External references</h3>\n\n")
+		f.printCmd("<p><h3>External "+r+"</h3>\n\n")
 	}
 	f.printCmd("<p><ol>\n")
 	f.i0 = f.tab
@@ -471,6 +470,9 @@ func (f *htmlFmt) run(t *Text) {
 	f.wrBib(t.bibrefs)
 	f.printCmd("<p>\n<hr><p>\n\n")
 	if !cliveMan {
+		if cop != "" {
+			f.printCmd("<p><b>(c) " + cop + "</b>\n<br>\n")
+		}
 		f.printCmd("</div></div>\n")
 		f.printCmd("</body>\n</html>\n")
 	} else if sect != "doc" {

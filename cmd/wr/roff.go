@@ -51,6 +51,9 @@ func escRoff(s string) string {
 			continue
 		case r == '¯', r == '¸':
 			r = '\\'
+		case r == '©':
+			ns += "(c)"
+			continue
 		case r > rune(0x7F):
 			// Use groff escapes for all codepoints not in 7bits.
 			// We might use named chars for common 8bit latin but
@@ -88,7 +91,7 @@ func (f *roffFmt) wrText(e *Elem) {
 	}
 	switch e.Kind {
 	case Kchap:
-		f.printPar(chtext[eflag]+" " + e.Nb, ": ");
+		f.printPar(labels[e.Kind]+" " + e.Nb, ": ");
 	case Khdr1, Khdr2, Khdr3:
 	case Kfoot:
 		if e.Nb != "" {
@@ -177,6 +180,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 	nb := 0
 	inabs := false
 	firstnh := false
+	firstchap := true
 	f.lvl++
 	defer func() {
 		f.lvl--
@@ -187,7 +191,17 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			f.wrFnt(e)
 		case Kfont:
 			f.printCmd(".ps %s\n", e.Data)
+		case Kcop:
+			f.printCmd(".OF '(c) "+e.Data+" ' ' '\n");
+			f.printCmd(".EF '(c) "+e.Data+" ' ' '\n");
 		case Kchap, Khdr1, Khdr2, Khdr3:
+			if e.Kind == Kchap {
+				if firstchap {
+					f.printCmd(".LP\n  \n")
+					f.printCmd(".bp\n")
+				}
+				firstchap = false
+			}
 			if inabs {
 				f.printCmd(".AE\n")
 				inabs = false
@@ -216,7 +230,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			}
 			f.wrText(e)
 			if e.Kind == Kchap {
-				ct := escRoff(chtext[eflag])
+				ct := escRoff(labels[e.Kind])
 				dt := escRoff(e.Data)
 				f.printCmd(".br\n \n");
 				f.printCmd(".OH '"+ct+" " + e.Nb + ".' '" + dt + "' \n");
@@ -290,7 +304,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 				f.printCmd("%s\n", e.Data)
 				f.printCmd(".PE\n")
 			}
-			f.wrCaption(e, "Figure")
+			f.wrCaption(e, labels[e.Kind])
 			f.printCmd(".KE\n")
 		case Ktbl:
 			f.closePar()
@@ -298,14 +312,14 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			f.lvl += 2
 			f.wrTbl(e.Tbl)
 			f.lvl -= 2
-			f.wrCaption(e, "Table")
+			f.wrCaption(e, labels[e.Kind])
 			f.printCmd(".KE\n")
 		case Keqn:
 			f.printCmd(".KF\n")
 			f.printCmd(".EQ\n")
 			f.printCmd("%s\n", e.Data)
 			f.printCmd(".EN\n")
-			f.wrCaption(e, "Eqn.")
+			f.wrCaption(e, labels[e.Kind])
 			f.printCmd(".KE\n")
 		case Kcode:
 			f.printCmd(".KF\n")
@@ -318,7 +332,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			f.printCmd(".ps +2\n")
 			f.printCmd(".R\n")
 			f.printCmd(".DE\n")
-			f.wrCaption(e, "Listing")
+			f.wrCaption(e, labels[e.Kind])
 			f.printCmd(".KE\n")
 		}
 	}
@@ -367,7 +381,13 @@ func (f *roffFmt) wrBib(refs []string) {
 		return
 	}
 	f.printCmd(".SH\n")
-	f.printCmd("References\n")
+	if eflag {
+		f.printCmd("Referencias\n")
+	} else {
+		f.printCmd("References\n")
+	}
+	f.printCmd(".OH 'Refs.' ' ' \n")
+	f.printCmd(".EH ' ' 'Refs.' \n")
 	f.printCmd(".LP\n.SM\n")
 	for i, r := range refs {
 		f.printPar(fmt.Sprintf("%d. %s", i+1, r))
@@ -396,6 +416,12 @@ func (f *roffFmt) run(t *Text) {
 	}
 	f.printCmd("\n")
 	f.wrElems(els...)
+	if (t.nchap > 0) {
+		f.printCmd(".br\n")
+		f.printCmd(".OH '' ' ' \n")
+		f.printCmd(".EH ' ' '' \n")
+		f.printCmd(".bp\n")
+	}
 	f.wrBib(t.bibrefs)
 	f.closePar()
 }

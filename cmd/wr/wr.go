@@ -43,9 +43,25 @@ var (
 
 	eflag, hflag, tflag, lflag, mflag, pflag, psflag, notux bool
 
-	chtext = map[bool]string{
-		false: "Chapter",
-		true: "Capítulo",
+
+	labels = map[Kind]string{
+		Kfig:  "Figure",
+		Kpic:  "Figure",
+		Kgrap: "Figure",
+		Ktbl:  "Table",
+		Keqn:  "Eqn.",
+		Kcode: "Listing",
+		Kchap: "Chapter",
+	}
+
+	splabels = map[Kind]string{
+		Kfig:  "Figura",
+		Kpic:  "Figura",
+		Kgrap: "Figura",
+		Ktbl:  "Tabla",
+		Keqn:  "Ec.",
+		Kcode: "Listado",
+		Kchap: "Capítulo",
 	}
 )
 
@@ -244,6 +260,9 @@ func main() {
 		cmd.SetIn("in", cmd.Files(args...))
 	}
 	oext = outExt()
+	if eflag {
+		labels = splabels
+	}
 	sts := wr(cmd.Lines(cmd.In("in")))
 	if sts != nil {
 		cmd.Fatal(sts)

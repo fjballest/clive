@@ -68,6 +68,8 @@ func (f *txtFmt) wrText(e *Elem) {
 	}
 }
 
+var cop = ""
+
 func (f *txtFmt) wrElems(els ...*Elem) {
 	nb := 0
 	inchap := false
@@ -83,6 +85,8 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			inchap = true
 		}
 		switch e.Kind {
+		case Kcop:
+			cop = e.Data
 		case Kfont, Kit, Kbf, Ktt, Kitend, Kbfend, Kttend:
 			if f.sc != nil && !e.Inline {
 				f.printPar(" ")
@@ -154,12 +158,12 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			s := e.Data
 			f.printCmd("%s[%s]\n", xpref+f.tab, s)
 			if e.Caption == nil {
-				f.printCmd("%sFigure %s.\n\n", xpref, e.Nb)
+				f.printCmd("%s%s %s.\n\n", xpref, labels[e.Kind], e.Nb)
 				break
 			}
 			f.i0, f.in = xpref, xpref
 			f.newPar()
-			f.printPar("Figure ", e.Nb, ": ")
+			f.printPar(labels[e.Kind]+" ", e.Nb, ": ")
 			f.wrText(e.Caption)
 			f.closePar()
 		case Ktbl:
@@ -169,12 +173,12 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			f.lvl -= 2
 			xpref := pref + f.tab
 			if e.Caption == nil {
-				f.printCmd("%sTable %s.\n\n", xpref, e.Nb)
+				f.printCmd("%s%s %s.\n\n", xpref, labels[e.Kind], e.Nb)
 				break
 			}
 			f.i0, f.in = xpref, xpref
 			f.newPar()
-			f.printPar("Table ", e.Nb, ": ")
+			f.printPar(labels[e.Kind]+" ", e.Nb, ": ")
 			f.wrText(e.Caption)
 			f.closePar()
 		case Keqn:
@@ -183,13 +187,13 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			s := "eqn data"
 			f.printCmd("%s[%s]\n", xpref+f.tab, s)
 			if e.Caption == nil {
-				f.printCmd("%sEqn. %s.\n\n",
-					xpref, e.Nb)
+				f.printCmd("%s%s %s.\n\n",
+					xpref, labels[e.Kind], e.Nb)
 				break
 			}
 			f.i0, f.in = xpref, xpref
 			f.newPar()
-			f.printPar("Eqn. ", e.Nb, ": ")
+			f.printPar(labels[e.Kind]+" ", e.Nb, ": ")
 			f.wrText(e.Caption)
 			f.closePar()
 		case Kcode:
@@ -198,12 +202,12 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			f.closePar()
 			f.printCmd("%s", e.Data)
 			if e.Caption == nil {
-				f.printCmd("%sListing %s.\n\n", xpref, e.Nb)
+				f.printCmd("%s%s %s.\n\n", xpref, labels[e.Kind], e.Nb)
 				break
 			}
 			f.i0, f.in = xpref, xpref
 			f.newPar()
-			f.printPar("Listing ", e.Nb, ": ")
+			f.printPar(labels[e.Kind]+" ", e.Nb, ": ")
 			f.wrText(e.Caption)
 			f.closePar()
 		}
@@ -278,6 +282,9 @@ func (f *txtFmt) run(t *Text) {
 	f.wrElems(els...)
 	f.wrFoots(t)
 	f.wrBib(t.bibrefs)
+	if cop != "" {
+		fmt.Fprintf(f.out, "\n(c)  %s\n", cop);
+	}
 }
 
 // plain text writer (for man)
