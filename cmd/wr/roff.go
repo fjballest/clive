@@ -279,7 +279,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 		case Kverb, Ksh:
 			f.printCmd(".DS\n")
 			if e.Kind == Kverb && e.Tag != "" {
-				f.printCmd(`\fB`+e.Tag+`\fP`+":\n")
+				f.printCmd(`\f(CB[`+e.Tag+`]\fP`+":\n")
 				f.printCmd(".br\n")
 			}
 			f.printCmd(".CW\n")
