@@ -41,7 +41,12 @@ var (
 		".html": wrhtml,
 	}
 
-	hflag, tflag, lflag, mflag, pflag, psflag, notux bool
+	eflag, hflag, tflag, lflag, mflag, pflag, psflag, notux bool
+
+	chtext = map[bool]string{
+		false: "Chapter",
+		true: "Capítulo",
+	}
 )
 
 func outExt() string {
@@ -224,6 +229,7 @@ func main() {
 	opts.NewFlag("P", "debug paragraphs", &debugPars)
 	opts.NewFlag("b", "dir: change the default refer bib dir", &refsdir)
 	opts.NewFlag("u", "do not generate output for unix", &notux)
+	opts.NewFlag("e", "use spanish for labels", &eflag)
 
 	args := opts.Parse()
 	if !notux {

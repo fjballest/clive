@@ -88,7 +88,7 @@ func (f *roffFmt) wrText(e *Elem) {
 	}
 	switch e.Kind {
 	case Kchap:
-		f.printPar("Chapter " + e.Nb, ": ");
+		f.printPar(chtext[eflag]+" " + e.Nb, ": ");
 	case Khdr1, Khdr2, Khdr3:
 	case Kfoot:
 		if e.Nb != "" {
@@ -216,9 +216,10 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			}
 			f.wrText(e)
 			if e.Kind == Kchap {
+				ct := escRoff(chtext[eflag])
 				f.printCmd(".br\n \n");
-				f.printCmd(".OH 'Chapter " + e.Nb + ".' '" + e.Data + "' \n");
-				f.printCmd(".EH ' "+ e.Data + " ' ' Chapter " + e.Nb + ".' \n");
+				f.printCmd(".OH '"+ct+" " + e.Nb + ".' '" + e.Data + "' \n");
+				f.printCmd(".EH ' "+ e.Data + " ' ' "+ct+" " + e.Nb + ".' \n");
 			}
 			f.printCmd(".LP\n")
 		case Kpar:
