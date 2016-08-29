@@ -87,7 +87,9 @@ func (f *roffFmt) wrText(e *Elem) {
 		return
 	}
 	switch e.Kind {
-	case Kchap, Khdr1, Khdr2, Khdr3:
+	case Kchap:
+		f.printPar("Chapter " + e.Nb, ": ");
+	case Khdr1, Khdr2, Khdr3:
 	case Kfoot:
 		if e.Nb != "" {
 			f.printPar(e.Nb, ". ")
@@ -145,7 +147,7 @@ var ifnts = map[Kind]string{
 }
 
 var hdrs = map[Kind]string{
-	Kchap: "CH",
+	Kchap: "SH",
 	Khdr1: "NH",
 	Khdr2: "NH 2",
 	Khdr3: "NH 3",
@@ -174,6 +176,7 @@ func (f *roffFmt) wrCaption(e *Elem, tag string) {
 func (f *roffFmt) wrElems(els ...*Elem) {
 	nb := 0
 	inabs := false
+	firstnh := false
 	f.lvl++
 	defer func() {
 		f.lvl--
@@ -195,8 +198,28 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 				break
 			}
 
-			f.printCmd(".%s\n", hdrs[e.Kind])
+			if e.Kind == Kchap {
+				f.printCmd(".OH ' ' ' '\n");
+				f.printCmd(".EH ' ' ' '\n");
+				f.printCmd(".bp\n");
+			}
+			if firstnh && e.Kind == Khdr1 {
+				f.printCmd(".bp\n");
+				f.printCmd(".NH 0\n")
+				firstnh = false
+			} else {
+				f.printCmd(".%s\n", hdrs[e.Kind])
+			}
+			if e.Kind == Kchap {
+				f.printCmd(".ps +10\n");
+				firstnh = true
+			}
 			f.wrText(e)
+			if e.Kind == Kchap {
+				f.printCmd(".br\n \n");
+				f.printCmd(".OH 'Chapter " + e.Nb + ".' '" + e.Data + "' \n");
+				f.printCmd(".EH ' "+ e.Data + " ' ' Chapter " + e.Nb + ".' \n");
+			}
 			f.printCmd(".LP\n")
 		case Kpar:
 			f.printCmd("\n")
