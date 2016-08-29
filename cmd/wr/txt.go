@@ -70,6 +70,7 @@ func (f *txtFmt) wrText(e *Elem) {
 
 func (f *txtFmt) wrElems(els ...*Elem) {
 	nb := 0
+	inchap := false
 	pref := strings.Repeat(f.tab, f.lvl)
 	f.lvl++
 	defer func() {
@@ -78,12 +79,15 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 	for _, e := range els {
 		f.i0, f.in = pref, pref
 		f.fn = nil
+		if e.Kind == Kchap {
+			inchap = true
+		}
 		switch e.Kind {
 		case Kfont, Kit, Kbf, Ktt, Kitend, Kbfend, Kttend:
 			if f.sc != nil && !e.Inline {
 				f.printPar(" ")
 			}
-		case Khdr1, Khdr2, Khdr3:
+		case Kchap, Khdr1, Khdr2, Khdr3:
 			f.closePar()
 			f.hasSeeAlso = false
 			if cliveMan && strings.ToLower(e.Data) == "see also" {
@@ -91,6 +95,9 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			}
 			if cliveMan && e.Kind != Khdr3 {
 				f.fn = strings.ToUpper
+			}
+			if strings.ToLower(e.Data) == "abstract" && inchap {
+				e.Data = ""
 			}
 			f.newPar()
 			f.wrText(e)

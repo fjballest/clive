@@ -12,6 +12,7 @@ type Kind int
 const (
 	Knone  Kind = iota
 	Ktitle      // title or author info (first found is title)
+	Kchap	// chapter title
 	Khdr1       // heading
 	Khdr2       // heading
 	Khdr3       // heading
@@ -56,6 +57,7 @@ const (
 const (
 	// these require a space after
 	TitleMark = "_ "
+	ChapMark  = "= "
 	Hdr1Mark  = "* "
 	Hdr2Mark  = "** "
 	Hdr3Mark  = "*** "
@@ -89,7 +91,7 @@ struct Text {
 	bibrefs []string
 	refsdir string
 
-	nhdr1, nhdr2, nhdr3 int
+	nchap, nhdr1, nhdr2, nhdr3 int
 
 	itset, ttset, bfset bool
 
@@ -127,6 +129,7 @@ struct scan {
 var marks = map[string]Kind{
 	TitleMark: Ktitle,
 	FootMark:  Kfoot,
+	ChapMark: Kchap,
 	Hdr1Mark:  Khdr1,
 	Hdr2Mark:  Khdr2,
 	Hdr3Mark:  Khdr3,
@@ -150,6 +153,8 @@ func (k Kind) String() string {
 		return "none"
 	case Ktitle:
 		return "title"
+	case Kchap:
+		return "chapter"
 	case Khdr1:
 		return "hdr1"
 	case Khdr2:
@@ -233,7 +238,7 @@ func (k Kind) String() string {
 
 func (k Kind) HasData() bool {
 	switch k {
-	case Ktitle, Khdr1, Khdr2, Khdr3,
+	case Ktitle, Kchap, Khdr1, Khdr2, Khdr3,
 		Kcite, Kbib, Kurl, Ksref, Kfref, Ktref, Keref, Knref, Kcref,
 		Kverb, Ksh, Kfig, Kpic, Kgrap,
 		Ktbl, Keqn, Kcode, Ktext, Kfoot, Kfont, Kitem, Kenum, Kname:
@@ -246,7 +251,7 @@ func (k Kind) HasData() bool {
 func (k Kind) HasChild() bool {
 	switch k {
 	case Kindent, Kitemize, Kenumeration, Kdescription, Kname,
-		Ktext, Kfoot, Kenum, Kitem, Khdr1, Ktitle, Khdr2, Khdr3:
+		Ktext, Kfoot, Kenum, Kitem, Kchap, Khdr1, Ktitle, Khdr2, Khdr3:
 		return true
 	default:
 		return false

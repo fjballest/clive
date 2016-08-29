@@ -52,7 +52,7 @@ func (f *texFmt) wrText(e *Elem) {
 		return
 	}
 	switch e.Kind {
-	case Khdr1, Khdr2, Khdr3, Kfoot:
+	case Kchap, Khdr1, Khdr2, Khdr3, Kfoot:
 	default:
 		if e.Nb != "" {
 			f.printPar(e.Nb, " ")
@@ -126,6 +126,7 @@ var lfnts = map[Kind]string{
 }
 
 var lhdrs = map[Kind]string{
+	Kchap: "chapter",
 	Khdr1: "section",
 	Khdr2: "subsection",
 	Khdr3: "subsubsection",
@@ -190,6 +191,7 @@ var llbl = map[Kind]string{
 	Kfoot: "foot",
 	Keqn:  "eqn",
 	Ktbl:  "tbl",
+	Kchap: "sec",
 	Khdr1: "sec",
 	Khdr2: "sec",
 	Khdr3: "sec",
@@ -197,6 +199,7 @@ var llbl = map[Kind]string{
 
 func (f *texFmt) wrElems(els ...*Elem) {
 	inabs := false
+	inchap := false
 	pref := strings.Repeat(f.tab, f.lvl)
 	f.lvl++
 	defer func() {
@@ -204,18 +207,29 @@ func (f *texFmt) wrElems(els ...*Elem) {
 	}()
 	for _, e := range els {
 		f.i0, f.in = pref, pref
+		if e.Kind == Kchap {
+			inchap = true
+		}
 		switch e.Kind {
 		case Kit, Kbf, Ktt, Kitend, Kbfend, Kttend:
 			f.wrFnt(e)
 		case Kfont:
 			f.fntSz(e.Data)
-		case Khdr1, Khdr2, Khdr3:
+		case Kchap, Khdr1, Khdr2, Khdr3:
 			if inabs {
-				f.printCmd(`\end{abstract}` + "\n\n")
+				if inchap {
+					f.printCmd(`\end{quote}` + "\n\n")
+				} else {
+					f.printCmd(`\end{abstract}` + "\n\n")
+				}
 				inabs = false
 			}
 			if strings.ToLower(e.Data) == "abstract" {
-				f.printCmd(`\begin{abstract}` + "\n")
+				if inchap {
+					f.printCmd(`\begin{quote}` + "\n")
+				} else {
+					f.printCmd(`\begin{abstract}` + "\n")
+				}
 				inabs = true
 				break
 			}
@@ -229,7 +243,11 @@ func (f *texFmt) wrElems(els ...*Elem) {
 		case Kpar:
 			f.printCmd("\n")
 			if inabs {
-				f.printCmd(`\end{abstract}` + "\n")
+				if inchap {
+					f.printCmd(`\end{quote}` + "\n")
+				} else {
+					f.printCmd(`\end{abstract}` + "\n")
+				}
 				inabs = false
 			}
 		case Kbr:
@@ -365,7 +383,11 @@ func (f *texFmt) wrBib(refs []string) {
 
 func (f *texFmt) run(t *Text) {
 	f.printCmd("%s\n", `% use pdflatex to compile this.`)
-	f.printCmd(`\documentclass[a4paper]{article}` + "\n")
+	if t.nchap > 0 {
+		f.printCmd(`\documentclass[a4paper]{book}` + "\n")
+	} else {
+		f.printCmd(`\documentclass[a4paper]{article}` + "\n")
+	}
 	f.printCmd(`\usepackage{graphicx}` + "\n")
 	f.printCmd(`\usepackage[utf8x]{inputenc}` + "\n")
 	els := t.Elems

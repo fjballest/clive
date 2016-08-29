@@ -135,8 +135,8 @@ func (t *Text) parse() {
 		t.splitMarks(p)
 		t.pprintf("PAR %s\n", p)
 		t.Elems = append(t.Elems, p)
-		if p.Kind == Ktitle || p.Kind == Khdr1 || p.Kind == Khdr2 ||
-			p.Kind == Khdr3 {
+		if p.Kind == Ktitle || p.Kind == Kchap ||
+			p.Kind == Khdr1 || p.Kind == Khdr2 || p.Kind == Khdr3 {
 			t.skipBlanks()
 		}
 	}
@@ -209,7 +209,7 @@ func (t *Text) parsePar() (el *Elem) {
 			t.addRef(el, Kfoot)
 		}
 		return el
-	case Khdr1, Khdr2, Khdr3:
+	case Kchap, Khdr1, Khdr2, Khdr3:
 		el := &Elem{Kind: k, Data: strings.TrimSpace(ln)}
 		if strings.ToLower(ln) != "abstract" {
 			t.addRef(el, k)
@@ -329,7 +329,8 @@ func (ek *eKeys) setKeys() {
 	if e.Caption != nil {
 		ks = append(ks, keys(e.Caption.Data)...)
 	}
-	if e.Kind == Khdr1 || e.Kind == Khdr2 || e.Kind == Khdr3 || e.Kind == Kfoot {
+	if e.Kind == Kchap || e.Kind == Khdr1 || e.Kind == Khdr2 ||
+			e.Kind == Khdr3 || e.Kind == Kfoot {
 		ks = append(ks, keys(e.Data)...)
 	}
 	for _, w := range ks {
@@ -349,23 +350,45 @@ func (t *Text) addRef(el *Elem, k Kind) {
 	prev := "??"
 	nb := 0
 	switch k {
+	case Kchap:
+		t.nchap++
+		t.nhdr1 = 0
+		t.nhdr2 = 0
+		t.nhdr3 = 0
+		prev = ""
+		nb = t.nchap
 	case Khdr1:
 		t.nhdr1++
 		t.nhdr2 = 0
 		t.nhdr3 = 0
 		nb = t.nhdr1
-		prev = ""
+		if t.nchap > 0 {
+			prev = fmt.Sprintf("%d.", t.nchap)
+		} else {
+			prev = ""
+		}
 	case Khdr2:
 		t.nhdr2++
 		t.nhdr3 = 0
-		prev = fmt.Sprintf("%d.", t.nhdr1)
+		if t.nchap > 0 {
+			prev = fmt.Sprintf("%d.%d.", t.nchap, t.nhdr1)
+		} else {
+			prev = fmt.Sprintf("%d.", t.nhdr1)
+		}
 		if h1 := refs[Khdr1]; len(h1) > 0 {
 			prev = h1[len(h1)-1].el.Nb + "."
 		}
 		nb = t.nhdr2
 	case Khdr3:
 		t.nhdr3++
-		prev = fmt.Sprintf("%d.%d.", t.nhdr1, t.nhdr2)
+		if t.nchap > 0 {
+			prev = fmt.Sprintf("%d.%d.%d.", t.nchap, t.nhdr1, t.nhdr2)
+		} else {
+			prev = fmt.Sprintf("%d.%d.", t.nhdr1, t.nhdr2)
+		}
+		if h2 := refs[Khdr2]; len(h2) > 0 {
+			prev = h2[len(h2)-1].el.Nb + "."
+		}
 		nb = t.nhdr3
 	default:
 		prev = ""
@@ -465,7 +488,7 @@ var cites = map[string]Kind{
 // inlined marks and raw text elems.
 func (t *Text) splitMarks(p *Elem) {
 	switch p.Kind {
-	case Ktext, Kfoot, Kenum, Kitem, Khdr1, Ktitle, Khdr2, Khdr3:
+	case Ktext, Kfoot, Kenum, Kitem, Ktitle, Kchap, Khdr1, Khdr2, Khdr3:
 		if !strings.ContainsAny(p.Data, "*_|[") {
 			return
 		}
@@ -779,6 +802,7 @@ func (t *Text) fixRefs() {
 	if t.refs == nil {
 		return
 	}
+	t.refs[Ktitle] = append(t.refs[Ktitle], t.refs[Kchap]...)
 	t.refs[Ktitle] = append(t.refs[Ktitle], t.refs[Khdr1]...)
 	t.refs[Ktitle] = append(t.refs[Ktitle], t.refs[Khdr2]...)
 	t.refs[Ktitle] = append(t.refs[Ktitle], t.refs[Khdr3]...)

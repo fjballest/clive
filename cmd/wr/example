@@ -3,10 +3,13 @@ perhaps continued here with |verb \| text
 _ author info
 _ more author info with |tt text|
 
+= A chap
+
 * Abstract
 
 A section perhaps with the abstract if it's titled "Abstract".
 Tildes: Axéáñññ Unicode:  ½ ¼  ™  → ← µkernel.
+
 
 * A sect
 
@@ -14,7 +17,7 @@ Tildes: Axéáñññ Unicode:  ½ ¼  ™  → ← µkernel.
 
 Use [sect: A sect], or any keys, to refer to the section with the title containing all the words.
 
-*** A sub-sub sect
+*** A sub-sub section
 
 .abc escaped
 
@@ -202,7 +205,7 @@ describes rows. No other table formats are supported.
 eqns may have captions
 ]
 
-[code Listing
+[code key
 	{
 		some prog or code
 		taken verbatim to be printed
@@ -227,3 +230,17 @@ and so on...
 * See also
 
 	- [cite: intro(1)] for so and so.
+
+= Another chapter
+
+* Another sect
+
+You may reg [fig: label2] other figures.
+
+[pic label2
+	circle "hola"
+	arrow
+	circle "caracola"
+the caption starts without indentation and
+may span several lines. 
+]

@@ -87,7 +87,7 @@ func (f *roffFmt) wrText(e *Elem) {
 		return
 	}
 	switch e.Kind {
-	case Khdr1, Khdr2, Khdr3:
+	case Kchap, Khdr1, Khdr2, Khdr3:
 	case Kfoot:
 		if e.Nb != "" {
 			f.printPar(e.Nb, ". ")
@@ -145,6 +145,7 @@ var ifnts = map[Kind]string{
 }
 
 var hdrs = map[Kind]string{
+	Kchap: "CH",
 	Khdr1: "NH",
 	Khdr2: "NH 2",
 	Khdr3: "NH 3",
@@ -183,7 +184,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			f.wrFnt(e)
 		case Kfont:
 			f.printCmd(".ps %s\n", e.Data)
-		case Khdr1, Khdr2, Khdr3:
+		case Kchap, Khdr1, Khdr2, Khdr3:
 			if inabs {
 				f.printCmd(".AE\n")
 				inabs = false

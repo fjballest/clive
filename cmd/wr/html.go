@@ -75,7 +75,7 @@ func (f *htmlFmt) wrText(e *Elem) {
 		return
 	}
 	switch e.Kind {
-	case Khdr1, Khdr2, Khdr3, Kfoot:
+	case Kchap, Khdr1, Khdr2, Khdr3, Kfoot:
 	default:
 		if e.Nb != "" {
 			f.printPar(e.Nb, " ")
@@ -155,6 +155,7 @@ var hfnts = map[Kind]string{
 }
 
 var hhdrs = map[Kind]string{
+	Kchap: "h1",
 	Khdr1: "h2",
 	Khdr2: "h3",
 	Khdr3: "h3",
@@ -246,7 +247,7 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			f.wrFnt(e)
 		case Kfont:
 			f.fntSz(e.Data)
-		case Khdr1, Khdr2, Khdr3:
+		case Kchap, Khdr1, Khdr2, Khdr3:
 			f.closePar()
 			f.printParCmd(`<a name="` + llbl[e.Kind] +
 				strings.Replace(e.Nb, ".", "x", -1) + `"></a>`)
