@@ -295,7 +295,11 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			f.wrText(e)
 			f.closePar()
 		case Kverb, Ksh:
-			f.printCmd(pref + `<code><pre>` + "\n")
+			f.printCmd(pref + `<code>`)
+			if e.Kind == Kverb && e.Tag != "" {
+				f.printCmd("<b>[%s]</b>:<br>", e.Tag)
+			}
+			f.printCmd(`<pre>` + "\n")
 			e.Data = indentVerb(e.Data, f.i0, f.tab)
 			f.printCmd("%s", html.EscapeString(e.Data))
 			f.printCmd(pref + `</pre></code>` + "\n")

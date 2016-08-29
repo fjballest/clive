@@ -286,6 +286,10 @@ func (f *texFmt) wrElems(els ...*Elem) {
 			f.wrText(e)
 		case Kverb, Ksh:
 			f.printCmd(pref + `\begin{verbatim}` + "\n")
+			if e.Kind == Kverb && e.Tag != "" {
+				tg := indentVerb("["+e.Tag+"]", pref, f.tab)
+				f.printCmd("%s", tg)
+			}
 			e.Data = indentVerb(e.Data, f.i0, f.tab)
 			f.printCmd("%s", e.Data)
 			f.printCmd(pref + `\end{verbatim}` + "\n")
@@ -296,7 +300,11 @@ func (f *texFmt) wrElems(els ...*Elem) {
 		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Knref, Ksref, Kcite:
 			f.wrText(e)
 		case Kfig, Kpic, Kcode, Kgrap, Keqn:
-			f.printCmd(pref + `\begin{figure}` + "\n")
+			if e.Kind == Kcode {
+				f.printCmd(pref + `\begin[h]{figure}` + "\n")
+			} else {
+				f.printCmd(pref + `\begin{figure}` + "\n")
+			}
 			f.printCmd(pref + `\centering` + "\n")
 			switch e.Kind {
 			case Kpic, Kgrap:

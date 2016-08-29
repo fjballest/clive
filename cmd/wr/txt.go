@@ -141,6 +141,10 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			f.wrText(e)
 		case Kverb, Ksh:
 			f.closePar()
+			if e.Kind == Kverb && e.Tag != "" {
+				tg := indentVerb("["+e.Tag+"]", pref, f.tab)
+				f.printCmd("%s", tg)
+			}
 			e.Data = indentVerb(e.Data, pref, f.tab)
 			f.printCmd("%s", e.Data)
 		case Kfoot:

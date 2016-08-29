@@ -130,8 +130,8 @@ or
 make a set of lines fixed font
 |
 
-this paragraph has
-	[verb
+this paragraph has indented verbatim text
+	[verb with a tag name
 		.text starting with dot
 		some indented verbatim text, including ['s and ]'s and \n
 		nb = 0
@@ -141,6 +141,7 @@ this paragraph has
 		wrelems(out, e.Child, lvl+1)
 	]
 but the verbatim text could be unindented as well.
+A tag name (printed in bold) by be given after the |[verb| keyword.
 
 this other paragraph has a cite
 [cite: for this] and a url for [url: the lsub page|http://lsub.org] within the rest of the text
@@ -211,9 +212,6 @@ eqns may have captions
 		some prog or code
 		taken verbatim to be printed
 	}
-it may have caption, the word after [code is used as a tag in the listing.
-the default is program. but all code listings share the same code counter
-despite the tag used. You can use |marks| and [cite: cites] here.
 ]
 
 [grap

@@ -278,7 +278,34 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			f.wrText(e)
 		case Kverb, Ksh:
 			f.printCmd(".DS\n")
+			if e.Kind == Kverb && e.Tag != "" {
+				f.printCmd(`\fB`+e.Tag+`\fP`+":\n")
+				f.printCmd(".br\n")
+			}
 			f.printCmd(".CW\n")
+			f.printCmd(".ps -2\n")
+			e.Data = indentVerb(e.Data, "", f.tab)
+			f.printCmd("%s", escRoff(e.Data))
+			f.printCmd(".ps +2\n")
+			f.printCmd(".R\n")
+			f.printCmd(".DE\n")
+		case Kcode:
+			e.Data = strings.TrimSpace(e.Data)
+			e.Tag = strings.TrimSpace(e.Tag)
+			f.printCmd(".DS\n")
+			tag := labels[e.Kind]
+			if e.Tag == "+" {
+				// continued code, ignore tag
+			} else if e.Tag == "" {
+				f.printParCmd(fmt.Sprintf("\\fB%s %s.\\fP ", tag, e.Nb))
+			} else {
+				f.printParCmd(fmt.Sprintf("\\fB%s %s:\\fP \\fI", tag, e.Nb))
+				f.printParCmd(`\fP`)
+				f.printParCmd(`\f(CW`)
+				f.printParCmd(escRoff(e.Tag))
+				f.printParCmd(`\fP`)
+			}
+			f.printCmd(".br\n.CW\n")
 			f.printCmd(".ps -2\n")
 			e.Data = indentVerb(e.Data, "", f.tab)
 			f.printCmd("%s", escRoff(e.Data))
@@ -319,19 +346,6 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			f.printCmd(".EQ\n")
 			f.printCmd("%s\n", e.Data)
 			f.printCmd(".EN\n")
-			f.wrCaption(e, labels[e.Kind])
-			f.printCmd(".KE\n")
-		case Kcode:
-			f.printCmd(".KF\n")
-			e.Data = strings.TrimSpace(e.Data)
-			f.printCmd(".DS\n")
-			f.printCmd(".CW\n")
-			f.printCmd(".ps -2\n")
-			e.Data = indentVerb(e.Data, "", f.tab)
-			f.printCmd("%s", escRoff(e.Data))
-			f.printCmd(".ps +2\n")
-			f.printCmd(".R\n")
-			f.printCmd(".DE\n")
 			f.wrCaption(e, labels[e.Kind])
 			f.printCmd(".KE\n")
 		}
