@@ -14,7 +14,7 @@ struct texFmt {
 	outfig string
 }
 
-const lspecial = `&_$\%{}#`
+const lspecial = `&_$\%{}#^`
 
 func escTex(s string) string {
 	ns := ""
