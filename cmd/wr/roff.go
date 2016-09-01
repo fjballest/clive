@@ -198,6 +198,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			if e.Kind == Kchap {
 				if firstchap {
 					f.printCmd(".LP\n  \n")
+					f.printCmd(".nr %% 0\n")
 					f.printCmd(".bp\n")
 				}
 				firstchap = false
@@ -207,14 +208,16 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 				inabs = false
 			}
 			if strings.ToLower(e.Data) == "abstract" {
-				f.printCmd(".AB\n")
-				inabs = true
+				if (firstchap) {
+					f.printCmd(".AB\n")
+					inabs = true
+				}
 				break
 			}
 
 			if e.Kind == Kchap {
-				f.printCmd(".OH ' ' ' '\n");
-				f.printCmd(".EH ' ' ' '\n");
+				f.printCmd(".ds LH \n");
+				f.printCmd(".ds RH \n");
 				f.printCmd(".bp\n");
 			}
 			if firstnh && e.Kind == Khdr1 {
@@ -233,9 +236,21 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 				ct := escRoff(labels[e.Kind])
 				dt := escRoff(e.Data)
 				f.printCmd(".br\n \n");
-				f.printCmd(".OH '"+ct+" " + e.Nb + ".' '" + dt + "' \n");
-				f.printCmd(".EH ' "+ dt + " ' ' "+ct+" " + e.Nb + ".' \n");
+				f.printCmd(".ds LH " + ct + " " + e.Nb + "\n")
+				f.printCmd(".ds RH " + dt + "\n");
 			}
+			f.printCmd(".XS\n");
+			if (e.Kind >= Khdr1) {
+				f.printCmd("    " + e.Nb + " ");
+			}
+			if (e.Kind >= Khdr2) {
+				f.printCmd("    ");
+			}
+			if (e.Kind >= Khdr3) {
+				f.printCmd("    ");
+			}
+			f.wrText(e)
+			f.printCmd(".XE\n");
 			f.printCmd(".LP\n")
 		case Kpar:
 			f.printCmd("\n")
@@ -430,6 +445,7 @@ func (f *roffFmt) run(t *Text) {
 	}
 	f.printCmd("\n")
 	f.wrElems(els...)
+	f.closePar()
 	if (t.nchap > 0) {
 		f.printCmd(".br\n")
 		f.printCmd(".OH '' ' ' \n")
@@ -438,6 +454,10 @@ func (f *roffFmt) run(t *Text) {
 	}
 	f.wrBib(t.bibrefs)
 	f.closePar()
+	if (t.nchap > 0) {
+		f.printCmd(".bp\n")
+		f.printCmd(".TC\n")
+	}
 }
 
 // roff writer
