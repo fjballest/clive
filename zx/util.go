@@ -78,7 +78,7 @@ func Suffix(p, pref string) string {
 	}
 }
 
-// returns <0, 0, >0 if the path a is found before, at or after b
+// returns -1,0, or 1 if the path a is found before, at or after b
 // like string compare but operates on one element at a time to compare.
 func PathCmp(path0, path1 string) int {
 	els0 := Elems(path0)

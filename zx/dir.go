@@ -107,7 +107,6 @@ func IsTemp(name string) bool {
 
 // Make a dup of the dir entry w/o temporary attributes
 func (d Dir) SysDup() Dir {
-
 	nd := Dir{}
 	for k, v := range d {
 		if !IsTemp(k) {
@@ -332,6 +331,43 @@ func (d Dir) Fmt() string {
 // Print d in long std format
 func (d Dir) LongFmt() string {
 	return d.fmt(d.Attrs(), false)
+}
+
+func nouid(s string) string {
+	if s == "" {
+		return "none"
+	}
+	return s
+}
+
+// Print d in a format suitable for keeping a db of file metadata.
+func (d Dir) DbFmt() string {
+	var b bytes.Buffer
+
+	fmt.Fprintf(&b, "%-14s", d["path"])
+	typ := d["type"]
+	if typ == "" {
+		fmt.Fprintf(&b, " -")
+	} else {
+		fmt.Fprintf(&b, " %s", typ)
+	}
+	if d["rm"] != "" {
+		fmt.Fprintf(&b, " GONE")
+	} else {
+		fmt.Fprintf(&b, " 0%o", d.Mode())
+	}
+	uid := nouid(d["Uid"])
+	gid := nouid(d["Gid"])
+	wuid := nouid(d["Wuid"])
+	fmt.Fprintf(&b, " %-8s %-8s %-8s", uid, gid, wuid)
+	fmt.Fprintf(&b, " %8d", d.Uint("size"))
+	if d["type"] != "d" {
+		fmt.Fprintf(&b, " %d", d.Uint("mtime"))
+	}
+	if d["err"] != "" {
+		fmt.Fprintf(&b, " %s", d["err"])
+	}
+	return b.String()
 }
 
 // Return a string that can be parsed later.
