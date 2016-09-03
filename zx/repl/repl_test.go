@@ -43,7 +43,7 @@ func mkdb(t *testing.T, tdir string) *DB {
 func mktest(t *testing.T, tdir string) (*DB, func() ) {
 	cmd.UnixIO("in", "out", "err")
 	cmd.Warn("testing")
-	os.Args[0] = "zux.test"
+	os.Args[0] = "repl.test"
 	fstest.Verb = testing.Verbose()
 	os.RemoveAll(tdir)
 	os.Remove(tdb)
@@ -56,25 +56,30 @@ func mktest(t *testing.T, tdir string) (*DB, func() ) {
 	return db, fn
 }
 
-func TestDbScan(t *testing.T) {
-	db, fn := mktest(t, tdir)
-	defer fn()
-
+func chkFiles(t *testing.T, db *DB, files []string) {
+	t.Logf("%s files:", db.Name)
 	all := map[string]bool{}
-	for _, f := range fstest.AllFiles {
+	for _, f := range files {
 		all[f] = true
 	}
 	fc := db.Files()
 	for f := range fc {
-		t.Logf("got %s\n", f.D.Fmt())
-		if !all[f.D["path"]] {
+		t.Logf("file %s\n", f.D.Fmt())
+		if files != nil && !all[f.D["path"]] {
 			t.Fatalf("bad file");
 		}
 		delete(all, f.D["path"])
 	}
-	if len(all) > 0 {
-		t.Fatalf("didn't get %s", all)
+	if files != nil && len(all) > 0 {
+		t.Fatalf("don't have %s", all)
 	}
+	t.Logf("%s files ok", db.Name)
+}
+
+func TestDbScan(t *testing.T) {
+	db, fn := mktest(t, tdir)
+	defer fn()
+	chkFiles(t, db, fstest.AllFiles)
 }
 
 func TestDBFile(t *testing.T) {
@@ -126,6 +131,11 @@ func cmpChgs(t *testing.T, xc []Chg, gc []Chg) {
 		if xc[i].Type != gc[i].Type || xc[i].D["path"] != gc[i].D["path"] {
 			t.Fatalf("bad chg %s", gc[i])
 		}
+		if xc[i].At != Nowhere {
+			if xc[i].At != gc[i].At {
+				t.Fatalf("bad chg %s", gc[i])
+			}
+		}
 	}
 	if len(xc) != len(gc) {
 		t.Fatalf("too many or too few changes")
@@ -166,8 +176,7 @@ func TestCmp(t *testing.T) {
 
 func mkrtest(t *testing.T, rtdir string) (*DB, func() ) {
 	cmd.UnixIO("in", "out", "err")
-	cmd.Warn("testing")
-	os.Args[0] = "zux.test"
+	os.Args[0] = "repl.test"
 	os.Mkdir(rtdir+"/p", 0755)
 	fstest.Verb = testing.Verbose()
 	fstest.MkTree(t, rtdir+"/p")
@@ -203,21 +212,7 @@ func mkrtest(t *testing.T, rtdir string) (*DB, func() ) {
 func TestRzxDbScan(t *testing.T) {
 	db, fn := mkrtest(t, rtdir)
 	defer fn()
-	all := map[string]bool{}
-	for _, f := range fstest.AllFiles {
-		all[f] = true
-	}
-	fc := db.Files()
-	for f := range fc {
-		t.Logf("got %s\n", f.D.Fmt())
-		if !all[f.D["path"]] {
-			t.Fatalf("bad file");
-		}
-		delete(all, f.D["path"])
-	}
-	if len(all) > 0 {
-		t.Fatalf("didn't get %s", all)
-	}
+	chkFiles(t, db, fstest.AllFiles)
 }
 
 func TestRzxCmp(t *testing.T) {
@@ -251,4 +246,144 @@ func TestRzxCmp(t *testing.T) {
 		t.Logf("chg %s", c)
 	}
 	cmpChgs(t, chg3, chgs)
+}
+
+var schg = []Chg {
+	Chg{Type: Data, D: zx.Dir{"path": "/1"}, At: Remote},
+	Chg{Type: DirFile, D: zx.Dir{"path": "/2"}, At: Remote},
+	Chg{Type: Data, D: zx.Dir{"path": "/a/a1"}, At: Local},
+	Chg{Type: Meta, D: zx.Dir{"path": "/a/a2"}, At: Local},
+	Chg{Type: Del, D: zx.Dir{"path": "/a/b/c"}, At: Local},
+	Chg{Type: Add, D: zx.Dir{"path": "/a/n"}, At: Local},
+}
+
+
+func TestTreeChanges(t *testing.T) {
+	db, fn := mkrtest(t, rtdir)
+	defer fn()
+	db.Close()
+	db, fn2 := mktest(t, tdir)
+	defer fn2()
+	db.Close()
+
+	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	if err != nil {
+		t.Fatalf("tree %s", err)
+	}
+	tr.Debug = testing.Verbose()
+	defer tr.Close()
+	fstest.MkChgs(t, tdir)
+	fstest.MkChgs2(t, rtdir+"/p")
+	t.Logf("pull")
+	cc, err := tr.PullChanges()
+	if err != nil {
+		t.Fatalf("pull %s", err)
+	}
+	for c := range cc {
+		t.Logf("chg %s %s", c.At, c)
+	}
+	t.Logf("push")
+	cc, err = tr.PushChanges()
+	if err != nil {
+		t.Fatalf("push %s", err)
+	}
+	for c := range cc {
+		t.Logf("chg %s %s", c.At, c)
+	}
+	t.Logf("sync")
+	cc, err = tr.Changes()
+	if err != nil {
+		t.Fatalf("sync %s", err)
+	}
+	chgs := []Chg{}
+	for c := range cc {
+		chgs = append(chgs, c)
+		t.Logf("chg %s %s", c.At, c)
+	}
+	cmpChgs(t, schg, chgs)
+}
+
+func TestTreePull(t *testing.T) {
+	db, fn := mkrtest(t, rtdir)
+	defer fn()
+	db.Close()
+	db, fn2 := mktest(t, tdir)
+	defer fn2()
+	db.Close()
+
+	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	if err != nil {
+		t.Fatalf("tree %s", err)
+	}
+	tr.Debug = testing.Verbose()
+	defer tr.Close()
+	fstest.MkChgs(t, tdir)
+	fstest.MkChgs2(t, rtdir+"/p")
+	chkFiles(t, tr.Ldb, nil)
+	t.Logf("pull")
+	err = tr.Pull()
+	if err != nil {
+		t.Fatalf("pull %s", err)
+	}
+	chkFiles(t, tr.Ldb, nil)
+	os.RemoveAll(tdir+".pull")
+	os.Rename(tdir, tdir+".pull")
+}
+
+func TestTreePush(t *testing.T) {
+	db, fn := mkrtest(t, rtdir)
+	defer fn()
+	db.Close()
+	db, fn2 := mktest(t, tdir)
+	defer fn2()
+	db.Close()
+
+	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	if err != nil {
+		t.Fatalf("tree %s", err)
+	}
+	tr.Debug = testing.Verbose()
+	tr.Rdb.Debug = testing.Verbose()
+	defer tr.Close()
+	fstest.MkChgs(t, tdir)
+	fstest.MkChgs2(t, rtdir+"/p")
+	chkFiles(t, tr.Rdb, nil)
+	t.Logf("push")
+	err = tr.Push()
+	if err != nil {
+		t.Fatalf("pull %s", err)
+	}
+	chkFiles(t, tr.Rdb, nil)
+	os.RemoveAll(rtdir+".push")
+	os.Rename(rtdir+"/p", rtdir+".push")
+}
+
+func TestTreeSync(t *testing.T) {
+	db, fn := mkrtest(t, rtdir)
+	defer fn()
+	db.Close()
+	db, fn2 := mktest(t, tdir)
+	defer fn2()
+	db.Close()
+
+	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	if err != nil {
+		t.Fatalf("tree %s", err)
+	}
+	tr.Debug = testing.Verbose()
+	tr.Rdb.Debug = testing.Verbose()
+	defer tr.Close()
+	fstest.MkChgs(t, tdir)
+	fstest.MkChgs2(t, rtdir+"/p")
+	chkFiles(t, tr.Rdb, nil)
+	t.Logf("sync")
+	err = tr.Sync()
+	if err != nil {
+		t.Fatalf("sync %s", err)
+	}
+	chkFiles(t, tr.Rdb, nil)
+	os.RemoveAll(tdir+".pull")
+	os.Rename(tdir, tdir+".pull")
+	os.RemoveAll(rtdir+".push")
+	os.Rename(rtdir+"/p", rtdir+".push")
 }

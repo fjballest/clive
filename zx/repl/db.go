@@ -7,9 +7,9 @@ import (
 	"clive/dbg"
 	"clive/ch"
 	"clive/zx"
+	"clive/zx/zux"
 	"clive/zx/rzx"
 	"clive/net/auth"
-	"clive/cmd"
 	fpath "path"
 	"errors"
 	"fmt"
@@ -22,9 +22,10 @@ import (
 // A DB for a fs tree
 struct DB {
 	Name     string // of the repl
-	Path	string // for / of repl
+	Addr	string // addr!path or path
 	Excl	[]string // exclude exprs.
-	rfs	*rzx.Fs
+	rpath	string	// path to repl root in fs
+	Fs	zx.Fs	// keeping the db files
 	dbg.Flag
 	Root     *File  // root
 	lastpf   *File
@@ -45,36 +46,70 @@ func splitaddr(addr string) (string, string) {
 	return addr[:n], addr[n+1:]
 }
 
+
+func isExcl(path string, excl ...string) bool {
+	if path == "/" {
+		return false
+	}
+	for _, e := range excl {
+		if zx.PathMatch(path, e) {
+			return true
+		}
+	}
+	return false
+}
+
+func (db *DB) setFs(path string) error {
+	addr := path
+	if strings.HasPrefix(path, "zx!") {
+		path = path[3:]
+	}
+	if strings.ContainsRune(path, '!') {
+		addr, rpath := splitaddr(addr)
+		rfs, err := rzx.Dial(addr, auth.TLSclient)
+		if err != nil {
+			return err
+		}
+		db.Fs = rfs
+		db.rpath = rpath
+	} else {
+		fs, err := zux.NewZX("/")
+		if err != nil {
+			return err
+		}
+		db.Fs = fs
+		db.rpath = path
+	}
+	db.Addr = addr
+	return nil
+}
+
 // Create a DB for the given tree with the given name.
 // if path contains '!', it's assumed to be a remote tree address
 // and the db operates on a remote ZX fs
 // In this case, the last component of the address must be a path
 func NewDB(name, path string, excl ...string) (*DB, error) {
-	if strings.HasPrefix(path, "zx!") {
-		path = path[3:]
-	}
-	t := &DB{
+	excl = append(excl, ".Ctl", ".Chg", ".zx")
+	db := &DB{
 		Name: name,
-		Path: path,
 		Excl: excl,
 	}
-	if strings.ContainsRune(path, '!') {
-		addr, rpath := splitaddr(path)
-		rfs, err := rzx.Dial(addr, auth.TLSclient)
-		if err != nil {
-			return nil, err
-		}
-		t.rfs = rfs
-		t.Path = rpath
+	db.Tag = db.Name
+	if err := db.setFs(path); err != nil {
+		return nil, err
 	}
-	return t, nil
+	return db, nil
 }
 
 func (db *DB) Close() error {
-	if db.rfs == nil {
+	if db.Fs == nil {
 		return nil
 	}
-	return db.rfs.Close()
+	if fs, ok := db.Fs.(io.Closer); ok {
+		return fs.Close()
+	}
+	db.Fs = nil
+	return nil
 }
 
 func (f *File) Walk1(name string) (*File, error) {
@@ -84,6 +119,17 @@ func (f *File) Walk1(name string) (*File, error) {
 		}
 	}
 	return nil, fmt.Errorf("%s: %s: file not found", f.D["path"], name)
+}
+
+func (f *File) Remove(name string) error {
+	nc := []*File{}
+	for _, c := range f.Child {
+		if c.D["name"] != name {
+			nc = append(nc, c)
+		}
+	}
+	f.Child = nc
+	return nil
 }
 
 func (f *File) String() string {
@@ -179,7 +225,7 @@ func (db *DB) Add(d zx.Dir) error {
 		db.lastpdir = pdir
 		db.lastpf = pf
 	}
-	db.Dprintf("add %s to %s\n", name, db.lastpf)
+	//db.Dprintf("add %s to %s\n", name, db.lastpf)
 	child := db.lastpf.Child
 	for _, cf := range child {
 		if cf.D["name"] == name {
@@ -203,21 +249,28 @@ func (db *DB) Add(d zx.Dir) error {
 // Dials the tree if necessary.
 // Only the first error is reported.
 func (db *DB) Scan() error {
-	db.Dprintf("scan %s\n", db.Files)
-	if db.rfs != nil {
-		ic := db.rfs.Find(db.Path, "", "", "", 0)
-		dc := make(chan face{})
-		go func() {
-			for d := range ic {
-				if ok := dc <- d; !ok {
-					close(ic, cerror(dc))
-				}
-			}
-			close(dc, cerror(ic))
-		}()
-		return db.scan(dc)
+	db.Dprintf("scan %s\n", db.Addr)
+	if db.Fs == nil {
+		return errors.New("no fs")
 	}
-	return db.scan(cmd.Dirs(db.Path+","))
+	fs, ok := db.Fs.(zx.Finder)
+	if !ok {
+		return errors.New("can't find in fs")
+	}
+	ic := fs.Find(db.rpath, "", db.rpath, "/", 0)
+	dc := make(chan face{})
+	go func() {
+		for d := range ic {
+			if isExcl(d["path"], db.Excl...) {
+				continue
+			}
+			if ok := dc <- d; !ok {
+				close(ic, cerror(dc))
+			}
+		}
+		close(dc, cerror(ic))
+	}()
+	return db.scan(dc)
 }
 
 func (db *DB) scan(dc <-chan face{}) error {
@@ -230,11 +283,13 @@ func (db *DB) scan(dc <-chan face{}) error {
 		if !ok {
 			continue
 		}
-		d["path"] = zx.Suffix(d["path"], db.Path)
-		if d["path"] == "/Ctl" || d["path"] == "/Chg" {
+		if strings.HasSuffix(d["path"], "/Ctl") || 
+		   strings.HasSuffix(d["path"],"/.zx") ||
+		   strings.HasSuffix(d["path"],"/Chg") ||
+		   isExcl(d["path"], db.Excl...) {
 			continue
 		}
-		db.Dprintf("add %s\n", d)
+		// db.Dprintf("scan %s\n", d)
 		if e := db.Add(d); err == nil && e != nil {
 			err = nil
 		}
@@ -253,7 +308,7 @@ func (db *DB) sendTo(c chan<- face{}) error {
 	if ok := c <- []byte(db.Name); !ok {
 		return cerror(c)
 	}
-	if ok := c <- []byte(db.Path); !ok {
+	if ok := c <- []byte(db.Addr); !ok {
 		return cerror(c)
 	}
 	if ok := c <- []byte(strings.Join(db.Excl, "\n")); !ok {
@@ -291,7 +346,7 @@ func gbytes(c <- chan face{}) ([]byte, bool) {
 // Receive a db from c assuming it was sent in the same format used by SendTo.
 func recvDBFrom(c <-chan face{}) (*DB, error) {
 	nm, ok1 := gbytes(c)
-	path, ok2 := gbytes(c)
+	addr, ok2 := gbytes(c)
 	strs, ok3 := gbytes(c)
 	if !ok1 || !ok2 || !ok3 {
 		close(c, "unexpected msg");
@@ -299,9 +354,10 @@ func recvDBFrom(c <-chan face{}) (*DB, error) {
 	}
 	db := &DB{
 		Name: string(nm),
-		Path: string(path),
+		Addr: string(addr),
 		Excl: strings.SplitN(string(strs), "\n", -1),
 	}
+	db.Tag = db.Name
 	db.lastpdir = ""
 	db.lastpf = nil
 	db.Root = nil
@@ -318,6 +374,9 @@ func recvDBFrom(c <-chan face{}) (*DB, error) {
 			return db, err
 		}
 		if d["path"] == "/Ctl" || d["path"] == "/Chg" {
+			continue
+		}
+		if isExcl(d["path"], db.Excl...) {
 			continue
 		}
 		db.Dprintf("add %s\n", d)
@@ -348,6 +407,8 @@ func (db *DB) Save(fname string) error {
 	return os.Rename(tname, fname)
 }
 
+// Load a DB from a (unix) file.
+// The DB is not dialed and Dial() must be called before making a scan.
 func LoadDB(fname string) (*DB, error) {
 	fd, err := os.Open(fname)
 	if err != nil {
@@ -361,4 +422,10 @@ func LoadDB(fname string) (*DB, error) {
 	db, err := recvDBFrom(dc)
 	close(dc, err)
 	return db, err
+}
+
+// For DBs loaded from a file, dial the DB fs.
+func (db *DB) Dial() error {
+	db.Close()
+	return db.setFs(db.Addr)
 }

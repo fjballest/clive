@@ -8,7 +8,7 @@ import (
 	"sort"
 )
 
-// A change between two trees
+// Type of change for a file
 type ChgType int
 
 const (
@@ -21,9 +21,21 @@ const (
 	// implies a del of the old tree at file
 )
 
+// Where the change was made
+type Where int
+const (
+	Nowhere Where = iota
+	Local
+	Remote
+	Both
+)
+
+
+// A change made to a file
 type Chg struct {
 	Type ChgType
 	Time time.Time
+	At Where
 	D    zx.Dir
 }
 
@@ -51,6 +63,19 @@ func (ct ChgType) String() string {
 	}
 }
 
+func (w Where) String() string {
+	switch w {
+	case Nowhere:
+		return "none"
+	case Local:
+		return "local"
+	case Remote:
+		return "remote"
+	default:
+		panic("bad chg location")
+	}
+}
+
 func (c Chg) String() string {
 	switch c.Type {
 	case None:
@@ -69,6 +94,10 @@ func (c Chg) String() string {
 // Compare and compute changes for db to make it like ndb.
 // Removes are noted in ndb using the mtime of the dir.
 func (ndb *DB) ChangesFrom(db *DB) <-chan Chg {
+	return ndb.changesFrom(db, Nowhere)
+}
+
+func (ndb *DB) changesFrom(db *DB, w Where) <-chan Chg {
 	rc := make(chan Chg)
 	nildb := db == nil || db.Root == nil || db.Root.D["path"] == ""
 	nilndb := ndb == nil || ndb.Root == nil || ndb.Root.D["path"] == ""
@@ -81,7 +110,7 @@ func (ndb *DB) ChangesFrom(db *DB) <-chan Chg {
 		return rc
 	}
 	go func() {
-		close(rc, changes(db.Root, ndb.Root, time.Now(), rc))
+		close(rc, changes(db.Root, ndb.Root, time.Now(), w, rc))
 	}()
 	return rc
 }
@@ -109,11 +138,11 @@ func dirMetaChanged(d0, d1 zx.Dir) bool {
 	return metaChanged(d0, d1)
 }
 
-func (f *File) came(rc chan<- Chg) {
-	rc <- Chg{Type: Add, Time: f.D.Time("mtime"), D: f.D}
+func (f *File) came(rc chan<- Chg, at Where) {
+	rc <- Chg{Type: Add, Time: f.D.Time("mtime"), D: f.D, At: at}
 }
 
-func changes(f0, f1 *File, metat time.Time, rc chan<- Chg) error {
+func changes(f0, f1 *File, metat time.Time, w Where, rc chan<- Chg) error {
 	d0 := f0.D
 	d1 := f1.D
 	if d0["rm"] != "" && d1["rm"] != "" {
@@ -131,28 +160,28 @@ func changes(f0, f1 *File, metat time.Time, rc chan<- Chg) error {
 		return fmt.Errorf("path '%s' does not match '%s'", d0["path"], d1["path"])
 	}
 	if d0["rm"] != "" {
-		f1.came(rc)
+		f1.came(rc, w)
 		return nil
 	}
 	d1time := d1.Time("mtime")
 	if d1["rm"] != "" {
-		rc <- Chg{Type: Del, Time: d1time, D: d0}
+		rc <- Chg{Type: Del, Time: d1time, D: d0, At: w}
 		return nil
 	}
 	if d0["type"] != d1["type"] {
-		rc <- Chg{Type: DirFile, Time: d1time, D: d1}
+		rc <- Chg{Type: DirFile, Time: d1time, D: d1, At: w}
 		return nil
 	}
 	if d0["type"] != "d" {
 		if dataChanged(d0, d1) {
-			rc <- Chg{Type: Data, Time: d1time, D: d1}
+			rc <- Chg{Type: Data, Time: d1time, D: d1, At: w}
 		} else if metaChanged(d0, d1) {
-			rc <- Chg{Type: Meta, Time: metat, D: d1}
+			rc <- Chg{Type: Meta, Time: metat, D: d1, At: w}
 		}
 		return nil
 	}
 	if dirMetaChanged(d0, d1) {
-		rc <- Chg{Type: Meta, Time: metat, D: d1}
+		rc <- Chg{Type: Meta, Time: metat, D: d1, At: w}
 	}
 	names := make([]string, 0, len(f0.Child)+len(f1.Child))
 	for _, c0 := range f0.Child {
@@ -183,7 +212,7 @@ func changes(f0, f1 *File, metat time.Time, rc chan<- Chg) error {
 				}
 				continue
 			}
-			c1.came(rc)
+			c1.came(rc, w)
 			continue
 		}
 		if err1 != nil {
@@ -195,13 +224,13 @@ func changes(f0, f1 *File, metat time.Time, rc chan<- Chg) error {
 				continue
 			}
 			dels = append(dels, c0.D)
-			ok := rc <- Chg{Type: Del, Time: metat, D: c0.D}
+			ok := rc <- Chg{Type: Del, Time: metat, D: c0.D, At: w}
 			if !ok {
 				return nil
 			}
 			continue
 		}
-		changes(c0, c1, d1time, rc)
+		changes(c0, c1, d1time, w, rc)
 	}
 	if len(dels) != 0 {
 		for _, d := range dels {

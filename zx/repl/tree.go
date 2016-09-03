@@ -2,11 +2,13 @@ package repl
 
 import (
 	"clive/zx"
+	"clive/dbg"
 )
 
 // A replicated tree
 struct Tree {
 	Ldb, Rdb *DB
+	*dbg.Flag
 	lpath, rpath string
 	excl []string
 }
@@ -49,6 +51,7 @@ func New(name, path, rpath string, excl ...string) (*Tree, error) {
 		lpath: path,
 		rpath: rpath,
 		excl: excl,
+		Flag: &db.Flag,
 	}
 	return t, nil
 }
@@ -61,8 +64,8 @@ func (t *Tree) Close() error {
 	return err	
 }
 
-// Report remote changes that must be applied locally to sync
-func (t *Tree) mustChange(path string, old *DB) (<-chan Chg, error) {
+// Report remote changes that must be applied to sync
+func (t *Tree) mustChange(path string, old *DB, w Where) (<-chan Chg, error) {
 	db, err := NewDB(old.Name, path, t.excl...)
 	if err != nil {
 		return nil, err
@@ -70,41 +73,69 @@ func (t *Tree) mustChange(path string, old *DB) (<-chan Chg, error) {
 	if err = db.Scan(); err != nil {
 		return nil, err
 	}
-	return db.ChangesFrom(old), nil
+	return db.changesFrom(old, w), nil
 }
 
 // Report remote changes that must be applied locally to sync
-func (t *Tree) MustPull() (<-chan Chg, error) {
-	return t.mustChange(t.rpath, t.Rdb)
+func (t *Tree) PullChanges() (<-chan Chg, error) {
+	return t.mustChange(t.rpath, t.Rdb, Remote)
+}
+
+// Pull changes and apply them
+func (t  *Tree) Pull() error {
+	pc, err := t.PullChanges()
+	if err != nil {
+		return err
+	}
+	return ApplyAll(t.Ldb, t.Rdb, pc, Remote)
 }
 
 // Report local changes that must be applied to the remote to sync
-func (t *Tree) MustPush() (<-chan Chg, error) {
-	return t.mustChange(t.lpath, t.Ldb)
+func (t *Tree) PushChanges() (<-chan Chg, error) {
+	return t.mustChange(t.lpath, t.Ldb, Local)
+}
+
+// Push changes and apply them
+func (t  *Tree) Push() error {
+	pc, err := t.PushChanges()
+	if err != nil {
+		return err
+	}
+	return ApplyAll(t.Ldb, t.Rdb, pc, Local)
+}
+
+// Sync changes and apply them
+func (t  *Tree) Sync() error {
+	pc, err := t.Changes()
+	if err != nil {
+		return err
+	}
+	return ApplyAll(t.Ldb, t.Rdb, pc, Both)
 }
 
 // Report pull and push changes that must be made to sync
 // If there's a conflict, the latest change wins.
-func (t *Tree) MustSync() (pullc <-chan Chg, pushc <-chan Chg, err error) {
-	pullc, err = t.MustPull()
+func (t *Tree) Changes() (<-chan Chg, error) {
+	pullc, err := t.PullChanges()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	pushc, err = t.MustPush()
+	pushc, err := t.PushChanges()
 	if err != nil {
 		close(pullc, "can't push")
-		return nil, nil, err
+		return nil, err
 	}
 	// Changes are reported in order, so we must
 	// go one by one merging them and deciding what to
 	// pull, push, or ignore
-	pullokc := make(chan Chg)
-	pushokc := make(chan Chg)
-	go t.merge(pullc, pushc, pullokc, pushokc)
-	return pullokc, pushokc, err
+	mergec := make(chan Chg)
+	syncc := make(chan Chg)
+	go t.merge(pullc, pushc, mergec)
+	go t.resolve(mergec, syncc)
+	return syncc, nil
 }
 
-func fwd(c <-chan Chg, into chan Chg) {
+func fwd(c <-chan Chg, into chan<- Chg) {
 	for x := range c {
 		ok := into <- x
 		if !ok {
@@ -114,14 +145,17 @@ func fwd(c <-chan Chg, into chan Chg) {
 	close(into, cerror(c))
 }
 
-func (t *Tree) merge(pullc, pushc <-chan Chg, pullokc, pushokc chan Chg) {
+// merge changes according to names
+func (t *Tree) merge(pullc, pushc <-chan Chg, syncc chan<- Chg) {
 	var c1, c2 Chg
 	for {
 		if c1.Type == None {
 			c, ok := <-pullc
 			if !ok {
-				close(pullokc)
-				fwd(pushc, pushokc)
+				if c2.Type != None {
+					syncc <- c2
+				}
+				fwd(pushc, syncc)
 				break
 			}
 			c1 = c
@@ -129,42 +163,67 @@ func (t *Tree) merge(pullc, pushc <-chan Chg, pullokc, pushokc chan Chg) {
 		if c2.Type == None {
 			c, ok := <-pushc
 			if !ok {
-				close(pushokc)
-				fwd(pullc, pullokc)
+				if c1.Type != None {
+					syncc <- c1
+				}
+				fwd(pullc, syncc)
 				break
 			}
 			c2 = c
 		}
-		// Problems here when we choose:
-		// 	add /a, del /a, dirfile /a
-		//		must ignore peer changes under /a
 		cmp := zx.PathCmp(c1.D["path"], c2.D["path"])
-		switch cmp {
-		case -1:
-			ok := pullokc <- c1
+		if cmp <= 0 {
+			ok := syncc <- c1
 			if !ok {
-				close(pullc, cerror(pullokc))
-				close(pushc, "can't pull")
+				close(pullc, cerror(syncc))
+				close(pullc, cerror(syncc))
 			}
 			c1 = Chg{}
-		case 0:
-			if c2.Time.Before(c1.Time) {
-				ok := pullokc <- c1
-				if !ok {
-					close(pullc, cerror(pullokc))
-					close(pushc, "can't pull")
-				}
-			} else {
-			}
-			c1 = Chg{}
-			c2 = Chg{}
-		case 1:
-			ok := pushokc <- c2
+		}
+		if cmp >= 0 {
+			ok := syncc <- c2
 			if !ok {
-				close(pushc, cerror(pushokc))
-				close(pullc, "can't push")
+				close(pushc, cerror(syncc))
+				close(pullc, cerror(syncc))
 			}
 			c2 = Chg{}
 		}
 	}
+	close(syncc)
+}
+
+// resolve a merged change stream.
+// if a prefix is removed or added this takes precedence over peer changes
+// if the same path is changed in both sites, the later change wins.
+func (t *Tree) resolve(mc <-chan Chg, rc chan<- Chg) {
+	var last Chg
+	for c := range mc {
+		if last.Type == None {
+			last = c
+			continue
+		}
+		if last.D["path"] == c.D["path"] {
+			if c.Time.Before(last.Time) {
+				t.Dprintf("discard on conflict %s\n", c)
+				continue
+			}
+			t.Dprintf("discard on conflict %s\n", last)
+			last = c
+			continue
+		}
+		switch last.Type {
+		case Add, Del, DirFile:
+			if zx.HasPrefix(c.D["path"], last.D["path"]) {
+				t.Dprintf("discard suff. %s\n", c)
+			}
+		}
+		if ok := rc <- last; !ok {
+			close(mc, cerror(rc))
+		}
+		last = c;
+	}
+	if last.Type != None {
+		rc <- last
+	}
+	close(rc, cerror(mc))
 }

@@ -3,6 +3,7 @@ package zx
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -98,4 +99,28 @@ func PathCmp(path0, path1 string) int {
 		return 1
 	}
 	return 0
+}
+
+// Match expr against a path using the same semantics found
+// in zx finds.
+func PathMatch(p, exp string) bool {
+	if len(exp) > 0 && exp[0] != '/' {
+		m, err := filepath.Match(exp, p)
+		if err != nil {
+			return false
+		}
+		return m
+	}
+	els := Elems(exp)
+	pels := Elems(p)
+	if len(pels) > len(els) {
+		return false
+	}
+	for i := 0; i < len(pels); i++ {
+		m, err := filepath.Match(els[i], pels[i])
+		if !m || err != nil {
+			return false
+		}
+	}
+	return len(pels) == len(els)
 }
