@@ -48,16 +48,21 @@ func New(name, path, rpath string, excl ...string) (*Tree, error) {
 	if err != nil {
 		return nil, err
 	}
-	t := &Tree {
-		Ldb: db,
-		Rdb: rdb,
-		lpath: path,
-		rpath: rpath,
-		excl: excl,
-		Flag: &db.Flag,
-	}
-	return t, nil
+	return mkTree(db, rdb), nil
 }
+
+func mkTree(ldb, rdb *DB) *Tree {
+	t := &Tree {
+		Ldb: ldb,
+		Rdb: rdb,
+		lpath: ldb.Addr,
+		rpath: rdb.Addr,
+		excl: ldb.Excl,
+		Flag: &ldb.Flag,
+	}
+	return t
+}
+
 
 func (t *Tree) Close() error {
 	err := t.Ldb.Close()
@@ -303,4 +308,35 @@ func (t  *Tree) Sync(cc chan<- Chg) error {
 		return err
 	}
 	return t.ApplyAll(pc, Both, cc)
+}
+
+// Load a replica configuration from the given (unix) files.
+// Its DBs are dialed and the tree is ready to pull/push/sync.
+// Files are named <fname>.ldb and <fname>.rdb
+func Load(fname string) (*Tree, error) {
+	ldb, err := LoadDB(fname+".ldb")
+	if err != nil {
+		return nil, err
+	}
+	if err = ldb.Dial(); err != nil {
+		return nil, err
+	}
+	rdb, err := LoadDB(fname+".rdb")
+	if err == nil {
+		err = rdb.Dial()
+	}
+	if err != nil {
+		ldb.Close()
+		return nil, err
+	}
+	return mkTree(ldb, rdb), nil
+}
+
+// Save a replica configuration to the given (unix) files.
+// Files are named <fname>.ldb and <fname>.rdb
+func (t *Tree) Save(fname string) error {
+	if err := t.Ldb.Save(fname+".ldb"); err != nil {
+		return err
+	}
+	return t.Rdb.Save(fname+".rdb")
 }

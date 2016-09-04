@@ -707,4 +707,59 @@ func TestTreePullAll(t *testing.T) {
 	os.Rename(rtdir+"/p", rtdir+".push")
 }
 
+func TestTreeSaveLoad(t *testing.T) {
+
+	db, fn := mkrtest(t, rtdir)
+	defer fn()
+	db.Close()
+	db, fn2 := mktest(t, tdir)
+	defer fn2()
+	db.Close()
+	fstest.MkChgs(t, tdir)
+	fstest.MkChgs2(t, rtdir+"/p")
+	os.Remove(tdir+"repl.ldb")
+	os.Remove(tdir+"repl.rdb")
+	defer os.Remove(tdir+"repl.ldb")
+	defer os.Remove(tdir+"repl.rdb")
+	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	if err != nil {
+		t.Fatalf("tree %s", err)
+	}
+	tr.Debug = testing.Verbose()
+	tr.Rdb.Debug = testing.Verbose()
+	defer tr.Close()
+	dprintf("\ninitial:\n")
+	chkFiles(t, tr.Ldb, nil, "")
+	chkFiles(t, tr.Rdb, nil, "")
+
+	dprintf("\nsave & load:\n")
+	if err := tr.Save(tdir+"repl"); err != nil {
+		t.Fatalf("save %s", err)
+	}
+	if tr, err = Load(tdir+"repl"); err != nil {
+		t.Fatalf("load %s", err)
+	}
+	chkFiles(t, tr.Ldb, nil, "")
+	chkFiles(t, tr.Rdb, nil, "")
+
+	// now continue as in the previous test, to check
+	// it all is ok.
+	dprintf("\npullall\n")
+	cc, dc := getChgs()
+	err = tr.PullAll(cc)
+	if err != nil {
+		t.Fatalf("pullall %s", err)
+	}
+	dprintf("\npullall done\n")
+	cs := <-dc
+	logChgs(cs)
+	chkFiles(t, tr.Ldb, nil, pullrdb)
+	chkFiles(t, tr.Rdb, nil, pullrdb)
+	os.RemoveAll(tdir+".pull")
+	os.Rename(tdir, tdir+".pull")
+	os.RemoveAll(rtdir+".push")
+	os.Rename(rtdir+"/p", rtdir+".push")
+
+}
+
 // TODO: test excluded files, test errors on files
