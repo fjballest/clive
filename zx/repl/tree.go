@@ -13,22 +13,22 @@ struct Tree {
 	excl []string
 }
 
-func scanDbs(name, path, rpath string, excl ...string) (db *DB, rdb *DB, err error) {
-	db, err = NewDB(name, path, excl...)
+func newDbs(scan bool, name, path, rpath string, excl ...string) (db *DB, rdb *DB, err error) {
+	if scan {
+		db, err = ScanNewDB(name, path, excl...)
+	} else {
+		db, err = NewDB(name, path, excl...)
+	}
 	if err != nil {
 		return nil, nil, err
 	}
-	rdb, err = NewDB(name, rpath, excl...)
-	if err != nil {
-		return nil, nil, err
-	}
-	err = db.Scan()
-	if err2 := rdb.Scan(); err == nil {
-		err = err2
+	if scan {
+		rdb, err = ScanNewDB(name, rpath, excl...)
+	} else {
+		rdb, err = NewDB(name, rpath, excl...)
 	}
 	if err != nil {
 		db.Close()
-		rdb.Close()
 		return nil, nil, err
 	}
 	return db, rdb, nil
@@ -36,12 +36,15 @@ func scanDbs(name, path, rpath string, excl ...string) (db *DB, rdb *DB, err err
 
 // Create a new replicated tree with the given name and replica
 // paths.
+// Both replicas are assumed to be already synced, so that only
+// new changes made will be propagated.
+// If that's not the case, you can always use Tree.PullAll or PushAll
+// to make one synced wrt the other before further pulls/pushes/syncs.
 // If a path contains '!', it's assumed to be a remote tree address
 // and the db operates on a remote ZX fs
 // In this case, the last component of the address must be a path
-// If one of the replicas is empty, it's to be populated with the other one.
 func New(name, path, rpath string, excl ...string) (*Tree, error) {
-	db, rdb, err := scanDbs(name, path, rpath, excl...)
+	db, rdb, err := newDbs(true, name, path, rpath, excl...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +69,8 @@ func (t *Tree) Close() error {
 
 // Report remote changes that must be applied to sync
 func (t *Tree) mustChange(path string, old *DB, w Where) (<-chan Chg, error) {
-	db, err := NewDB(old.Name, path, t.excl...)
+	db, err := ScanNewDB(old.Name, path, t.excl...)
 	if err != nil {
-		return nil, err
-	}
-	if err = db.Scan(); err != nil {
 		return nil, err
 	}
 	return db.changesFrom(old, w), nil
@@ -81,39 +81,30 @@ func (t *Tree) PullChanges() (<-chan Chg, error) {
 	return t.mustChange(t.rpath, t.Rdb, Remote)
 }
 
-// Pull changes and apply them
-func (t  *Tree) Pull() error {
-	pc, err := t.PullChanges()
-	if err != nil {
-		return err
-	}
-	return ApplyAll(t.Ldb, t.Rdb, pc, Remote)
-}
-
 // Report local changes that must be applied to the remote to sync
 func (t *Tree) PushChanges() (<-chan Chg, error) {
 	return t.mustChange(t.lpath, t.Ldb, Local)
 }
 
-// Push changes and apply them
-func (t  *Tree) Push() error {
-	pc, err := t.PushChanges()
+// Report all replica differences as changes that may be pulled
+func (t *Tree) AllPullChanges()  (<-chan Chg, error) {
+	ldb, rdb, err := newDbs(true, t.Ldb.Name, t.lpath, t.rpath, t.excl...)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return ApplyAll(t.Ldb, t.Rdb, pc, Local)
+	return rdb.changesFrom(ldb, Remote), nil
 }
 
-// Sync changes and apply them
-func (t  *Tree) Sync() error {
-	pc, err := t.Changes()
+// Report all replica differences as changes that may be pushed
+func (t *Tree) AllPushChanges()  (<-chan Chg, error) {
+	ldb, rdb, err := newDbs(true, t.Ldb.Name, t.lpath, t.rpath, t.excl...)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return ApplyAll(t.Ldb, t.Rdb, pc, Both)
+	return ldb.changesFrom(rdb, Local), nil
 }
 
-// Report pull and push changes that must be made to sync
+// Report pull and push changes that must be made to sync.
 // If there's a conflict, the latest change wins.
 func (t *Tree) Changes() (<-chan Chg, error) {
 	pullc, err := t.PullChanges()
@@ -149,10 +140,10 @@ func fwd(c <-chan Chg, into chan<- Chg) {
 func (t *Tree) merge(pullc, pushc <-chan Chg, syncc chan<- Chg) {
 	var c1, c2 Chg
 	for {
-		if c1.Type == None {
+		if c1.Type == zx.None {
 			c, ok := <-pullc
 			if !ok {
-				if c2.Type != None {
+				if c2.Type != zx.None {
 					syncc <- c2
 				}
 				fwd(pushc, syncc)
@@ -160,10 +151,10 @@ func (t *Tree) merge(pullc, pushc <-chan Chg, syncc chan<- Chg) {
 			}
 			c1 = c
 		}
-		if c2.Type == None {
+		if c2.Type == zx.None {
 			c, ok := <-pushc
 			if !ok {
-				if c1.Type != None {
+				if c1.Type != zx.None {
 					syncc <- c1
 				}
 				fwd(pullc, syncc)
@@ -198,7 +189,7 @@ func (t *Tree) merge(pullc, pushc <-chan Chg, syncc chan<- Chg) {
 func (t *Tree) resolve(mc <-chan Chg, rc chan<- Chg) {
 	var last Chg
 	for c := range mc {
-		if last.Type == None {
+		if last.Type == zx.None {
 			last = c
 			continue
 		}
@@ -212,7 +203,7 @@ func (t *Tree) resolve(mc <-chan Chg, rc chan<- Chg) {
 			continue
 		}
 		switch last.Type {
-		case Add, Del, DirFile:
+		case zx.Add, zx.Del, zx.DirFile:
 			if zx.HasPrefix(c.D["path"], last.D["path"]) {
 				t.Dprintf("discard suff. %s\n", c)
 			}
@@ -222,8 +213,94 @@ func (t *Tree) resolve(mc <-chan Chg, rc chan<- Chg) {
 		}
 		last = c;
 	}
-	if last.Type != None {
+	if last.Type != zx.None {
 		rc <- last
 	}
 	close(rc, cerror(mc))
+}
+
+// Pull changes and apply them, w/o paying attention to any local change made.
+// If cc is not nil, report changes applied there.
+// Failed changes have dir["err"] set to the error status.
+func (t  *Tree) BlindPull(cc chan<- Chg) error {
+	pc, err := t.PullChanges()
+	if err != nil {
+		close(cc, err)
+		return err
+	}
+	return t.ApplyAll(pc, Remote, cc)
+}
+
+// Sync changes and apply just pulls.
+// If cc is not nil, report changes applied there.
+// Failed changes have dir["err"] set to the error status.
+func (t  *Tree) Pull(cc chan<- Chg) error {
+	pc, err := t.Changes()
+	if err != nil {
+		close(cc, err)
+		return err
+	}
+	return t.ApplyAll(pc, Remote, cc)
+}
+
+// Pull all changes (not just new ones) to make the
+// local replica become like the remote one.
+// If cc is not nil, report changes applied there.
+// Failed changes have dir["err"] set to the error status.
+func (t *Tree) PullAll(cc chan<- Chg) error {
+	pc, err := t.AllPullChanges()
+	if err != nil {
+		close(cc, err)
+		return err
+	}
+	return t.ApplyAll(pc, Remote, cc)
+}
+
+// Push changes and apply them, w/o paying attention to any remote change made.
+// If cc is not nil, report changes applied there.
+// Failed changes have dir["err"] set to the error status
+func (t  *Tree) BlindPush(cc chan<- Chg) error {
+	pc, err := t.PushChanges()
+	if err != nil {
+		return err
+	}
+	return t.ApplyAll(pc, Local, cc)
+}
+
+// Sync changes and apply just pushes.
+// If cc is not nil, report changes applied there.
+// Failed changes have dir["err"] set to the error status
+func (t  *Tree) Push(cc chan<- Chg) error {
+	pc, err := t.Changes()
+	if err != nil {
+		return err
+	}
+	return t.ApplyAll(pc, Local, cc)
+}
+
+// Push all changes (not just new ones) to make the
+// remote replica become like the local one.
+// If cc is not nil, report changes applied there.
+// Failed changes have dir["err"] set to the error status.
+func (t *Tree) PushAll(cc chan<- Chg) error {
+	pc, err := t.AllPushChanges()
+	if err != nil {
+		close(cc, err)
+		return err
+	}
+	return t.ApplyAll(pc, Local, cc)
+}
+
+
+// Sync changes and apply them.
+// If there's a create/remote, it wins wrt inner files changed at the peer.
+// If there's a conflict, the newest change wins.
+// If cc is not nil, report changes applied there.
+// Failed changes have dir["err"] set to the error status
+func (t  *Tree) Sync(cc chan<- Chg) error {
+	pc, err := t.Changes()
+	if err != nil {
+		return err
+	}
+	return t.ApplyAll(pc, Both, cc)
 }

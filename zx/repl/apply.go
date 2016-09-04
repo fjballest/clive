@@ -7,53 +7,72 @@ import (
 	"errors"
 )
 
-// Apply a series of changes from where (perhaps both)
-func ApplyAll(ldb, rdb *DB, cc <-chan Chg, from Where) error {
+// Apply a series of changes from local/remote/both replicas
+// to the other and update the dbs accordingly.
+// If a change has errors noted in it, it's ignored.
+func (t *Tree) ApplyAll(cc <-chan Chg, from Where, appliedc chan<- Chg) error {
 	var err error
 	for c := range cc {
+		// t.Ldb.Dprintf("apply %s\n", c)
 		if from == Both || c.At == from {
-			if err2 := Apply(ldb, rdb, c); err == nil {
+			err2 := t.Apply(c)
+			if err2 != nil {
+				t.Ldb.Dprintf("apply err %s\n", err2)
+			}
+			if err == nil {
 				err = err2
+			}
+			if appliedc != nil {
+				c.D = c.D.Dup()
+				if c.D["err"] == "" && err2 != nil {
+					c.D["err"] = err2.Error()
+				}
+				appliedc <- c
 			}
 		}
 	}
 	if err == nil {
 		err = cerror(cc)
 	}
+	close(appliedc, err)
 	return err
 }
 
-// Apply a single change (either pull or push).
+// Apply a single change and update the dbs accordingly.
 // If the change has errors noted in it, it's ignored.
-func Apply(ldb, rdb *DB, c Chg) error {
+func (t *Tree) Apply(c Chg) error {
 	if c.D["err"] != "" {
 		return nil
+	}
+	ldb, rdb := t.Ldb, t.Rdb
+	defer func(ldb, rdb *DB) {
+		t.Ldb, t.Rdb = ldb, rdb
+	}(ldb, rdb)
+	if c.At == Local {
+		ldb, rdb = rdb, ldb
 	}
 	if isExcl(c.D["path"], ldb.Excl...) || isExcl(c.D["path"], rdb.Excl...) {
 		return nil
 	}
-	if c.At == Local {
-		ldb, rdb = rdb, ldb
-	}
-	// ldb is now the target and ldb is now the source; always.
+	// ldb is the target and ldb is the source
 
 	switch c.Type {
-	case None:
+	case zx.None:
 		return nil
-	case Meta:
-		return ldb.applyMeta(c)
-	case Data:
-		return ldb.applyData(c, rdb.Fs, rdb.rpath)
-	case Add:
-		return ldb.applyAdd(c, rdb.Fs, rdb.rpath)
-	case Del:
-		return ldb.applyDel(c)
-	case DirFile:
+	case zx.Meta:
+		return ldb.applyMeta(c, rdb)
+	case zx.Data:
+		return ldb.applyData(c, rdb)
+	case zx.Add:
+		return ldb.applyAdd(c, rdb)
+	case zx.Del:
+		return ldb.applyDel(c, rdb)
+	case zx.DirFile:
 		// get rid of the old and add the new
 		nc := c
-		nc.Type = Del
-		err := ldb.applyDel(nc)
-		if err2 := ldb.applyAdd(c, rdb.Fs, rdb.rpath); err == nil {
+		nc.Type = zx.Del
+		err := ldb.applyDel(nc, rdb)
+		if err2 := ldb.applyAdd(c, rdb); err == nil {
 			err = err2;
 		}
 		return err
@@ -62,7 +81,7 @@ func Apply(ldb, rdb *DB, c Chg) error {
 	}
 }
 
-func (db *DB) applyMeta(c Chg) error {
+func (db *DB) applyMeta(c Chg, rdb *DB) error {
 	fs, ok := db.Fs.(zx.Wstater)
 	if !ok {
 		return errors.New("Fs can't wstat");
@@ -76,10 +95,14 @@ func (db *DB) applyMeta(c Chg) error {
 	}
 	rd["path"] = c.D["path"]
 	rd["name"] = c.D["name"]
-	return db.Add(rd)
+	err := db.Add(rd)
+	if err == nil {
+		rdb.Add(rd)
+	}
+	return err
 }
 
-func (db *DB) applyDel(c Chg) error {
+func (db *DB) applyDel(c Chg, rdb *DB) error {
 	if c.D["path"] == "/" {
 		return errors.New("won't del /")
 	}
@@ -93,12 +116,13 @@ func (db *DB) applyDel(c Chg) error {
 	if err != nil && !zx.IsNotExist(err) {
 		return err
 	}
-	f, err := db.Walk(fpath.Dir(c.D["path"]))
-	if err == nil {
-		err = f.Remove(c.D["name"])
-	}
+	c.D["rm"] = "y"
+	err = db.Add(c.D)
 	if zx.IsNotExist(err) {
 		err = nil
+	}
+	if err == nil {
+		rdb.Add(c.D)
 	}
 	return err
 }
@@ -108,6 +132,7 @@ struct pfile {
 	d zx.Dir
 	dc chan<- []byte
 	rc <-chan zx.Dir
+	ldb, rdb *DB
 }
 
 func (pf *pfile) start(pfs zx.Putter, rpath string, d zx.Dir) {
@@ -121,27 +146,46 @@ func (pf *pfile) start(pfs zx.Putter, rpath string, d zx.Dir) {
 	pf.rc = pfs.Put(fpath.Join(rpath, d["path"]), d, 0, dc)
 }
 
-func (pf *pfile) done() error {
-	if pf.dc == nil {
+func (pf *pfile) add() error {
+	if pf.d == nil {
 		return nil
 	}
+	if isExcl(pf.d["path"], pf.ldb.Excl...) {
+		return nil
+	}
+	if err := pf.ldb.Add(pf.d); err == nil {
+		pf.rdb.Add(pf.d)
+	}
+	pf.d = nil
+	return nil
+}
+
+func (pf *pfile) done() error {
+	if pf.dc == nil {
+		return pf.add()
+	}
 	close(pf.dc)
-	pf.dc = nil
 	rd := <-pf.rc
 	err := cerror(pf.rc)
+	pf.dc = nil
 	pf.rc = nil
 	for k, v := range rd {
 		if k != "path" && k != "name" {
 			pf.d[k] = v
 		}
 	}
-	if err != nil {
+	if err != nil && pf.d["err"] == "" {
 		pf.d["err"] = err.Error()
 	}
-	return err
+	return pf.add()
 }
 
-func (db *DB) applyAdd(c Chg, fs zx.Fs, rpath string) error {
+func (db *DB) applyAdd(c Chg, rdb *DB) error {
+	// NB: We won't remove local files/dir before trying to add a dir/file.
+	// If this happens, the apply will fail and the user can always remove
+	// the file/dir causing the error and then retry
+	fs := rdb.Fs
+	rpath := rdb.rpath
 	gfs, ok := fs.(zx.FindGetter)
 	if !ok {
 		return errors.New("fs can't findget")
@@ -151,7 +195,7 @@ func (db *DB) applyAdd(c Chg, fs zx.Fs, rpath string) error {
 		return errors.New("fs can't put")
 	}
 	fc := gfs.FindGet(fpath.Join(rpath, c.D["path"]), "", rpath, "/", 0)
-	pf := &pfile{}
+	pf := &pfile{ldb: db, rdb: rdb}
 	for m := range fc {
 		switch d := m.(type) {
 		case zx.Dir:
@@ -160,14 +204,7 @@ func (db *DB) applyAdd(c Chg, fs zx.Fs, rpath string) error {
 			if err := pf.done(); err != nil {
 				cmd.Warn("add %s: %s", pf.d["path"], err)
 			}
-			if isExcl(d["path"], db.Excl...) {
-				continue
-			}
-			if pf.d != nil {
-				db.Add(pf.d)
-			}
 			pf.start(pfs, db.rpath, d)
-			db.Add(pf.d)
 		case []byte:
 			if (pf.dc == nil) {
 				continue
@@ -178,19 +215,21 @@ func (db *DB) applyAdd(c Chg, fs zx.Fs, rpath string) error {
 					err = errors.New("can't put")
 				}
 				cmd.Warn("add %s: %s", pf.d["path"], err)
-				pf.done()
 				pf.d["err"] = err.Error()
-				db.Add(pf.d)
+				pf.done()
 			}
 		}
 	}
-	if err := pf.done(); err != nil {
-		db.Add(pf.d)
+	err := pf.done()
+	if err != nil {
+		cmd.Warn("add %s: %s", pf.d["path"], err)
 	}
 	return cerror(fc)
 }
 
-func (db *DB) applyData(c Chg, fs zx.Fs, rpath string) error {
+func (db *DB) applyData(c Chg, rdb *DB) error {
+	fs := rdb.Fs
+	rpath := rdb.rpath
 	gfs, ok := fs.(zx.Getter)
 	if !ok {
 		return errors.New("fs can't get")
@@ -211,5 +250,9 @@ func (db *DB) applyData(c Chg, fs zx.Fs, rpath string) error {
 			c.D[k] = v
 		}
 	}
-	return db.Add(c.D)
+	err := db.Add(c.D)
+	if err == nil {
+		rdb.Add(c.D)
+	}
+	return err
 }

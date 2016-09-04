@@ -8,20 +8,8 @@ import (
 	"sort"
 )
 
-// Type of change for a file
-type ChgType int
 
-const (
-	None    ChgType = iota
-	Add             // file was added
-	Data            // file data was changed
-	Meta            // file metadata was changed
-	Del             // file was deleted
-	DirFile         // dir replaced with file or file replaced with dir
-	// implies a del of the old tree at file
-)
-
-// Where the change was made
+// Where a change was found
 type Where int
 const (
 	Nowhere Where = iota
@@ -31,37 +19,16 @@ const (
 )
 
 
-// A change made to a file
+// A zx file change made to a replicated file
 type Chg struct {
-	Type ChgType
-	Time time.Time
+	zx.Chg
 	At Where
-	D    zx.Dir
 }
 
 var (
 	ignoredAttrs = [...]string{"mtime", "Wuid", "Sum", "size"}
 	ignoredPutAttrs = [...]string{"Wuid", "size"}
 )
-
-func (ct ChgType) String() string {
-	switch ct {
-	case None:
-		return "none"
-	case Add:
-		return "add"
-	case Data:
-		return "data"
-	case Meta:
-		return "meta"
-	case Del:
-		return "del"
-	case DirFile:
-		return "dirfile"
-	default:
-		panic("bad chg type")
-	}
-}
 
 func (w Where) String() string {
 	switch w {
@@ -77,15 +44,15 @@ func (w Where) String() string {
 }
 
 func (c Chg) String() string {
+	s := ""
+	if c.D["err"] != "" {
+		s = "\tERR "+s
+	}
 	switch c.Type {
-	case None:
+	case zx.None:
 		return "none"
-	case Add, Data, Meta:
-		return fmt.Sprintf("%s %s", c.Type, c.D.Fmt())
-	case Del:
-		return fmt.Sprintf("%s %s", c.Type, c.D.Fmt())
-	case DirFile:
-		return fmt.Sprintf("%s %s", c.Type, c.D.Fmt())
+	case zx.Add, zx.Data, zx.Meta, zx.Del, zx.DirFile:
+		return fmt.Sprintf("%s %s%s", c.Type, c.D.Fmt(), s)
 	default:
 		panic("bad chg type")
 	}
@@ -139,7 +106,7 @@ func dirMetaChanged(d0, d1 zx.Dir) bool {
 }
 
 func (f *File) came(rc chan<- Chg, at Where) {
-	rc <- Chg{Type: Add, Time: f.D.Time("mtime"), D: f.D, At: at}
+	rc <- Chg{Chg: zx.Chg{Type: zx.Add, Time: f.D.Time("mtime"), D: f.D}, At: at}
 }
 
 func changes(f0, f1 *File, metat time.Time, w Where, rc chan<- Chg) error {
@@ -165,23 +132,23 @@ func changes(f0, f1 *File, metat time.Time, w Where, rc chan<- Chg) error {
 	}
 	d1time := d1.Time("mtime")
 	if d1["rm"] != "" {
-		rc <- Chg{Type: Del, Time: d1time, D: d0, At: w}
+		rc <- Chg{Chg: zx.Chg{Type: zx.Del, Time: d1time, D: d0}, At: w}
 		return nil
 	}
 	if d0["type"] != d1["type"] {
-		rc <- Chg{Type: DirFile, Time: d1time, D: d1, At: w}
+		rc <- Chg{Chg: zx.Chg{Type: zx.DirFile, Time: d1time, D: d1}, At: w}
 		return nil
 	}
 	if d0["type"] != "d" {
 		if dataChanged(d0, d1) {
-			rc <- Chg{Type: Data, Time: d1time, D: d1, At: w}
+			rc <- Chg{Chg: zx.Chg{Type: zx.Data, Time: d1time, D: d1}, At: w}
 		} else if metaChanged(d0, d1) {
-			rc <- Chg{Type: Meta, Time: metat, D: d1, At: w}
+			rc <- Chg{Chg: zx.Chg{Type: zx.Meta, Time: metat, D: d1}, At: w}
 		}
 		return nil
 	}
 	if dirMetaChanged(d0, d1) {
-		rc <- Chg{Type: Meta, Time: metat, D: d1, At: w}
+		rc <- Chg{Chg: zx.Chg{Type: zx.Meta, Time: metat, D: d1}, At: w}
 	}
 	names := make([]string, 0, len(f0.Child)+len(f1.Child))
 	for _, c0 := range f0.Child {
@@ -224,7 +191,9 @@ func changes(f0, f1 *File, metat time.Time, w Where, rc chan<- Chg) error {
 				continue
 			}
 			dels = append(dels, c0.D)
-			ok := rc <- Chg{Type: Del, Time: metat, D: c0.D, At: w}
+			ok := rc <- Chg{
+				Chg: zx.Chg{Type: zx.Del, Time: metat, D: c0.D},
+				At: w}
 			if !ok {
 				return nil
 			}

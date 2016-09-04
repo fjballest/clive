@@ -52,7 +52,7 @@ func isExcl(path string, excl ...string) bool {
 		return false
 	}
 	for _, e := range excl {
-		if zx.PathMatch(path, e) {
+		if zx.PathPrefixMatch(path, e) {
 			return true
 		}
 	}
@@ -87,7 +87,8 @@ func (db *DB) setFs(path string) error {
 // Create a DB for the given tree with the given name.
 // if path contains '!', it's assumed to be a remote tree address
 // and the db operates on a remote ZX fs
-// In this case, the last component of the address must be a path
+// In this case, the last component of the address must be a path.
+// The DB is not scanned, unlike in ScanNewDB
 func NewDB(name, path string, excl ...string) (*DB, error) {
 	excl = append(excl, ".Ctl", ".Chg", ".zx")
 	db := &DB{
@@ -96,6 +97,27 @@ func NewDB(name, path string, excl ...string) (*DB, error) {
 	}
 	db.Tag = db.Name
 	if err := db.setFs(path); err != nil {
+		return nil, err
+	}
+	d, err := zx.Stat(db.Fs, db.rpath)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	d["path"] = "/"
+	d["name"] = "/"
+	db.Root = &File{D: d}
+	return db, nil
+}
+
+// Like NewDB() and then Scan()
+func ScanNewDB(name, path string, excl ...string) (*DB, error) {
+	db, err := NewDB(name, path, excl...)
+	if err != nil {
+		return nil, err
+	}
+	if err = db.Scan(); err != nil {
+		db.Close()
 		return nil, err
 	}
 	return db, nil
@@ -121,22 +143,18 @@ func (f *File) Walk1(name string) (*File, error) {
 	return nil, fmt.Errorf("%s: %s: file not found", f.D["path"], name)
 }
 
-func (f *File) Remove(name string) error {
-	nc := []*File{}
-	for _, c := range f.Child {
-		if c.D["name"] != name {
-			nc = append(nc, c)
-		}
-	}
-	f.Child = nc
-	return nil
-}
-
 func (f *File) String() string {
 	if f == nil || f.D == nil {
 		return "<nil file>"
 	}
-	return f.D.DbFmt()
+	s := f.D.Fmt()
+	if f.D["err"] != "" {
+		s += fmt.Sprintf("E<%s>", f.D["err"])
+	}
+	if f.D["rm"] != "" {
+		s += " DEL"
+	}
+	return s
 }
 
 func (db *DB) String() string {
@@ -158,7 +176,9 @@ func (f *File) files(rc chan<- *File) error {
 	return nil
 }
 
-// Enumerate all files in db
+// Enumerate all files in db.
+// Removed files known to be removed have Dir["rm"] set to  "y"
+// and are also reported.
 func (db *DB) Files() <-chan *File {
 	rc := make(chan *File)
 	if db == nil || db.Root == nil {
@@ -173,7 +193,11 @@ func (db *DB) Files() <-chan *File {
 
 // Debug dump
 func (db *DB) DumpTo(w io.Writer) {
-	fmt.Fprintf(w, "%s\n", db)
+	if db == nil {
+		fmt.Fprintf(w, "<nil db>\n");
+		return
+	}
+	fmt.Fprintf(w, "db %s %s\n", db.Name, db.Addr)
 	if db == nil {
 		return
 	}
@@ -181,6 +205,7 @@ func (db *DB) DumpTo(w io.Writer) {
 	for f := range fc {
 		fmt.Fprintf(w, "%s\n", f)
 	}
+	fmt.Fprintf(w, "\n")
 }
 
 // Walk to the given path
@@ -188,6 +213,7 @@ func (db *DB) Walk(elems ...string) (*File, error) {
 	f := db.Root
 	for _, e := range elems {
 		cf, err := f.Walk1(e)
+		// db.Dprintf("\t%s walk %s -> %s\n", f.D["name"], e, cf)
 		if err != nil {
 			return nil, err
 		}
@@ -203,13 +229,17 @@ func (b byName) Less(i, j int) bool { return b[i].D["name"] < b[j].D["name"] }
 func (b byName) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 
 // add or update the entry for a  dir into db.
+// If d has "rm" or "err" set, then the file is flagged as such and children are discarded.
 func (db *DB) Add(d zx.Dir) error {
 	d = d.Dup();
 	f := &File{
 		D: d,
 	}
 	elems := zx.Elems(d["path"])
-	if db.Root == nil {
+	if db.Root == nil || d["path"] == "/" {
+		if db.Root != nil {
+			f.Child = db.Root.Child
+		}
 		db.Root = f
 		return nil
 	}
@@ -230,7 +260,7 @@ func (db *DB) Add(d zx.Dir) error {
 	for _, cf := range child {
 		if cf.D["name"] == name {
 			cf.D = d
-			if cf.D["type"] != "d" {
+			if cf.D["type"] != "d" || cf.D["err"] != "" || cf.D["rm"] != "" {
 				cf.Child = nil
 			}
 			return nil
@@ -246,6 +276,7 @@ func (db *DB) Add(d zx.Dir) error {
 }
 
 // Scan the underlying tree and re-build the metadata db.
+// Beware that this drops "removed file" entries.
 // Dials the tree if necessary.
 // Only the first error is reported.
 func (db *DB) Scan() error {
@@ -273,6 +304,7 @@ func (db *DB) Scan() error {
 	return db.scan(dc)
 }
 
+// Beware that this drops "removed file" entries.
 func (db *DB) scan(dc <-chan face{}) error {
 	db.lastpdir = ""
 	db.lastpf = nil

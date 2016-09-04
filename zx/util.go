@@ -101,26 +101,32 @@ func PathCmp(path0, path1 string) int {
 	return 0
 }
 
-// Match expr against a path using the same semantics found
-// in zx finds.
-func PathMatch(p, exp string) bool {
-	if len(exp) > 0 && exp[0] != '/' {
-		m, err := filepath.Match(exp, p)
-		if err != nil {
-			return false
-		}
-		return m
-	}
+// Match expr against any element name if it's not /...
+// or match it against any prefix of p
+func PathPrefixMatch(p, exp string) bool {
 	els := Elems(exp)
 	pels := Elems(p)
-	if len(pels) > len(els) {
+	if len(els) == 0 {
+		return true
+	}
+	if len(pels) < len(els) {
 		return false
 	}
-	for i := 0; i < len(pels); i++ {
-		m, err := filepath.Match(els[i], pels[i])
-		if !m || err != nil {
+	var m bool
+	var err error
+	n := len(els)
+	if exp[0] != '/' {
+		n = len(pels)
+	}
+	for i := 0; i < n; i++ {
+		if exp[0] == '/' {
+			m, err = filepath.Match(els[i], pels[i])
+		} else {
+			m, err = filepath.Match(exp, pels[i])
+		}
+		if err != nil || !m {
 			return false
 		}
 	}
-	return len(pels) == len(els)
+	return true
 }

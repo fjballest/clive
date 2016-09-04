@@ -711,7 +711,7 @@ func (fs *Fs) put(p string, d zx.Dir, off int64, c <-chan []byte) error {
 			return err
 		}
 	}
-	delete(d, "mode")
+	//delete(d, "mode")
 	delete(d, "size")
 	fs.wstat(p, d, false)
 	if off != 0 || whence != 0 {

@@ -44,24 +44,86 @@ var (
 	xt     int64
 
 	// directories created
-	Dirs = [...]string{"/", "/a", "/a/b", "/a/b/c", "/d", "/e", "/e/f"}
+	Dirs = []string{"/", "/a", "/a/b", "/a/b/c", "/d", "/e", "/e/f"}
 
 	// files created
-	Files = [...]string{"/1", "/a/a1", "/a/a2", "/a/b/c/c3", "/2"}
+	Files = []string{"/1", "/a/a1", "/a/a2", "/a/b/c/c3", "/2"}
 
 	// dirs and files
 	AllFiles = append(Dirs[:], Files[:]...)
 
 	// file paths not in the test tree
-	NotThere = [...]string{"/n", "/a/n1", "/e/f/n2"}
+	NotThere = []string{"/n", "/a/n1", "/e/f/n2"}
 
 	// bad file paths; the 1st should be /, others should fail
-	BadPaths = [...]string{"/a/../..", "a", "..", "/1/b"}
+	BadPaths = []string{"/a/../..", "a", "..", "/1/b"}
 
 	// data stored in each file
 	FileData = map[string][]byte{}
 
+
 	Repeats = 1
+)
+
+var (
+	// dirs and files after MkChgs
+	AllChgFiles = []string{
+		"/", "/a", "/a/b", "/d", "/e", "/e/f", "/a/n", "/a/n/m",
+		"/1", "/a/a1", "/a/a2", "/a/n/m/m1", "/2",
+	}
+
+	// dirs and files after *both* MkChgs and MkChgs2
+	AllChg2Files = []string{
+		"/", "/2", "/a", "/a/b", "/d", "/e", "/e/f", "/a/n", "/a/n/m",
+		"/1", "/2/n2", "/a/a1", "/a/a2", "/a/n/m/m1",
+	}
+
+	// all dirs and files listed using Dir.Fmt()
+	AllFilesList = `d rwxr-xr-x      0 /
+- rw-r--r--      0 /1
+- rw-r--r--  30.9k /2
+d rwxr-xr-x      0 /a
+- rw-r--r--   9.9k /a/a1
+- rw-r--r--  20.9k /a/a2
+d rwxr-xr-x      0 /a/b
+d rwxr-xr-x      0 /a/b/c
+- rw-r--r--  43.9k /a/b/c/c3
+d rwxr-xr-x      0 /d
+d rwxr-xr-x      0 /e
+d rwxr-xr-x      0 /e/f
+`
+
+	// all dirs and files after MkChgs listed using Dir.Fmt()
+	AllChgFilesList = `d rwxr-xr-x      0 /
+- rw-r--r--      0 /1
+- rw-r--r--  30.9k /2
+d rwxr-xr-x      0 /a
+- rw-r--r--   9.9k /a/a1
+- rwxr-x---  20.9k /a/a2
+d rwxr-xr-x      0 /a/b
+d rwxr-x---      0 /a/n
+d rwxr-x---      0 /a/n/m
+- rw-r-----     11 /a/n/m/m1
+d rwxr-xr-x      0 /d
+d rwxr-xr-x      0 /e
+d rwxr-xr-x      0 /e/f
+`
+	// all dirs and files after MkChgs and MkChgs2 listed using Dir.Fmt()
+	AllChg2FilesList = `d rwxr-xr-x      0 /
+- rw-r--r--     50 /1
+d rwxr-x---      0 /2
+d rwxr-x---      0 /2/n2
+d rwxr-xr-x      0 /a
+- rw-r--r--   9.9k /a/a1
+- rwxr-x---  20.9k /a/a2
+d rwxr-xr-x      0 /a/b
+d rwxr-x---      0 /a/n
+d rwxr-x---      0 /a/n/m
+- rw-r-----     11 /a/n/m/m1
+d rwxr-xr-x      0 /d
+d rwxr-xr-x      0 /e
+d rwxr-xr-x      0 /e/f
+`
 )
 
 // Create a tree with Dirs and Files at tdir at the underlying OS
@@ -99,9 +161,9 @@ func MkTree(t Fataler, tdir string) {
 
 // Make some changes in the test tree.
 //	- Touch /a/a1
-//	- Chmod /a/a2
+//	- Chmod /a/a2 750
 //	- Remove /a/b/c /a/b/c/c3
-//	- Create /a/n /a/n/m /a/n/m/m1
+//	- Create /a/n/ /a/n/m/ /a/n/m/m1 (750 750 640)
 func MkChgs(t Fataler, tdir string) {
 	Touch(tdir + "/a/a1")
 	if err := os.Chmod(tdir+"/a/a2", 0750); err != nil {
@@ -124,8 +186,8 @@ func MkChgs(t Fataler, tdir string) {
 
 // Make some changes in the test tree, another version.
 //	- Remove /2
-//	- Create /2/n2
-//	- Truncate /1
+//	- Create /2/n2 750
+//	- Resize /1 to 50 bytes
 func MkChgs2(t Fataler, tdir string) {
 	if err := os.Remove(tdir + "/2"); err != nil {
 		t.Fatalf("rm: %s", err)

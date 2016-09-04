@@ -356,9 +356,9 @@ func (d Dir) DbFmt() string {
 	} else {
 		fmt.Fprintf(&b, " 0%o", d.Mode())
 	}
-	uid := nouid(d["Uid"])
-	gid := nouid(d["Gid"])
-	wuid := nouid(d["Wuid"])
+	uid := nouid(d["uid"])
+	gid := nouid(d["gid"])
+	wuid := nouid(d["wuid"])
 	fmt.Fprintf(&b, " %-8s %-8s %-8s", uid, gid, wuid)
 	fmt.Fprintf(&b, " %8d", d.Uint("size"))
 	if d["type"] != "d" {
