@@ -166,7 +166,6 @@ var chg1 = []Chg {
 var chg2 = []Chg {
 	Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}}},
 	Chg{Chg: zx.Chg{Type: zx.DirFile, D: zx.Dir{"path": "/2"}}},
-	Chg{Chg: zx.Chg{Type: zx.Del, D: zx.Dir{"path": "/a/b/c"}}},
 }
 
 var chg3 = []Chg {
@@ -191,7 +190,7 @@ func cmpChgs(t *testing.T, xc []Chg, gc []Chg) {
 		}
 	}
 	if len(xc) != len(gc) {
-		t.Fatalf("too many or too few changes")
+		t.Fatalf("expected %d changes but got %d", len(xc), len(gc))
 	}
 }
 

@@ -183,8 +183,8 @@ func changes(f0, f1 *File, metat time.Time, w Where, rc chan<- Chg) error {
 			continue
 		}
 		if err1 != nil {
-			if c0.D["err"] != "" {
-				if c1.D["err"] != "pruned" {
+			if c0.D["err"] != "" || c0.D["rm"] != "" {
+				if c1 != nil && c1.D["err"] != "pruned" {
 					cmd.Warn("%s: file ignored (%s)",
 						c0.D["path"], c0.D["err"])
 				}

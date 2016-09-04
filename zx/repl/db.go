@@ -198,8 +198,12 @@ func (db *DB) DumpTo(w io.Writer) {
 		return
 	}
 	fmt.Fprintf(w, "db %s %s\n", db.Name, db.Addr)
-	if db == nil {
-		return
+	if len(db.Excl) > 0 {
+		fmt.Fprintf(w, "exclude:")
+		for _, e := range db.Excl {
+			fmt.Fprintf(w, " '%s'", e)
+		}
+		fmt.Fprintf(w, "\n")
 	}
 	fc := db.Files()
 	for f := range fc {
