@@ -43,7 +43,7 @@ func main() {
 			cmd.Fatal(err)
 		}
 		for c := range cc {
-			cmd.Printf("%s\n", c)
+			cmd.Printf("chg %s %s\n", c.At, c)
 		}
 		cmd.Exit(nil)
 	}
@@ -53,7 +53,7 @@ func main() {
 		cc = make(chan repl.Chg)
 		go func() {
 			for c := range cc {
-				cmd.Printf("%s\n", c)
+				cmd.Printf("chg %s %s\n", c.At, c)
 			}
 			close(dc)
 		}()
