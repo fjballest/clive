@@ -1,34 +1,34 @@
 /*
-	whatch file system changes
+	file system watcher
 */
-package main
+package fswatch
 
 import (
 	"clive/cmd"
-	"clive/cmd/opt"
 	"syscall"
 	fpath "path"
 	"io/ioutil"
+	"errors"
 )
 
-struct Watches {
+// Watcher for file system changes
+// (unix; not ZX)
+struct Watcher {
 	kfd int
 	did uint64
 	fds map[uint64]string
 	evs []syscall.Kevent_t
+	once bool
+	rc chan string
 }
 
-var (
-	opts = opt.New("file")
-	notux bool
-)
-
-func NewWatches() (*Watches, error) {
+// Create a new watcher
+func New() (*Watcher, error) {
 	fd, err := syscall.Kqueue()
 	if err != nil {
 		return nil, err
 	}
-	w := &Watches {
+	w := &Watcher {
 		did: ^uint64(0),
 		kfd: fd,
 		fds: map[uint64]string{},
@@ -36,7 +36,12 @@ func NewWatches() (*Watches, error) {
 	return w, nil
 }
 
-func (w *Watches) Add(p string) error {
+// Arrange for w to be done after the first change reported.
+func (w *Watcher) Once() {
+	w.once = true
+}
+
+func (w *Watcher) add1(p string) error {
 	fd, err := syscall.Open(p, syscall.O_RDONLY, 0)
 	if err != nil {
 		return err
@@ -58,7 +63,29 @@ func (w *Watches) Add(p string) error {
 	return nil
 }
 
-func (w *Watches) watch1(rc chan string) bool {
+// Add a file to the watcher list.
+// Must be called before watching changes.
+// If the file is a directory all the files in it are also watched (w/o recur. for subdirs)
+func (w *Watcher) Add(p string) error {
+	if w.rc != nil {
+		return errors.New("can't add (yet) while watching")
+	}
+	if err := w.add1(p); err != nil {
+		return err
+	}
+	ents, err := ioutil.ReadDir(p)
+	if err == nil {
+		for _, e := range ents {
+			path := fpath.Join(p, e.Name())
+			if err := w.add1(path); err != nil {
+				cmd.Dprintf("wath %s: %s\n", path, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (w *Watcher) change(rc chan string) bool { 
 	if len(w.fds) == 0 {
 		return false
 	}
@@ -79,8 +106,8 @@ Loop:	for !isdir {
 				cmd.Dprintf("no events\n")
 				continue
 			}
-			cmd.Dprintf("%s %x\n", p, e.Fflags)
-			if ok := rc <- p; !ok {
+			// cmd.Dprintf("%s %x\n", p, e.Fflags)
+			if ok = rc <- p; !ok || w.once {
 				break Loop
 			}
 			if e.Fflags&syscall.NOTE_DELETE != 0 {
@@ -95,11 +122,11 @@ Loop:	for !isdir {
 	for fd := range w.fds {
 		syscall.Close(int(fd))
 	}
-	return true
+	return !w.once
 }
 
-func (w *Watches) watch(rc chan string) {
-	for w.watch1(rc) {
+func (w *Watcher) changes(rc chan string) {
+	for w.change(rc) {
 		ofds := w.fds
 		w.fds = map[uint64]string{}
 		for _, p := range ofds {
@@ -109,60 +136,18 @@ func (w *Watches) watch(rc chan string) {
 	for fd := range w.fds {
 		syscall.Close(int(fd))
 	}
+	close(rc)
 	syscall.Close(w.kfd)
 }
 
-func (w *Watches) Watch() chan string {
+// Report changes through the returned chan.
+func (w *Watcher) Changes() chan string {
 	rc := make(chan string, 10)
-	go w.watch(rc)
+	if w.rc != nil {
+		close(rc, "already watching")
+		return rc
+	}
+	w.rc = rc
+	go w.changes(rc)
 	return rc
-}
-
-func kq(dir string) {
-	w, err := NewWatches()
-	if err != nil {
-		cmd.Fatal("kqueue: %s", err)
-	}
-
-	cmd.Dprintf("(re)read %s\n", dir)
-	if err := w.Add(dir); err != nil {
-		cmd.Fatal("kqueue: %s", err)
-	}
-	ents, err := ioutil.ReadDir(dir)
-	if err == nil {
-		for _, e := range ents {
-			path := fpath.Join(dir, e.Name())
-			if err := w.Add(path); err != nil {
-				cmd.Dprintf("wath %s: %s\n", path, err)
-			}
-		}
-	}
-	pc := w.Watch()
-	if err != nil {
-		cmd.Fatal("watch: %s", err)
-	}
-	for p := range pc {
-		cmd.Warn("%s", p)
-	}
-	if err := cerror(pc); err != nil {
-		cmd.Fatal(err)
-	}
-	cmd.Exit(nil)
-}
-
-func main() {
-	cmd.UnixIO("err")
-	c := cmd.AppCtx()
-	opts.NewFlag("D", "debug", &c.Debug)
-	opts.NewFlag("u", "don't use unix out", &notux)
-	args := opts.Parse()
-	if !notux {
-		cmd.UnixIO("out")
-	}
-	if len(args) != 1{
-		opts.Usage()
-	}
-	for {
-		kq(args[0])
-	}
 }
