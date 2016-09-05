@@ -76,8 +76,9 @@ func (ndb *DB) changesFrom(db *DB, w Where) <-chan Chg {
 		close(rc, "tree is void")
 		return rc
 	}
+	excl := append(db.Excl, ndb.Excl...)
 	go func() {
-		close(rc, changes(db.Root, ndb.Root, time.Now(), w, rc))
+		close(rc, db.changes(db.Root, ndb.Root, excl, time.Now(), w, rc))
 	}()
 	return rc
 }
@@ -109,9 +110,12 @@ func (f *File) came(rc chan<- Chg, at Where) {
 	rc <- Chg{Chg: zx.Chg{Type: zx.Add, Time: f.D.Time("mtime"), D: f.D}, At: at}
 }
 
-func changes(f0, f1 *File, metat time.Time, w Where, rc chan<- Chg) error {
+func (db *DB) changes(f0, f1 *File, excl []string, metat time.Time, w Where, rc chan<- Chg) error {
 	d0 := f0.D
 	d1 := f1.D
+	if isExcl(d0["path"], excl...) || isExcl(d1["path"], excl...) {
+		return nil
+	}
 	if d0["rm"] != "" && d1["rm"] != "" {
 		return nil
 	}
@@ -199,7 +203,7 @@ func changes(f0, f1 *File, metat time.Time, w Where, rc chan<- Chg) error {
 			}
 			continue
 		}
-		changes(c0, c1, d1time, w, rc)
+		db.changes(c0, c1, excl, d1time, w, rc)
 	}
 	if len(dels) != 0 {
 		for _, d := range dels {

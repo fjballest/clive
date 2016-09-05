@@ -121,12 +121,21 @@ func PathPrefixMatch(p, exp string) bool {
 	for i := 0; i < n; i++ {
 		if exp[0] == '/' {
 			m, err = filepath.Match(els[i], pels[i])
+			if err != nil {
+				return false
+			}
+			if !m { 
+				return false
+			}
 		} else {
 			m, err = filepath.Match(exp, pels[i])
-		}
-		if err != nil || !m {
-			return false
+			if err != nil {
+				return false
+			}
+			if m { 
+				return true
+			}
 		}
 	}
-	return true
+	return exp[0] == '/'
 }

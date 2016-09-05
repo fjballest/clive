@@ -26,9 +26,9 @@ var (
 	dprintf =  dbg.FlagPrintf(&debug)
 )
 
-func mkdb(t *testing.T, tdir string) *DB {
+func mkdb(t *testing.T, tdir string, excl ...string) *DB {
 	debug = testing.Verbose()
-	db, err := NewDB("adb", tdir)
+	db, err := NewDB("adb", tdir, excl...)
 	if err != nil {
 		t.Fatalf("failed %v", err)
 	}
@@ -44,7 +44,7 @@ func mkdb(t *testing.T, tdir string) *DB {
 	return db
 }
 
-func mktest(t *testing.T, tdir string) (*DB, func() ) {
+func mktest(t *testing.T, tdir string, excl ...string) (*DB, func() ) {
 	cmd.UnixIO("in", "out", "err")
 	cmd.Warn("testing")
 	os.Args[0] = "repl.test"
@@ -56,11 +56,11 @@ func mktest(t *testing.T, tdir string) (*DB, func() ) {
 		os.RemoveAll(tdir)
 		os.RemoveAll(tdb)
 	}
-	db := mkdb(t, tdir)
+	db := mkdb(t, tdir, excl...)
 	return db, fn
 }
 
-func mkrtest(t *testing.T, rtdir string) (*DB, func() ) {
+func mkrtest(t *testing.T, rtdir string, excl ...string) (*DB, func() ) {
 	cmd.UnixIO("in", "out", "err")
 	os.Args[0] = "repl.test"
 	os.Mkdir(rtdir+"/p", 0755)
@@ -84,7 +84,7 @@ func mkrtest(t *testing.T, rtdir string) (*DB, func() ) {
 		os.Remove("/tmp/clive.9898")
 		t.Fatal(err)
 	}
-	db := mkdb(t, "unix!local!9898!/p")
+	db := mkdb(t, "unix!local!9898!/p", excl...)
 	fn := func() {
 		db.Close()
 		os.RemoveAll(rtdir)
@@ -133,6 +133,24 @@ func TestRzxDbScan(t *testing.T) {
 	db, fn := mkrtest(t, rtdir)
 	defer fn()
 	chkFiles(t, db, fstest.AllFiles, fstest.AllFilesList)
+}
+
+var xfiles = `d rwxr-xr-x      0 /
+- rw-r--r--      0 /1
+- rw-r--r--  30.9k /2
+d rwxr-xr-x      0 /a
+d rwxr-xr-x      0 /a/b
+d rwxr-xr-x      0 /a/b/c
+- rw-r--r--  43.9k /a/b/c/c3
+d rwxr-xr-x      0 /d
+d rwxr-xr-x      0 /e
+d rwxr-xr-x      0 /e/f
+`
+
+func TestDbExcl(t *testing.T) {
+	db, fn := mktest(t, tdir, "/*/a1", "a?")
+	defer fn()
+	chkFiles(t, db, nil, xfiles)
 }
 
 func TestDBFile(t *testing.T) {

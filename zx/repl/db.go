@@ -5,6 +5,7 @@ package repl
 
 import (
 	"clive/dbg"
+	"clive/cmd"
 	"clive/ch"
 	"clive/zx"
 	"clive/zx/zux"
@@ -96,6 +97,8 @@ func NewDB(name, path string, excl ...string) (*DB, error) {
 		Excl: excl,
 	}
 	db.Tag = db.Name
+	c := cmd.AppCtx()
+	db.Debug = c.Debug
 	if err := db.setFs(path); err != nil {
 		return nil, err
 	}
@@ -235,6 +238,10 @@ func (b byName) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 // add or update the entry for a  dir into db.
 // If d has "rm" or "err" set, then the file is flagged as such and children are discarded.
 func (db *DB) Add(d zx.Dir) error {
+	if isExcl(d["path"], db.Excl...) {
+		db.Dprintf("db add: excluded: %s\n", d.Fmt())
+		return nil
+	}
 	d = d.Dup();
 	f := &File{
 		D: d,
@@ -394,6 +401,8 @@ func recvDBFrom(c <-chan face{}) (*DB, error) {
 		Excl: strings.SplitN(string(strs), "\n", -1),
 	}
 	db.Tag = db.Name
+	ctx := cmd.AppCtx()
+	db.Debug = ctx.Debug
 	db.lastpdir = ""
 	db.lastpf = nil
 	db.Root = nil

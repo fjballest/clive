@@ -232,3 +232,76 @@ func TestDir(t *testing.T) {
 	}
 
 }
+
+struct ptest {
+	p, e string
+	m bool
+}
+
+func TestPathPrefixMatch(t *testing.T) {
+	debug = testing.Verbose()
+	ts := []ptest {
+		{"/a/b/c", "a", true},
+		{"/a/b/c", "a.*", false},
+		{"/a/b/c", "*1", false},
+		{"/a/b/c", "a[1]*", false},
+		{"/a/b/c", "/", true},
+		{"/a/b/c", "/a/*1", false},
+		{"/a/b/c", "/a/*1/a*", false},
+		{"/a/a1/a11", "a", true},
+		{"/a/a1/a11", "a.*", false},
+		{"/a/a1/a11", "*1", true},
+		{"/a/a1/a11", "a[1]*", true},
+		{"/a/a1/a11", "/", true},
+		{"/a/a1/a11", "/a/*1", true},
+		{"/a/a1/a11", "/a/*1/a*", true},
+		{"/a/a1/g11", "a", true},
+		{"/a/a1/g11", "a.*", false},
+		{"/a/a1/g11", "*1", true},
+		{"/a/a1/g11", "a[1]*", true},
+		{"/a/a1/g11", "/", true},
+		{"/a/a1/g11", "/a/*1", true},
+		{"/a/a1/g11", "/a/*1/a*", false},
+		{"/b/b1/b11", "a", false},
+		{"/b/b1/b11", "a.*", false},
+		{"/b/b1/b11", "*1", true},
+		{"/b/b1/b11", "a[1]*", false},
+		{"/b/b1/b11", "/", true},
+		{"/b/b1/b11", "/a/*1", false},
+		{"/b/b1/b11", "/a/*1/a*", false},
+		{"/", "a", false},
+		{"/", "a.*", false},
+		{"/", "*1", false},
+		{"/", "a[1]*", false},
+		{"/", "/", true},
+		{"/", "/a/*1", false},
+		{"/", "/a/*1/a*", false},
+	}
+	paths := []string {
+		"/a/b/c",
+		"/a/a1/a11",
+		"/a/a1/g11",
+		"/b/b1/b11",
+		"/",
+	}
+	exprs := []string {
+		"a",
+		"a.*",
+		"*1",
+		"a[1]*",
+		"/",
+		"/a/*1",
+		"/a/*1/a*",
+	}
+	i := 0
+	for _, p := range paths {
+		for _, e := range exprs {
+			v := PathPrefixMatch(p, e)
+			printf("\t{\"%s\", \"%s\", %v},\n", p, e, v)
+			if v != ts[i].m {
+				t.Fatalf("bad match")
+			}
+			i++
+		}
+	}
+}
