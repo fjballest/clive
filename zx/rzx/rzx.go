@@ -431,8 +431,10 @@ func (s *Server) client(mx *ch.Mux) {
 	var ai *auth.Info
 	var err error
 	for c := range mx.In {
+		s.Dprintf("%s req\n", mx.Tag)
 		if c.Out == nil {
 			close(c.In, "must issue auth rpc")
+			dbg.Warn("%s: no auth rpc", s.addr)
 			continue
 		}
 		if s.noauth {
@@ -447,8 +449,12 @@ func (s *Server) client(mx *ch.Mux) {
 			dbg.Warn("%s: %s: %s", s.addr, mx.Tag, err)
 			continue
 		}
+		if ai == nil {
+			dbg.Warn("%s: no ai and no err", s.addr)
+		}
 		break
 	}
+	s.Dprintf("%s done req\n", mx.Tag)
 	if ai == nil {
 		dbg.Warn("no client auth info for %s", mx.Tag)
 		close(mx.In)

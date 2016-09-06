@@ -122,10 +122,10 @@ var (
 	ErrFailed   = errors.New("auth failed")
 
 	// Timeout placed on the authentication protocol.
-	Tmout = 2 * time.Second
+	Tmout = 10 * time.Second
 
 	// Enable debug diagnostics.
-	Debug   bool
+	Debug   = false
 	dprintf = dbg.FlagPrintf(&Debug)
 
 	chc  chan uint64

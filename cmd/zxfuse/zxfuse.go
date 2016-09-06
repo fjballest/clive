@@ -37,6 +37,7 @@ func main() {
 	opts.NewFlag("D", "debug requests", &zxfs.Debug)
 	opts.NewFlag("F", "verbose debug requests", &zxfs.Verb)
 	opts.NewFlag("V", "verbose fuse debug", &fs.Debug)
+	opts.NewFlag("A", "auth debug", &auth.Debug)
 	opts.NewFlag("v", "verbose cache", &verb)
 	opts.NewFlag("r", "read only", &rflag)
 	opts.NewFlag("n", "no caching", &nocache)

@@ -40,6 +40,7 @@ func main() {
 	opts.NewFlag("s", "use writesync for caches", &wsync)
 	c := cmd.AppCtx()
 	opts.NewFlag("D", "debug", &c.Debug)
+	opts.NewFlag("A", "auth debug", &auth.Debug)
 	opts.NewFlag("v", "report users logged in/out (verbose)", &c.Verb)
 	opts.NewFlag("Z", "verbose debug", &Zdebug)
 	opts.NewFlag("n", "no auth", &noauth)
