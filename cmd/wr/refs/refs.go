@@ -94,7 +94,7 @@ import (
 )
 
 const (
-	Dir  = "/zx/lib/bib" // default bib dir
+	Dir  = "/zx/lib/bib" // default bib dir (should become /u/bib)
 	Keys = "ATBSJPRVNEFGICDOWX"
 )
 

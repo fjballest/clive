@@ -12,6 +12,7 @@ import (
 	"clive/zx"
 	"fmt"
 	"io"
+	"os"
 	fpath "path"
 	"path/filepath"
 )
@@ -31,7 +32,7 @@ var (
 	outpdf             string
 	uname, oname, oext string
 	max                = 70
-	refsdir            = refs.Dir
+	refsdir            = ""
 	wrs                = map[string]func(*Text, int, io.Writer, string){
 		".man":  wrtxt,
 		".ms":   wrroff,
@@ -253,6 +254,12 @@ func main() {
 	}
 	if oname == "stdout" {
 		oname = "-"
+	}
+	if refsdir == "" {
+		refsdir = refs.Dir
+		if _, err := os.Stat("/u/bib"); err == nil {
+			refsdir = "/u/bib"
+		}
 	}
 	hflag = hflag || sect != ""
 	cliveMan = sect != "" || mflag

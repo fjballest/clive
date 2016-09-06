@@ -18,6 +18,9 @@ to work in a new branch (eg, doselect)
 	git commit -m 'doselect break and continue'
 	git push origin doselect
 
+zxsync -n clive
+zxsync -v clive
+
 Go install -v ./...
 go test -short ./...
 go test -short -bench . ./... |[2=1] grep '^Bench'
