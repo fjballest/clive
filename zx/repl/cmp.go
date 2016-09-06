@@ -160,7 +160,7 @@ func (db *DB) changes(f0, f1 *File, excl []string, metat time.Time, w Where, rc 
 		}
 		return nil
 	}
-	if dirMetaChanged(d0, d1) {
+	if dirMetaChanged(d0, d1)  && d0["path"] != "/" && d1["path"] != "/" {
 		rc <- Chg{Chg: zx.Chg{Type: zx.Meta, Time: metat, D: d1}, At: w}
 	}
 	names := make([]string, 0, len(f0.Child)+len(f1.Child))
