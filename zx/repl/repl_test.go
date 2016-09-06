@@ -529,8 +529,6 @@ func TestTreeSync(t *testing.T) {
 
 var (
 	pulldchgs = []Chg {
-		Chg{Chg: zx.Chg{Type: zx.Meta, D: zx.Dir{"path": "/"}},
-			At: Remote},
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}},
 			At: Remote},
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/2"}},
@@ -543,8 +541,6 @@ var (
 			At: Remote},
 	}
 	pulldchgs2 = []Chg {
-		Chg{Chg: zx.Chg{Type: zx.Meta, D: zx.Dir{"path": "/"}},
-			At: Remote},
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}},
 			At: Remote},
 		Chg{Chg: zx.Chg{Type: zx.DirFile, D: zx.Dir{"path": "/2"}},
@@ -609,8 +605,6 @@ func TestTreeAllPullChanges(t *testing.T) {
 
 var (
 	pushdchgs = []Chg {
-		Chg{Chg: zx.Chg{Type: zx.Meta, D: zx.Dir{"path": "/"}},
-			At: Local},
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}},
 			At: Local},
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/2"}},
@@ -623,8 +617,6 @@ var (
 			At: Local},
 	}
 	pushdchgs2 = []Chg {
-		Chg{Chg: zx.Chg{Type: zx.Meta, D: zx.Dir{"path": "/"}},
-			At: Local},
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}},
 			At: Local},
 		Chg{Chg: zx.Chg{Type: zx.DirFile, D: zx.Dir{"path": "/2"}},
