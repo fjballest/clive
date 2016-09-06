@@ -8,6 +8,7 @@ import (
 	"clive/cmd/opt"
 	"clive/zx/repl"
 	"os"
+	"strings"
 )
 
 var (
@@ -28,6 +29,9 @@ func main() {
 	}
 	if len(args) != 1 {
 		opts.Usage()
+	}
+	if !strings.ContainsRune(args[0], '/') {
+		args[0] = "/u/lib/repl/" + args[0]
 	}
 	tr, err := repl.Load(args[0])
 	if err != nil {

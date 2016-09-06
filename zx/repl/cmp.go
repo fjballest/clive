@@ -26,8 +26,7 @@ type Chg struct {
 }
 
 var (
-	ignoredAttrs = [...]string{"mtime", "Wuid", "Sum", "size"}
-	ignoredPutAttrs = [...]string{"Wuid", "size"}
+	ignoredAttrs = [...]string{"mtime", "uid", "gid", "wuid", "Sum", "size", "addr"}
 )
 
 func (w Where) String() string {
@@ -84,10 +83,16 @@ func (ndb *DB) changesFrom(db *DB, w Where) <-chan Chg {
 }
 
 func dataChanged(d0, d1 zx.Dir) bool {
-	return d0["type"] != d1["type"] ||
-		d0.Uint("size") != d1.Uint("size") ||
-		d0.Uint("mtime") != d1.Uint("mtime") ||
-		d0["Sum"] != "" && d1["Sum"] != "" && d0["Sum"] != d1["Sum"]
+	t0 := d0.Uint("mtime") / uint64(time.Second)
+	t1 := d1.Uint("mtime") / uint64(time.Second)
+	r := d0["type"] != d1["type"] ||
+		d0.Uint("size") != d1.Uint("size") || t0 != t1
+	if r {
+		cmd.Dprintf("datachg %s\n%v %v\n%v %v\n",
+			d0["path"], d0.Uint("size"), d1.Uint("size"),
+			t0, t1)
+	}
+	return r
 }
 
 // does not check attributes that indicate that data changed.
@@ -98,7 +103,11 @@ func metaChanged(d0, d1 zx.Dir) bool {
 		delete(ud0, k)
 		delete(ud1, k)
 	}
-	return !zx.EqualDirs(ud0, ud1)
+	r := !zx.EqualDirs(ud0, ud1)
+	if r {
+		cmd.Dprintf("chg\n%s\n%s\n", ud0, ud1)
+	}
+	return r
 }
 
 // does not check attributes that indicate that data changed.

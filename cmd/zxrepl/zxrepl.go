@@ -9,6 +9,7 @@ import (
 	"clive/zx/repl"
 	fpath "path"
 	"os"
+	"strings"
 )
 
 var (
@@ -41,6 +42,9 @@ func main() {
 	file, ldir, rdir := args[0], args[1], args[2]
 	if !notux {
 		cmd.UnixIO("out")
+	}
+	if !strings.ContainsRune(file, '/') {
+		file = "/u/lib/repl/" + file
 	}
 	tr, err:= repl.New(fpath.Base(file), ldir, rdir, excl...)
 	if err != nil {
