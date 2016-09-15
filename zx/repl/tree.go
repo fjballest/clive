@@ -1,8 +1,8 @@
 package repl
 
 import (
-	"clive/zx"
 	"clive/dbg"
+	"clive/zx"
 )
 
 // A replicated tree
@@ -10,7 +10,7 @@ struct Tree {
 	Ldb, Rdb *DB
 	*dbg.Flag
 	lpath, rpath string
-	excl []string
+	excl         []string
 }
 
 func newDbs(scan bool, name, path, rpath string, excl ...string) (db *DB, rdb *DB, err error) {
@@ -52,24 +52,23 @@ func New(name, path, rpath string, excl ...string) (*Tree, error) {
 }
 
 func mkTree(ldb, rdb *DB) *Tree {
-	t := &Tree {
-		Ldb: ldb,
-		Rdb: rdb,
+	t := &Tree{
+		Ldb:   ldb,
+		Rdb:   rdb,
 		lpath: ldb.Addr,
 		rpath: rdb.Addr,
-		excl: ldb.Excl,
-		Flag: &ldb.Flag,
+		excl:  ldb.Excl,
+		Flag:  &ldb.Flag,
 	}
 	return t
 }
-
 
 func (t *Tree) Close() error {
 	err := t.Ldb.Close()
 	if err2 := t.Rdb.Close(); err == nil {
 		err = err2
 	}
-	return err	
+	return err
 }
 
 // Report remote changes that must be applied to sync
@@ -92,7 +91,7 @@ func (t *Tree) PushChanges() (<-chan Chg, error) {
 }
 
 // Report all replica differences as changes that may be pulled
-func (t *Tree) AllPullChanges()  (<-chan Chg, error) {
+func (t *Tree) AllPullChanges() (<-chan Chg, error) {
 	ldb, rdb, err := newDbs(true, t.Ldb.Name, t.lpath, t.rpath, t.excl...)
 	if err != nil {
 		return nil, err
@@ -101,7 +100,7 @@ func (t *Tree) AllPullChanges()  (<-chan Chg, error) {
 }
 
 // Report all replica differences as changes that may be pushed
-func (t *Tree) AllPushChanges()  (<-chan Chg, error) {
+func (t *Tree) AllPushChanges() (<-chan Chg, error) {
 	ldb, rdb, err := newDbs(true, t.Ldb.Name, t.lpath, t.rpath, t.excl...)
 	if err != nil {
 		return nil, err
@@ -216,7 +215,7 @@ func (t *Tree) resolve(mc <-chan Chg, rc chan<- Chg) {
 		if ok := rc <- last; !ok {
 			close(mc, cerror(rc))
 		}
-		last = c;
+		last = c
 	}
 	if last.Type != zx.None {
 		rc <- last
@@ -227,7 +226,7 @@ func (t *Tree) resolve(mc <-chan Chg, rc chan<- Chg) {
 // Pull changes and apply them, w/o paying attention to any local change made.
 // If cc is not nil, report changes applied there.
 // Failed changes have dir["err"] set to the error status.
-func (t  *Tree) BlindPull(cc chan<- Chg) error {
+func (t *Tree) BlindPull(cc chan<- Chg) error {
 	pc, err := t.PullChanges()
 	if err != nil {
 		close(cc, err)
@@ -239,7 +238,7 @@ func (t  *Tree) BlindPull(cc chan<- Chg) error {
 // Sync changes and apply just pulls.
 // If cc is not nil, report changes applied there.
 // Failed changes have dir["err"] set to the error status.
-func (t  *Tree) Pull(cc chan<- Chg) error {
+func (t *Tree) Pull(cc chan<- Chg) error {
 	pc, err := t.Changes()
 	if err != nil {
 		close(cc, err)
@@ -264,7 +263,7 @@ func (t *Tree) PullAll(cc chan<- Chg) error {
 // Push changes and apply them, w/o paying attention to any remote change made.
 // If cc is not nil, report changes applied there.
 // Failed changes have dir["err"] set to the error status
-func (t  *Tree) BlindPush(cc chan<- Chg) error {
+func (t *Tree) BlindPush(cc chan<- Chg) error {
 	pc, err := t.PushChanges()
 	if err != nil {
 		return err
@@ -275,7 +274,7 @@ func (t  *Tree) BlindPush(cc chan<- Chg) error {
 // Sync changes and apply just pushes.
 // If cc is not nil, report changes applied there.
 // Failed changes have dir["err"] set to the error status
-func (t  *Tree) Push(cc chan<- Chg) error {
+func (t *Tree) Push(cc chan<- Chg) error {
 	pc, err := t.Changes()
 	if err != nil {
 		return err
@@ -296,13 +295,12 @@ func (t *Tree) PushAll(cc chan<- Chg) error {
 	return t.ApplyAll(pc, Local, cc)
 }
 
-
 // Sync changes and apply them.
 // If there's a create/remote, it wins wrt inner files changed at the peer.
 // If there's a conflict, the newest change wins.
 // If cc is not nil, report changes applied there.
 // Failed changes have dir["err"] set to the error status
-func (t  *Tree) Sync(cc chan<- Chg) error {
+func (t *Tree) Sync(cc chan<- Chg) error {
 	pc, err := t.Changes()
 	if err != nil {
 		return err
@@ -314,14 +312,14 @@ func (t  *Tree) Sync(cc chan<- Chg) error {
 // Its DBs are dialed and the tree is ready to pull/push/sync.
 // Files are named <fname>.ldb and <fname>.rdb
 func Load(fname string) (*Tree, error) {
-	ldb, err := LoadDB(fname+".ldb")
+	ldb, err := LoadDB(fname + ".ldb")
 	if err != nil {
 		return nil, err
 	}
 	if err = ldb.Dial(); err != nil {
 		return nil, err
 	}
-	rdb, err := LoadDB(fname+".rdb")
+	rdb, err := LoadDB(fname + ".rdb")
 	if err == nil {
 		err = rdb.Dial()
 	}
@@ -335,8 +333,8 @@ func Load(fname string) (*Tree, error) {
 // Save a replica configuration to the given (unix) files.
 // Files are named <fname>.ldb and <fname>.rdb
 func (t *Tree) Save(fname string) error {
-	if err := t.Ldb.Save(fname+".ldb"); err != nil {
+	if err := t.Ldb.Save(fname + ".ldb"); err != nil {
 		return err
 	}
-	return t.Rdb.Save(fname+".rdb")
+	return t.Rdb.Save(fname + ".rdb")
 }

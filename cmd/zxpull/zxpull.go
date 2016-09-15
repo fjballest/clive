@@ -7,8 +7,8 @@ import (
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx/repl"
-	"os"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -95,7 +95,7 @@ func names() []string {
 }
 
 var (
-	opts = opt.New("file")
+	opts                       = opt.New("file")
 	notux, aflag, bflag, nflag bool
 )
 

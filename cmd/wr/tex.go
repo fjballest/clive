@@ -186,7 +186,7 @@ func (f *texFmt) wrCaption(e *Elem) {
 var llbl = map[Kind]string{
 	Kfig:  "fig",
 	Kpic:  "fig",
-	Kgrap:  "fig",
+	Kgrap: "fig",
 	Kcode: "lst",
 	Kfoot: "foot",
 	Keqn:  "eqn",

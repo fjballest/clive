@@ -287,7 +287,7 @@ func (f *txtFmt) run(t *Text) {
 	f.wrFoots(t)
 	f.wrBib(t.bibrefs)
 	if cop != "" {
-		fmt.Fprintf(f.out, "\n(c)  %s\n", cop);
+		fmt.Fprintf(f.out, "\n(c)  %s\n", cop)
 	}
 }
 

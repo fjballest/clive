@@ -1,10 +1,10 @@
 package repl
 
 import (
-	"clive/zx"
 	"clive/cmd"
-	fpath "path"
+	"clive/zx"
 	"errors"
+	fpath "path"
 )
 
 // Apply a series of changes from local/remote/both replicas
@@ -73,7 +73,7 @@ func (t *Tree) Apply(c Chg) error {
 		nc.Type = zx.Del
 		err := ldb.applyDel(nc, rdb)
 		if err2 := ldb.applyAdd(c, rdb); err == nil {
-			err = err2;
+			err = err2
 		}
 		return err
 	default:
@@ -84,7 +84,7 @@ func (t *Tree) Apply(c Chg) error {
 func (db *DB) applyMeta(c Chg, rdb *DB) error {
 	fs, ok := db.Fs.(zx.Wstater)
 	if !ok {
-		return errors.New("Fs can't wstat");
+		return errors.New("Fs can't wstat")
 	}
 	db.Dprintf("meta %s\n", c.D.Fmt())
 	p := fpath.Join(db.rpath, c.D["path"])
@@ -108,11 +108,11 @@ func (db *DB) applyDel(c Chg, rdb *DB) error {
 	}
 	fs, ok := db.Fs.(zx.Remover)
 	if !ok {
-		return errors.New("Fs can't remove");
+		return errors.New("Fs can't remove")
 	}
 	p := fpath.Join(db.rpath, c.D["path"])
 	db.Dprintf("del %s\n", c.D.Fmt())
-	err := <- fs.RemoveAll(p)
+	err := <-fs.RemoveAll(p)
 	if err != nil && !zx.IsNotExist(err) {
 		return err
 	}
@@ -128,10 +128,10 @@ func (db *DB) applyDel(c Chg, rdb *DB) error {
 }
 
 struct pfile {
-	fs zx.Putter
-	d zx.Dir
-	dc chan<- []byte
-	rc <-chan zx.Dir
+	fs       zx.Putter
+	d        zx.Dir
+	dc       chan<- []byte
+	rc       <-chan zx.Dir
 	ldb, rdb *DB
 }
 
@@ -206,7 +206,7 @@ func (db *DB) applyAdd(c Chg, rdb *DB) error {
 			}
 			pf.start(pfs, db.rpath, d)
 		case []byte:
-			if (pf.dc == nil) {
+			if pf.dc == nil {
 				continue
 			}
 			if ok := pf.dc <- d; !ok {

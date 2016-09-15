@@ -112,17 +112,20 @@ func testConn(t *testing.T, addr string, clicfg, srvcfg *tls.Config) {
 }
 
 func TestUnixConn(t *testing.T) {
-	os.Remove("/tmp/clive.6667")
 	os.Args[0] = "net.test"
+	t.Skip("this test is out of date")
+	os.Remove("/tmp/clive.6667")
 	testConn(t, "unix!local!6667", nil, nil)
 }
 
 func TestTCPConn(t *testing.T) {
 	os.Args[0] = "net.test"
-	testConn(t, "tcp!local!6667", nil, nil)
+	t.Skip("this test is out of date")
+	testConn(t, "tcp!local!6668", nil, nil)
 }
 
 func TestGoTLS(t *testing.T) {
+	t.Skip("just for nemo")
 	os.Args[0] = "net.test"
 	ccfg, err := TLSCfg("/Users/nemo/.ssh/client")
 	if err != nil {
@@ -162,6 +165,7 @@ func TestGoTLS(t *testing.T) {
 }
 
 func TestTLSConn(t *testing.T) {
+	t.Skip("just for nemo")
 	os.Args[0] = "net.test"
 	ccfg, err := TLSCfg("/Users/nemo/.ssh/client")
 	if err != nil {

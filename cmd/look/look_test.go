@@ -5,7 +5,6 @@ import (
 )
 
 func TestCmdFor(t *testing.T) {
-	debug = testing.Verbose()
 	r := &Rule{Rexp: `^([a-zA-Z.]+)\(([0-9]+)\)$`, Cmd: `man \2 \1`}
 	s, err := r.CmdFor("foo(1)")
 	t.Logf("got %v %v\n", s, err)
@@ -15,7 +14,6 @@ func TestCmdFor(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	debug = testing.Verbose()
 	txt := `# example
 
 		#rule set

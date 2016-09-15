@@ -330,7 +330,7 @@ func (ek *eKeys) setKeys() {
 		ks = append(ks, keys(e.Caption.Data)...)
 	}
 	if e.Kind == Kchap || e.Kind == Khdr1 || e.Kind == Khdr2 ||
-			e.Kind == Khdr3 || e.Kind == Kfoot {
+		e.Kind == Khdr3 || e.Kind == Kfoot {
 		ks = append(ks, keys(e.Data)...)
 	}
 	for _, w := range ks {

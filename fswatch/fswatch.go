@@ -5,21 +5,21 @@ package fswatch
 
 import (
 	"clive/cmd"
-	"syscall"
-	fpath "path"
-	"io/ioutil"
 	"errors"
+	"io/ioutil"
+	fpath "path"
+	"syscall"
 )
 
 // Watcher for file system changes
 // (unix; not ZX)
 struct Watcher {
-	kfd int
-	did uint64
-	fds map[uint64]string
-	evs []syscall.Kevent_t
+	kfd  int
+	did  uint64
+	fds  map[uint64]string
+	evs  []syscall.Kevent_t
 	once bool
-	rc chan string
+	rc   chan string
 }
 
 // Create a new watcher
@@ -28,7 +28,7 @@ func New() (*Watcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	w := &Watcher {
+	w := &Watcher{
 		did: ^uint64(0),
 		kfd: fd,
 		fds: map[uint64]string{},
@@ -70,6 +70,10 @@ func (w *Watcher) Add(p string) error {
 	if w.rc != nil {
 		return errors.New("can't add (yet) while watching")
 	}
+	return w.add(p)
+}
+
+func (w *Watcher) add(p string) error {
 	if err := w.add1(p); err != nil {
 		return err
 	}
@@ -85,13 +89,14 @@ func (w *Watcher) Add(p string) error {
 	return nil
 }
 
-func (w *Watcher) change(rc chan string) bool { 
+func (w *Watcher) change(rc chan string) bool {
 	if len(w.fds) == 0 {
 		return false
 	}
 	// wait for events
 	isdir := false
-Loop:	for !isdir {
+Loop:
+	for !isdir {
 		// create kevent
 		events := make([]syscall.Kevent_t, 2*len(w.evs))
 		_, err := syscall.Kevent(w.kfd, w.evs, events, nil)
@@ -130,7 +135,7 @@ func (w *Watcher) changes(rc chan string) {
 		ofds := w.fds
 		w.fds = map[uint64]string{}
 		for _, p := range ofds {
-			w.Add(p)
+			w.add(p)
 		}
 	}
 	for fd := range w.fds {

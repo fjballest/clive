@@ -24,10 +24,6 @@ var (
 	lastyear, lastday string
 
 	errNoDump = errors.New("no dump")
-	prefs     = map[string]string{
-		// frrom <pref>/path into: <dump>/<pref>/yyyy/mmdd/path
-		"/zx": "/zx",
-	}
 )
 
 func ignored(year, day string) bool {
@@ -42,7 +38,7 @@ func ignored(year, day string) bool {
 	return false
 }
 
-func find(dpref, rel string, dc chan<- zx.Dir, ufile zx.Dir) {
+func find(dump, dpref, rel string, dc chan<- zx.Dir, ufile zx.Dir) {
 	droot := fpath.Join(dump, dpref)
 	years, err := cmd.GetDir(droot)
 	if err != nil {
@@ -139,20 +135,43 @@ func hist(in <-chan face{}) error {
 		case zx.Dir:
 			cmd.Dprintf("got %T %s\n", m, m["path"])
 			file := m["path"]
+			if m["upath"] == "" {
+				m["upath"] = m["path"]
+			}
+			ddir := dump
 			dpref := ""
 			rel := ""
-			for p, v := range prefs {
-				if zx.HasPrefix(file, p) {
-					dpref = v
-					rel = zx.Suffix(file, p)
-					break
+			switch {
+			case zx.HasPrefix(file, "/zx"):
+				if ddir == "" {
+					ddir = "/dump"
 				}
-			}
-			if dpref == "" {
+				dpref = "/zx"
+				rel = zx.Suffix(file, "/zx")
+			case zx.HasPrefix(file, "/u/gosrc/src/clive"):
+				if ddir == "" {
+					ddir = "/u/dump"
+				}
+				dpref = "clive"
+				rel = zx.Suffix(file, "/u/gosrc/src/clive")
+			case zx.HasPrefix(file, "/u"):
+				if ddir == "" {
+					ddir = "/u/dump"
+				}
+				els := zx.Elems(file)
+				if len(els) < 3 {
+					cmd.Warn("%s: too few path elements", m["upath"])
+					sts = errNoDump
+					continue
+				}
+				dpref = els[1]
+				rel = zx.Path(els[2:]...)
+			default:
 				cmd.Warn("%s: %s", m["upath"], errNoDump)
 				sts = errNoDump
+				continue
 			}
-			find(dpref, rel, dc, m.Dup())
+			find(ddir, dpref, rel, dc, m.Dup())
 		default:
 			cmd.Dprintf("got %T\n", m)
 
@@ -180,8 +199,7 @@ func main() {
 	opts.NewFlag("d", "print file differences", &dflag)
 	opts.NewFlag("x", "cmd: print lines to execute this command between versions", &xcmd)
 	opts.NewFlag("a", "list all copies that differ, not just the last one.", &all)
-	dump = "/dump"
-	opts.NewFlag("p", "dumpdir: path to dump (default is /dump)", &dump)
+	opts.NewFlag("p", "dumpdir: path to dump (default is /dump or /u/dump)", &dump)
 	t := time.Now()
 	when := t
 	opts.NewFlag("w", "date: backward search start time (default is now)", &when)

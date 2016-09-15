@@ -74,7 +74,7 @@ func main() {
 		if !ux {
 			out <- fmt.Errorf("%s: %s", cmd.Args()[0], err)
 		}
-		cmd.Fatal(err)
+		cmd.Exit(err)
 	}
 	cmd.Exit(err)
 }

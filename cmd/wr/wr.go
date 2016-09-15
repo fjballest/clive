@@ -44,7 +44,6 @@ var (
 
 	eflag, hflag, tflag, lflag, mflag, pflag, psflag, notux bool
 
-
 	labels = map[Kind]string{
 		Kfig:  "Figure",
 		Kpic:  "Figure",

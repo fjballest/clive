@@ -91,7 +91,7 @@ func (f *roffFmt) wrText(e *Elem) {
 	}
 	switch e.Kind {
 	case Kchap:
-		f.printPar(labels[e.Kind]+" " + e.Nb, ": ");
+		f.printPar(labels[e.Kind]+" "+e.Nb, ": ")
 	case Khdr1, Khdr2, Khdr3:
 	case Kfoot:
 		if e.Nb != "" {
@@ -192,8 +192,8 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 		case Kfont:
 			f.printCmd(".ps %s\n", e.Data)
 		case Kcop:
-			f.printCmd(".OF '(c) "+e.Data+" ' ' '\n");
-			f.printCmd(".EF '(c) "+e.Data+" ' ' '\n");
+			f.printCmd(".OF '(c) " + e.Data + " ' ' '\n")
+			f.printCmd(".EF '(c) " + e.Data + " ' ' '\n")
 		case Kchap, Khdr1, Khdr2, Khdr3:
 			if e.Kind == Kchap {
 				if firstchap {
@@ -208,7 +208,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 				inabs = false
 			}
 			if strings.ToLower(e.Data) == "abstract" {
-				if (firstchap) {
+				if firstchap {
 					f.printCmd(".AB\n")
 					inabs = true
 				}
@@ -216,41 +216,41 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 			}
 
 			if e.Kind == Kchap {
-				f.printCmd(".ds LH \n");
-				f.printCmd(".ds RH \n");
-				f.printCmd(".bp\n");
+				f.printCmd(".ds LH \n")
+				f.printCmd(".ds RH \n")
+				f.printCmd(".bp\n")
 			}
 			if firstnh && e.Kind == Khdr1 {
-				f.printCmd(".bp\n");
+				f.printCmd(".bp\n")
 				f.printCmd(".NH 0\n")
 				firstnh = false
 			} else {
 				f.printCmd(".%s\n", hdrs[e.Kind])
 			}
 			if e.Kind == Kchap {
-				f.printCmd(".ps +10\n");
+				f.printCmd(".ps +10\n")
 				firstnh = true
 			}
 			f.wrText(e)
 			if e.Kind == Kchap {
 				ct := escRoff(labels[e.Kind])
 				dt := escRoff(e.Data)
-				f.printCmd(".br\n \n");
+				f.printCmd(".br\n \n")
 				f.printCmd(".ds LH " + ct + " " + e.Nb + "\n")
-				f.printCmd(".ds RH " + dt + "\n");
+				f.printCmd(".ds RH " + dt + "\n")
 			}
-			f.printCmd(".XS\n");
-			if (e.Kind >= Khdr1) {
-				f.printCmd("    " + e.Nb + " ");
+			f.printCmd(".XS\n")
+			if e.Kind >= Khdr1 {
+				f.printCmd("    " + e.Nb + " ")
 			}
-			if (e.Kind >= Khdr2) {
-				f.printCmd("    ");
+			if e.Kind >= Khdr2 {
+				f.printCmd("    ")
 			}
-			if (e.Kind >= Khdr3) {
-				f.printCmd("    ");
+			if e.Kind >= Khdr3 {
+				f.printCmd("    ")
 			}
 			f.wrText(e)
-			f.printCmd(".XE\n");
+			f.printCmd(".XE\n")
 			f.printCmd(".LP\n")
 		case Kpar:
 			f.printCmd("\n")
@@ -294,7 +294,7 @@ func (f *roffFmt) wrElems(els ...*Elem) {
 		case Kverb, Ksh:
 			f.printCmd(".DS\n")
 			if e.Kind == Kverb && e.Tag != "" {
-				f.printCmd(`\f(CB[`+e.Tag+`]\fP`+":\n")
+				f.printCmd(`\f(CB[` + e.Tag + `]\fP` + ":\n")
 				f.printCmd(".br\n")
 			}
 			f.printCmd(".CW\n")
@@ -446,7 +446,7 @@ func (f *roffFmt) run(t *Text) {
 	f.printCmd("\n")
 	f.wrElems(els...)
 	f.closePar()
-	if (t.nchap > 0) {
+	if t.nchap > 0 {
 		f.printCmd(".br\n")
 		f.printCmd(".OH '' ' ' \n")
 		f.printCmd(".EH ' ' '' \n")
@@ -454,7 +454,7 @@ func (f *roffFmt) run(t *Text) {
 	}
 	f.wrBib(t.bibrefs)
 	f.closePar()
-	if (t.nchap > 0) {
+	if t.nchap > 0 {
 		f.printCmd(".bp\n")
 		f.printCmd(".TC\n")
 	}

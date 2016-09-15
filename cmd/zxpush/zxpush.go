@@ -7,9 +7,9 @@ import (
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx/repl"
-	"strings"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 func push1(name string) error {
@@ -95,7 +95,7 @@ func names() []string {
 }
 
 var (
-	opts = opt.New("file")
+	opts                       = opt.New("file")
 	notux, aflag, bflag, nflag bool
 )
 
@@ -131,4 +131,3 @@ func main() {
 	}
 	cmd.Exit(err)
 }
-

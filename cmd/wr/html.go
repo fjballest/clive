@@ -215,7 +215,6 @@ func (f *htmlFmt) fntSz(d string) {
 	f.fnts = append(f.fnts, n)
 }
 
-
 func (f *htmlFmt) wrCaption(e *Elem) {
 	if e.Caption == nil {
 		f.printCmd("<b>%s %s.</b>", labels[e.Kind], e.Nb)
@@ -225,7 +224,6 @@ func (f *htmlFmt) wrCaption(e *Elem) {
 		f.printParCmd(`</em>`)
 	}
 }
-
 
 func (f *htmlFmt) wrElems(els ...*Elem) {
 	pref := strings.Repeat(f.tab, f.lvl)
@@ -388,11 +386,11 @@ func (f *htmlFmt) wrBib(refs []string) {
 		r = "Referencias"
 	}
 	if !cliveMan {
-		f.printCmd("<p><h3>"+r+"</h3>\n<hr>\n")
+		f.printCmd("<p><h3>" + r + "</h3>\n<hr>\n")
 	} else if !f.hasSeeAlso {
 		f.printCmd("<p><h2>SEE ALSO</h2>\n<hr>\n")
 	} else {
-		f.printCmd("<p><h3>External "+r+"</h3>\n\n")
+		f.printCmd("<p><h3>External " + r + "</h3>\n\n")
 	}
 	f.printCmd("<p><ol>\n")
 	f.i0 = f.tab

@@ -1,29 +1,29 @@
 package repl
 
 import (
+	"bytes"
 	"clive/cmd"
 	"clive/dbg"
 	"clive/net/auth"
-	"clive/zx/zux"
-	"clive/zx/rzx"
-	"clive/zx"
 	"clive/u"
+	"clive/zx"
 	"clive/zx/fstest"
+	"clive/zx/rzx"
+	"clive/zx/zux"
 	"os"
 	"testing"
-	"bytes"
 )
 
 const (
-	tdir = "/tmp/repl_test"
+	tdir  = "/tmp/repl_test"
 	rtdir = "/tmp/repl_testrzx"
-	tdb = "/tmp/repl_test.db"
+	tdb   = "/tmp/repl_test.db"
 )
 
 var (
-	ai   = &auth.Info{Uid: u.Uid, SpeaksFor: u.Uid, Ok: true}
-	debug bool
-	dprintf =  dbg.FlagPrintf(&debug)
+	ai      = &auth.Info{Uid: u.Uid, SpeaksFor: u.Uid, Ok: true}
+	debug   bool
+	dprintf = dbg.FlagPrintf(&debug)
 )
 
 func mkdb(t *testing.T, tdir string, excl ...string) *DB {
@@ -44,7 +44,7 @@ func mkdb(t *testing.T, tdir string, excl ...string) *DB {
 	return db
 }
 
-func mktest(t *testing.T, tdir string, excl ...string) (*DB, func() ) {
+func mktest(t *testing.T, tdir string, excl ...string) (*DB, func()) {
 	cmd.UnixIO("in", "out", "err")
 	cmd.Warn("testing")
 	os.Args[0] = "repl.test"
@@ -60,35 +60,35 @@ func mktest(t *testing.T, tdir string, excl ...string) (*DB, func() ) {
 	return db, fn
 }
 
-func mkrtest(t *testing.T, rtdir string, excl ...string) (*DB, func() ) {
+func mkrtest(t *testing.T, rtdir string, excl ...string) (*DB, func()) {
 	cmd.UnixIO("in", "out", "err")
 	os.Args[0] = "repl.test"
 	os.Mkdir(rtdir+"/p", 0755)
 	fstest.Verb = testing.Verbose()
 	fstest.MkTree(t, rtdir+"/p")
-	os.Remove("/tmp/clive.9898")
+	os.Remove("/tmp/clive.9988")
 	fs, err := zux.NewZX(rtdir)
 	if err != nil {
 		os.RemoveAll(rtdir)
-		os.Remove("/tmp/clive.9898")
+		os.Remove("/tmp/clive.9988")
 		t.Fatal(err)
 	}
-	srv, err := rzx.NewServer("unix!local!9898", auth.TLSserver)
+	srv, err := rzx.NewServer("unix!local!9988", auth.TLSserver)
 	if err != nil {
 		os.RemoveAll(rtdir)
-		os.Remove("/tmp/clive.9898")
+		os.Remove("/tmp/clive.9988")
 		t.Fatal(err)
 	}
 	if err := srv.Serve("main", fs); err != nil {
 		os.RemoveAll(rtdir)
-		os.Remove("/tmp/clive.9898")
+		os.Remove("/tmp/clive.9988")
 		t.Fatal(err)
 	}
-	db := mkdb(t, "unix!local!9898!/p", excl...)
+	db := mkdb(t, "unix!local!9988!/p", excl...)
 	fn := func() {
 		db.Close()
 		os.RemoveAll(rtdir)
-		os.Remove("/tmp/clive.9898")
+		os.Remove("/tmp/clive.9988")
 		srv.Close()
 	}
 
@@ -110,7 +110,7 @@ func chkFiles(t *testing.T, db *DB, files []string, list string) {
 		}
 		s += f.D.Fmt() + "\n"
 		if files != nil && !all[f.D["path"]] {
-			t.Fatalf("bad file %s", f.D.Fmt());
+			t.Fatalf("bad file %s", f.D.Fmt())
 		}
 		delete(all, f.D["path"])
 	}
@@ -174,19 +174,19 @@ func TestDBFile(t *testing.T) {
 	}
 }
 
-var chg1 = []Chg {
+var chg1 = []Chg{
 	Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/a/a1"}}},
 	Chg{Chg: zx.Chg{Type: zx.Meta, D: zx.Dir{"path": "/a/a2"}}},
 	Chg{Chg: zx.Chg{Type: zx.Del, D: zx.Dir{"path": "/a/b/c"}}},
 	Chg{Chg: zx.Chg{Type: zx.Add, D: zx.Dir{"path": "/a/n"}}},
 }
 
-var chg2 = []Chg {
+var chg2 = []Chg{
 	Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}}},
 	Chg{Chg: zx.Chg{Type: zx.DirFile, D: zx.Dir{"path": "/2"}}},
 }
 
-var chg3 = []Chg {
+var chg3 = []Chg{
 	Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}}},
 	Chg{Chg: zx.Chg{Type: zx.DirFile, D: zx.Dir{"path": "/2"}}},
 	Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/a/a1"}}},
@@ -255,7 +255,7 @@ func TestRzxCmp(t *testing.T) {
 	defer fn()
 	fstest.MkChgs(t, rtdir+"/p")
 	dprintf("db after changes\n")
-	ndb := mkdb(t, "unix!local!9898!/p")
+	ndb := mkdb(t, "unix!local!9988!/p")
 	chkFiles(t, ndb, fstest.AllChgFiles, fstest.AllChgFilesList)
 	defer ndb.Close()
 	cc := ndb.ChangesFrom(db)
@@ -267,7 +267,7 @@ func TestRzxCmp(t *testing.T) {
 	cmpChgs(t, chg1, chgs)
 	fstest.MkChgs2(t, rtdir+"/p")
 	dprintf("\ndb after changes2\n")
-	ndb2 := mkdb(t, "unix!local!9898!/p")
+	ndb2 := mkdb(t, "unix!local!9988!/p")
 	chkFiles(t, ndb2, fstest.AllChg2Files, fstest.AllChg2FilesList)
 	defer ndb2.Close()
 	chgs = []Chg{}
@@ -287,7 +287,7 @@ func TestRzxCmp(t *testing.T) {
 	cmpChgs(t, chg3, chgs)
 }
 
-var schg = []Chg {
+var schg = []Chg{
 	Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}}, At: Remote},
 	Chg{Chg: zx.Chg{Type: zx.DirFile, D: zx.Dir{"path": "/2"}}, At: Remote},
 	Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/a/a1"}}, At: Local},
@@ -295,7 +295,6 @@ var schg = []Chg {
 	Chg{Chg: zx.Chg{Type: zx.Del, D: zx.Dir{"path": "/a/b/c"}}, At: Local},
 	Chg{Chg: zx.Chg{Type: zx.Add, D: zx.Dir{"path": "/a/n"}}, At: Local},
 }
-
 
 func TestTreeChanges(t *testing.T) {
 	db, fn := mkrtest(t, rtdir)
@@ -305,7 +304,7 @@ func TestTreeChanges(t *testing.T) {
 	defer fn2()
 	db.Close()
 
-	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	tr, err := New("adb", tdir, "unix!local!9988!/p")
 	if err != nil {
 		t.Fatalf("tree %s", err)
 	}
@@ -363,7 +362,7 @@ func logChgs(cs []Chg) {
 }
 
 var (
-	pushcs = []Chg {
+	pushcs = []Chg{
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/a/a1"}},
 			At: Local},
 		Chg{Chg: zx.Chg{Type: zx.Meta, D: zx.Dir{"path": "/a/a2"}},
@@ -413,7 +412,7 @@ func TestTreePush(t *testing.T) {
 	defer fn2()
 	db.Close()
 
-	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	tr, err := New("adb", tdir, "unix!local!9988!/p")
 	if err != nil {
 		t.Fatalf("tree %s", err)
 	}
@@ -435,12 +434,12 @@ func TestTreePush(t *testing.T) {
 	cmpChgs(t, pushcs, cs)
 	chkFiles(t, tr.Ldb, nil, pushldb)
 	chkFiles(t, tr.Rdb, nil, pushrdb)
-	os.RemoveAll(rtdir+".push")
+	os.RemoveAll(rtdir + ".push")
 	os.Rename(rtdir+"/p", rtdir+".push")
 }
 
 var (
-	pullcs = []Chg {
+	pullcs = []Chg{
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}}, At: Remote},
 		Chg{Chg: zx.Chg{Type: zx.DirFile, D: zx.Dir{"path": "/2"}}, At: Remote},
 	}
@@ -470,7 +469,7 @@ func TestTreePull(t *testing.T) {
 	defer fn2()
 	db.Close()
 
-	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	tr, err := New("adb", tdir, "unix!local!9988!/p")
 	if err != nil {
 		t.Fatalf("tree %s", err)
 	}
@@ -490,7 +489,7 @@ func TestTreePull(t *testing.T) {
 	cmpChgs(t, pullcs, cs)
 	chkFiles(t, tr.Ldb, nil, pullrdb)
 	chkFiles(t, tr.Rdb, nil, pullrdb)
-	os.RemoveAll(tdir+".pull")
+	os.RemoveAll(tdir + ".pull")
 	os.Rename(tdir, tdir+".pull")
 }
 
@@ -502,7 +501,7 @@ func TestTreeSync(t *testing.T) {
 	defer fn2()
 	db.Close()
 
-	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	tr, err := New("adb", tdir, "unix!local!9988!/p")
 	if err != nil {
 		t.Fatalf("tree %s", err)
 	}
@@ -521,14 +520,14 @@ func TestTreeSync(t *testing.T) {
 	logChgs(cs)
 	chkFiles(t, tr.Ldb, nil, "")
 	chkFiles(t, tr.Rdb, nil, "")
-	os.RemoveAll(tdir+".pull")
+	os.RemoveAll(tdir + ".pull")
 	os.Rename(tdir, tdir+".pull")
-	os.RemoveAll(rtdir+".push")
+	os.RemoveAll(rtdir + ".push")
 	os.Rename(rtdir+"/p", rtdir+".push")
 }
 
 var (
-	pulldchgs = []Chg {
+	pulldchgs = []Chg{
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}},
 			At: Remote},
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/2"}},
@@ -540,7 +539,7 @@ var (
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/a/b/c/c3"}},
 			At: Remote},
 	}
-	pulldchgs2 = []Chg {
+	pulldchgs2 = []Chg{
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}},
 			At: Remote},
 		Chg{Chg: zx.Chg{Type: zx.DirFile, D: zx.Dir{"path": "/2"}},
@@ -564,7 +563,7 @@ func TestTreeAllPullChanges(t *testing.T) {
 	defer fn2()
 	db.Close()
 
-	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	tr, err := New("adb", tdir, "unix!local!9988!/p")
 	if err != nil {
 		t.Fatalf("tree %s", err)
 	}
@@ -597,14 +596,14 @@ func TestTreeAllPullChanges(t *testing.T) {
 	}
 	cmpChgs(t, pulldchgs2, chgs)
 
-	os.RemoveAll(tdir+".pull")
+	os.RemoveAll(tdir + ".pull")
 	os.Rename(tdir, tdir+".pull")
-	os.RemoveAll(rtdir+".push")
+	os.RemoveAll(rtdir + ".push")
 	os.Rename(rtdir+"/p", rtdir+".push")
 }
 
 var (
-	pushdchgs = []Chg {
+	pushdchgs = []Chg{
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}},
 			At: Local},
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/2"}},
@@ -616,7 +615,7 @@ var (
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/a/b/c/c3"}},
 			At: Local},
 	}
-	pushdchgs2 = []Chg {
+	pushdchgs2 = []Chg{
 		Chg{Chg: zx.Chg{Type: zx.Data, D: zx.Dir{"path": "/1"}},
 			At: Local},
 		Chg{Chg: zx.Chg{Type: zx.DirFile, D: zx.Dir{"path": "/2"}},
@@ -640,7 +639,7 @@ func TestTreeAllPushChanges(t *testing.T) {
 	defer fn2()
 	db.Close()
 
-	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	tr, err := New("adb", tdir, "unix!local!9988!/p")
 	if err != nil {
 		t.Fatalf("tree %s", err)
 	}
@@ -673,9 +672,9 @@ func TestTreeAllPushChanges(t *testing.T) {
 	}
 	cmpChgs(t, pushdchgs2, chgs)
 
-	os.RemoveAll(tdir+".pull")
+	os.RemoveAll(tdir + ".pull")
 	os.Rename(tdir, tdir+".pull")
-	os.RemoveAll(rtdir+".push")
+	os.RemoveAll(rtdir + ".push")
 	os.Rename(rtdir+"/p", rtdir+".push")
 }
 
@@ -689,7 +688,7 @@ func TestTreePullAll(t *testing.T) {
 	fstest.MkChgs(t, tdir)
 	fstest.MkChgs2(t, rtdir+"/p")
 
-	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	tr, err := New("adb", tdir, "unix!local!9988!/p")
 	if err != nil {
 		t.Fatalf("tree %s", err)
 	}
@@ -710,9 +709,9 @@ func TestTreePullAll(t *testing.T) {
 	logChgs(cs)
 	chkFiles(t, tr.Ldb, nil, pullrdb)
 	chkFiles(t, tr.Rdb, nil, pullrdb)
-	os.RemoveAll(tdir+".pull")
+	os.RemoveAll(tdir + ".pull")
 	os.Rename(tdir, tdir+".pull")
-	os.RemoveAll(rtdir+".push")
+	os.RemoveAll(rtdir + ".push")
 	os.Rename(rtdir+"/p", rtdir+".push")
 }
 
@@ -726,11 +725,11 @@ func TestTreeSaveLoad(t *testing.T) {
 	db.Close()
 	fstest.MkChgs(t, tdir)
 	fstest.MkChgs2(t, rtdir+"/p")
-	os.Remove(tdir+"repl.ldb")
-	os.Remove(tdir+"repl.rdb")
-	defer os.Remove(tdir+"repl.ldb")
-	defer os.Remove(tdir+"repl.rdb")
-	tr, err := New("adb", tdir, "unix!local!9898!/p")
+	os.Remove(tdir + "repl.ldb")
+	os.Remove(tdir + "repl.rdb")
+	defer os.Remove(tdir + "repl.ldb")
+	defer os.Remove(tdir + "repl.rdb")
+	tr, err := New("adb", tdir, "unix!local!9988!/p")
 	if err != nil {
 		t.Fatalf("tree %s", err)
 	}
@@ -742,10 +741,10 @@ func TestTreeSaveLoad(t *testing.T) {
 	chkFiles(t, tr.Rdb, nil, "")
 
 	dprintf("\nsave & load:\n")
-	if err := tr.Save(tdir+"repl"); err != nil {
+	if err := tr.Save(tdir + "repl"); err != nil {
 		t.Fatalf("save %s", err)
 	}
-	if tr, err = Load(tdir+"repl"); err != nil {
+	if tr, err = Load(tdir + "repl"); err != nil {
 		t.Fatalf("load %s", err)
 	}
 	chkFiles(t, tr.Ldb, nil, "")
@@ -764,9 +763,9 @@ func TestTreeSaveLoad(t *testing.T) {
 	logChgs(cs)
 	chkFiles(t, tr.Ldb, nil, pullrdb)
 	chkFiles(t, tr.Rdb, nil, pullrdb)
-	os.RemoveAll(tdir+".pull")
+	os.RemoveAll(tdir + ".pull")
 	os.Rename(tdir, tdir+".pull")
-	os.RemoveAll(rtdir+".push")
+	os.RemoveAll(rtdir + ".push")
 	os.Rename(rtdir+"/p", rtdir+".push")
 
 }

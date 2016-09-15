@@ -4,31 +4,31 @@
 package repl
 
 import (
-	"clive/dbg"
-	"clive/cmd"
 	"clive/ch"
-	"clive/zx"
-	"clive/zx/zux"
-	"clive/zx/rzx"
+	"clive/cmd"
+	"clive/dbg"
 	"clive/net/auth"
-	fpath "path"
+	"clive/zx"
+	"clive/zx/rzx"
+	"clive/zx/zux"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	fpath "path"
 	"sort"
 	"strings"
 )
 
 // A DB for a fs tree
 struct DB {
-	Name     string // of the repl
-	Addr	string // addr!path or path
-	Excl	[]string // exclude exprs.
-	rpath	string	// path to repl root in fs
-	Fs	zx.Fs	// keeping the db files
+	Name  string   // of the repl
+	Addr  string   // addr!path or path
+	Excl  []string // exclude exprs.
+	rpath string   // path to repl root in fs
+	Fs    zx.Fs    // keeping the db files
 	dbg.Flag
-	Root     *File  // root
+	Root     *File // root
 	lastpf   *File
 	lastpdir string
 }
@@ -46,7 +46,6 @@ func splitaddr(addr string) (string, string) {
 	}
 	return addr[:n], addr[n+1:]
 }
-
 
 func isExcl(path string, excl ...string) bool {
 	if path == "/" {
@@ -83,6 +82,11 @@ func (db *DB) setFs(path string) error {
 	}
 	db.Addr = addr
 	return nil
+}
+
+// Move the path for the root to a new place.
+func (db *DB) MoveTo(path string) error {
+	return db.setFs(path)
 }
 
 // Create a DB for the given tree with the given name.
@@ -197,7 +201,7 @@ func (db *DB) Files() <-chan *File {
 // Debug dump
 func (db *DB) DumpTo(w io.Writer) {
 	if db == nil {
-		fmt.Fprintf(w, "<nil db>\n");
+		fmt.Fprintf(w, "<nil db>\n")
 		return
 	}
 	fmt.Fprintf(w, "db %s %s\n", db.Name, db.Addr)
@@ -242,7 +246,7 @@ func (db *DB) Add(d zx.Dir) error {
 		db.Dprintf("db add: excluded: %s\n", d.Fmt())
 		return nil
 	}
-	d = d.Dup();
+	d = d.Dup()
 	f := &File{
 		D: d,
 	}
@@ -326,10 +330,10 @@ func (db *DB) scan(dc <-chan face{}) error {
 		if !ok {
 			continue
 		}
-		if strings.HasSuffix(d["path"], "/Ctl") || 
-		   strings.HasSuffix(d["path"],"/.zx") ||
-		   strings.HasSuffix(d["path"],"/Chg") ||
-		   isExcl(d["path"], db.Excl...) {
+		if strings.HasSuffix(d["path"], "/Ctl") ||
+			strings.HasSuffix(d["path"], "/.zx") ||
+			strings.HasSuffix(d["path"], "/Chg") ||
+			isExcl(d["path"], db.Excl...) {
 			continue
 		}
 		// db.Dprintf("scan %s\n", d)
@@ -377,8 +381,8 @@ func (db *DB) sendTo(c chan<- face{}) error {
 	return err
 }
 
-func gbytes(c <- chan face{}) ([]byte, bool) {
-	m, ok := <- c
+func gbytes(c <-chan face{}) ([]byte, bool) {
+	m, ok := <-c
 	if !ok {
 		return nil, false
 	}
@@ -392,7 +396,7 @@ func recvDBFrom(c <-chan face{}) (*DB, error) {
 	addr, ok2 := gbytes(c)
 	strs, ok3 := gbytes(c)
 	if !ok1 || !ok2 || !ok3 {
-		close(c, "unexpected msg");
+		close(c, "unexpected msg")
 		return nil, cerror(c)
 	}
 	db := &DB{

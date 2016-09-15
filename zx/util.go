@@ -42,6 +42,13 @@ func HasPrefix(p, pref string) bool {
 	return pref == "/" || len(p) == len(pref) || p[len(pref)] == '/'
 }
 
+// Make a path starting with / for elems
+func Path(elems ...string) string {
+	s := strings.Join(elems, "/")
+	s = "/" + s
+	return path.Clean(s)
+}
+
 // Return the suffix of p relative to base
 // Both paths must be absolute or both relative.
 // Pref can be empty.
@@ -124,7 +131,7 @@ func PathPrefixMatch(p, exp string) bool {
 			if err != nil {
 				return false
 			}
-			if !m { 
+			if !m {
 				return false
 			}
 		} else {
@@ -132,7 +139,7 @@ func PathPrefixMatch(p, exp string) bool {
 			if err != nil {
 				return false
 			}
-			if m { 
+			if m {
 				return true
 			}
 		}

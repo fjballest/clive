@@ -118,8 +118,8 @@ func TestPack(t *testing.T) {
 	t.Logf("+%d\tsz = %d\n", n, buf.Len())
 
 	outs := []string{
-		"30 1 zx.Addr :0,0 <nil>",
-		"36 1 zx.Addr a file:1,2 <nil>",
+		"30 1 zx.Addr in:#0,#0 <nil>",
+		"36 1 zx.Addr a file:1,2:#3,#4 <nil>",
 		"14 1 zx.Dir  <nil>",
 		`42 1 zx.Dir Key2:"" key1:"val1" <nil>`,
 	}
@@ -127,7 +127,10 @@ func TestPack(t *testing.T) {
 	for _, s := range outs {
 		n, tag, m, err := ch.ReadMsg(&buf)
 		t.Logf("%d %d %T %v %v\n", n, tag, m, m, err)
-		if s != "" && s != fmt.Sprintf("%d %d %T %v %v", n, tag, m, m, err) {
+		xs := fmt.Sprintf("%d %d %T %v %v", n, tag, m, m, err)
+		if s != "" && s != xs {
+			t.Logf(" s=`%s`", s)
+			t.Logf(" xs=`%s`", xs)
 			t.Fatal("bad msg")
 		}
 		if err == io.EOF {
@@ -180,9 +183,9 @@ func TestConn(t *testing.T) {
 		`zx.Dir, `,
 		`zx.Dir, key1:"val1" key2:""`,
 		`zx.Dir, Key1:"val1" Key2:""`,
-		`zx.Addr, :0,0`,
+		`zx.Addr, in:#0,#0`,
 		`*errors.errorString, buggered or not implemented`,
-		`zx.Addr, a file:1,2`,
+		`zx.Addr, a file:1,2:#3,#4`,
 	}
 	for o := range p.In {
 		out := fmt.Sprintf("%T, %s", o, o)
@@ -235,12 +238,12 @@ func TestDir(t *testing.T) {
 
 struct ptest {
 	p, e string
-	m bool
+	m    bool
 }
 
 func TestPathPrefixMatch(t *testing.T) {
 	debug = testing.Verbose()
-	ts := []ptest {
+	ts := []ptest{
 		{"/a/b/c", "a", true},
 		{"/a/b/c", "a.*", false},
 		{"/a/b/c", "*1", false},
@@ -277,14 +280,14 @@ func TestPathPrefixMatch(t *testing.T) {
 		{"/", "/a/*1", false},
 		{"/", "/a/*1/a*", false},
 	}
-	paths := []string {
+	paths := []string{
 		"/a/b/c",
 		"/a/a1/a11",
 		"/a/a1/g11",
 		"/b/b1/b11",
 		"/",
 	}
-	exprs := []string {
+	exprs := []string{
 		"a",
 		"a.*",
 		"*1",

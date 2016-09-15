@@ -1,5 +1,5 @@
 /*
-	push a zx replica
+	sync a zx replica
 */
 package main
 
@@ -7,62 +7,66 @@ import (
 	"clive/cmd"
 	"clive/cmd/opt"
 	"clive/zx/repl"
-	"os"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
-func sync1(name string) error {
+func sync1(name string, rc chan face{}) *repl.Tree {
 	c := cmd.AppCtx()
 	if !strings.ContainsRune(name, '/') {
 		name = "/u/lib/repl/" + name
 	}
 	tr, err := repl.Load(name)
 	if err != nil {
-		cmd.Warn("load %s: %s", name, err)
-		return err
+		close(rc, err)
+		return nil
 	}
-	defer tr.Close()
 	if c.Debug {
 		tr.Ldb.DumpTo(os.Stderr)
 		tr.Rdb.DumpTo(os.Stderr)
 	}
-	if nflag {
-		cc, err := tr.Changes()
-		if err != nil {
-			cmd.Warn("changes %s: %s", name, err)
-			return err
-		}
-		for c := range cc {
-			cmd.Printf("chg %s %s\n", c.At, c)
-		}
-		return nil
-	}
-	var cc chan repl.Chg
-	dc := make(chan bool)
-	if c.Verb {
-		cc = make(chan repl.Chg)
-		go func() {
-			for c := range cc {
-				cmd.Printf("chg %s %s\n", c.At, c)
+	go func() {
+		if nflag {
+			cc, err := tr.Changes()
+			if err != nil {
+				close(rc, err)
+				return
 			}
-			close(dc)
-		}()
-	} else {
-		close(dc)
-	}
-	err = tr.Sync(cc)
-	if err != nil {
-		cmd.Warn("sync %s: %s", name, err)
-	}
-	<-dc
-	if err2 := tr.Save(name); err2 != nil {
-		cmd.Warn("save %s: %s", name, err2)
-		if err == nil {
-			err = err2
+			for c := range cc {
+				if ok := rc <- c; !ok {
+					close(cc, cerror(rc))
+				}
+			}
+			close(rc)
+			return
 		}
-	}
-	return err
+		var cc chan repl.Chg
+		dc := make(chan bool)
+		if c.Verb {
+			cc = make(chan repl.Chg)
+			go func() {
+				for c := range cc {
+					if ok := rc <- c; !ok {
+						close(cc, cerror(rc))
+					}
+				}
+				close(dc)
+			}()
+		} else {
+			close(dc)
+		}
+		err = tr.Sync(cc)
+		if err != nil {
+			rc <- err
+		}
+		<-dc
+		if err2 := tr.Save(name); err2 != nil {
+			rc <- err
+		}
+		close(rc)
+	}()
+	return tr
 }
 
 func names() []string {
@@ -82,7 +86,7 @@ func names() []string {
 }
 
 var (
-	opts = opt.New("[file]")
+	opts         = opt.New("[file]")
 	notux, nflag bool
 )
 
@@ -98,18 +102,43 @@ func main() {
 		cmd.UnixIO("out")
 	}
 	var err error
+	rcs := []chan face{}{}
+	nms := []string{}
+	trs := []*repl.Tree{}
 	switch len(args) {
 	case 0:
-		for _, nm := range names() {
-			cmd.Printf("sync %s...\n", nm)
-			if err2 := sync1(nm); err == nil {
-				err = err2
-			}
-		}
+		nms = names()
 	case 1:
-		err = sync1(args[0])
+		nms = []string{args[0]}
 	default:
 		opts.Usage()
+	}
+	for _, nm := range nms {
+		rc := make(chan face{}, 32)
+		rcs = append(rcs, rc)
+		trs = append(trs, sync1(nm, rc))
+	}
+	for i, nm := range nms {
+		cmd.Printf("sync %s\n", nm)
+		for x := range rcs[i] {
+			switch x := x.(type) {
+			case repl.Chg:
+				cmd.Printf("chg %s %s\n", x.At, x)
+			case error:
+				cmd.Warn("%s: %s\n", nm, x)
+				if err == nil {
+					err = x
+				}
+			}
+		}
+		if err := cerror(rcs[i]); err != nil {
+			cmd.Warn("%s: %s", nm, err)
+		}
+	}
+	for _, tr := range trs {
+		if tr != nil {
+			tr.Close()
+		}
 	}
 	cmd.Exit(err)
 }

@@ -12,8 +12,8 @@ type Kind int
 const (
 	Knone  Kind = iota
 	Ktitle      // title or author info (first found is title)
-	Kcop	// copyright info
-	Kchap	// chapter title
+	Kcop        // copyright info
+	Kchap       // chapter title
 	Khdr1       // heading
 	Khdr2       // heading
 	Khdr3       // heading
@@ -57,7 +57,7 @@ const (
 
 const (
 	// these require a space after
-	CopMark = "© "
+	CopMark   = "© "
 	TitleMark = "_ "
 	ChapMark  = "= "
 	Hdr1Mark  = "* "
@@ -130,9 +130,9 @@ struct scan {
 
 var marks = map[string]Kind{
 	TitleMark: Ktitle,
-	CopMark: Kcop,
+	CopMark:   Kcop,
 	FootMark:  Kfoot,
-	ChapMark: Kchap,
+	ChapMark:  Kchap,
 	Hdr1Mark:  Khdr1,
 	Hdr2Mark:  Khdr2,
 	Hdr3Mark:  Khdr3,

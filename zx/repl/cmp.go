@@ -1,16 +1,16 @@
 package repl
 
 import (
-	"clive/zx"
 	"clive/cmd"
-	"time"
+	"clive/zx"
 	"fmt"
 	"sort"
+	"time"
 )
-
 
 // Where a change was found
 type Where int
+
 const (
 	Nowhere Where = iota
 	Local
@@ -18,9 +18,8 @@ const (
 	Both
 )
 
-
 // A zx file change made to a replicated file
-type Chg struct {
+struct Chg {
 	zx.Chg
 	At Where
 }
@@ -45,7 +44,7 @@ func (w Where) String() string {
 func (c Chg) String() string {
 	s := ""
 	if c.D["err"] != "" {
-		s = "\tERR "+s
+		s = "\tERR " + s
 	}
 	switch c.Type {
 	case zx.None:
@@ -160,7 +159,7 @@ func (db *DB) changes(f0, f1 *File, excl []string, metat time.Time, w Where, rc 
 		}
 		return nil
 	}
-	if dirMetaChanged(d0, d1)  && d0["path"] != "/" && d1["path"] != "/" {
+	if dirMetaChanged(d0, d1) && d0["path"] != "/" && d1["path"] != "/" {
 		rc <- Chg{Chg: zx.Chg{Type: zx.Meta, Time: metat, D: d1}, At: w}
 	}
 	names := make([]string, 0, len(f0.Child)+len(f1.Child))
@@ -206,7 +205,7 @@ func (db *DB) changes(f0, f1 *File, excl []string, metat time.Time, w Where, rc 
 			dels = append(dels, c0.D)
 			ok := rc <- Chg{
 				Chg: zx.Chg{Type: zx.Del, Time: metat, D: c0.D},
-				At: w}
+				At:  w}
 			if !ok {
 				return nil
 			}
